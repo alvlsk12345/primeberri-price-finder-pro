@@ -42,7 +42,7 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
           },
           {
             role: "user",
-            content: `Найди товары по запросу: ${query}. Верни только JSON без дополнительного текста, в формате: [{"id": "уникальный_id", "name": "название товара", "price": цена_в_числовом_формате, "currency": "EUR", "image": "https://полный_url_изображения", "store": "название_магазина"}]. Вместо placeholder используй реальные ссылки на изображения с https://images.unsplash.com/`
+            content: `Найди товары по запросу: ${query}. Верни только JSON без дополнительного текста, в формате: [{"id": "уникальный_id", "name": "название товара", "price": цена_в_числовом_формате, "currency": "EUR", "image": "ссылка_на_изображение", "store": "название_магазина"}]. Для изображений используй публичные URL изображений товаров.`
           }
         ],
         temperature: 0.7,
@@ -72,20 +72,38 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
 
     // Парсим результаты из ответа OpenAI
     try {
+      // Находим и извлекаем JSON из ответа
       const jsonStartIndex = content.indexOf('[');
       const jsonEndIndex = content.lastIndexOf(']') + 1;
       const jsonContent = content.substring(jsonStartIndex, jsonEndIndex);
-      const products = JSON.parse(jsonContent);
+      let products = JSON.parse(jsonContent);
       
-      // Проверяем валидность данных
-      const validProducts = products.map((product: any, index: number) => ({
-        id: product.id || `${index + 1}`,
-        name: product.name || `Товар ${index + 1}`,
-        price: Number(product.price) || 100 + (index * 50),
-        currency: product.currency || 'EUR',
-        image: product.image || `https://images.unsplash.com/photo-${1500000000 + index}`,
-        store: product.store || 'Интернет-магазин'
-      }));
+      // Проверяем и корректируем данные о товарах
+      const validProducts = products.map((product: any, index: number) => {
+        // Проверка и исправление ссылки на изображение
+        let imageUrl = product.image || "";
+        
+        // Если изображения нет или оно некорректное, используем изображения с Unsplash
+        if (!imageUrl || imageUrl.includes("placeholder") || !imageUrl.startsWith("http")) {
+          const unsplashImages = [
+            "https://images.unsplash.com/photo-1604525843809-cbba713a792b", // технологии
+            "https://images.unsplash.com/photo-1542291026-7eec264c27ff", // обувь
+            "https://images.unsplash.com/photo-1523275335684-37898b6baf30", // часы
+            "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f", // камера
+            "https://images.unsplash.com/photo-1505740420928-5e560c06d30e"  // наушники
+          ];
+          imageUrl = unsplashImages[index % unsplashImages.length];
+        }
+        
+        return {
+          id: product.id || `${index + 1}`,
+          name: product.name || `Товар ${index + 1}`,
+          price: Number(product.price) || 100 + (index * 50),
+          currency: product.currency || 'EUR',
+          image: imageUrl,
+          store: product.store || 'Интернет-магазин'
+        };
+      });
       
       return validProducts;
     } catch (parseError) {
@@ -103,16 +121,16 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
         name: `${query} - Товар (резервные данные)`,
         price: 250,
         currency: 'EUR',
-        image: 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b',
-        store: 'Интернет-магазин'
+        image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30',
+        store: 'Amazon'
       },
       {
         id: '2',
         name: `${query} - Аналогичный товар (резервные данные)`,
         price: 180,
         currency: 'EUR',
-        image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158',
-        store: 'Online Shop'
+        image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e',
+        store: 'eBay'
       }
     ];
   }
@@ -147,12 +165,9 @@ export const getExchangeRate = async (currency: string): Promise<number> => {
   }
 };
 
-// Добавляем функцию для получения реальной ссылки на страницу товара
+// Обновляем функцию для получения реальной ссылки на страницу товара
 export const getProductLink = (product: Product): string => {
-  // В реальном проекте здесь будет логика построения ссылки на товар
-  // Например, на основе магазина и параметров товара
-  
-  // Создаем более реалистичную ссылку на товар
+  // Карта реальных доменов магазинов
   const storeMap: {[key: string]: string} = {
     'Amazon': 'amazon.com',
     'eBay': 'ebay.com',
@@ -165,10 +180,21 @@ export const getProductLink = (product: Product): string => {
     'H&M': 'hm.com',
     'Zara': 'zara.com',
     'Sportisimo': 'sportisimo.eu',
+    'Интернет-магазин': 'shop.example.com'
   };
 
-  const domain = storeMap[product.store] || 'example.com';
+  // Определяем домен магазина или используем запасной вариант
+  const domain = storeMap[product.store] || 'shop.example.com';
   
   // Формируем URL с правильными параметрами
-  return `https://${domain}/products/${encodeURIComponent(product.name.toLowerCase().replace(/\s+/g, '-'))}/${product.id}?price=${product.price}&currency=${product.currency}`;
+  // Например: https://amazon.com/dp/B09X123456 для Amazon
+  if (domain === 'amazon.com') {
+    return `https://${domain}/dp/${product.id}`;
+  } else if (domain === 'ebay.com') {
+    return `https://${domain}/itm/${product.id}`;
+  } else {
+    // Для других магазинов используем стандартный формат
+    const productSlug = product.name.toLowerCase().replace(/[^a-zа-яё0-9]/g, '-').replace(/-+/g, '-');
+    return `https://${domain}/product/${productSlug}-${product.id}`;
+  }
 };

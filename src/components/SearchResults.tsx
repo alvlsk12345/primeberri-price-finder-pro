@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ImageOff } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Product = {
   id: string;
@@ -20,8 +21,23 @@ type SearchResultsProps = {
 };
 
 export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect, selectedProduct }) => {
-  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement>) => {
-    event.currentTarget.src = "https://via.placeholder.com/150?text=Нет+изображения";
+  // Состояние для отслеживания загрузки изображений
+  const [imageLoading, setImageLoading] = useState<{[key: string]: boolean}>({});
+
+  // Обработчик для ошибок загрузки изображений
+  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement>, productId: string) => {
+    console.error('Ошибка загрузки изображения для товара:', productId);
+    event.currentTarget.src = "https://images.unsplash.com/photo-1523275335684-37898b6baf30";
+  };
+
+  // Обработчик для успешной загрузки изображения
+  const handleImageLoad = (productId: string) => {
+    setImageLoading(prev => ({ ...prev, [productId]: false }));
+  };
+
+  // Обработчик для начала загрузки изображения
+  const handleImageLoadStart = (productId: string) => {
+    setImageLoading(prev => ({ ...prev, [productId]: true }));
   };
 
   return (
@@ -37,14 +53,20 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect,
           <CardContent className="p-4">
             <div className="flex flex-col items-center">
               <div className="w-full h-[150px] mb-3 flex items-center justify-center relative">
+                {imageLoading[product.id] && (
+                  <Skeleton className="w-full h-full absolute inset-0" />
+                )}
+                
                 {product.image ? (
                   <img 
                     src={product.image} 
                     alt={product.name} 
                     className="max-h-full max-w-full object-contain"
-                    onError={handleImageError}
+                    onError={(e) => handleImageError(e, product.id)}
+                    onLoad={() => handleImageLoad(product.id)}
                     loading="eager"
                     crossOrigin="anonymous"
+                    onLoadStart={() => handleImageLoadStart(product.id)}
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center text-gray-400">
