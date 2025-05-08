@@ -11,6 +11,7 @@ import { PageFooter } from "@/components/PageFooter";
 import { PageHeader } from "@/components/PageHeader";
 import { ActionButtons } from "@/components/ActionButtons";
 import { searchProducts, type Product } from "@/services/productService";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -27,7 +28,14 @@ const Index = () => {
     // Проверяем наличие API ключа
     const apiKey = localStorage.getItem('openai_api_key');
     if (!apiKey) {
-      toast.error('Необходимо добавить API ключ OpenAI в настройках браузера');
+      toast.error(
+        <div>
+          Необходимо добавить API ключ OpenAI.{' '}
+          <Link to="/settings" className="underline">
+            Перейти к настройкам
+          </Link>
+        </div>
+      );
       return;
     }
 
