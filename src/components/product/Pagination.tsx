@@ -20,13 +20,17 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
     return null;
   }
 
-  // Handler for page change with debugging
+  // Handler for page change with additional validation and debugging
   const handlePageChange = (page: number, e: React.MouseEvent) => {
     e.preventDefault();
-    console.log('Changing to page:', page, 'from current page:', currentPage);
+    e.stopPropagation(); // Stop event propagation to prevent any parent handlers
     
+    // Validate page value
     if (page !== currentPage && page >= 1 && page <= totalPages) {
+      console.log(`Pagination: Changing from page ${currentPage} to page ${page}`);
       onPageChange(page);
+    } else {
+      console.log(`Pagination: Invalid page change request - current: ${currentPage}, requested: ${page}, total: ${totalPages}`);
     }
   };
 
@@ -76,7 +80,7 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
 
   // Using Shadcn UI Pagination component
   return (
-    <div className="flex justify-center mt-6">
+    <div className="flex justify-center mt-6" data-testid="pagination-component">
       <ShadcnPagination>
         <PaginationContent>
           <PaginationItem>
@@ -85,6 +89,7 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
               onClick={(e) => handlePageChange(currentPage - 1, e)} 
               aria-disabled={currentPage <= 1}
               className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
+              data-testid="pagination-previous"
             />
           </PaginationItem>
           
@@ -96,6 +101,7 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
               onClick={(e) => handlePageChange(currentPage + 1, e)} 
               aria-disabled={currentPage >= totalPages}
               className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
+              data-testid="pagination-next"
             />
           </PaginationItem>
         </PaginationContent>

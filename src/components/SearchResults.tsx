@@ -20,18 +20,23 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   totalPages,
   onPageChange
 }) => {
-  console.log('Рендерим результаты поиска:', results, 'Текущая страница:', currentPage, 'Всего страниц:', totalPages);
+  console.log('SearchResults render:', {
+    resultsCount: results?.length || 0,
+    currentPage,
+    totalPages,
+    hasSelectedProduct: !!selectedProduct
+  });
 
   // Check if results are available
   if (!results || results.length === 0) {
     return (
-      <div className="text-center p-6">
+      <div className="text-center p-6" data-testid="no-results">
         <p className="text-lg text-gray-500">Товары не найдены.</p>
       </div>
     );
   }
 
-  // Ensure unique keys for products
+  // Ensure all products have unique IDs to prevent React key issues
   const productsWithUniqueKeys = results.map(product => {
     // If the product already has a unique ID, use it
     if (product.id) {
@@ -39,12 +44,21 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     }
     
     // Otherwise, create a unique ID based on other properties
-    const uniqueId = `${product.title}-${product.price}-${Math.random().toString(36).substr(2, 9)}`;
+    // Using combination of title, price and random string to ensure uniqueness
+    const uniqueId = `${product.title}-${product.price}-${Math.random().toString(36).substring(2, 9)}`;
     return { ...product, id: uniqueId };
   });
 
+  // Handle page change with validation
+  const handlePageChange = (page: number) => {
+    console.log(`SearchResults: Page change requested from ${currentPage} to ${page}`);
+    if (page >= 1 && page <= totalPages && page !== currentPage) {
+      onPageChange(page);
+    }
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="search-results">
       <ProductList 
         products={productsWithUniqueKeys}
         selectedProduct={selectedProduct}
@@ -54,7 +68,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
       <Pagination 
         currentPage={currentPage}
         totalPages={totalPages}
-        onPageChange={onPageChange}
+        onPageChange={handlePageChange}
       />
     </div>
   );
