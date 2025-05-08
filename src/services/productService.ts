@@ -22,6 +22,10 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
       } else if (response.products && Array.isArray(response.products)) {
         console.log('Получен объект с массивом продуктов:', response.products);
         return processProductsData(response.products);
+      } else if (isSingleProduct(response)) {
+        // Если получен один продукт, оборачиваем его в массив
+        console.log('Получен единичный продукт, преобразуем в массив:', response);
+        return processProductsData([response]);
       } else {
         const keys = Object.keys(response);
         console.log('Получен объект с ключами:', keys);
@@ -62,6 +66,10 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
         // Если получили объект с массивом products
         else if (products.products && Array.isArray(products.products)) {
           return processProductsData(products.products);
+        }
+        // Если получили единичный продукт
+        else if (isSingleProduct(products)) {
+          return processProductsData([products]);
         }
         // Если формат не соответствует ожидаемому
         else {
@@ -104,6 +112,17 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
     toast.error('Произошла ошибка при поиске товаров');
     return [];
   }
+};
+
+// Функция для проверки, является ли объект отдельным продуктом
+const isSingleProduct = (obj: any): boolean => {
+  // Проверяем наличие ключевых полей, которые должны быть у продукта
+  return obj && 
+         typeof obj === 'object' && 
+         !Array.isArray(obj) && 
+         obj.title !== undefined && 
+         obj.price !== undefined && 
+         obj.image !== undefined;
 };
 
 // Вспомогательная функция для обработки данных о товарах
