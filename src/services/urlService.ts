@@ -32,10 +32,10 @@ export const createProductSlug = (name: string): string => {
 // Обновляем функцию для получения реальной ссылки на страницу товара
 export const getProductLink = (product: Product): string => {
   // Определяем домен магазина или используем запасной вариант
-  const domain = getStoreDomain(product.store);
+  const domain = getStoreDomain(product.source);
   
   // Создаем слаг для URL из имени продукта
-  const productSlug = createProductSlug(product.name);
+  const productSlug = createProductSlug(product.title);
   
   // Формируем URL с правильными параметрами в зависимости от магазина
   if (domain === 'amazon.com') {
