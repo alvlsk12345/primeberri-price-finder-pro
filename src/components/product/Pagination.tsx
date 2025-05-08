@@ -7,6 +7,7 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
+  PaginationEllipsis,
 } from "@/components/ui/pagination";
 
 interface PaginationProps {
@@ -21,7 +22,7 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
     return null;
   }
 
-  // Обработчик клика по пагинации с предотвращением дефолтного поведения
+  // Улучшенный обработчик клика по пагинации
   const handlePageClick = (page: number) => (e: React.MouseEvent<HTMLAnchorElement>) => {
     // Предотвращаем дефолтное поведение ссылки для предотвращения перезагрузки страницы
     e.preventDefault();
@@ -30,7 +31,10 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
     // Дополнительная проверка, чтобы не вызывать обработчик для текущей страницы или недопустимой страницы
     if (page !== currentPage && page >= 1 && page <= totalPages) {
       console.log(`Pagination: Переход с ${currentPage} на страницу ${page}`);
-      onPageChange(page);
+      // Добавляем небольшую задержку для стабильности обработки
+      setTimeout(() => {
+        onPageChange(page);
+      }, 10);
     } else {
       console.log(`Pagination: Отклонен переход на страницу ${page} (текущая: ${currentPage}, всего: ${totalPages})`);
     }
@@ -41,33 +45,71 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
     const items = [];
     const maxVisiblePages = 5;
     
-    // Логика определения, какие страницы показывать
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-    
-    // Корректировка, если мы находимся близко к концу
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-    
-    // Генерация номеров страниц
-    for (let i = startPage; i <= endPage; i++) {
-      items.push(
-        <PaginationItem key={i} data-testid={`pagination-item-${i}`}>
-          <PaginationLink 
-            isActive={currentPage === i}
-            onClick={handlePageClick(i)}
-            href="#"
-            aria-current={currentPage === i ? "page" : undefined}
-          >
-            {i}
-          </PaginationLink>
-        </PaginationItem>
-      );
+    // Если страниц меньше или равно максимальному количеству видимых страниц, показываем все страницы
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        items.push(generatePageItem(i));
+      }
+    } else {
+      // Логика определения, какие страницы показывать при большом количестве страниц
+      if (currentPage <= 3) {
+        // Мы близко к началу
+        for (let i = 1; i <= 4; i++) {
+          items.push(generatePageItem(i));
+        }
+        items.push(
+          <PaginationItem key="ellipsis-end">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+        items.push(generatePageItem(totalPages));
+      } else if (currentPage >= totalPages - 2) {
+        // Мы близко к концу
+        items.push(generatePageItem(1));
+        items.push(
+          <PaginationItem key="ellipsis-start">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          items.push(generatePageItem(i));
+        }
+      } else {
+        // Мы где-то в середине
+        items.push(generatePageItem(1));
+        items.push(
+          <PaginationItem key="ellipsis-start">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          items.push(generatePageItem(i));
+        }
+        items.push(
+          <PaginationItem key="ellipsis-end">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+        items.push(generatePageItem(totalPages));
+      }
     }
     
     return items;
   };
+
+  // Вспомогательная функция для создания элемента страницы пагинации
+  const generatePageItem = (pageNumber: number) => (
+    <PaginationItem key={pageNumber} data-testid={`pagination-item-${pageNumber}`}>
+      <PaginationLink 
+        isActive={currentPage === pageNumber}
+        onClick={handlePageClick(pageNumber)}
+        href="#"
+        aria-current={currentPage === pageNumber ? "page" : undefined}
+      >
+        {pageNumber}
+      </PaginationLink>
+    </PaginationItem>
+  );
 
   return (
     <div className="flex justify-center mt-6" data-testid="pagination-component">

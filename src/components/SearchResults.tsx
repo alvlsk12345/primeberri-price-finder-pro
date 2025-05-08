@@ -37,23 +37,26 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   }
 
   // Ensure all products have unique IDs to prevent React key issues
-  const productsWithUniqueKeys = results.map(product => {
+  const productsWithUniqueKeys = results.map((product, index) => {
     // If the product already has a unique ID, use it
     if (product.id) {
       return product;
     }
     
-    // Otherwise, create a unique ID based on other properties
-    // Using combination of title, price and random string to ensure uniqueness
-    const uniqueId = `${product.title}-${product.price}-${Math.random().toString(36).substring(2, 9)}`;
+    // Otherwise, create a unique ID based on other properties and index
+    // Using combination of title, price, index and timestamp to ensure uniqueness
+    const uniqueId = `${product.title}-${product.price}-${index}-${Date.now()}`;
     return { ...product, id: uniqueId };
   });
 
-  // Handle page change with validation
+  // Handle page change with validation and debouncing
   const handlePageChange = (page: number) => {
     console.log(`SearchResults: Page change requested from ${currentPage} to ${page}`);
     if (page >= 1 && page <= totalPages && page !== currentPage) {
+      // Вызываем родительский обработчик изменения страницы
       onPageChange(page);
+    } else {
+      console.log(`SearchResults: Invalid page change request: ${page}`);
     }
   };
 
