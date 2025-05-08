@@ -2,7 +2,7 @@
 import { searchProductsViaZylalabs } from './api/zylalabsService';
 import { Product, SearchParams } from './types';
 import { toast } from "@/components/ui/sonner";
-import { processZylalabsProductsData } from './productFormatter';
+import { processZylalabsProductsData } from './formatters/productDataFormatter';
 
 // Функция для поиска товаров с поддержкой пагинации и фильтрации
 export const searchProducts = async (params: SearchParams): Promise<{ products: Product[], totalPages: number }> => {
