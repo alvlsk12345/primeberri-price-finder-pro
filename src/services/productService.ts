@@ -28,13 +28,21 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
           imageUrl = getFallbackImage(index);
         }
         
+        // Извлекаем валюту из цены
+        const priceString = product.price || "0 €";
+        const currencyMatch = priceString.match(/[£$€]/);
+        const currency = currencyMatch ? currencyMatch[0] : '€';
+        
         return {
-          id: product.id || `${Date.now()}-${index}`,
-          name: product.name || `Товар ${index + 1}`,
-          price: Number(product.price) || 100 + (index * 50),
-          currency: product.currency || 'EUR',
+          id: `${Date.now()}-${index}`,
+          title: product.title || `Товар ${index + 1}`,
+          subtitle: product.subtitle || "Популярный",
+          price: product.price || "0 €",
+          currency: currency,
           image: imageUrl,
-          store: product.store || 'Интернет-магазин'
+          link: product.link || "#",
+          rating: parseFloat(product.rating) || (4 + Math.random()).toFixed(1),
+          source: product.source || 'Интернет-магазин'
         };
       });
       
@@ -51,19 +59,25 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
     return [
       {
         id: `${Date.now()}-1`,
-        name: `${query} - Товар (резервные данные)`,
-        price: 250,
-        currency: 'EUR',
+        title: `${query} - Товар (резервные данные)`,
+        subtitle: "Популярный",
+        price: "250 €",
+        currency: "€",
         image: getFallbackImage(0),
-        store: 'Amazon'
+        link: "#",
+        rating: 4.7,
+        source: 'Amazon'
       },
       {
         id: `${Date.now()}-2`,
-        name: `${query} - Аналогичный товар (резервные данные)`,
-        price: 180,
-        currency: 'EUR',
+        title: `${query} - Аналогичный товар (резервные данные)`,
+        subtitle: "Новинка",
+        price: "180 €",
+        currency: "€",
         image: getFallbackImage(1),
-        store: 'eBay'
+        link: "#",
+        rating: 4.5,
+        source: 'eBay'
       }
     ];
   }

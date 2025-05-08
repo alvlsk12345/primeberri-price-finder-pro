@@ -2,11 +2,14 @@
 // Определение типов для сервисов
 export type Product = {
   id: string;
-  name: string;
-  price: number;
+  title: string;
+  subtitle: string;
+  price: string;
   currency: string;
   image: string;
-  store: string;
+  link: string;
+  rating: number;
+  source: string;
 };
 
 // Тип для карты доменов магазинов

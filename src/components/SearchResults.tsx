@@ -2,17 +2,9 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ImageOff } from "lucide-react";
+import { ImageOff, Star } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-
-type Product = {
-  id: string;
-  name: string;
-  price: number;
-  currency: string;
-  image: string;
-  store: string;
-};
+import { Product } from "@/services/types";
 
 type SearchResultsProps = {
   results: Product[];
@@ -67,6 +59,12 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect,
         >
           <CardContent className="p-4">
             <div className="flex flex-col items-center">
+              <div className="relative w-full">
+                <div className="absolute top-0 right-0 bg-primary text-white text-xs px-2 py-1 rounded-bl-md z-10">
+                  {product.subtitle}
+                </div>
+              </div>
+              
               <div className="w-full h-[150px] mb-3 flex items-center justify-center relative">
                 {imageLoading[product.id] && (
                   <Skeleton className="w-full h-full absolute inset-0" />
@@ -75,21 +73,21 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect,
                 {!imageError[product.id] && product.image ? (
                   <img 
                     src={product.image} 
-                    alt={product.name} 
+                    alt={product.title} 
                     className="max-h-full max-w-full object-contain"
                     onError={() => handleImageError(product.id)}
                     onLoad={() => handleImageLoad(product.id)}
                     loading="eager"
                     crossOrigin="anonymous"
                     onLoadStart={() => handleImageLoadStart(product.id)}
-                    key={`img-${product.id}`} // Добавляем уникальный ключ для избежания кеширования
+                    key={`img-${product.id}-${Date.now()}`} // Уникальный ключ для избежания кеширования
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center text-gray-400">
                     {imageError[product.id] ? (
                       <img 
-                        src={fallbackImages[index % fallbackImages.length]} 
-                        alt={product.name}
+                        src={fallbackImages[index % fallbackImages.length] + `?random=${product.id}`} 
+                        alt={product.title}
                         className="max-h-full max-w-full object-contain"
                         onLoad={() => handleImageLoad(product.id)}
                         loading="eager"
@@ -105,10 +103,16 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect,
               </div>
               
               <div className="w-full text-center">
-                <h3 className="font-semibold text-base mb-1">{product.name}</h3>
-                <div className="text-sm mb-2">{product.store}</div>
+                <h3 className="font-semibold text-base mb-1">{product.title}</h3>
+                <div className="text-sm mb-2 flex items-center justify-center">
+                  <span className="mr-1">{product.source}</span>
+                  <div className="flex items-center">
+                    <Star size={14} className="text-yellow-500 fill-yellow-500" />
+                    <span className="text-xs ml-1">{product.rating}</span>
+                  </div>
+                </div>
                 <div className="font-bold text-lg">
-                  {product.price} {product.currency}
+                  {product.price}
                 </div>
               </div>
               
