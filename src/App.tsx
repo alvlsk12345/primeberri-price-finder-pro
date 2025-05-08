@@ -17,7 +17,7 @@ function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <Toaster />
+      <Toaster position="bottom-right" closeButton={true} />
     </>
   );
 }

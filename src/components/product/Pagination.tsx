@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   Pagination as ShadcnPagination,
   PaginationContent,
@@ -9,7 +9,6 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
-import { toast } from "sonner";
 
 interface PaginationProps {
   currentPage: number;
@@ -18,53 +17,40 @@ interface PaginationProps {
 }
 
 export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPageChange }) => {
-  // Не отображаем пагинацию, если страница всего одна
+  // Don't show pagination if there's only one page
   if (totalPages <= 1) {
     return null;
   }
 
-  // Улучшенный обработчик клика по пагинации
-  const handlePageClick = (page: number) => (e: React.MouseEvent<HTMLAnchorElement>) => {
-    // Предотвращаем дефолтное поведение ссылки для предотвращения перезагрузки страницы
+  // Improved page click handler with memoization to prevent unnecessary re-renders
+  const handlePageClick = useCallback((page: number) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // Prevent default link behavior to avoid page reloads
     e.preventDefault();
     e.stopPropagation();
     
-    // Дополнительная проверка, чтобы не вызывать обработчик для текущей страницы или недопустимой страницы
+    // Only trigger for valid pages that aren't the current page
     if (page !== currentPage && page >= 1 && page <= totalPages) {
       console.log(`Pagination: Переход с ${currentPage} на страницу ${page}`);
-      
-      // Показываем уведомление о начале загрузки
-      toast.info(`Загрузка страницы ${page}...`, {
-        id: `page-change-${page}`,
-        duration: 2000
-      });
-      
-      // Вызываем обработчик изменения страницы
       onPageChange(page);
     } else {
       console.log(`Pagination: Отклонен переход на страницу ${page} (текущая: ${currentPage}, всего: ${totalPages})`);
-      
-      // Если это недопустимая страница, показываем предупреждение
-      if (page > totalPages) {
-        toast.error("Запрошенная страница не существует");
-      }
     }
-  };
+  }, [currentPage, totalPages, onPageChange]);
 
-  // Функция для генерации элементов пагинации
+  // Function to generate pagination items
   const generatePaginationItems = () => {
     const items = [];
     const maxVisiblePages = 5;
     
-    // Если страниц меньше или равно максимальному количеству видимых страниц, показываем все страницы
+    // If there are fewer pages than the maximum visible, show all pages
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) {
         items.push(generatePageItem(i));
       }
     } else {
-      // Логика определения, какие страницы показывать при большом количестве страниц
+      // Logic for showing pages when there are more than the maximum visible
       if (currentPage <= 3) {
-        // Мы близко к началу
+        // Near the beginning
         for (let i = 1; i <= 4; i++) {
           items.push(generatePageItem(i));
         }
@@ -75,7 +61,7 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
         );
         items.push(generatePageItem(totalPages));
       } else if (currentPage >= totalPages - 2) {
-        // Мы близко к концу
+        // Near the end
         items.push(generatePageItem(1));
         items.push(
           <PaginationItem key="ellipsis-start">
@@ -86,7 +72,7 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
           items.push(generatePageItem(i));
         }
       } else {
-        // Мы где-то в середине
+        // Somewhere in the middle
         items.push(generatePageItem(1));
         items.push(
           <PaginationItem key="ellipsis-start">
@@ -108,7 +94,7 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
     return items;
   };
 
-  // Вспомогательная функция для создания элемента страницы пагинации
+  // Helper function to create a pagination page item
   const generatePageItem = (pageNumber: number) => {
     const isDisabled = pageNumber > totalPages;
     return (
@@ -130,7 +116,7 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
     <div className="flex justify-center mt-6" data-testid="pagination-component">
       <ShadcnPagination>
         <PaginationContent>
-          {/* Кнопка "Предыдущая страница" */}
+          {/* Previous page button */}
           <PaginationItem>
             <PaginationPrevious 
               href="#" 
@@ -141,10 +127,10 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
             />
           </PaginationItem>
           
-          {/* Номера страниц */}
+          {/* Page numbers */}
           {generatePaginationItems()}
           
-          {/* Кнопка "Следующая страница" */}
+          {/* Next page button */}
           <PaginationItem>
             <PaginationNext 
               href="#" 

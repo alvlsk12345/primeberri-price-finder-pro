@@ -4,6 +4,7 @@ import { Product } from "@/services/types";
 import { ProductList } from '../product/ProductList';
 import { Pagination } from '../product/Pagination';
 import { SearchResultsAlert } from './SearchResultsAlert';
+import { toast } from "@/components/ui/sonner";
 
 interface ProductListContainerProps {
   products: Product[];
@@ -22,10 +23,27 @@ export const ProductListContainer: React.FC<ProductListContainerProps> = ({
   totalPages,
   onPageChange
 }) => {
+  // Enhanced page change handler with validation and feedback
   const handlePageChange = (page: number) => {
     console.log(`ProductListContainer: Changing page from ${currentPage} to ${page}`);
     if (page >= 1 && page <= totalPages && page !== currentPage) {
+      // Show loading toast when changing pages
+      toast.info(`Загрузка страницы ${page}...`, {
+        id: `page-change-${page}`,
+        duration: 2000
+      });
+      
+      // Call the parent's onPageChange function
       onPageChange(page);
+    } else if (page === currentPage) {
+      // No need to reload the same page
+      console.log(`Already on page ${page}, no change needed`);
+    } else {
+      // Invalid page requested
+      console.log(`Invalid page request: ${page} (total: ${totalPages})`);
+      if (page > totalPages) {
+        toast.error(`Страница ${page} не существует`);
+      }
     }
   };
 
