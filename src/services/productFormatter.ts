@@ -40,10 +40,23 @@ export const processZylalabsProductsData = (products: any[], filters?: ProductFi
       imageUrl = product.offer.offer_images[0];
       console.log(`Использую URL из offer_images: ${imageUrl}`);
     }
-    // Если нет в offer_images, проверяем thumbnail_image в offer
+    // Если нет в offer_images, проверяем thumbnail в product_variants
+    else if (product.product_variants && product.product_variants.Color && 
+             Array.isArray(product.product_variants.Color) && 
+             product.product_variants.Color.length > 0 &&
+             product.product_variants.Color[0].thumbnail) {
+      imageUrl = product.product_variants.Color[0].thumbnail;
+      console.log(`Использую URL из product_variants.Color[0].thumbnail: ${imageUrl}`);
+    }
+    // Если нет в thumbnail в variants, проверяем thumbnail_image в offer
     else if (product.offer && product.offer.thumbnail_image) {
       imageUrl = product.offer.thumbnail_image;
       console.log(`Использую URL из offer.thumbnail_image: ${imageUrl}`);
+    }
+    // Если не нашли, проверяем store_favicon в offer
+    else if (product.offer && product.offer.store_favicon) {
+      imageUrl = product.offer.store_favicon;
+      console.log(`Использую URL из offer.store_favicon: ${imageUrl}`);
     }
     // Если не нашли, пробуем получить из поля image или thumbnail
     else if (product.image) {
@@ -60,12 +73,14 @@ export const processZylalabsProductsData = (products: any[], filters?: ProductFi
       console.log(`Использую URL из merchant_logo: ${imageUrl}`);
     }
     
-    // Обрабатываем изображение товара
+    // Обрабатываем изображение товара с логированием
+    console.log(`Обрабатываем изображение для товара "${title}": ${imageUrl}`);
     const processedImageUrl = processProductImage(imageUrl, index);
     
     // Если изображение не прошло валидацию, всё равно продолжаем (даже с пустым URL)
     if (!processedImageUrl) {
       console.log('Товар будет показан без изображения:', title);
+      invalidImageCounter++;
     }
     
     // Определяем цену и валюту
@@ -157,6 +172,7 @@ export const processZylalabsProductsData = (products: any[], filters?: ProductFi
   }).filter(product => product !== null); // Фильтруем null продукты
   
   console.log(`Подготовлено товаров: ${processedProducts.length} из ${products.length}`);
+  console.log(`Товаров без изображений: ${invalidImageCounter}`);
   
   // Применяем фильтры к обработанным товарам, если они указаны
   let filteredProducts = processedProducts;

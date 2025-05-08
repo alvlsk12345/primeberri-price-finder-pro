@@ -32,6 +32,14 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
   // Для URL от Google Shopping (encrypted-tbn) используем их без изменений
   if (processedUrl.includes('encrypted-tbn')) {
     console.log(`Обнаружен URL Google Shopping: ${processedUrl}`);
+    
+    // Проверяем, начинается ли URL с http или https
+    if (!processedUrl.startsWith('http') && !processedUrl.startsWith('//')) {
+      processedUrl = `https://${processedUrl}`;
+    } else if (processedUrl.startsWith('//')) {
+      processedUrl = `https:${processedUrl}`;
+    }
+    
     return processedUrl; // Возвращаем URL как есть без дополнительной обработки
   }
   
@@ -47,13 +55,19 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
     console.log(`Преобразован относительный URL: ${processedUrl}`);
   }
   
+  // Обрабатываем особые случаи URL
+  if (processedUrl && processedUrl.includes('data:image')) {
+    console.log('Обнаружен Data URL изображения, использование без изменений');
+    return processedUrl;
+  }
+  
   // Проверяем, валидный ли URL изображения
   if (!isValidImageUrl(processedUrl)) {
     console.log(`Невалидный URL изображения: ${processedUrl}`);
     return '';
   }
   
-  // Добавляем уникальный параметр к URL
+  // Добавляем уникальный параметр к URL для избежания кэширования
   const finalUrl = getUniqueImageUrl(processedUrl, index);
   console.log(`Финальный URL изображения: ${finalUrl}`);
   

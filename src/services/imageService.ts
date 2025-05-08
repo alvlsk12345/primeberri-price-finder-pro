@@ -11,6 +11,11 @@ export const isValidImageUrl = (url: string | undefined): boolean => {
     return true;
   }
   
+  // Разрешаем data URLs для изображений
+  if (url.startsWith('data:image/')) {
+    return true;
+  }
+  
   // Базовая валидация URL
   try {
     new URL(url);
@@ -20,14 +25,21 @@ export const isValidImageUrl = (url: string | undefined): boolean => {
     const hasImageExtension = imageExtensions.some(ext => url.toLowerCase().includes(ext));
     
     // Проверка на содержание ключевых слов для изображений - расширенный список
-    const imageKeywords = ['image', 'img', 'photo', 'picture', 'product', 'thumb', 'preview', 'media', 'asset'];
+    const imageKeywords = [
+      'image', 'img', 'photo', 'picture', 'product', 'thumb', 'preview', 'media', 'asset',
+      'photo', 'pic', 'thumbnail', 'gallery', 'cover', 'shot', 'icon'
+    ];
     const hasImageKeyword = imageKeywords.some(keyword => url.toLowerCase().includes(keyword));
     
     // Проверка на популярные CDN и хостинги изображений
     const imageCDNs = [
       'cloudfront.net', 'cloudinary.com', 'imgix.net', 's3.amazonaws', 'cdninstagram', 
       'akamaized', 'cdn', 'media', 'images', 'static', 'assets', 'shopify', 'adidas.com',
-      'nike.com', 'amazon.com', 'ebay.com', 'walmart.com', 'target.com'
+      'nike.com', 'amazon.com', 'ebay.com', 'walmart.com', 'target.com', 'etsy.com',
+      'akamai', 'fastly.net', 'imgur.com', 'googleusercontent.com', 'ggpht.com',
+      'blob.core', 'storage.googleapis', 'store-images', 'ytimg', 'pexels', 'unsplash',
+      'pixabay', 'flickr', 'twimg', 'wp-content', 'alicdn', 'aliexpress', 'shutterstock',
+      'ibb.co', 'imgbb', 'postimg', 'postimages', 'blob:', 'data:image'
     ];
     const usesImageCDN = imageCDNs.some(cdn => url.toLowerCase().includes(cdn));
     
@@ -35,9 +47,16 @@ export const isValidImageUrl = (url: string | undefined): boolean => {
     // то, вероятно, это не URL изображения
     const hasPath = url.split('/').length > 3;
     
-    return hasPath && (hasImageExtension || hasImageKeyword || usesImageCDN);
+    // Защита от некоторых нестандартных URL, которые не являются изображениями
+    const suspiciousKeywords = ['javascript:', 'script', 'file:', 'about:', 'data:text', 'moz-extension'];
+    const hasSuspiciousKeyword = suspiciousKeywords.some(keyword => url.toLowerCase().includes(keyword));
+    
+    // Учитываем особые случаи для данных из API
+    const isSpecialCase = url.includes('etsy.com/listing') || url.includes('product-images');
+    
+    return !hasSuspiciousKeyword && (isSpecialCase || hasPath && (hasImageExtension || hasImageKeyword || usesImageCDN));
   } catch (e) {
-    console.error('Невалидный URL:', e);
+    console.error('Невалидный URL:', e, url);
     return false;
   }
 };
@@ -51,6 +70,11 @@ export const getUniqueImageUrl = (url: string, index: number): string => {
     // Проверяем, содержит ли URL encrypted-tbn (Google Shopping)
     // или другие специфические URL, которые не следует модифицировать
     if (url.includes('encrypted-tbn') || url.includes('googleusercontent')) {
+      return url;
+    }
+    
+    // Обрабатываем data URL и blob URL без изменений
+    if (url.startsWith('data:') || url.startsWith('blob:')) {
       return url;
     }
     
@@ -96,6 +120,9 @@ export const getStoreNameFromUrl = (url: string): string => {
     if (domain.includes('adidas')) return 'Adidas';
     if (domain.includes('zalando')) return 'Zalando';
     if (domain.includes('asos')) return 'ASOS';
+    if (domain.includes('etsy')) return 'Etsy';
+    if (domain.includes('zara')) return 'Zara';
+    if (domain.includes('apple')) return 'Apple';
     
     // Если не нашли совпадений, возвращаем домен как имя магазина
     const domainParts = domain.split('.');
