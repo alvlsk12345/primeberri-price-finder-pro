@@ -86,16 +86,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
       setIsTranslating(true);
       setIsPopoverOpen(true);
       
-      // Определяем язык описания
-      const sourceLanguage = isDescriptionTranslated ? "ru" : "en";
-      const targetLanguage = sourceLanguage === "ru" ? "en" : "ru";
-      
       // Если у нас уже есть переведенное описание, просто переключаем флаг
       if (isDescriptionTranslated && translatedDescription) {
         setIsDescriptionTranslated(false);
         toast("Отображено оригинальное описание");
       } else {
         // Выполняем перевод
+        const sourceLanguage = "en";
+        const targetLanguage = "ru";
+        
         const translated = await translateText(
           product.description,
           sourceLanguage,

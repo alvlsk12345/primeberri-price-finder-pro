@@ -5,6 +5,8 @@
 
 // URL API для перевода
 const LIBRE_TRANSLATE_API_URL = "https://libretranslate.com/translate";
+// API ключ для LibreTranslate (если есть)
+const LIBRE_TRANSLATE_API_KEY = ""; // Нужно получить ключ на https://portal.libretranslate.com
 
 // Функция для перевода текста с одного языка на другой
 export const translateText = async (
@@ -40,60 +42,128 @@ export const translateText = async (
       sourceLanguage = detectedLanguage;
     }
 
-    // Формируем данные запроса
-    const requestData = {
-      q: text,
-      source: sourceLanguage,
-      target: targetLanguage,
-      format: "text",
-    };
-
-    // Отправляем запрос к API перевода с таймаутом
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 секунд таймаут
-    
+    // СИМУЛЯЦИЯ ПЕРЕВОДА: Если API недоступен из-за лимитов, симулируем перевод для демонстрации
     try {
-      // Добавляем уведомление о начале перевода
-      console.log(`Отправляем запрос на перевод текста длиной ${text.length} символов`);
+      // Формируем данные запроса
+      const requestData = {
+        q: text,
+        source: sourceLanguage,
+        target: targetLanguage,
+        format: "text",
+        api_key: LIBRE_TRANSLATE_API_KEY || undefined,
+      };
+
+      // Отправляем запрос к API перевода с таймаутом
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 секунд таймаут
       
-      const response = await fetch(LIBRE_TRANSLATE_API_URL, {
-        method: "POST",
-        body: JSON.stringify(requestData),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        signal: controller.signal,
-      });
+      try {
+        // Добавляем уведомление о начале перевода
+        console.log(`Отправляем запрос на перевод текста длиной ${text.length} символов`);
+        
+        const response = await fetch(LIBRE_TRANSLATE_API_URL, {
+          method: "POST",
+          body: JSON.stringify(requestData),
+          headers: {
+            "Content-Type": "application/json",
+          },
+          signal: controller.signal,
+        });
 
-      clearTimeout(timeoutId);
+        clearTimeout(timeoutId);
 
-      // Проверяем успешность ответа
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Ошибка при переводе:", errorText);
-        return text; // В случае ошибки возвращаем исходный текст
+        // Проверяем успешность ответа
+        if (!response.ok) {
+          const errorResponse = await response.json();
+          console.error("Ошибка при переводе:", errorResponse);
+          
+          // Если API требует ключ или достигнут лимит, используем заглушку
+          if (errorResponse.error && (
+              errorResponse.error.includes("API-ключа") || 
+              errorResponse.error.includes("Притормозите") ||
+              errorResponse.error.includes("per hour")
+          )) {
+            throw new Error("API_LIMIT");
+          }
+          
+          return text; // В случае других ошибок возвращаем исходный текст
+        }
+
+        // Парсим ответ
+        const data = await response.json();
+        
+        if (data && data.translatedText) {
+          console.log(`Перевод выполнен успешно. Результат: "${data.translatedText.substring(0, 50)}..."`);
+          return data.translatedText;
+        } else {
+          console.warn("Неожиданный формат ответа от API перевода:", data);
+          throw new Error("UNEXPECTED_RESPONSE");
+        }
+      } catch (fetchError: any) {
+        console.warn("Ошибка запроса к API перевода:", fetchError);
+        clearTimeout(timeoutId);
+        
+        // Проверяем тип ошибки
+        if (fetchError.message === "API_LIMIT" || fetchError.message === "UNEXPECTED_RESPONSE") {
+          throw fetchError;
+        }
+        
+        return text; // При любой другой ошибке возвращаем исходный текст
       }
-
-      // Парсим ответ
-      const data = await response.json();
+    } catch (apiError: any) {
+      // Если проблема с API, используем заглушку для демонстрации
+      if (apiError.message === "API_LIMIT" || apiError.message === "UNEXPECTED_RESPONSE") {
+        console.log("Используем симуляцию перевода из-за ограничений API");
+        
+        // Простая симуляция перевода для демонстрации
+        if (sourceLanguage === "en" && targetLanguage === "ru") {
+          return simulateEnglishToRussianTranslation(text);
+        } else if (sourceLanguage === "ru" && targetLanguage === "en") {
+          return simulateRussianToEnglishTranslation(text);
+        }
+      }
       
-      if (data && data.translatedText) {
-        console.log(`Перевод выполнен успешно. Результат: "${data.translatedText.substring(0, 50)}..."`);
-        return data.translatedText;
-      } else {
-        console.warn("Неожиданный формат ответа от API перевода:", data);
-        return text;
-      }
-    } catch (fetchError) {
-      console.warn("Ошибка запроса к API перевода:", fetchError);
-      clearTimeout(timeoutId);
-      return text; // При любой ошибке возвращаем исходный текст
+      return text;
     }
   } catch (error) {
     console.error("Ошибка при переводе текста:", error);
     return text; // В случае ошибки возвращаем исходный текст
   }
 };
+
+// Простая симуляция перевода с английского на русский
+function simulateEnglishToRussianTranslation(text: string): string {
+  // Добавляем префикс, чтобы было понятно что это симуляция
+  return "[РУС] " + text
+    .replace(/product/gi, "товар")
+    .replace(/price/gi, "цена")
+    .replace(/features/gi, "функции")
+    .replace(/quality/gi, "качество")
+    .replace(/good/gi, "хороший")
+    .replace(/best/gi, "лучший")
+    .replace(/new/gi, "новый")
+    .replace(/with/gi, "с")
+    .replace(/and/gi, "и")
+    .replace(/or/gi, "или")
+    .replace(/the/gi, "")
+    .replace(/a /gi, "");
+}
+
+// Простая симуляция перевода с русского на английский
+function simulateRussianToEnglishTranslation(text: string): string {
+  // Добавляем префикс, чтобы было понятно что это симуляция
+  return "[ENG] " + text
+    .replace(/товар/gi, "product")
+    .replace(/цена/gi, "price")
+    .replace(/функции/gi, "features")
+    .replace(/качество/gi, "quality")
+    .replace(/хороший/gi, "good")
+    .replace(/лучший/gi, "best")
+    .replace(/новый/gi, "new")
+    .replace(/с /gi, "with ")
+    .replace(/ и /gi, " and ")
+    .replace(/ или /gi, " or ");
+}
 
 // Определение русских символов
 const russianPattern = /[а-яА-ЯёЁ]/;
