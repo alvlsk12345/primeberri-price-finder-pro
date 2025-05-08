@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Copy, Link } from 'lucide-react';
+import { ArrowRight, Link } from 'lucide-react';
 import { toast } from "@/components/ui/sonner";
 import { getProductLink } from "@/services/productService";
 
@@ -33,7 +33,10 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     }
   };
 
-  const handleCopyLink = () => {
+  const handleCopyLink = (e: React.MouseEvent) => {
+    // Предотвращаем стандартное поведение для предотвращения перезагрузки страницы
+    e.preventDefault();
+    
     if (selectedProduct) {
       // Получаем ссылку на товар из нашего сервиса
       const productLink = getProductLink(selectedProduct);

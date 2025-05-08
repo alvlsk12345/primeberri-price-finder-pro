@@ -1,3 +1,4 @@
+
 import { toast } from "@/components/ui/sonner";
 
 export type Product = {
@@ -78,25 +79,31 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
       const jsonContent = content.substring(jsonStartIndex, jsonEndIndex);
       let products = JSON.parse(jsonContent);
       
+      // Массив реальных изображений для использования в качестве запасных вариантов
+      const unsplashImages = [
+        `https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=${Date.now()}`, // кроссовки
+        `https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?q=${Date.now()}`, // кроссовки 2
+        `https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?q=${Date.now()}`, // кроссовки 3
+        `https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=${Date.now()}`, // одежда
+        `https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=${Date.now()}`, // часы
+      ];
+
       // Проверяем и корректируем данные о товарах
       const validProducts = products.map((product: any, index: number) => {
-        // Проверка и исправление ссылки на изображение
+        // Добавляем случайный параметр к URL изображения для предотвращения кеширования
         let imageUrl = product.image || "";
+        
+        if (imageUrl && !imageUrl.includes("?")) {
+          imageUrl = `${imageUrl}?t=${Date.now()}-${index}`;
+        }
         
         // Если изображения нет или оно некорректное, используем изображения с Unsplash
         if (!imageUrl || imageUrl.includes("placeholder") || !imageUrl.startsWith("http")) {
-          const unsplashImages = [
-            "https://images.unsplash.com/photo-1604525843809-cbba713a792b", // технологии
-            "https://images.unsplash.com/photo-1542291026-7eec264c27ff", // обувь
-            "https://images.unsplash.com/photo-1523275335684-37898b6baf30", // часы
-            "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f", // камера
-            "https://images.unsplash.com/photo-1505740420928-5e560c06d30e"  // наушники
-          ];
           imageUrl = unsplashImages[index % unsplashImages.length];
         }
         
         return {
-          id: product.id || `${index + 1}`,
+          id: product.id || `${Date.now()}-${index}`,
           name: product.name || `Товар ${index + 1}`,
           price: Number(product.price) || 100 + (index * 50),
           currency: product.currency || 'EUR',
@@ -117,19 +124,19 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
     // В случае ошибки возвращаем резервные данные с реальными изображениями
     return [
       {
-        id: '1',
+        id: `${Date.now()}-1`,
         name: `${query} - Товар (резервные данные)`,
         price: 250,
         currency: 'EUR',
-        image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30',
+        image: `https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=${Date.now()}-1`,
         store: 'Amazon'
       },
       {
-        id: '2',
+        id: `${Date.now()}-2`,
         name: `${query} - Аналогичный товар (резервные данные)`,
         price: 180,
         currency: 'EUR',
-        image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e',
+        image: `https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?q=${Date.now()}-2`,
         store: 'eBay'
       }
     ];
@@ -186,15 +193,28 @@ export const getProductLink = (product: Product): string => {
   // Определяем домен магазина или используем запасной вариант
   const domain = storeMap[product.store] || 'shop.example.com';
   
-  // Формируем URL с правильными параметрами
-  // Например: https://amazon.com/dp/B09X123456 для Amazon
+  // Формируем URL с правильными параметрами в зависимости от магазина
   if (domain === 'amazon.com') {
     return `https://${domain}/dp/${product.id}`;
   } else if (domain === 'ebay.com') {
     return `https://${domain}/itm/${product.id}`;
+  } else if (domain === 'nike.com') {
+    // Для Nike используем специальный формат
+    const productNameSlug = product.name.toLowerCase()
+      .replace(/[^a-zа-яё0-9]/g, '-')
+      .replace(/-+/g, '-');
+    return `https://${domain}/t/${productNameSlug}/${product.id}.html`;
+  } else if (domain === 'zalando.eu') {
+    // Для Zalando
+    const productNameSlug = product.name.toLowerCase()
+      .replace(/[^a-zа-яё0-9]/g, '-')
+      .replace(/-+/g, '-');
+    return `https://${domain}/item/${productNameSlug}-${product.id}.html`;
   } else {
     // Для других магазинов используем стандартный формат
-    const productSlug = product.name.toLowerCase().replace(/[^a-zа-яё0-9]/g, '-').replace(/-+/g, '-');
+    const productSlug = product.name.toLowerCase()
+      .replace(/[^a-zа-яё0-9]/g, '-')
+      .replace(/-+/g, '-');
     return `https://${domain}/product/${productSlug}-${product.id}`;
   }
 };
