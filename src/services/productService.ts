@@ -7,8 +7,11 @@ import { toast } from "@/components/ui/sonner";
 // Функция для использования OpenAI API для поиска товаров
 export const searchProducts = async (query: string): Promise<Product[]> => {
   try {
+    console.log('Начинаем поиск товаров по запросу:', query);
+    
     // Получаем данные от OpenAI API
     const response = await fetchFromOpenAI(query);
+    console.log('Ответ от OpenAI получен:', response);
     
     // Если ответ содержит продукты напрямую (response_format: { type: "json_object" })
     if (response && typeof response === 'object') {
@@ -19,6 +22,21 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
       } else if (response.products && Array.isArray(response.products)) {
         console.log('Получен объект с массивом продуктов:', response.products);
         return processProductsData(response.products);
+      } else {
+        const keys = Object.keys(response);
+        console.log('Получен объект с ключами:', keys);
+        
+        // Пробуем найти массив в объекте, который может содержать товары
+        for (const key of keys) {
+          if (Array.isArray(response[key]) && response[key].length > 0) {
+            console.log(`Найден массив в ключе "${key}":`, response[key]);
+            return processProductsData(response[key]);
+          }
+        }
+        
+        console.log('Не найден массив продуктов в ответе:', response);
+        toast.error('Не удалось найти товары в ответе API');
+        return [];
       }
     }
     
@@ -78,6 +96,7 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
     }
     
     // Если не удалось обработать ответ
+    console.error('Неизвестный формат ответа:', response);
     toast.error('Не удалось получить данные о товарах');
     return [];
   } catch (error) {
@@ -90,14 +109,29 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
 // Вспомогательная функция для обработки данных о товарах
 const processProductsData = (products: any[]): Product[] => {
   if (!Array.isArray(products) || products.length === 0) {
+    console.log('Пустой массив продуктов или некорректный формат');
     toast.info('По вашему запросу ничего не найдено');
     return [];
   }
   
+  console.log(`Обработка ${products.length} продуктов`);
   let invalidImageCounter = 0;
 
   // Проверяем и корректируем данные о товарах
   const validProducts = products.map((product: any, index: number) => {
+    if (!product || typeof product !== 'object') {
+      console.error('Некорректный товар:', product);
+      invalidImageCounter++;
+      return null;
+    }
+    
+    // Проверяем обязательные поля
+    if (!product.title || !product.image) {
+      console.error('Отсутствуют обязательные поля у товара:', product);
+      invalidImageCounter++;
+      return null;
+    }
+    
     // Валидируем и форматируем ссылку на изображение
     let imageUrl = product.image || "";
     
@@ -155,6 +189,8 @@ const processProductsData = (products: any[]): Product[] => {
       source: product.source || 'Интернет-магазин'
     };
   }).filter(product => product !== null); // Фильтруем null продукты
+  
+  console.log(`Валидных товаров: ${validProducts.length} из ${products.length}`);
   
   // Показываем информацию, если были выявлены проблемы с изображениями
   if (invalidImageCounter > 0) {
