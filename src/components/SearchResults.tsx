@@ -1,9 +1,7 @@
 import React from 'react';
 import { Product } from "@/services/types";
-import { ProductList } from './product/ProductList';
-import { Pagination } from './product/Pagination';
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { NoSearchResults } from './search/NoSearchResults';
+import { ProductListContainer } from './search/ProductListContainer';
 
 type SearchResultsProps = {
   results: Product[];
@@ -31,11 +29,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
 
   // Check if results are available
   if (!results || results.length === 0) {
-    return (
-      <div className="text-center p-6" data-testid="no-results">
-        <p className="text-lg text-gray-500">Товары не найдены.</p>
-      </div>
-    );
+    return <NoSearchResults />;
   }
 
   // Ensure all products have unique IDs to prevent React key issues
@@ -63,24 +57,11 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   };
 
   return (
-    <div className="space-y-4" data-testid="search-results">
-      {currentPage > 1 && results.length > 0 && (
-        <Alert className="mb-4 border-amber-300 bg-amber-50">
-          <AlertCircle className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="text-amber-700">
-            Возможны проблемы при загрузке данных для страницы {currentPage}. 
-            Для полного результата попробуйте повторить поиск позже.
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      <ProductList 
+    <div data-testid="search-results">
+      <ProductListContainer 
         products={productsWithUniqueKeys}
         selectedProduct={selectedProduct}
         onSelect={onSelect}
-      />
-      
-      <Pagination 
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={handlePageChange}
