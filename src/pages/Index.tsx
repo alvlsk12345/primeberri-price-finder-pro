@@ -10,30 +10,42 @@ import { PageFooter } from "@/components/PageFooter";
 import { PageHeader } from "@/components/PageHeader";
 import { ActionButtons } from "@/components/ActionButtons";
 import { searchProducts } from "@/services/productService";
-import { Product } from "@/services/types";
+import { Product, ProductFilters } from "@/services/types";
+import { FilterPanel } from "@/components/FilterPanel";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [filters, setFilters] = useState<ProductFilters>({});
 
-  const handleSearch = async () => {
+  // Функция для поиска товаров
+  const handleSearch = async (page: number = 1) => {
     if (!searchQuery) {
       toast.error('Пожалуйста, введите запрос для поиска товара');
       return;
     }
 
     setIsLoading(true);
+    setCurrentPage(page);
+    
     try {
-      // Используем наш сервис для поиска товаров
-      const results = await searchProducts(searchQuery);
+      // Используем наш сервис для поиска товаров с пагинацией и фильтрами
+      const results = await searchProducts({
+        query: searchQuery,
+        page: page,
+        filters: filters
+      });
       
-      setSearchResults(results);
+      setSearchResults(results.products);
+      setTotalPages(results.totalPages);
       setIsLoading(false);
       
-      if (results.length > 0) {
-        toast.success('Товары найдены!');
+      if (results.products.length > 0) {
+        toast.success(`Найдено ${results.products.length} товаров!`);
       } else {
         toast.info('По вашему запросу ничего не найдено.');
       }
@@ -44,8 +56,23 @@ const Index = () => {
     }
   };
 
+  // Обработчик выбора товара
   const handleProductSelect = (product: Product) => {
     setSelectedProduct(product);
+  };
+  
+  // Обработчик изменения страницы
+  const handlePageChange = (page: number) => {
+    if (page !== currentPage) {
+      handleSearch(page);
+    }
+  };
+  
+  // Обработчик изменения фильтров
+  const handleFilterChange = (newFilters: ProductFilters) => {
+    setFilters(newFilters);
+    // Сбрасываем на первую страницу при изменении фильтров
+    handleSearch(1);
   };
 
   return (
@@ -67,17 +94,27 @@ const Index = () => {
               <SearchForm 
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
-                handleSearch={handleSearch}
+                handleSearch={() => handleSearch(1)}
                 isLoading={isLoading}
               />
 
               {searchResults.length > 0 && (
                 <div className="mt-6">
-                  <h2 className="text-xl font-semibold mb-4">Результаты поиска:</h2>
+                  <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
+                    <h2 className="text-xl font-semibold">Результаты поиска:</h2>
+                    <FilterPanel 
+                      filters={filters}
+                      onFilterChange={handleFilterChange}
+                      results={searchResults}
+                    />
+                  </div>
                   <SearchResults 
                     results={searchResults} 
                     onSelect={handleProductSelect} 
                     selectedProduct={selectedProduct}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
                   />
                 </div>
               )}

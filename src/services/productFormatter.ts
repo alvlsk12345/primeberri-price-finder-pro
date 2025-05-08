@@ -1,22 +1,22 @@
 
-import { Product } from './types';
+import { Product, ProductFilters } from './types';
 import { getStoreNameFromUrl } from './imageService';
 import { processProductImage } from './imageProcessor';
 import { toast } from "@/components/ui/sonner";
 
 // Вспомогательная функция для обработки данных о товарах из Zylalabs API
-export const processZylalabsProductsData = (products: any[]): Product[] => {
+export const processZylalabsProductsData = (products: any[], filters?: ProductFilters): Product[] => {
   if (!Array.isArray(products) || products.length === 0) {
     console.log('Пустой массив продуктов или некорректный формат');
     toast.info('По вашему запросу ничего не найдено');
     return [];
   }
   
-  console.log(`Обработка ${products.length} продуктов`);
+  console.log(`Обработка ${products.length} продуктов с фильтрами:`, filters);
   let invalidImageCounter = 0;
 
   // Проверяем и корректируем данные о товарах
-  const validProducts = products.slice(0, 12).map((product: any, index: number) => {
+  const processedProducts = products.map((product: any, index: number) => {
     if (!product || typeof product !== 'object') {
       console.error('Некорректный товар:', product);
       invalidImageCounter++;
@@ -55,18 +55,23 @@ export const processZylalabsProductsData = (products: any[]): Product[] => {
     // Определяем цену и валюту
     let price = "N/A";
     let currency = "$";
+    let numericPrice = 0;
     
     if (product.typical_price_range && Array.isArray(product.typical_price_range)) {
       price = product.typical_price_range[0];
       if (price && !price.includes('$')) {
         price = '$' + price;
       }
+      // Пробуем извлечь числовую цену для фильтрации
+      numericPrice = parseFloat(price.replace(/[^\d.-]/g, ''));
     } else if (product.price) {
       price = product.price;
       currency = product.currency || "$";
+      numericPrice = typeof product.price === 'number' ? product.price : parseFloat(price.replace(/[^\d.-]/g, ''));
     } else if (product.offer && product.offer.price) {
       price = product.offer.price;
       currency = product.offer.currency || "$";
+      numericPrice = typeof product.offer.price === 'number' ? product.offer.price : parseFloat(price.replace(/[^\d.-]/g, ''));
     }
     
     const priceString = typeof price === 'string' ? price : `${currency}${price}`;
@@ -92,6 +97,25 @@ export const processZylalabsProductsData = (products: any[]): Product[] => {
     // Подзаголовок (состояние товара или другая информация)
     const subtitle = product.condition || product.subtitle || "Популярный";
     
+    // Извлекаем дополнительную информацию для детального отображения
+    const description = product.product_description || product.description || '';
+    const availability = product.availability || product.stock_status || "В наличии";
+    const brand = product.brand || source;
+    
+    // Извлекаем спецификации товара
+    const specifications: {[key: string]: string} = {};
+    if (product.specifications && typeof product.specifications === 'object') {
+      Object.keys(product.specifications).forEach(key => {
+        specifications[key] = product.specifications[key].toString();
+      });
+    } else if (product.attributes && Array.isArray(product.attributes)) {
+      product.attributes.forEach((attr: any) => {
+        if (attr.name && attr.value) {
+          specifications[attr.name] = attr.value.toString();
+        }
+      });
+    }
+    
     return {
       id: product.product_id || product.id || `${Date.now()}-${index}`,
       title: title,
@@ -101,23 +125,63 @@ export const processZylalabsProductsData = (products: any[]): Product[] => {
       image: processedImageUrl,
       link: link,
       rating: rating,
-      source: source
+      source: source,
+      description: description,
+      availability: availability,
+      brand: brand,
+      specifications: specifications,
+      _numericPrice: numericPrice // Внутреннее поле для фильтрации
     };
   }).filter(product => product !== null); // Фильтруем null продукты
   
-  console.log(`Валидных товаров: ${validProducts.length} из ${products.length}`);
+  console.log(`Подготовлено товаров: ${processedProducts.length} из ${products.length}`);
   
-  // Показываем информацию, если были выявлены проблемы с изображениями
-  if (invalidImageCounter > 0) {
-    const validCount = validProducts.length;
-    const totalCount = Math.min(products.length, 12);
+  // Применяем фильтры к обработанным товарам, если они указаны
+  let filteredProducts = processedProducts;
+  
+  if (filters) {
+    filteredProducts = processedProducts.filter((product: any) => {
+      // Фильтрация по цене
+      if (filters.minPrice && product._numericPrice && product._numericPrice < filters.minPrice) {
+        return false;
+      }
+      if (filters.maxPrice && product._numericPrice && product._numericPrice > filters.maxPrice) {
+        return false;
+      }
+      
+      // Фильтрация по брендам
+      if (filters.brands && filters.brands.length > 0 && product.brand && 
+          !filters.brands.some(brand => product.brand?.toLowerCase().includes(brand.toLowerCase()))) {
+        return false;
+      }
+      
+      // Фильтрация по источникам
+      if (filters.sources && filters.sources.length > 0 && 
+          !filters.sources.some(source => product.source.toLowerCase().includes(source.toLowerCase()))) {
+        return false;
+      }
+      
+      // Фильтрация по рейтингу
+      if (filters.rating && product.rating < filters.rating) {
+        return false;
+      }
+      
+      return true;
+    });
     
-    if (validCount === 0) {
-      toast.warning('Не удалось найти товары с корректными изображениями');
-    } else if (invalidImageCounter > 0) {
-      toast.warning(`Найдено ${validCount} из ${totalCount} товаров с корректными изображениями`);
+    console.log(`После применения фильтров осталось товаров: ${filteredProducts.length}`);
+    
+    if (filteredProducts.length === 0 && processedProducts.length > 0) {
+      toast.info('По заданным фильтрам товары не найдены');
     }
   }
   
-  return validProducts;
+  // Уведомляем о количестве найденных товаров
+  if (filteredProducts.length === 0) {
+    toast.info('По вашему запросу ничего не найдено');
+  } else {
+    toast.success(`Найдено ${filteredProducts.length} товаров`);
+  }
+  
+  return filteredProducts;
 };
