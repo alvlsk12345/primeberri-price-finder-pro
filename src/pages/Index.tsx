@@ -12,6 +12,7 @@ import { ActionButtons } from "@/components/ActionButtons";
 import { searchProducts } from "@/services/productService";
 import { Product, ProductFilters } from "@/services/types";
 import { FilterPanel } from "@/components/FilterPanel";
+import { autoTranslateQuery } from "@/services/translationService";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -21,6 +22,7 @@ const Index = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filters, setFilters] = useState<ProductFilters>({});
+  const [originalQuery, setOriginalQuery] = useState(''); // Оригинальный запрос пользователя
 
   // Функция для поиска товаров
   const handleSearch = async (page: number = 1) => {
@@ -33,16 +35,23 @@ const Index = () => {
     setCurrentPage(page);
     
     try {
-      // Используем наш сервис для поиска товаров с пагинацией и фильтрами
+      // Сохраняем оригинальный запрос (для отображения пользователю)
+      const userQuery = searchQuery;
+      setOriginalQuery(userQuery);
+      
+      // Переводим запрос на английский, если он на русском
+      const translatedQuery = await autoTranslateQuery(searchQuery);
+      console.log(`Запрос: "${searchQuery}" ${translatedQuery !== searchQuery ? `был переведен на: "${translatedQuery}"` : 'не требует перевода'}`);
+      
+      // Используем переведенный запрос для поиска
       const results = await searchProducts({
-        query: searchQuery,
+        query: translatedQuery,
         page: page,
         filters: filters
       });
       
       setSearchResults(results.products);
       setTotalPages(results.totalPages);
-      setIsLoading(false);
       
       if (results.products.length > 0) {
         toast.success(`Найдено ${results.products.length} товаров!`);
@@ -52,6 +61,7 @@ const Index = () => {
     } catch (error) {
       console.error('Ошибка поиска:', error);
       toast.error('Произошла ошибка при поиске товаров');
+    } finally {
       setIsLoading(false);
     }
   };
