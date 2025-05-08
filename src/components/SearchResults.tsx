@@ -47,16 +47,28 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect,
                 </div>
               </div>
               
-              <Button 
-                variant="outline" 
-                className="mt-3 w-full"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSelect(product);
-                }}
-              >
-                {selectedProduct?.id === product.id ? 'Выбрано' : 'Выбрать'}
-              </Button>
+              {selectedProduct?.id !== product.id && (
+                <Button 
+                  variant="outline" 
+                  className="mt-3 w-full"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelect(product);
+                  }}
+                >
+                  Выбрать
+                </Button>
+              )}
+              
+              {selectedProduct?.id === product.id && (
+                <Button 
+                  variant="default"
+                  className="mt-3 w-full"
+                  disabled
+                >
+                  Выбрано
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

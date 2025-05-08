@@ -9,14 +9,14 @@ import { toast } from "@/components/ui/sonner";
 import { Search, ArrowRight } from 'lucide-react';
 
 const Index = () => {
-  const [productLink, setProductLink] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   const handleSearch = async () => {
-    if (!productLink) {
-      toast.error('Пожалуйста, введите ссылку на товар');
+    if (!searchQuery) {
+      toast.error('Пожалуйста, введите запрос для поиска товара');
       return;
     }
 
@@ -80,7 +80,7 @@ const Index = () => {
   const handleCopyLink = () => {
     if (selectedProduct) {
       // В реальной реализации здесь будет логика копирования ссылки
-      navigator.clipboard.writeText(productLink);
+      navigator.clipboard.writeText(searchQuery);
       toast.success('Ссылка скопирована!');
     } else {
       toast.error('Пожалуйста, выберите товар');
@@ -104,7 +104,7 @@ const Index = () => {
               Узнайте, сколько вы сэкономите на товаре из Европы и США
             </CardTitle>
             <CardDescription>
-              Введите ссылку на товар, и мы покажем, сколько вы можете сэкономить при доставке в Россию
+              Найдите товар, и мы покажем, сколько вы можете сэкономить при доставке в Россию
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -112,21 +112,21 @@ const Index = () => {
               {/* Search input */}
               <div className="flex flex-col sm:flex-row gap-3">
                 <Input
-                  placeholder="Введите ссылку на товар, например, https://www.zalando.com/..."
-                  value={productLink}
-                  onChange={(e) => setProductLink(e.target.value)}
+                  placeholder="Введите название товара, например, кожаная сумка, кроссовки Nike..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="flex-grow"
                 />
                 <Button 
                   onClick={handleSearch} 
-                  disabled={isLoading || !productLink}
+                  disabled={isLoading || !searchQuery}
                   className="min-w-[200px]"
                 >
                   {isLoading ? (
                     <span>Поиск...</span>
                   ) : (
                     <span className="flex items-center gap-2">
-                      <Search size={18} /> Рассчитать экономию
+                      <Search size={18} /> Поиск
                     </span>
                   )}
                 </Button>
