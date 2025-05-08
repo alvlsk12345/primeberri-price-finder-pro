@@ -22,6 +22,13 @@ export const ProductListContainer: React.FC<ProductListContainerProps> = ({
   totalPages,
   onPageChange
 }) => {
+  const handlePageChange = (page: number) => {
+    console.log(`ProductListContainer: Changing page from ${currentPage} to ${page}`);
+    if (page >= 1 && page <= totalPages && page !== currentPage) {
+      onPageChange(page);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {currentPage > 1 && products.length > 0 && (
@@ -37,7 +44,7 @@ export const ProductListContainer: React.FC<ProductListContainerProps> = ({
       <Pagination 
         currentPage={currentPage}
         totalPages={totalPages}
-        onPageChange={onPageChange}
+        onPageChange={handlePageChange}
       />
     </div>
   );

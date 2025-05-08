@@ -9,7 +9,7 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 interface PaginationProps {
   currentPage: number;
@@ -18,14 +18,12 @@ interface PaginationProps {
 }
 
 export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPageChange }) => {
-  const { toast } = useToast();
-  
   // Не отображаем пагинацию, если страница всего одна
   if (totalPages <= 1) {
     return null;
   }
 
-  // Улучшенный обработчик клика по пагинации с дополнительным индикатором загрузки
+  // Улучшенный обработчик клика по пагинации
   const handlePageClick = (page: number) => (e: React.MouseEvent<HTMLAnchorElement>) => {
     // Предотвращаем дефолтное поведение ссылки для предотвращения перезагрузки страницы
     e.preventDefault();
@@ -36,27 +34,19 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
       console.log(`Pagination: Переход с ${currentPage} на страницу ${page}`);
       
       // Показываем уведомление о начале загрузки
-      const loadingToast = toast({
-        title: "Загрузка страницы...",
-        description: `Переход на страницу ${page}`,
-        duration: 3000,
+      toast.info(`Загрузка страницы ${page}...`, {
+        id: `page-change-${page}`,
+        duration: 2000
       });
       
-      // Добавляем небольшую задержку для стабильности обработки
-      setTimeout(() => {
-        onPageChange(page);
-        // При необходимости можно закрыть уведомление о загрузке здесь
-      }, 100);
+      // Вызываем обработчик изменения страницы
+      onPageChange(page);
     } else {
       console.log(`Pagination: Отклонен переход на страницу ${page} (текущая: ${currentPage}, всего: ${totalPages})`);
       
       // Если это недопустимая страница, показываем предупреждение
       if (page > totalPages) {
-        toast({
-          title: "Предупреждение",
-          description: "Запрошенная страница не существует",
-          variant: "destructive",
-        });
+        toast.error("Запрошенная страница не существует");
       }
     }
   };

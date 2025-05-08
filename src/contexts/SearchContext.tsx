@@ -1,9 +1,9 @@
 
-import React, { createContext, useState, useCallback, useContext } from 'react';
+import React, { createContext, useState, useCallback, useContext, useEffect } from 'react';
 import { Product, ProductFilters } from "@/services/types";
 import { searchProducts } from "@/services/productService";
 import { autoTranslateQuery } from "@/services/translationService";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 
 // Define the search context type
 type SearchContextType = {
@@ -42,6 +42,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [originalQuery, setOriginalQuery] = useState('');
   const [lastSearchQuery, setLastSearchQuery] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
+  const [pageChangeCount, setPageChangeCount] = useState(0);
 
   // Memoized search function
   const handleSearch = useCallback(async (page: number = 1, forceNewSearch: boolean = false) => {
@@ -146,6 +147,11 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const handlePageChange = (page: number) => {
     if (page !== currentPage && page >= 1 && page <= totalPages) {
       console.log(`Changing page from ${currentPage} to ${page}`);
+      // Increment page change counter to force a re-render
+      setPageChangeCount(prev => prev + 1);
+      // Set current page first
+      setCurrentPage(page);
+      // Then trigger a search with new page
       handleSearch(page);
     }
   };
@@ -156,6 +162,11 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // Reset to first page when filters change
     handleSearch(1, true);
   };
+
+  // Effect для отладки изменения страницы
+  useEffect(() => {
+    console.log(`Page change effect triggered: current page is ${currentPage}, change count: ${pageChangeCount}`);
+  }, [currentPage, pageChangeCount]);
 
   const value = {
     searchQuery,
