@@ -26,14 +26,25 @@ export const processZylalabsProductsData = (products: any[], filters?: ProductFi
     // Адаптируем поля под разные форматы API
     const title = product.product_title || product.title || product.name || `Товар ${index + 1}`;
     
-    // Обработка различных форматов изображений
+    // Расширенная обработка различных форматов изображений
     let imageUrl = '';
     
-    // Попытка получить URL из массива product_photos
+    // Приоритет для изображений из product_photos (массив изображений от API)
     if (product.product_photos && Array.isArray(product.product_photos) && product.product_photos.length > 0) {
+      // Берем первое изображение из массива
       imageUrl = product.product_photos[0];
       console.log(`Использую URL из product_photos: ${imageUrl}`);
     } 
+    // Если нет в product_photos, проверяем offer_images (для формата конечных магазинов)
+    else if (product.offer && product.offer.offer_images && Array.isArray(product.offer.offer_images) && product.offer.offer_images.length > 0) {
+      imageUrl = product.offer.offer_images[0];
+      console.log(`Использую URL из offer_images: ${imageUrl}`);
+    }
+    // Если нет в offer_images, проверяем thumbnail_image в offer
+    else if (product.offer && product.offer.thumbnail_image) {
+      imageUrl = product.offer.thumbnail_image;
+      console.log(`Использую URL из offer.thumbnail_image: ${imageUrl}`);
+    }
     // Если не нашли, пробуем получить из поля image или thumbnail
     else if (product.image) {
       imageUrl = product.image;
@@ -42,6 +53,11 @@ export const processZylalabsProductsData = (products: any[], filters?: ProductFi
     else if (product.thumbnail) {
       imageUrl = product.thumbnail;
       console.log(`Использую URL из thumbnail: ${imageUrl}`);
+    }
+    // Последний фоллбэк - искать в merchant_logo
+    else if (product.merchant && product.merchant.merchant_logo) {
+      imageUrl = product.merchant.merchant_logo;
+      console.log(`Использую URL из merchant_logo: ${imageUrl}`);
     }
     
     // Обрабатываем изображение товара
@@ -57,35 +73,37 @@ export const processZylalabsProductsData = (products: any[], filters?: ProductFi
     let currency = "$";
     let numericPrice = 0;
     
-    if (product.typical_price_range && Array.isArray(product.typical_price_range)) {
+    // Проверяем различные форматы цен из разных источников
+    if (product.offer && product.offer.price) {
+      price = product.offer.price;
+      currency = product.offer.currency || "$";
+      numericPrice = typeof product.offer.price === 'number' ? product.offer.price : parseFloat(price.replace(/[^\d.-]/g, ''));
+    } else if (product.typical_price_range && Array.isArray(product.typical_price_range)) {
       price = product.typical_price_range[0];
       if (price && !price.includes('$')) {
         price = '$' + price;
       }
-      // Пробуем извлечь числовую цену для фильтрации
       numericPrice = parseFloat(price.replace(/[^\d.-]/g, ''));
     } else if (product.price) {
       price = product.price;
       currency = product.currency || "$";
       numericPrice = typeof product.price === 'number' ? product.price : parseFloat(price.replace(/[^\d.-]/g, ''));
-    } else if (product.offer && product.offer.price) {
-      price = product.offer.price;
-      currency = product.offer.currency || "$";
-      numericPrice = typeof product.offer.price === 'number' ? product.offer.price : parseFloat(price.replace(/[^\d.-]/g, ''));
     }
     
     const priceString = typeof price === 'string' ? price : `${currency}${price}`;
     
     // Готовим рейтинг
-    const rating = product.product_rating || product.rating || 4.0;
+    const rating = product.product_rating || product.rating || product.offer?.rating || 4.0;
     
     // Формируем ссылку на товар
-    const link = product.product_page_url || product.link || product.url || "#";
+    const link = product.offer?.offer_page_url || product.product_page_url || product.link || product.url || "#";
     
     // Определяем источник товара
     let source = "Google Shopping";
     
-    if (product.source) {
+    if (product.offer && product.offer.store_name) {
+      source = product.offer.store_name;
+    } else if (product.source) {
       source = product.source;
     } else if (product.merchant && product.merchant.name) {
       source = product.merchant.name;
@@ -95,10 +113,10 @@ export const processZylalabsProductsData = (products: any[], filters?: ProductFi
     }
     
     // Подзаголовок (состояние товара или другая информация)
-    const subtitle = product.condition || product.subtitle || "Популярный";
+    const subtitle = product.condition || product.offer?.offer_badge || product.subtitle || "Популярный";
     
     // Извлекаем дополнительную информацию для детального отображения
-    const description = product.product_description || product.description || '';
+    const description = product.product_description || product.description || product.offer?.offer_title || '';
     const availability = product.availability || product.stock_status || "В наличии";
     const brand = product.brand || source;
     
@@ -107,6 +125,10 @@ export const processZylalabsProductsData = (products: any[], filters?: ProductFi
     if (product.specifications && typeof product.specifications === 'object') {
       Object.keys(product.specifications).forEach(key => {
         specifications[key] = product.specifications[key].toString();
+      });
+    } else if (product.product_attributes && typeof product.product_attributes === 'object') {
+      Object.keys(product.product_attributes).forEach(key => {
+        specifications[key] = product.product_attributes[key].toString();
       });
     } else if (product.attributes && Array.isArray(product.attributes)) {
       product.attributes.forEach((attr: any) => {

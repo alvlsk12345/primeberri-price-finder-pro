@@ -5,7 +5,7 @@ import { SearchParams } from "../types";
 // Константа для хранения API ключа Zylalabs
 const ZYLALABS_API_KEY = "8103|qZi97eieReCKmFs6mwcg9Mf1H2JjJfGgdesU59tv";
 
-// Фунцкия для поиска товаров через Zylalabs API с поддержкой пагинации
+// Фунцкия для поиска товаров через Zylalabs API с поддержкой пагинацией
 export const searchProductsViaZylalabs = async (params: SearchParams): Promise<any> => {
   try {
     console.log('Отправляем запрос к Zylalabs API...', params);
@@ -16,8 +16,10 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
     const country = params.country || 'us';
     const language = params.language || 'en';
     
-    // Формируем URL для запроса с параметрами пагинации
-    const apiUrl = `https://zylalabs.com/api/2033/real+time+product+search+api/1809/search+products?q=${encodedQuery}&country=${country}&language=${language}&page=${page}`;
+    // Добавляем параметр source=merchant, чтобы получать карточки из конечных магазинов
+    const apiUrl = `https://zylalabs.com/api/2033/real+time+product+search+api/1809/search+products?q=${encodedQuery}&country=${country}&language=${language}&page=${page}&source=merchant`;
+    
+    console.log('URL запроса:', apiUrl);
     
     // Выполняем запрос к API
     const response = await fetch(apiUrl, {

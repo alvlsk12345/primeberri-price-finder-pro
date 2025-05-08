@@ -20,15 +20,22 @@ export const isValidImageUrl = (url: string | undefined): boolean => {
     const hasImageExtension = imageExtensions.some(ext => url.toLowerCase().includes(ext));
     
     // Проверка на содержание ключевых слов для изображений - расширенный список
-    const imageKeywords = ['image', 'img', 'photo', 'picture', 'product', 'thumb', 'preview', 'media'];
+    const imageKeywords = ['image', 'img', 'photo', 'picture', 'product', 'thumb', 'preview', 'media', 'asset'];
     const hasImageKeyword = imageKeywords.some(keyword => url.toLowerCase().includes(keyword));
     
     // Проверка на популярные CDN и хостинги изображений
-    const imageCDNs = ['cloudfront.net', 'cloudinary.com', 'imgix.net', 's3.amazonaws', 'cdninstagram', 
-                      'akamaized', 'cdn', 'media', 'images', 'static', 'assets'];
+    const imageCDNs = [
+      'cloudfront.net', 'cloudinary.com', 'imgix.net', 's3.amazonaws', 'cdninstagram', 
+      'akamaized', 'cdn', 'media', 'images', 'static', 'assets', 'shopify', 'adidas.com',
+      'nike.com', 'amazon.com', 'ebay.com', 'walmart.com', 'target.com'
+    ];
     const usesImageCDN = imageCDNs.some(cdn => url.toLowerCase().includes(cdn));
     
-    return hasImageExtension || hasImageKeyword || usesImageCDN;
+    // Если URL содержит только домен (например, www.example.com без пути), 
+    // то, вероятно, это не URL изображения
+    const hasPath = url.split('/').length > 3;
+    
+    return hasPath && (hasImageExtension || hasImageKeyword || usesImageCDN);
   } catch (e) {
     console.error('Невалидный URL:', e);
     return false;
