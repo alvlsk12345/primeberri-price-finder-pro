@@ -36,26 +36,10 @@ export const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({ prod
     }
   }, [isOpen]);
 
-  return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button 
-          variant="secondary" 
-          size="icon" 
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsOpen(true);
-          }}
-        >
-          <Info size={16} />
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{product.title}</DialogTitle>
-          <DialogDescription>{product.subtitle}</DialogDescription>
-        </DialogHeader>
-        
+  // Безопасная проверка на наличие данных и обработка ошибок
+  const renderProductDetails = () => {
+    try {
+      return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <div className="flex items-center justify-center bg-gray-50 p-4 rounded-md">
             {!product.image ? (
@@ -68,7 +52,7 @@ export const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({ prod
               <Avatar className="w-full h-[200px] rounded-none">
                 <AvatarImage 
                   src={product.image}
-                  alt={product.title}
+                  alt={product.title || "Товар"}
                   className="object-contain"
                 />
                 <AvatarFallback className="w-full h-full rounded-none bg-gray-100">
@@ -82,7 +66,7 @@ export const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({ prod
               // Для обычных изображений используем стандартный тег img
               <img 
                 src={product.image} 
-                alt={product.title} 
+                alt={product.title || "Товар"} 
                 className="max-h-[300px] object-contain"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
@@ -107,17 +91,17 @@ export const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({ prod
           
           <div>
             <div className="mb-4">
-              <h3 className="text-lg font-bold">Цена: {product.price}</h3>
-              <p className="text-sm">{product.availability}</p>
+              <h3 className="text-lg font-bold">Цена: {product.price || "Цена не указана"}</h3>
+              <p className="text-sm">{product.availability || "Наличие не указано"}</p>
               <div className="flex items-center mt-1">
                 <Star size={16} className="text-yellow-500 fill-yellow-500" />
-                <span className="ml-1">{product.rating}/5</span>
+                <span className="ml-1">{product.rating || 0}/5</span>
               </div>
             </div>
             
             <div className="mb-4">
               <h4 className="font-semibold mb-1">Магазин</h4>
-              <p>{product.source}</p>
+              <p>{product.source || "Не указан"}</p>
             </div>
             
             {product.brand && (
@@ -135,8 +119,40 @@ export const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({ prod
             </Button>
           </div>
         </div>
+      );
+    } catch (error) {
+      console.error('Ошибка при отображении информации о товаре:', error);
+      return (
+        <div className="p-4 text-center">
+          <p className="text-red-500">Произошла ошибка при загрузке информации о товаре</p>
+        </div>
+      );
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button 
+          variant="secondary" 
+          size="icon" 
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsOpen(true);
+          }}
+        >
+          <Info size={16} />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{product?.title || "Информация о товаре"}</DialogTitle>
+          {product?.subtitle && <DialogDescription>{product.subtitle}</DialogDescription>}
+        </DialogHeader>
         
-        {product.description && (
+        {renderProductDetails()}
+        
+        {product?.description && (
           <div className="mt-4">
             <h4 className="font-semibold mb-1">Описание</h4>
             {isDescriptionLoaded ? (
@@ -150,7 +166,7 @@ export const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({ prod
           </div>
         )}
         
-        {product.specifications && Object.keys(product.specifications).length > 0 && (
+        {product?.specifications && Object.keys(product.specifications).length > 0 && (
           <div className="mt-4">
             <h4 className="font-semibold mb-1">Характеристики</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

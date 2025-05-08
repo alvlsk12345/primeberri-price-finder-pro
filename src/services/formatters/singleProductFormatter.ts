@@ -5,87 +5,92 @@ import { translateText } from '../translationService';
 
 // Функция для форматирования отдельного товара
 export const formatSingleProduct = async (product: any, index: number, invalidImageCounter: number): Promise<Product | null> => {
-  if (!product || typeof product !== 'object') {
-    console.error('Некорректный товар:', product);
-    invalidImageCounter++;
+  try {
+    if (!product || typeof product !== 'object') {
+      console.error('Некорректный товар:', product);
+      invalidImageCounter++;
+      return null;
+    }
+    
+    // Адаптируем поля под разные форматы API
+    const title = product.product_title || product.title || product.name || `Товар ${index + 1}`;
+    
+    // Получаем URL изображения из различных возможных источников
+    const imageUrl = extractImageUrl(product);
+    
+    // Обрабатываем изображение товара с логированием
+    console.log(`Обрабатываем изображение для товара "${title}": ${imageUrl}`);
+    const processedImageUrl = processProductImage(imageUrl, index);
+    
+    // Если изображение не прошло валидацию, всё равно продолжаем (даже с пустым URL)
+    if (!processedImageUrl) {
+      console.log('Товар будет показан без изображения:', title);
+      invalidImageCounter++;
+    } else {
+      // Логируем особый статус для изображений Google Shopping
+      if (isGoogleShoppingImage(processedImageUrl)) {
+        console.log('Обработано изображение Google Shopping:', processedImageUrl);
+      }
+    }
+    
+    // Получаем информацию о цене
+    const { priceString, currency, numericPrice } = extractPriceInfo(product);
+    
+    // Готовим рейтинг
+    const rating = product.product_rating || product.rating || product.offer?.rating || 4.0;
+    
+    // Формируем ссылку на товар
+    const link = product.offer?.offer_page_url || product.product_page_url || product.link || product.url || "#";
+    
+    // Определяем источник товара
+    const source = determineProductSource(product, link);
+    
+    // Подзаголовок (состояние товара или другая информация)
+    const subtitle = product.condition || product.offer?.offer_badge || product.subtitle || "Популярный";
+    
+    // Извлекаем описание для перевода
+    const originalDescription = product.product_description || product.description || product.offer?.offer_title || '';
+    
+    // Переводим описание если оно есть (но не на русский, если уже на русском)
+    let translatedDescription = originalDescription;
+    try {
+      if (originalDescription && originalDescription.length > 10) {
+        // Переводим на русский если это не русский текст
+        translatedDescription = await translateText(originalDescription, 'en', 'ru');
+        console.log(`Описание переведено с ${translatedDescription !== originalDescription ? 'английского' : 'уже на русском'}`);
+      }
+    } catch (error) {
+      console.error('Ошибка при переводе описания:', error);
+      // Используем оригинальное описание при ошибке перевода
+      translatedDescription = originalDescription;
+    }
+    
+    const availability = product.availability || product.stock_status || "В наличии";
+    const brand = product.brand || source;
+    
+    // Извлекаем спецификации товара
+    const specifications = extractProductSpecifications(product);
+    
+    return {
+      id: product.product_id || product.id || `${Date.now()}-${index}`,
+      title: title,
+      subtitle: subtitle,
+      price: priceString,
+      currency: currency || "$",
+      image: processedImageUrl,
+      link: link,
+      rating: typeof rating === 'number' ? rating : parseFloat(rating) || 4.0,
+      source: source,
+      description: translatedDescription || "",
+      availability: availability,
+      brand: brand,
+      specifications: specifications || {},
+      _numericPrice: numericPrice // Внутреннее поле для фильтрации
+    };
+  } catch (error) {
+    console.error('Ошибка при форматировании товара:', error, 'индекс:', index);
     return null;
   }
-  
-  // Адаптируем поля под разные форматы API
-  const title = product.product_title || product.title || product.name || `Товар ${index + 1}`;
-  
-  // Получаем URL изображения из различных возможных источников
-  const imageUrl = extractImageUrl(product);
-  
-  // Обрабатываем изображение товара с логированием
-  console.log(`Обрабатываем изображение для товара "${title}": ${imageUrl}`);
-  const processedImageUrl = processProductImage(imageUrl, index);
-  
-  // Если изображение не прошло валидацию, всё равно продолжаем (даже с пустым URL)
-  if (!processedImageUrl) {
-    console.log('Товар будет показан без изображения:', title);
-    invalidImageCounter++;
-  } else {
-    // Логируем особый статус для изображений Google Shopping
-    if (isGoogleShoppingImage(processedImageUrl)) {
-      console.log('Обработано изображение Google Shopping:', processedImageUrl);
-    }
-  }
-  
-  // Получаем информацию о цене
-  const { priceString, currency, numericPrice } = extractPriceInfo(product);
-  
-  // Готовим рейтинг
-  const rating = product.product_rating || product.rating || product.offer?.rating || 4.0;
-  
-  // Формируем ссылку на товар
-  const link = product.offer?.offer_page_url || product.product_page_url || product.link || product.url || "#";
-  
-  // Определяем источник товара
-  const source = determineProductSource(product, link);
-  
-  // Подзаголовок (состояние товара или другая информация)
-  const subtitle = product.condition || product.offer?.offer_badge || product.subtitle || "Популярный";
-  
-  // Извлекаем описание для перевода
-  const originalDescription = product.product_description || product.description || product.offer?.offer_title || '';
-  
-  // Переводим описание если оно есть (но не на русский, если уже на русском)
-  let translatedDescription = originalDescription;
-  try {
-    if (originalDescription && originalDescription.length > 10) {
-      // Переводим на русский если это не русский текст
-      translatedDescription = await translateText(originalDescription, 'en', 'ru');
-      console.log(`Описание переведено с ${translatedDescription !== originalDescription ? 'английского' : 'уже на русском'}`);
-    }
-  } catch (error) {
-    console.error('Ошибка при переводе описания:', error);
-    // Используем оригинальное описание при ошибке перевода
-    translatedDescription = originalDescription;
-  }
-  
-  const availability = product.availability || product.stock_status || "В наличии";
-  const brand = product.brand || source;
-  
-  // Извлекаем спецификации товара
-  const specifications = extractProductSpecifications(product);
-  
-  return {
-    id: product.product_id || product.id || `${Date.now()}-${index}`,
-    title: title,
-    subtitle: subtitle,
-    price: priceString,
-    currency: currency,
-    image: processedImageUrl,
-    link: link,
-    rating: rating,
-    source: source,
-    description: translatedDescription,
-    availability: availability,
-    brand: brand,
-    specifications: specifications,
-    _numericPrice: numericPrice // Внутреннее поле для фильтрации
-  };
 };
 
 // Функция для извлечения URL изображения из различных форматов данных API
@@ -187,23 +192,32 @@ export const determineProductSource = (product: any, link: string): string => {
 
 // Функция для извлечения спецификаций товара
 export const extractProductSpecifications = (product: any): {[key: string]: string} => {
-  const specifications: {[key: string]: string} = {};
-  
-  if (product.specifications && typeof product.specifications === 'object') {
-    Object.keys(product.specifications).forEach(key => {
-      specifications[key] = product.specifications[key].toString();
-    });
-  } else if (product.product_attributes && typeof product.product_attributes === 'object') {
-    Object.keys(product.product_attributes).forEach(key => {
-      specifications[key] = product.product_attributes[key].toString();
-    });
-  } else if (product.attributes && Array.isArray(product.attributes)) {
-    product.attributes.forEach((attr: any) => {
-      if (attr.name && attr.value) {
-        specifications[attr.name] = attr.value.toString();
-      }
-    });
+  try {
+    const specifications: {[key: string]: string} = {};
+    
+    if (product.specifications && typeof product.specifications === 'object') {
+      Object.keys(product.specifications).forEach(key => {
+        if (product.specifications[key] !== undefined && product.specifications[key] !== null) {
+          specifications[key] = String(product.specifications[key]);
+        }
+      });
+    } else if (product.product_attributes && typeof product.product_attributes === 'object') {
+      Object.keys(product.product_attributes).forEach(key => {
+        if (product.product_attributes[key] !== undefined && product.product_attributes[key] !== null) {
+          specifications[key] = String(product.product_attributes[key]);
+        }
+      });
+    } else if (product.attributes && Array.isArray(product.attributes)) {
+      product.attributes.forEach((attr: any) => {
+        if (attr.name && attr.value !== undefined && attr.value !== null) {
+          specifications[attr.name] = String(attr.value);
+        }
+      });
+    }
+    
+    return specifications;
+  } catch (error) {
+    console.error('Ошибка при извлечении спецификаций товара:', error);
+    return {};
   }
-  
-  return specifications;
 };
