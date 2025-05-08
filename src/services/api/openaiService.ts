@@ -56,17 +56,7 @@ export const fetchFromOpenAI = async (query: string): Promise<any> => {
           }
         ],
         temperature: 0.7,
-        max_tokens: 800,
-        tools: [
-          {
-            type: "web_browser",
-            config: {
-              provider: "bing",
-              dynamic_mode: true
-            }
-          }
-        ],
-        tool_choice: "auto"
+        max_tokens: 800
       })
     });
 

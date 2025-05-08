@@ -10,13 +10,33 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
     // Получаем данные от OpenAI API
     const content = await fetchFromOpenAI(query);
     
+    if (!content) {
+      toast.error('Не удалось получить результаты поиска');
+      throw new Error('Пустой ответ от OpenAI API');
+    }
+    
+    console.log('Получен ответ от OpenAI:', content);
+    
     // Парсим результаты из ответа OpenAI
     try {
       // Находим и извлекаем JSON из ответа
       const jsonStartIndex = content.indexOf('[');
       const jsonEndIndex = content.lastIndexOf(']') + 1;
+      
+      if (jsonStartIndex === -1 || jsonEndIndex === 0) {
+        toast.error('Не удалось найти JSON данные в ответе');
+        throw new Error('Некорректный формат ответа OpenAI');
+      }
+      
       const jsonContent = content.substring(jsonStartIndex, jsonEndIndex);
+      console.log('Извлеченный JSON:', jsonContent);
+      
       let products = JSON.parse(jsonContent);
+      
+      if (!Array.isArray(products) || products.length === 0) {
+        toast.info('По вашему запросу ничего не найдено');
+        return [];
+      }
       
       // Проверяем и корректируем данные о товарах
       const validProducts = products.map((product: any, index: number) => {
@@ -44,6 +64,7 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
         
         // Проверяем, валидный ли URL изображения
         if (!isValidImageUrl(imageUrl)) {
+          console.log(`Невалидный URL изображения: ${imageUrl}, используем запасной вариант`);
           imageUrl = getFallbackImage(index);
         }
         
