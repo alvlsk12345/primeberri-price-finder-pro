@@ -1,6 +1,6 @@
 
 import { fetchFromOpenAI } from './api/openaiService';
-import { getUniqueImageUrl, getFallbackImage, isValidImageUrl, validateImageTitleMatch } from './imageService';
+import { isValidImageUrl, getUniqueImageUrl } from './imageService';
 import { Product } from './types';
 import { toast } from "@/components/ui/sonner";
 
@@ -13,7 +13,7 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
     // Проверяем, является ли ответ уже массивом (успешно распарсен JSON в openaiService)
     if (Array.isArray(response)) {
       console.log('Получен ответ от OpenAI (уже распарсен):', response);
-      return processProductsData(response, query);
+      return processProductsData(response);
     }
     
     // Если ответ не является массивом, это строка с JSON
@@ -34,7 +34,7 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
       console.log('Извлеченный JSON:', jsonContent);
       
       let products = JSON.parse(jsonContent);
-      return processProductsData(products, query);
+      return processProductsData(products);
       
     } catch (parseError) {
       console.error('Ошибка при парсинге результатов OpenAI:', parseError, response);
@@ -43,50 +43,25 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
     }
   } catch (error) {
     console.error('Ошибка при поиске товаров:', error);
-    
-    // В случае ошибки возвращаем резервные данные с реальными изображениями
-    return [
-      {
-        id: `${Date.now()}-1`,
-        title: `${query} - Товар (резервные данные)`,
-        subtitle: "Популярный",
-        price: "250 €",
-        currency: "€",
-        image: getFallbackImage(0),
-        link: "#",
-        rating: 4.7,
-        source: 'Amazon'
-      },
-      {
-        id: `${Date.now()}-2`,
-        title: `${query} - Аналогичный товар (резервные данные)`,
-        subtitle: "Новинка",
-        price: "180 €",
-        currency: "€",
-        image: getFallbackImage(1),
-        link: "#",
-        rating: 4.5,
-        source: 'eBay'
-      }
-    ];
+    toast.error('Произошла ошибка при поиске товаров');
+    // Возвращаем пустой массив вместо резервных данных
+    return [];
   }
 };
 
 // Вспомогательная функция для обработки данных о товарах
-const processProductsData = (products: any[], searchQuery: string): Product[] => {
+const processProductsData = (products: any[]): Product[] => {
   if (!Array.isArray(products) || products.length === 0) {
     toast.info('По вашему запросу ничего не найдено');
     return [];
   }
   
   let invalidImageCounter = 0;
-  let mismatchCounter = 0;
 
   // Проверяем и корректируем данные о товарах
   const validProducts = products.map((product: any, index: number) => {
     // Валидируем и форматируем ссылку на изображение
     let imageUrl = product.image || "";
-    let imageChanged = false;
     
     // Убедимся, что imageUrl - строка
     imageUrl = typeof imageUrl === 'string' ? imageUrl : '';
@@ -106,26 +81,14 @@ const processProductsData = (products: any[], searchQuery: string): Product[] =>
     
     // Проверяем, валидный ли URL изображения
     if (!isValidImageUrl(imageUrl)) {
-      console.log(`Невалидный URL изображения: ${imageUrl}, используем запасной вариант`);
-      imageUrl = getFallbackImage(index);
-      imageChanged = true;
+      console.log(`Невалидный URL изображения: ${imageUrl}, пропускаем товар`);
       invalidImageCounter++;
-    } 
-    // Проверяем соответствие изображения названию товара
-    else if (!validateImageTitleMatch(imageUrl, product.title)) {
-      console.log(`Несоответствие изображения и названия для товара: ${product.title}, URL: ${imageUrl}`);
-      
-      // Используем запасное изображение при несоответствии
-      imageUrl = getFallbackImage(index);
-      imageChanged = true;
-      mismatchCounter++;
+      // Пропускаем товар с невалидным URL
+      return null;
     }
     
-    // Если изображение изменилось, не добавляем уникальные параметры
-    if (!imageChanged) {
-      // Добавляем уникальный параметр к URL
-      imageUrl = getUniqueImageUrl(imageUrl, index);
-    }
+    // Добавляем уникальный параметр к URL
+    imageUrl = getUniqueImageUrl(imageUrl, index);
     
     // Извлекаем валюту из цены
     const priceString = product.price || "0 €";
@@ -153,17 +116,17 @@ const processProductsData = (products: any[], searchQuery: string): Product[] =>
       rating: rating, // Теперь гарантированно число
       source: product.source || 'Интернет-магазин'
     };
-  });
+  }).filter(product => product !== null); // Фильтруем null продукты
   
   // Показываем информацию, если были выявлены проблемы с изображениями
-  if (invalidImageCounter > 0 || mismatchCounter > 0) {
-    const totalIssues = invalidImageCounter + mismatchCounter;
-    const productsCount = products.length;
+  if (invalidImageCounter > 0) {
+    const validCount = validProducts.length;
+    const totalCount = products.length;
     
-    if (totalIssues === productsCount) {
-      toast.warning(`Для всех товаров использованы запасные изображения из-за проблем с оригинальными`);
-    } else {
-      toast.warning(`Для ${totalIssues} из ${productsCount} товаров использованы запасные изображения`);
+    if (validCount === 0) {
+      toast.warning('Не удалось найти товары с корректными изображениями');
+    } else if (invalidImageCounter > 0) {
+      toast.warning(`Найдено ${validCount} из ${totalCount} товаров с корректными изображениями`);
     }
   }
   

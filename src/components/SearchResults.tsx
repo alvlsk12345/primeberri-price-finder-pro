@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { ImageOff, Star } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Product } from "@/services/types";
-import { getFallbackImage } from "@/services/imageService";
 
 type SearchResultsProps = {
   results: Product[];
@@ -20,18 +19,12 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect,
   const [imageError, setImageError] = useState<{[key: string]: boolean}>({});
 
   // Обработчик для ошибок загрузки изображений
-  const handleImageError = (productId: string, index: number) => {
+  const handleImageError = (productId: string) => {
     console.error('Ошибка загрузки изображения для товара:', productId);
     
     // Отмечаем, что загрузка этого изображения завершена с ошибкой
     setImageLoading(prev => ({ ...prev, [productId]: false }));
     setImageError(prev => ({ ...prev, [productId]: true }));
-    
-    // Автоматически заменяем на запасное изображение
-    const product = results.find(p => p.id === productId);
-    if (product) {
-      product.image = getFallbackImage(index);
-    }
   };
 
   // Обработчик для успешной загрузки изображения
@@ -48,7 +41,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect,
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {results.map((product, index) => (
+      {results.map((product) => (
         <Card 
           key={product.id} 
           className={`cursor-pointer transition-all hover:shadow-md ${
@@ -69,16 +62,23 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect,
                   <Skeleton className="w-full h-full absolute inset-0" />
                 )}
                 
-                <img 
-                  src={product.image}
-                  alt={product.title}
-                  className="max-h-full max-w-full object-contain"
-                  onError={() => handleImageError(product.id, index)}
-                  onLoad={() => handleImageLoad(product.id)}
-                  loading="eager"
-                  onLoadStart={() => handleImageLoadStart(product.id)}
-                  referrerPolicy="no-referrer"
-                />
+                {imageError[product.id] ? (
+                  <div className="flex flex-col items-center justify-center h-full w-full bg-gray-100">
+                    <ImageOff size={32} className="text-gray-400" />
+                    <p className="text-sm text-gray-500 mt-2">Изображение недоступно</p>
+                  </div>
+                ) : (
+                  <img 
+                    src={product.image}
+                    alt={product.title}
+                    className="max-h-full max-w-full object-contain"
+                    onError={() => handleImageError(product.id)}
+                    onLoad={() => handleImageLoad(product.id)}
+                    loading="eager"
+                    onLoadStart={() => handleImageLoadStart(product.id)}
+                    referrerPolicy="no-referrer"
+                  />
+                )}
               </div>
               
               <div className="w-full text-center">
@@ -123,4 +123,4 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect,
       ))}
     </div>
   );
-};
+}
