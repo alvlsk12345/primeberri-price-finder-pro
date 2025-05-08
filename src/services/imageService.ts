@@ -1,13 +1,20 @@
 
 // Функции для работы с изображениями
 
+// Проверка является ли URL от Google Shopping
+export const isGoogleShoppingImage = (url: string): boolean => {
+  return url.includes('encrypted-tbn') || 
+         url.includes('googleusercontent') || 
+         url.includes('gstatic.com/shopping');
+};
+
 // Проверка валидности URL изображения
 export const isValidImageUrl = (url: string | undefined): boolean => {
   if (!url) return false;
   
   // Разрешаем URL изображений от Google Shopping (encrypted-tbn)
   // и от других популярных CDN
-  if (url.includes('encrypted-tbn') || url.includes('googleusercontent')) {
+  if (isGoogleShoppingImage(url)) {
     return true;
   }
   
@@ -39,7 +46,8 @@ export const isValidImageUrl = (url: string | undefined): boolean => {
       'akamai', 'fastly.net', 'imgur.com', 'googleusercontent.com', 'ggpht.com',
       'blob.core', 'storage.googleapis', 'store-images', 'ytimg', 'pexels', 'unsplash',
       'pixabay', 'flickr', 'twimg', 'wp-content', 'alicdn', 'aliexpress', 'shutterstock',
-      'ibb.co', 'imgbb', 'postimg', 'postimages', 'blob:', 'data:image'
+      'ibb.co', 'imgbb', 'postimg', 'postimages', 'blob:', 'data:image',
+      'gstatic.com', 'shopping'
     ];
     const usesImageCDN = imageCDNs.some(cdn => url.toLowerCase().includes(cdn));
     
@@ -69,7 +77,7 @@ export const getUniqueImageUrl = (url: string, index: number): string => {
     
     // Проверяем, содержит ли URL encrypted-tbn (Google Shopping)
     // или другие специфические URL, которые не следует модифицировать
-    if (url.includes('encrypted-tbn') || url.includes('googleusercontent')) {
+    if (isGoogleShoppingImage(url)) {
       return url;
     }
     
@@ -123,6 +131,7 @@ export const getStoreNameFromUrl = (url: string): string => {
     if (domain.includes('etsy')) return 'Etsy';
     if (domain.includes('zara')) return 'Zara';
     if (domain.includes('apple')) return 'Apple';
+    if (domain.includes('gstatic') || domain.includes('googleusercontent')) return 'Google Shopping';
     
     // Если не нашли совпадений, возвращаем домен как имя магазина
     const domainParts = domain.split('.');

@@ -1,6 +1,13 @@
 
 import { isValidImageUrl, getUniqueImageUrl } from './imageService';
 
+// Функция для проверки, является ли URL от Google Shopping
+export const isGoogleShoppingImage = (url: string): boolean => {
+  return url.includes('encrypted-tbn') || 
+         url.includes('googleusercontent') || 
+         url.includes('gstatic.com/shopping');
+};
+
 // Функция для обработки изображения товара
 export const processProductImage = (imageUrl: string | undefined, index: number): string => {
   // Убедимся, что imageUrl - строка
@@ -29,8 +36,8 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
     console.log(`Удалены кавычки: ${processedUrl}`);
   }
   
-  // Для URL от Google Shopping (encrypted-tbn) используем их без изменений
-  if (processedUrl.includes('encrypted-tbn')) {
+  // Для URL от Google Shopping (encrypted-tbn) используем особую обработку
+  if (isGoogleShoppingImage(processedUrl)) {
     console.log(`Обнаружен URL Google Shopping: ${processedUrl}`);
     
     // Проверяем, начинается ли URL с http или https

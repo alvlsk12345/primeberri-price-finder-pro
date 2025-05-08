@@ -3,6 +3,8 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { ImageOff, Star, Info } from "lucide-react";
 import { Product } from "@/services/types";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { isGoogleShoppingImage } from "@/services/imageService";
 import { 
   Dialog,
   DialogContent,
@@ -17,6 +19,9 @@ interface ProductDetailsDialogProps {
 }
 
 export const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({ product }) => {
+  // Проверяем, является ли изображение от Google Shopping
+  const isGoogleImage = product.image && isGoogleShoppingImage(product.image);
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -41,7 +46,23 @@ export const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({ prod
                 <ImageOff size={48} className="text-gray-400" />
                 <p className="text-sm text-gray-500 mt-2">Изображение недоступно</p>
               </div>
+            ) : isGoogleImage ? (
+              // Для изображений Google Shopping используем Avatar компонент
+              <Avatar className="w-full h-[200px] rounded-none">
+                <AvatarImage 
+                  src={product.image}
+                  alt={product.title}
+                  className="object-contain"
+                />
+                <AvatarFallback className="w-full h-full rounded-none bg-gray-100">
+                  <div className="flex flex-col items-center justify-center">
+                    <ImageOff size={48} className="text-gray-400" />
+                    <p className="text-sm text-gray-500 mt-2">Изображение недоступно</p>
+                  </div>
+                </AvatarFallback>
+              </Avatar>
             ) : (
+              // Для обычных изображений используем стандартный тег img
               <img 
                 src={product.image} 
                 alt={product.title} 

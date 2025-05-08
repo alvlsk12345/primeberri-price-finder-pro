@@ -1,7 +1,7 @@
 
 import { Product } from '../types';
 import { processProductImage } from '../imageProcessor';
-import { getStoreNameFromUrl } from '../imageService';
+import { getStoreNameFromUrl, isGoogleShoppingImage } from '../imageService';
 
 // Функция для форматирования отдельного товара
 export const formatSingleProduct = (product: any, index: number, invalidImageCounter: number): Product | null => {
@@ -25,6 +25,11 @@ export const formatSingleProduct = (product: any, index: number, invalidImageCou
   if (!processedImageUrl) {
     console.log('Товар будет показан без изображения:', title);
     invalidImageCounter++;
+  } else {
+    // Логируем особый статус для изображений Google Shopping
+    if (isGoogleShoppingImage(processedImageUrl)) {
+      console.log('Обработано изображение Google Shopping:', processedImageUrl);
+    }
   }
   
   // Получаем информацию о цене
