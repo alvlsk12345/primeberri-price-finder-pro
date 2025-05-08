@@ -17,16 +17,32 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
     const response = await searchProductsViaZylalabs(params);
     console.log('Ответ от API получен:', response);
     
+    // Проверяем наличие результатов поиска
+    if (!response || !response.products || response.products.length === 0) {
+      toast.dismiss(searchToastId);
+      toast.info('По вашему запросу ничего не найдено');
+      return { products: [], totalPages: 0 };
+    }
+    
     // Обрабатываем данные о товарах с переводом описаний
     const products = await processZylalabsProductsData(response.products, params.filters);
     
     // Закрываем уведомление о поиске
     toast.dismiss(searchToastId);
     
-    // Предполагаем, что на странице отображается до 12 товаров
-    const totalPages = Math.ceil(response.total || products.length / 12);
+    // Расчет общего количества страниц (приблизительное значение)
+    const itemsPerPage = 12; // Стандартное количество элементов на странице
+    const totalItems = response.total || products.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
     
-    return { products, totalPages: totalPages || 1 };
+    // Информируем пользователя о результатах
+    if (products.length > 0) {
+      toast.success(`Найдено ${products.length} товаров${totalPages > 1 ? `, стр. ${params.page}/${totalPages}` : ''}`);
+    } else {
+      toast.info('По вашему запросу ничего не найдено');
+    }
+    
+    return { products, totalPages };
   } catch (error) {
     console.error('Ошибка при поиске товаров:', error);
     toast.error('Произошла ошибка при поиске товаров');

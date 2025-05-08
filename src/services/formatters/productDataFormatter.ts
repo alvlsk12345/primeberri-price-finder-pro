@@ -1,3 +1,4 @@
+
 import { Product, ProductFilters } from '../types';
 import { toast } from "@/components/ui/sonner";
 import { formatSingleProduct } from './singleProductFormatter';
@@ -6,36 +7,48 @@ import { formatSingleProduct } from './singleProductFormatter';
 export const processZylalabsProductsData = async (products: any[], filters?: ProductFilters): Promise<Product[]> => {
   if (!Array.isArray(products) || products.length === 0) {
     console.log('Пустой массив продуктов или некорректный формат');
-    toast.info('По вашему запросу ничего не найдено');
     return [];
   }
   
   console.log(`Обработка ${products.length} продуктов с фильтрами:`, filters);
   let invalidImageCounter = 0;
 
-  // Обрабатываем товары с помощью функции форматирования
-  const productPromises = products.map((product: any, index: number) => 
-    formatSingleProduct(product, index, invalidImageCounter)
-  );
-  
-  // Ждем завершения всех промисов
-  const processedProductsRaw = await Promise.all(productPromises);
-  const processedProducts = processedProductsRaw.filter(product => product !== null) as Product[];
-  
-  console.log(`Подготовлено товаров: ${processedProducts.length} из ${products.length}`);
-  console.log(`Товаров без изображений: ${invalidImageCounter}`);
-  
-  // Применяем фильтры к обработанным товарам
-  const filteredProducts = applyProductFilters(processedProducts, filters);
-  
-  // Уведомляем о количестве найденных товаров
-  if (filteredProducts.length === 0) {
-    toast.info('По вашему запросу ничего не найдено');
-  } else {
-    toast.success(`Найдено ${filteredProducts.length} товаров`);
+  try {
+    // Обрабатываем товары с помощью функции форматирования
+    const productPromises = products.map(async (product: any, index: number) => {
+      try {
+        // Проверяем, является ли продукт уже готовым (мок-данные)
+        if (product.id && product.id.startsWith('mock-')) {
+          console.log('Обнаружен готовый продукт (мок):', product.title);
+          return {
+            ...product,
+            _numericPrice: parseFloat(product.price) || 0
+          };
+        }
+        
+        return await formatSingleProduct(product, index, invalidImageCounter);
+      } catch (err) {
+        console.error('Ошибка при обработке товара:', err);
+        return null;
+      }
+    });
+    
+    // Ждем завершения всех промисов
+    const processedProductsRaw = await Promise.all(productPromises);
+    const processedProducts = processedProductsRaw.filter(product => product !== null) as Product[];
+    
+    console.log(`Подготовлено товаров: ${processedProducts.length} из ${products.length}`);
+    console.log(`Товаров без изображений: ${invalidImageCounter}`);
+    
+    // Применяем фильтры к обработанным товарам
+    const filteredProducts = applyProductFilters(processedProducts, filters);
+    
+    return filteredProducts;
+  } catch (error) {
+    console.error('Ошибка при обработке данных товаров:', error);
+    toast.error('Произошла ошибка при подготовке данных товаров');
+    return [];
   }
-  
-  return filteredProducts;
 };
 
 // Функция для применения фильтров к обработанным товарам

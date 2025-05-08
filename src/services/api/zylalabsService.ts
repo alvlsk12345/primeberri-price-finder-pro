@@ -10,13 +10,86 @@ const MAX_RETRY_ATTEMPTS = 3;
 // Задержка между повторными попытками (в миллисекундах)
 const RETRY_DELAY = 1000;
 
+// Проверка наличия ключа API
+const checkApiKey = () => {
+  if (!ZYLALABS_API_KEY) {
+    console.error('API ключ Zylalabs не настроен');
+    toast.error('API ключ не настроен. Пожалуйста, проверьте настройки.');
+    return false;
+  }
+  return true;
+};
+
 /**
  * Функция для установки паузы в заданное количество миллисекунд
  */
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Мок-данные для использования при сбоях API
+const getMockSearchResults = (query: string) => {
+  console.log('Используем мок-данные для запроса:', query);
+  
+  // Базовые элементы для всех запросов
+  const baseProducts = [
+    {
+      id: 'mock-1',
+      title: 'Демонстрационный товар 1',
+      subtitle: 'Тестовый товар для демонстрации функционала',
+      price: '1999 руб.',
+      currency: 'RUB',
+      image: 'https://via.placeholder.com/300x300?text=Демо+Товар+1',
+      link: 'https://example.com/product1',
+      rating: 4.5,
+      source: 'Demo Shop',
+      description: 'Это демонстрационный товар, созданный системой при недоступности API поиска.',
+      availability: 'В наличии',
+      brand: 'Demo Brand',
+    },
+    {
+      id: 'mock-2',
+      title: 'Демонстрационный товар 2',
+      subtitle: 'Альтернативный тестовый товар',
+      price: '3499 руб.',
+      currency: 'RUB',
+      image: 'https://via.placeholder.com/300x300?text=Демо+Товар+2',
+      link: 'https://example.com/product2',
+      rating: 3.8,
+      source: 'Example Store',
+      description: 'Это второй демонстрационный товар для тестирования интерфейса.',
+      availability: 'Под заказ',
+      brand: 'Test Brand',
+    },
+  ];
+  
+  // Добавляем товар, связанный с запросом пользователя
+  const queryRelatedProduct = {
+    id: 'mock-query',
+    title: `${query} - демонстрационный товар`,
+    subtitle: `Товар, связанный с запросом "${query}"`,
+    price: '2499 руб.',
+    currency: 'RUB',
+    image: `https://via.placeholder.com/300x300?text=${encodeURIComponent(query)}`,
+    link: 'https://example.com/product-query',
+    rating: 4.2,
+    source: 'Search Demo',
+    description: `Это демонстрационный товар, связанный с вашим запросом "${query}". Создан при недоступности API поиска.`,
+    availability: 'Ограниченное количество',
+    brand: query.split(' ')[0] || 'Query Brand',
+  };
+  
+  return {
+    products: [queryRelatedProduct, ...baseProducts],
+    total: 3
+  };
+};
+
 // Функция для поиска товаров через Zylalabs API с поддержкой пагинацией и повторными попытками
 export const searchProductsViaZylalabs = async (params: SearchParams): Promise<any> => {
+  // Проверяем наличие API ключа
+  if (!checkApiKey()) {
+    return getMockSearchResults(params.query);
+  }
+  
   let attempts = 0;
   let lastError = null;
 
@@ -108,7 +181,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
       } else {
         console.error('Неожиданный формат ответа от API:', data);
         toast.warning('Получены некорректные данные от API');
-        return { products: [], total: 0 };
+        return getMockSearchResults(params.query);
       }
       
       // Успешный ответ - возвращаем результаты
@@ -141,19 +214,14 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
         console.log(`Повторная попытка ${attempts}/${MAX_RETRY_ATTEMPTS} через ${RETRY_DELAY}мс`);
         await sleep(RETRY_DELAY);
         continue; // Переходим к следующей попытке
-      } else {
-        throw error; // Больше попыток не осталось, выбрасываем исключение
       }
     }
   }
   
-  // Если все попытки исчерпаны, выбрасываем последнюю ошибку
-  if (lastError) {
-    console.error('Все попытки запросов исчерпаны:', lastError);
-    toast.error('Не удалось получить данные после нескольких попыток');
-    throw lastError;
-  }
+  // Если все попытки исчерпаны, используем мок-данные
+  console.error('Все попытки запросов исчерпаны:', lastError);
+  toast.error('Не удалось подключиться к API поиска. Используем демонстрационные данные.');
   
-  // Этот код никогда не должен выполняться, но нужен для типизации
-  return { products: [], total: 0 };
+  // Возвращаем мок-данные для демонстрации интерфейса
+  return getMockSearchResults(params.query);
 };

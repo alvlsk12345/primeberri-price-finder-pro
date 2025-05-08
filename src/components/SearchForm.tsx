@@ -1,8 +1,9 @@
 
-import React, { KeyboardEvent } from 'react';
+import React, { KeyboardEvent, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search } from 'lucide-react';
+import { Search, AlertCircle } from 'lucide-react';
+import { toast } from "@/components/ui/sonner";
 
 type SearchFormProps = {
   searchQuery: string;
@@ -17,36 +18,70 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   handleSearch, 
   isLoading 
 }) => {
+  const [hasError, setHasError] = useState(false);
+  
   // Обработчик нажатия клавиши Enter
   const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchQuery.trim() !== '') {
-      handleSearch();
+      executeSearch();
       e.preventDefault(); // Предотвращаем стандартное поведение формы
+    }
+  };
+  
+  // Функция выполнения поиска с дополнительными проверками
+  const executeSearch = () => {
+    try {
+      if (!searchQuery.trim()) {
+        toast.error('Пожалуйста, введите запрос для поиска');
+        return;
+      }
+      
+      setHasError(false);
+      handleSearch();
+    } catch (error) {
+      console.error('Ошибка при попытке поиска:', error);
+      setHasError(true);
+      toast.error('Произошла ошибка при поиске. Пожалуйста, попробуйте снова.');
     }
   };
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3">
-      <Input
-        placeholder="Введите название товара, например, кожаная сумка, кроссовки Nike..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        onKeyDown={handleKeyPress}
-        className="flex-grow"
-      />
-      <Button 
-        onClick={handleSearch} 
-        disabled={isLoading || !searchQuery}
-        className="min-w-[200px]"
-      >
-        {isLoading ? (
-          <span>Поиск...</span>
-        ) : (
-          <span className="flex items-center gap-2">
-            <Search size={18} /> Поиск
-          </span>
-        )}
-      </Button>
+    <div className="space-y-3">
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Input
+          placeholder="Введите название товара, например, кожаная сумка, кроссовки Nike..."
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            if (hasError) setHasError(false);
+          }}
+          onKeyDown={handleKeyPress}
+          className={`flex-grow ${hasError ? 'border-red-500' : ''}`}
+        />
+        <Button 
+          onClick={executeSearch} 
+          disabled={isLoading || !searchQuery.trim()}
+          className="min-w-[200px]"
+        >
+          {isLoading ? (
+            <span className="flex items-center gap-2">
+              <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+              Поиск...
+            </span>
+          ) : (
+            <span className="flex items-center gap-2">
+              <Search size={18} /> Поиск
+            </span>
+          )}
+        </Button>
+      </div>
+      
+      {hasError && (
+        <div className="flex items-center text-red-500 text-sm gap-1">
+          <AlertCircle size={14} />
+          <span>Произошла ошибка при поиске. Пожалуйста, попробуйте еще раз.</span>
+        </div>
+      )}
     </div>
   );
 };
