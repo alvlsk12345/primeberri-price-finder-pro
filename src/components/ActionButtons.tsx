@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Link } from 'lucide-react';
@@ -38,6 +39,18 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       toast.error('Пожалуйста, выберите товар');
     }
   };
+  
+  // Функция для прямого перехода на страницу товара
+  const handleVisitProduct = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    if (selectedProduct) {
+      const productLink = getProductLink(selectedProduct);
+      window.open(productLink, '_blank');
+    } else {
+      toast.error('Пожалуйста, выберите товар');
+    }
+  };
 
   return (
     <div className="flex flex-col sm:flex-row gap-3 mt-6">
@@ -48,6 +61,15 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       >
         <span className="flex items-center gap-2">
           <Link size={18} /> Копировать ссылку
+        </span>
+      </Button>
+      <Button 
+        onClick={handleVisitProduct}
+        variant="outline"
+        className="flex-1"
+      >
+        <span className="flex items-center gap-2">
+          Перейти к товару <ArrowRight size={18} />
         </span>
       </Button>
       <Button 

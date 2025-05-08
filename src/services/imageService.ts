@@ -10,13 +10,56 @@ export const getUnsplashImages = (): string[] => {
   ];
 };
 
+// Проверка валидности URL изображения
+export const isValidImageUrl = (url: string): boolean => {
+  if (!url) return false;
+  
+  try {
+    const parsed = new URL(url);
+    return ['http:', 'https:'].includes(parsed.protocol) && 
+           url.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) !== null;
+  } catch (e) {
+    return false;
+  }
+};
+
+// Удаляем параметры размера изображения для улучшения совместимости
+export const cleanImageUrl = (url: string): string => {
+  if (!url) return '';
+  
+  try {
+    const parsedUrl = new URL(url);
+    
+    // Удаляем специфичные для CDN параметры размера
+    ['width', 'height', 'w', 'h', 'size', 'sz', 'resize', 'fit'].forEach(param => {
+      parsedUrl.searchParams.delete(param);
+    });
+    
+    return parsedUrl.toString();
+  } catch (e) {
+    return url;
+  }
+};
+
 // Функция для получения уникальной ссылки на изображение 
 export const getUniqueImageUrl = (baseUrl: string, index: number): string => {
-  // Если URL начинается с http и не содержит параметры запроса, добавляем случайный параметр
-  if (baseUrl && baseUrl.startsWith('http') && !baseUrl.includes('?')) {
-    return `${baseUrl}?t=${Date.now()}-${index}`;
+  // Проверяем валидность URL и очищаем его
+  if (!baseUrl) return '';
+  
+  try {
+    // Если URL не начинается с http/https, возвращаем пустую строку
+    if (!baseUrl.startsWith('http')) return '';
+    
+    const cleanedUrl = cleanImageUrl(baseUrl);
+    
+    // Добавляем параметр времени для предотвращения кеширования
+    const separator = cleanedUrl.includes('?') ? '&' : '?';
+    return `${cleanedUrl}${separator}t=${Date.now()}-${index}`;
+    
+  } catch (e) {
+    console.error('Ошибка при обработке URL изображения:', e);
+    return '';
   }
-  return baseUrl;
 };
 
 // Функция для получения запасного изображения, если основное недоступно

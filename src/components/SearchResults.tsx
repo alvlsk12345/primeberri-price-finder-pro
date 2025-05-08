@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ImageOff, Star } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Product } from "@/services/types";
+import { getFallbackImage } from "@/services/imageService";
 
 type SearchResultsProps = {
   results: Product[];
@@ -38,14 +39,6 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect,
     setImageLoading(prev => ({ ...prev, [productId]: true }));
     setImageError(prev => ({ ...prev, [productId]: false }));
   };
-  
-  // Массив изображений для запасных вариантов
-  const fallbackImages = [
-    "https://images.unsplash.com/photo-1542291026-7eec264c27ff", // обувь
-    "https://images.unsplash.com/photo-1523275335684-37898b6baf30", // часы
-    "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f", // камера
-    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e"  // наушники
-  ];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -70,35 +63,25 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect,
                   <Skeleton className="w-full h-full absolute inset-0" />
                 )}
                 
-                {!imageError[product.id] && product.image ? (
+                {imageError[product.id] ? (
                   <img 
-                    src={product.image} 
-                    alt={product.title} 
+                    src={getFallbackImage(index)}
+                    alt={product.title}
+                    className="max-h-full max-w-full object-contain"
+                    onLoad={() => handleImageLoad(product.id)}
+                    loading="eager"
+                  />
+                ) : (
+                  <img 
+                    src={product.image}
+                    alt={product.title}
                     className="max-h-full max-w-full object-contain"
                     onError={() => handleImageError(product.id)}
                     onLoad={() => handleImageLoad(product.id)}
                     loading="eager"
-                    crossOrigin="anonymous"
                     onLoadStart={() => handleImageLoadStart(product.id)}
-                    key={`img-${product.id}-${Date.now()}`} // Уникальный ключ для избежания кеширования
+                    referrerPolicy="no-referrer"
                   />
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-gray-400">
-                    {imageError[product.id] ? (
-                      <img 
-                        src={fallbackImages[index % fallbackImages.length] + `?random=${product.id}`} 
-                        alt={product.title}
-                        className="max-h-full max-w-full object-contain"
-                        onLoad={() => handleImageLoad(product.id)}
-                        loading="eager"
-                      />
-                    ) : (
-                      <>
-                        <ImageOff size={40} />
-                        <span className="mt-2 text-sm">Нет изображения</span>
-                      </>
-                    )}
-                  </div>
                 )}
               </div>
               

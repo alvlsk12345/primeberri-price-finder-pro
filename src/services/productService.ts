@@ -1,6 +1,6 @@
 
 import { fetchFromOpenAI } from './api/openaiService';
-import { getUniqueImageUrl, getFallbackImage } from './imageService';
+import { getUniqueImageUrl, getFallbackImage, isValidImageUrl } from './imageService';
 import { Product } from './types';
 import { toast } from "@/components/ui/sonner";
 
@@ -20,11 +20,30 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
       
       // Проверяем и корректируем данные о товарах
       const validProducts = products.map((product: any, index: number) => {
-        // Добавляем уникальную ссылку на изображение
-        let imageUrl = getUniqueImageUrl(product.image || "", index);
+        // Валидируем и форматируем ссылку на изображение
+        let imageUrl = product.image || "";
         
-        // Если изображения нет или оно некорректное, используем изображения с Unsplash
-        if (!imageUrl || imageUrl.includes("placeholder") || !imageUrl.startsWith("http")) {
+        // Убедимся, что imageUrl - строка
+        imageUrl = typeof imageUrl === 'string' ? imageUrl : '';
+        
+        // Форматируем URL изображения
+        imageUrl = imageUrl.trim();
+        
+        // Добавляем протокол, если его нет
+        if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('//')) {
+          imageUrl = `https://${imageUrl}`;
+        }
+        
+        // Преобразуем относительные URL в абсолютные
+        if (imageUrl && imageUrl.startsWith('//')) {
+          imageUrl = `https:${imageUrl}`;
+        }
+        
+        // Добавляем уникальный параметр к URL
+        imageUrl = getUniqueImageUrl(imageUrl, index);
+        
+        // Проверяем, валидный ли URL изображения
+        if (!isValidImageUrl(imageUrl)) {
           imageUrl = getFallbackImage(index);
         }
         
@@ -34,7 +53,7 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
         const currency = currencyMatch ? currencyMatch[0] : '€';
         
         return {
-          id: `${Date.now()}-${index}`,
+          id: product.id || `${Date.now()}-${index}`,
           title: product.title || `Товар ${index + 1}`,
           subtitle: product.subtitle || "Популярный",
           price: product.price || "0 €",
