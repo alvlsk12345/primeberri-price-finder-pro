@@ -10,41 +10,79 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
     // Получаем данные от OpenAI API
     const response = await fetchFromOpenAI(query);
     
-    // Проверяем, является ли ответ уже массивом (успешно распарсен JSON в openaiService)
-    if (Array.isArray(response)) {
-      console.log('Получен ответ от OpenAI (уже распарсен):', response);
-      return processProductsData(response);
-    }
-    
-    // Если ответ не является массивом, это строка с JSON
-    console.log('Получен ответ от OpenAI (строка):', response);
-    
-    // Парсим результаты из ответа OpenAI
-    try {
-      // Находим и извлекаем JSON из ответа
-      const jsonStartIndex = response.indexOf('[');
-      const jsonEndIndex = response.lastIndexOf(']') + 1;
-      
-      if (jsonStartIndex === -1 || jsonEndIndex === 0) {
-        toast.error('Не удалось найти JSON данные в ответе');
-        throw new Error('Некорректный формат ответа OpenAI');
+    // Если ответ содержит продукты напрямую (response_format: { type: "json_object" })
+    if (response && typeof response === 'object') {
+      // Проверяем наличие продуктов в объекте (может быть в корне или в products)
+      if (Array.isArray(response)) {
+        console.log('Получен массив продуктов напрямую:', response);
+        return processProductsData(response);
+      } else if (response.products && Array.isArray(response.products)) {
+        console.log('Получен объект с массивом продуктов:', response.products);
+        return processProductsData(response.products);
       }
-      
-      const jsonContent = response.substring(jsonStartIndex, jsonEndIndex);
-      console.log('Извлеченный JSON:', jsonContent);
-      
-      let products = JSON.parse(jsonContent);
-      return processProductsData(products);
-      
-    } catch (parseError) {
-      console.error('Ошибка при парсинге результатов OpenAI:', parseError, response);
-      toast.error('Не удалось обработать результаты поиска');
-      throw new Error('Не удалось обработать результаты поиска');
     }
+    
+    // Если ответ - строка (старый формат)
+    if (typeof response === 'string') {
+      console.log('Получен ответ от OpenAI (строка):', response);
+      
+      // Пытаемся удалить markdown если он есть
+      const cleanedResponse = response
+        .replace(/^```json\s*/i, '')
+        .replace(/^```\s*/i, '')
+        .replace(/\s*```$/i, '')
+        .trim();
+        
+      try {
+        // Парсим JSON
+        const products = JSON.parse(cleanedResponse);
+        
+        // Проверяем что получили массив
+        if (Array.isArray(products)) {
+          return processProductsData(products);
+        } 
+        // Если получили объект с массивом products
+        else if (products.products && Array.isArray(products.products)) {
+          return processProductsData(products.products);
+        }
+        // Если формат не соответствует ожидаемому
+        else {
+          console.error('Неожиданный формат данных:', products);
+          toast.error('Неожиданный формат данных от API');
+          return [];
+        }
+      } catch (parseError) {
+        console.error('Ошибка при парсинге JSON строки:', parseError);
+        
+        // Пытаемся найти JSON массив в тексте
+        const jsonStartIndex = cleanedResponse.indexOf('[');
+        const jsonEndIndex = cleanedResponse.lastIndexOf(']') + 1;
+        
+        if (jsonStartIndex !== -1 && jsonEndIndex > jsonStartIndex) {
+          const jsonContent = cleanedResponse.substring(jsonStartIndex, jsonEndIndex);
+          console.log('Извлеченный JSON:', jsonContent);
+          
+          try {
+            const products = JSON.parse(jsonContent);
+            if (Array.isArray(products)) {
+              return processProductsData(products);
+            }
+          } catch (e) {
+            console.error('Не удалось извлечь JSON из текста:', e);
+          }
+        }
+        
+        toast.error('Не удалось обработать результаты поиска');
+        return [];
+      }
+    }
+    
+    // Если не удалось обработать ответ
+    toast.error('Не удалось получить данные о товарах');
+    return [];
   } catch (error) {
     console.error('Ошибка при поиске товаров:', error);
     toast.error('Произошла ошибка при поиске товаров');
-    // Возвращаем пустой массив вместо резервных данных
     return [];
   }
 };

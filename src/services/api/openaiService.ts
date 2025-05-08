@@ -37,6 +37,7 @@ export const fetchFromOpenAI = async (query: string): Promise<any> => {
 - Отвечай только в JSON без пояснений и комментариев.
 - Не придумывай данные. Покажи только реальные товары, которые можно найти в интернете.
 - Если товары не найдены — верни пустой массив: []
+- ВАЖНО: Твой ответ не должен содержать обрамляющие символы markdown или обозначения формата (```json, ```, или любые другие форматирующие символы). Верни только чистый JSON.
 
 Пользовательский запрос: "${query}"
 `;
@@ -51,6 +52,7 @@ export const fetchFromOpenAI = async (query: string): Promise<any> => {
       body: JSON.stringify({
         model: "gpt-4o",
         temperature: 0.2,
+        response_format: { type: "json_object" },
         messages: [
           {
             role: "user",
@@ -84,11 +86,24 @@ export const fetchFromOpenAI = async (query: string): Promise<any> => {
       throw new Error('Пустой ответ от API');
     }
 
-    // Пытаемся напрямую распарсить JSON
+    // Попытка обработать ответ, который может содержать маркдаун
     try {
-      return JSON.parse(content);
+      // Если ответ - это уже объект, просто возвращаем его
+      if (typeof content === 'object') {
+        return content;
+      }
+      
+      // Удаляем markdown символы, если они есть
+      const cleanedContent = content
+        .replace(/^```json\s*/i, '')
+        .replace(/^```\s*/i, '')
+        .replace(/\s*```$/i, '')
+        .trim();
+
+      // Парсим JSON
+      return JSON.parse(cleanedContent);
     } catch (parseError) {
-      console.error('Ошибка при прямом парсинге JSON ответа:', parseError);
+      console.error('Ошибка при парсинге JSON ответа:', parseError);
       
       // Возвращаем сырой контент для дальнейшей обработки в productService
       return content;
