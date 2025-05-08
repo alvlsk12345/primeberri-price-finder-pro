@@ -9,7 +9,8 @@ import { BenefitsSection } from "@/components/BenefitsSection";
 import { PageFooter } from "@/components/PageFooter";
 import { PageHeader } from "@/components/PageHeader";
 import { ActionButtons } from "@/components/ActionButtons";
-import { searchProducts, type Product } from "@/services/productService";
+import { searchProducts } from "@/services/productService";
+import { Product } from "@/services/types";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');

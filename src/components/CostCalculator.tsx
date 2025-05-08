@@ -1,16 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { getExchangeRate } from "@/services/productService";
-
-type Product = {
-  id: string;
-  name: string;
-  price: number;
-  currency: string;
-  image: string;
-  store: string;
-};
+import { getExchangeRate } from "@/services/exchangeService";
+import { Product } from "@/services/types";
 
 type CostCalculatorProps = {
   product: Product;

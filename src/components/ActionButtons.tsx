@@ -1,18 +1,9 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Link } from 'lucide-react';
 import { toast } from "@/components/ui/sonner";
-import { getProductLink } from "@/services/productService";
-
-type Product = {
-  id: string;
-  name: string;
-  price: number;
-  currency: string;
-  image: string;
-  store: string;
-};
+import { getProductLink } from "@/services/urlService";
+import { Product } from "@/services/types";
 
 type ActionButtonsProps = {
   selectedProduct: Product | null;
