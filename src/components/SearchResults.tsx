@@ -20,12 +20,18 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect,
   const [imageError, setImageError] = useState<{[key: string]: boolean}>({});
 
   // Обработчик для ошибок загрузки изображений
-  const handleImageError = (productId: string) => {
+  const handleImageError = (productId: string, index: number) => {
     console.error('Ошибка загрузки изображения для товара:', productId);
     
     // Отмечаем, что загрузка этого изображения завершена с ошибкой
     setImageLoading(prev => ({ ...prev, [productId]: false }));
     setImageError(prev => ({ ...prev, [productId]: true }));
+    
+    // Автоматически заменяем на запасное изображение
+    const product = results.find(p => p.id === productId);
+    if (product) {
+      product.image = getFallbackImage(index);
+    }
   };
 
   // Обработчик для успешной загрузки изображения
@@ -63,26 +69,16 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect,
                   <Skeleton className="w-full h-full absolute inset-0" />
                 )}
                 
-                {imageError[product.id] ? (
-                  <img 
-                    src={getFallbackImage(index)}
-                    alt={product.title}
-                    className="max-h-full max-w-full object-contain"
-                    onLoad={() => handleImageLoad(product.id)}
-                    loading="eager"
-                  />
-                ) : (
-                  <img 
-                    src={product.image}
-                    alt={product.title}
-                    className="max-h-full max-w-full object-contain"
-                    onError={() => handleImageError(product.id)}
-                    onLoad={() => handleImageLoad(product.id)}
-                    loading="eager"
-                    onLoadStart={() => handleImageLoadStart(product.id)}
-                    referrerPolicy="no-referrer"
-                  />
-                )}
+                <img 
+                  src={product.image}
+                  alt={product.title}
+                  className="max-h-full max-w-full object-contain"
+                  onError={() => handleImageError(product.id, index)}
+                  onLoad={() => handleImageLoad(product.id)}
+                  loading="eager"
+                  onLoadStart={() => handleImageLoadStart(product.id)}
+                  referrerPolicy="no-referrer"
+                />
               </div>
               
               <div className="w-full text-center">
