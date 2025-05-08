@@ -1,4 +1,3 @@
-
 import { toast } from "@/components/ui/sonner";
 
 export type Product = {
@@ -23,7 +22,8 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
     
     // Проверка на корректность ключа API
     if (!apiKey) {
-      throw new Error("API ключ не установлен или не валиден");
+      toast.error("API ключ не установлен. Пожалуйста, добавьте свой ключ в настройках");
+      throw new Error("API ключ не установлен");
     }
 
     // Создаем запрос к OpenAI API для генерации результатов поиска
@@ -34,7 +34,7 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "gpt-4o",  // Используем gpt-4o модель
+        model: "gpt-4o-mini",  // Используем более доступную модель
         messages: [
           {
             role: "system",
@@ -52,7 +52,19 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
 
     if (!openaiResponse.ok) {
       const errorData = await openaiResponse.json();
-      throw new Error(`Ошибка OpenAI API: ${errorData.error?.message || 'Неизвестная ошибка'}`);
+      const errorMessage = errorData.error?.message || 'Неизвестная ошибка';
+      
+      // Проверяем специфические ошибки и даем понятные сообщения
+      if (errorMessage.includes("quota")) {
+        toast.error("Превышен лимит запросов API. Проверьте ваш тарифный план OpenAI.");
+        throw new Error("Превышен лимит запросов OpenAI API");
+      } else if (errorMessage.includes("invalid")) {
+        toast.error("Недействительный API ключ. Пожалуйста, проверьте его в настройках.");
+        throw new Error("Недействительный API ключ");
+      } else {
+        toast.error(`Ошибка API: ${errorMessage}`);
+        throw new Error(`Ошибка OpenAI API: ${errorMessage}`);
+      }
     }
 
     const data = await openaiResponse.json();
@@ -78,11 +90,11 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
       return validProducts;
     } catch (parseError) {
       console.error('Ошибка при парсинге результатов OpenAI:', parseError, content);
+      toast.error('Не удалось обработать результаты поиска');
       throw new Error('Не удалось обработать результаты поиска');
     }
   } catch (error) {
     console.error('Ошибка при поиске товаров:', error);
-    toast.error('Произошла ошибка при поиске товаров.');
     
     // В случае ошибки возвращаем резервные данные
     return [
