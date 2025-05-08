@@ -17,10 +17,10 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
   // Форматируем URL изображения
   processedUrl = processedUrl.trim();
   
-  // Для URL от Google Shopping (encrypted-tbn) используем их как есть
+  // Для URL от Google Shopping (encrypted-tbn) используем их без изменений
   if (processedUrl.includes('encrypted-tbn')) {
     console.log(`Обнаружен URL Google Shopping: ${processedUrl}`);
-    return processedUrl;
+    return processedUrl; // Возвращаем URL как есть без дополнительной обработки
   }
   
   // Добавляем протокол, если его нет

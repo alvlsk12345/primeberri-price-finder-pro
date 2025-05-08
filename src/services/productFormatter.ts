@@ -1,6 +1,6 @@
 
 import { Product } from './types';
-import { processProductImage } from './imageProcessor';
+import { processProductImage, getStoreNameFromUrl } from './imageService';
 import { toast } from "@/components/ui/sonner";
 
 // Вспомогательная функция для обработки данных о товарах из Zylalabs API
@@ -15,17 +15,17 @@ export const processZylalabsProductsData = (products: any[]): Product[] => {
   let invalidImageCounter = 0;
 
   // Проверяем и корректируем данные о товарах
-  const validProducts = products.slice(0, 6).map((product: any, index: number) => {
+  const validProducts = products.slice(0, 12).map((product: any, index: number) => {
     if (!product || typeof product !== 'object') {
       console.error('Некорректный товар:', product);
       invalidImageCounter++;
       return null;
     }
     
-    // Адаптируем поля под новый формат API
-    const title = product.product_title || product.title || `Товар ${index + 1}`;
+    // Адаптируем поля под разные форматы API
+    const title = product.product_title || product.title || product.name || `Товар ${index + 1}`;
     
-    // Изменения здесь: обрабатываем различные форматы изображений
+    // Обработка различных форматов изображений
     let imageUrl = '';
     
     // Попытка получить URL из массива product_photos
@@ -33,20 +33,22 @@ export const processZylalabsProductsData = (products: any[]): Product[] => {
       imageUrl = product.product_photos[0];
       console.log(`Использую URL из product_photos: ${imageUrl}`);
     } 
-    // Если не нашли, пробуем получить из поля image
+    // Если не нашли, пробуем получить из поля image или thumbnail
     else if (product.image) {
       imageUrl = product.image;
       console.log(`Использую URL из image: ${imageUrl}`);
     }
+    else if (product.thumbnail) {
+      imageUrl = product.thumbnail;
+      console.log(`Использую URL из thumbnail: ${imageUrl}`);
+    }
     
-    // Обрабатываем изображение товара (даже если это Google Shopping URL)
-    const processedImageUrl = imageUrl;
+    // Обрабатываем изображение товара
+    const processedImageUrl = processProductImage(imageUrl, index);
     
-    // Если изображение не прошло валидацию, пропускаем товар
+    // Если изображение не прошло валидацию, всё равно продолжаем (даже с пустым URL)
     if (!processedImageUrl) {
-      console.log('Пропускаем товар из-за невалидного URL изображения:', imageUrl);
-      invalidImageCounter++;
-      return null;
+      console.log('Товар будет показан без изображения:', title);
     }
     
     // Определяем цену и валюту
@@ -61,6 +63,9 @@ export const processZylalabsProductsData = (products: any[]): Product[] => {
     } else if (product.price) {
       price = product.price;
       currency = product.currency || "$";
+    } else if (product.offer && product.offer.price) {
+      price = product.offer.price;
+      currency = product.offer.currency || "$";
     }
     
     const priceString = typeof price === 'string' ? price : `${currency}${price}`;
@@ -69,10 +74,19 @@ export const processZylalabsProductsData = (products: any[]): Product[] => {
     const rating = product.product_rating || product.rating || 4.0;
     
     // Формируем ссылку на товар
-    const link = product.product_page_url || product.link || "#";
+    const link = product.product_page_url || product.link || product.url || "#";
     
-    // Источник товара
-    const source = product.source || "Google Shopping";
+    // Определяем источник товара
+    let source = "Google Shopping";
+    
+    if (product.source) {
+      source = product.source;
+    } else if (product.merchant && product.merchant.name) {
+      source = product.merchant.name;
+    } else if (link && link !== "#") {
+      // Пытаемся определить источник из ссылки
+      source = getStoreNameFromUrl(link);
+    }
     
     // Подзаголовок (состояние товара или другая информация)
     const subtitle = product.condition || product.subtitle || "Популярный";
@@ -95,7 +109,7 @@ export const processZylalabsProductsData = (products: any[]): Product[] => {
   // Показываем информацию, если были выявлены проблемы с изображениями
   if (invalidImageCounter > 0) {
     const validCount = validProducts.length;
-    const totalCount = Math.min(products.length, 6);
+    const totalCount = Math.min(products.length, 12);
     
     if (validCount === 0) {
       toast.warning('Не удалось найти товары с корректными изображениями');

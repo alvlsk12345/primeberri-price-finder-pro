@@ -72,7 +72,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect,
                   <Skeleton className="w-full h-full absolute inset-0" />
                 )}
                 
-                {imageError[product.id] ? (
+                {imageError[product.id] || !product.image ? (
                   <div className="flex flex-col items-center justify-center h-full w-full bg-gray-100">
                     <ImageOff size={32} className="text-gray-400" />
                     <p className="text-sm text-gray-500 mt-2">Изображение недоступно</p>
@@ -84,7 +84,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect,
                     className="max-h-full max-w-full object-contain"
                     onError={() => handleImageError(product.id)}
                     onLoad={() => handleImageLoad(product.id)}
-                    loading="eager"
+                    loading="lazy"
                     onLoadStart={() => handleImageLoadStart(product.id)}
                     referrerPolicy="no-referrer"
                     crossOrigin="anonymous"
@@ -93,9 +93,9 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect,
               </div>
               
               <div className="w-full text-center">
-                <h3 className="font-semibold text-base mb-1">{product.title}</h3>
+                <h3 className="font-semibold text-base mb-1 line-clamp-2">{product.title}</h3>
                 <div className="text-sm mb-2 flex items-center justify-center">
-                  <span className="mr-1">{product.source}</span>
+                  <span className="mr-1 text-xs">{product.source}</span>
                   <div className="flex items-center">
                     <Star size={14} className="text-yellow-500 fill-yellow-500" />
                     <span className="text-xs ml-1">{product.rating}</span>
