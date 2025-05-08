@@ -1,6 +1,7 @@
 
 import { Product } from './types';
-import { processProductImage, getStoreNameFromUrl } from './imageService';
+import { getStoreNameFromUrl } from './imageService';
+import { processProductImage } from './imageProcessor';
 import { toast } from "@/components/ui/sonner";
 
 // Вспомогательная функция для обработки данных о товарах из Zylalabs API
