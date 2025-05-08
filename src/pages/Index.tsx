@@ -1,6 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 import { SearchResults } from "@/components/SearchResults";
 import { CostCalculator } from "@/components/CostCalculator";
@@ -9,6 +10,7 @@ import { BenefitsSection } from "@/components/BenefitsSection";
 import { PageFooter } from "@/components/PageFooter";
 import { PageHeader } from "@/components/PageHeader";
 import { ActionButtons } from "@/components/ActionButtons";
+import { ApiKeyForm } from "@/components/ApiKeyForm";
 import { searchProducts, type Product } from "@/services/productService";
 
 const Index = () => {
@@ -16,10 +18,27 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showApiKeyForm, setShowApiKeyForm] = useState(false);
+
+  useEffect(() => {
+    // Проверяем наличие API ключа при загрузке страницы
+    const savedKey = localStorage.getItem('openai_api_key');
+    if (!savedKey) {
+      setShowApiKeyForm(true);
+    }
+  }, []);
 
   const handleSearch = async () => {
     if (!searchQuery) {
       toast.error('Пожалуйста, введите запрос для поиска товара');
+      return;
+    }
+
+    // Проверяем наличие API ключа
+    const apiKey = localStorage.getItem('openai_api_key');
+    if (!apiKey) {
+      toast.error('Необходимо добавить API ключ OpenAI');
+      setShowApiKeyForm(true);
       return;
     }
 
@@ -47,6 +66,10 @@ const Index = () => {
     setSelectedProduct(product);
   };
 
+  const toggleApiKeyForm = () => {
+    setShowApiKeyForm(!showApiKeyForm);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader />
@@ -60,9 +83,19 @@ const Index = () => {
             <CardDescription>
               Найдите товар, и мы покажем, сколько вы можете сэкономить при доставке в Россию
             </CardDescription>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={toggleApiKeyForm}
+              className="mt-2"
+            >
+              {showApiKeyForm ? "Скрыть настройки API" : "Настройки API"}
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col gap-6">
+              {showApiKeyForm && <ApiKeyForm />}
+
               <SearchForm 
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
