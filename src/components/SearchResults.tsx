@@ -43,6 +43,8 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect,
                     alt={product.name} 
                     className="max-h-full max-w-full object-contain"
                     onError={handleImageError}
+                    loading="eager"
+                    crossOrigin="anonymous"
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center text-gray-400">

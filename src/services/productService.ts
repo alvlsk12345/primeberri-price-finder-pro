@@ -38,11 +38,11 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
         messages: [
           {
             role: "system",
-            content: "Ты - помощник для поиска товаров. Генерируй релевантные результаты поиска в формате JSON на основе запроса пользователя. Результаты должны включать 3-5 товаров с названием, ценой в евро, магазином и ссылкой на изображение заглушки."
+            content: "Ты - помощник для поиска товаров. Генерируй релевантные результаты поиска в формате JSON на основе запроса пользователя. Результаты должны включать 3-5 товаров с названием, ценой в евро, магазином и ссылкой на реальное изображение товара."
           },
           {
             role: "user",
-            content: `Найди товары по запросу: ${query}. Верни только JSON без дополнительного текста, в формате: [{"id": "уникальный_id", "name": "название товара", "price": цена_в_числовом_формате, "currency": "EUR", "image": "https://via.placeholder.com/150", "store": "название_магазина"}]`
+            content: `Найди товары по запросу: ${query}. Верни только JSON без дополнительного текста, в формате: [{"id": "уникальный_id", "name": "название товара", "price": цена_в_числовом_формате, "currency": "EUR", "image": "https://полный_url_изображения", "store": "название_магазина"}]. Вместо placeholder используй реальные ссылки на изображения с https://images.unsplash.com/`
           }
         ],
         temperature: 0.7,
@@ -83,7 +83,7 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
         name: product.name || `Товар ${index + 1}`,
         price: Number(product.price) || 100 + (index * 50),
         currency: product.currency || 'EUR',
-        image: product.image || 'https://via.placeholder.com/150',
+        image: product.image || `https://images.unsplash.com/photo-${1500000000 + index}`,
         store: product.store || 'Интернет-магазин'
       }));
       
@@ -96,14 +96,14 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
   } catch (error) {
     console.error('Ошибка при поиске товаров:', error);
     
-    // В случае ошибки возвращаем резервные данные
+    // В случае ошибки возвращаем резервные данные с реальными изображениями
     return [
       {
         id: '1',
         name: `${query} - Товар (резервные данные)`,
         price: 250,
         currency: 'EUR',
-        image: 'https://via.placeholder.com/150',
+        image: 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b',
         store: 'Интернет-магазин'
       },
       {
@@ -111,7 +111,7 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
         name: `${query} - Аналогичный товар (резервные данные)`,
         price: 180,
         currency: 'EUR',
-        image: 'https://via.placeholder.com/150',
+        image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158',
         store: 'Online Shop'
       }
     ];
@@ -145,4 +145,30 @@ export const getExchangeRate = async (currency: string): Promise<number> => {
     toast.error('Не удалось получить актуальный курс валюты');
     return 100; // Дефолтный курс на случай ошибки
   }
+};
+
+// Добавляем функцию для получения реальной ссылки на страницу товара
+export const getProductLink = (product: Product): string => {
+  // В реальном проекте здесь будет логика построения ссылки на товар
+  // Например, на основе магазина и параметров товара
+  
+  // Создаем более реалистичную ссылку на товар
+  const storeMap: {[key: string]: string} = {
+    'Amazon': 'amazon.com',
+    'eBay': 'ebay.com',
+    'Zalando': 'zalando.eu',
+    'ASOS': 'asos.com',
+    'JD Sports': 'jdsports.com',
+    'Nike Store': 'nike.com',
+    'Foot Locker': 'footlocker.eu',
+    'Adidas': 'adidas.com',
+    'H&M': 'hm.com',
+    'Zara': 'zara.com',
+    'Sportisimo': 'sportisimo.eu',
+  };
+
+  const domain = storeMap[product.store] || 'example.com';
+  
+  // Формируем URL с правильными параметрами
+  return `https://${domain}/products/${encodeURIComponent(product.name.toLowerCase().replace(/\s+/g, '-'))}/${product.id}?price=${product.price}&currency=${product.currency}`;
 };

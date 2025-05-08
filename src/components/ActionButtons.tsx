@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Copy, Link } from 'lucide-react';
 import { toast } from "@/components/ui/sonner";
+import { getProductLink } from "@/services/productService";
 
 type Product = {
   id: string;
@@ -34,9 +35,8 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
 
   const handleCopyLink = () => {
     if (selectedProduct) {
-      // Формируем ссылку товара (в реальной реализации это была бы ссылка на сам товар)
-      // Используем данные выбранного товара для создания "псевдо-ссылки"
-      const productLink = `https://store.example.com/product/${selectedProduct.id}?name=${encodeURIComponent(selectedProduct.name)}&store=${encodeURIComponent(selectedProduct.store)}`;
+      // Получаем ссылку на товар из нашего сервиса
+      const productLink = getProductLink(selectedProduct);
       
       navigator.clipboard.writeText(productLink);
       toast.success('Ссылка на товар скопирована!');
