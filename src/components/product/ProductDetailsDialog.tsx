@@ -1,10 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { ImageOff, Star, Info, Loader2 } from "lucide-react";
+import { ImageOff, Star, Info, Loader2, Languages } from "lucide-react";
 import { Product } from "@/services/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { isGoogleShoppingImage } from "@/services/imageService";
+import { translateText, containsRussian } from "@/services/translationService";
+import { toast } from "sonner";
 import { 
   Dialog,
   DialogContent,
@@ -22,19 +24,77 @@ export const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({ prod
   // Проверяем, является ли изображение от Google Shopping
   const isGoogleImage = product.image && isGoogleShoppingImage(product.image);
   
-  // Состояние для отслеживания загрузки описания
+  // Состояние для отслеживания загрузки описания и процесса перевода
   const [isDescriptionLoaded, setIsDescriptionLoaded] = useState<boolean>(true);
+  const [isTranslating, setIsTranslating] = useState<boolean>(false);
+  
+  // Состояние для хранения оригинального и переведенного описания
+  const [originalDescription, setOriginalDescription] = useState<string>(product.description || "");
+  const [translatedDescription, setTranslatedDescription] = useState<string>(product.description || "");
+  
+  // Состояние для отслеживания, переведено ли описание
+  const [isTranslated, setIsTranslated] = useState<boolean>(false);
   
   // Состояние для открытия диалога
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
-  // При открытии диалога отмечаем, что описание загружено
-  // (т.к. перевод происходит на стороне сервера при загрузке данных)
+  // При открытии диалога сбрасываем состояния и устанавливаем оригинальное описание
   useEffect(() => {
     if (isOpen) {
       setIsDescriptionLoaded(true);
+      setOriginalDescription(product.description || "");
+      setTranslatedDescription(product.description || "");
+      setIsTranslated(product.description ? containsRussian(product.description) : false);
     }
-  }, [isOpen]);
+  }, [isOpen, product.description]);
+
+  // Функция для перевода описания
+  const handleTranslate = async () => {
+    try {
+      // Если описание отсутствует или уже переведено, не выполняем перевод
+      if (!originalDescription || isTranslated) {
+        return;
+      }
+
+      setIsTranslating(true);
+      
+      // Определяем направление перевода (с английского на русский или наоборот)
+      const sourceLanguage = containsRussian(translatedDescription) ? "ru" : "en";
+      const targetLanguage = sourceLanguage === "ru" ? "en" : "ru";
+      
+      // Выполняем перевод
+      const translated = await translateText(
+        translatedDescription, 
+        sourceLanguage, 
+        targetLanguage
+      );
+      
+      // Обновляем состояние с переведенным текстом
+      setTranslatedDescription(translated);
+      setIsTranslated(targetLanguage === "ru");
+      
+      // Показываем уведомление об успешном переводе
+      toast.success(`Описание переведено на ${targetLanguage === "ru" ? "русский" : "английский"} язык`);
+    } catch (error) {
+      console.error("Ошибка при переводе описания:", error);
+      toast.error("Не удалось перевести описание");
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  // Функция для переключения между оригинальным и переведенным текстом
+  const toggleTranslation = () => {
+    if (isTranslated) {
+      // Если уже переведено, возвращаемся к оригиналу
+      setIsTranslated(false);
+      setTranslatedDescription(originalDescription);
+      toast.info("Показан оригинальный текст");
+    } else {
+      // Если не переведено, запускаем перевод
+      handleTranslate();
+    }
+  };
 
   // Безопасная проверка на наличие данных и обработка ошибок
   const renderProductDetails = () => {
@@ -152,11 +212,36 @@ export const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({ prod
         
         {renderProductDetails()}
         
-        {product?.description && (
+        {translatedDescription && (
           <div className="mt-4">
-            <h4 className="font-semibold mb-1">Описание</h4>
+            <div className="flex items-center justify-between mb-1">
+              <h4 className="font-semibold">Описание</h4>
+              
+              <Button 
+                variant="outline" 
+                size="sm"
+                disabled={isTranslating || !originalDescription}
+                onClick={toggleTranslation}
+                className="flex items-center gap-1"
+              >
+                {isTranslating ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Languages className="h-3 w-3" />
+                )}
+                <span>
+                  {isTranslating 
+                    ? "Перевод..." 
+                    : isTranslated 
+                      ? "Показать оригинал" 
+                      : "Перевести"
+                  }
+                </span>
+              </Button>
+            </div>
+            
             {isDescriptionLoaded ? (
-              <p className="text-sm">{product.description}</p>
+              <p className="text-sm">{translatedDescription}</p>
             ) : (
               <div className="flex items-center space-x-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
