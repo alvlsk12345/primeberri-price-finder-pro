@@ -1,10 +1,8 @@
 
 import React from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Filter } from "lucide-react";
-import { ProductFilters } from "@/services/types";
+import { Popover } from "@/components/ui/popover";
+import { FilterTrigger } from './FilterTrigger';
+import { FilterContent } from './FilterContent';
 
 interface FilterContainerProps {
   activeFiltersCount: number;
@@ -22,29 +20,13 @@ export const FilterContainer: React.FC<FilterContainerProps> = ({
   return (
     <div className="flex flex-col items-end">
       <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className="flex items-center gap-2">
-            <Filter size={16} />
-            <span>Фильтры</span>
-            {activeFiltersCount > 0 && (
-              <Badge variant="secondary" className="ml-1">{activeFiltersCount}</Badge>
-            )}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-80">
-          <div className="space-y-4">
-            {children}
-            
-            <div className="flex justify-between pt-2">
-              <Button variant="outline" size="sm" onClick={resetFilters}>
-                Сбросить
-              </Button>
-              <Button size="sm" onClick={applyFilters}>
-                Применить
-              </Button>
-            </div>
-          </div>
-        </PopoverContent>
+        <FilterTrigger activeFiltersCount={activeFiltersCount} />
+        <FilterContent 
+          resetFilters={resetFilters} 
+          applyFilters={applyFilters}
+        >
+          {children}
+        </FilterContent>
       </Popover>
     </div>
   );
