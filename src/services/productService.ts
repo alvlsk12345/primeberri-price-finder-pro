@@ -73,6 +73,16 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
         const currencyMatch = priceString.match(/[£$€]/);
         const currency = currencyMatch ? currencyMatch[0] : '€';
         
+        // Обрабатываем рейтинг, гарантируя, что он будет числом
+        let rating: number = 4.0;
+        
+        // Если рейтинг есть и он числовой, используем его
+        if (product.rating !== undefined && product.rating !== null) {
+          // Сначала преобразуем в строку, затем в число для безопасного парсинга
+          const ratingStr = String(product.rating);
+          rating = parseFloat(ratingStr) || 4.0;
+        }
+        
         return {
           id: product.id || `${Date.now()}-${index}`,
           title: product.title || `Товар ${index + 1}`,
@@ -81,7 +91,7 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
           currency: currency,
           image: imageUrl,
           link: product.link || "#",
-          rating: parseFloat(product.rating) || (4 + Math.random()).toFixed(1),
+          rating: rating, // Теперь гарантированно число
           source: product.source || 'Интернет-магазин'
         };
       });

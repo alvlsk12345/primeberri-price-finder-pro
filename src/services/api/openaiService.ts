@@ -44,7 +44,7 @@ export const fetchFromOpenAI = async (query: string): Promise<any> => {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "gpt-4o", // Используем модель GPT-4o
         messages: [
           {
             role: "system",
