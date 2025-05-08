@@ -1,3 +1,4 @@
+
 import { toast } from "@/components/ui/sonner";
 
 export type Product = {
@@ -15,12 +16,17 @@ const OPENAI_API_KEY = "sk-ваш-ключ-здесь";  // Замените н�
 // Функция для использования OpenAI API для поиска товаров
 export const searchProducts = async (query: string): Promise<Product[]> => {
   try {
+    // Проверка на корректность ключа API
+    if (!OPENAI_API_KEY || OPENAI_API_KEY === "sk-ваш-ключ-здесь") {
+      throw new Error("API ключ не установлен или не валиден");
+    }
+
     // Создаем запрос к OpenAI API для генерации результатов поиска
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}` // Используем предустановленный ключ
+        'Authorization': `Bearer ${OPENAI_API_KEY.trim()}`
       },
       body: JSON.stringify({
         model: "gpt-4o",  // Изменено с gpt-3.5-turbo на gpt-4o
