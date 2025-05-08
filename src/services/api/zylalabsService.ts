@@ -45,13 +45,17 @@ export const searchProductsViaZylalabs = async (query: string): Promise<any> => 
     const data = await response.json();
     console.log('Получен ответ от Zylalabs API:', data);
     
-    if (!data || !data.products || !Array.isArray(data.products)) {
+    // Проверяем структуру данных - исправляем под новый формат API
+    if (data && data.data && data.data.products && Array.isArray(data.data.products)) {
+      return data.data.products;
+    } else if (data && Array.isArray(data.products)) {
+      // Старый формат
+      return data.products;
+    } else {
       console.error('Неожиданный формат ответа от API:', data);
       toast.warning('Получены некорректные данные от API');
       return [];
     }
-    
-    return data.products;
   } catch (error) {
     console.error('Ошибка при запросе к Zylalabs API:', error);
     toast.error('Ошибка при получении данных о товарах');

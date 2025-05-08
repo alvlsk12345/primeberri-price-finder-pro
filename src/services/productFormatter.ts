@@ -15,48 +15,65 @@ export const processZylalabsProductsData = (products: any[]): Product[] => {
   let invalidImageCounter = 0;
 
   // Проверяем и корректируем данные о товарах
-  const validProducts = products.slice(0, 3).map((product: any, index: number) => {
+  const validProducts = products.slice(0, 6).map((product: any, index: number) => {
     if (!product || typeof product !== 'object') {
       console.error('Некорректный товар:', product);
       invalidImageCounter++;
       return null;
     }
     
-    // Проверяем обязательные поля
-    if (!product.title || !product.image) {
-      console.error('Отсутствуют обязательные поля у товара:', product);
-      invalidImageCounter++;
-      return null;
-    }
+    // Адаптируем поля под новый формат API
+    const title = product.product_title || product.title || `Товар ${index + 1}`;
+    const imageUrl = product.product_photos?.[0] || product.image;
     
     // Обрабатываем изображение товара
-    const imageUrl = processProductImage(product.image, index);
+    const processedImageUrl = processProductImage(imageUrl, index);
     
     // Если изображение не прошло валидацию, пропускаем товар
-    if (!imageUrl) {
-      console.log('Пропускаем товар из-за невалидного URL изображения');
+    if (!processedImageUrl) {
+      console.log('Пропускаем товар из-за невалидного URL изображения:', imageUrl);
       invalidImageCounter++;
       return null;
     }
     
     // Определяем цену и валюту
-    const price = product.price || "0";
-    const currency = product.currency || "$";
-    const priceString = `${price} ${currency}`;
+    let price = "N/A";
+    let currency = "$";
+    
+    if (product.typical_price_range && Array.isArray(product.typical_price_range)) {
+      price = product.typical_price_range[0];
+      if (price && !price.includes('$')) {
+        price = '$' + price;
+      }
+    } else if (product.price) {
+      price = product.price;
+      currency = product.currency || "$";
+    }
+    
+    const priceString = typeof price === 'string' ? price : `${currency}${price}`;
     
     // Готовим рейтинг
-    const rating = product.rating ? parseFloat(product.rating) : 4.0;
+    const rating = product.product_rating || product.rating || 4.0;
+    
+    // Формируем ссылку на товар
+    const link = product.product_page_url || product.link || "#";
+    
+    // Источник товара
+    const source = product.source || "Google Shopping";
+    
+    // Подзаголовок (состояние товара или другая информация)
+    const subtitle = product.condition || product.subtitle || "Популярный";
     
     return {
-      id: product.id || `${Date.now()}-${index}`,
-      title: product.title || `Товар ${index + 1}`,
-      subtitle: product.condition || "Популярный",
+      id: product.product_id || product.id || `${Date.now()}-${index}`,
+      title: title,
+      subtitle: subtitle,
       price: priceString,
       currency: currency,
-      image: imageUrl,
-      link: product.link || "#",
+      image: processedImageUrl,
+      link: link,
       rating: rating,
-      source: product.source || product.store || 'Интернет-магазин'
+      source: source
     };
   }).filter(product => product !== null); // Фильтруем null продукты
   
@@ -65,7 +82,7 @@ export const processZylalabsProductsData = (products: any[]): Product[] => {
   // Показываем информацию, если были выявлены проблемы с изображениями
   if (invalidImageCounter > 0) {
     const validCount = validProducts.length;
-    const totalCount = Math.min(products.length, 3);
+    const totalCount = Math.min(products.length, 6);
     
     if (validCount === 0) {
       toast.warning('Не удалось найти товары с корректными изображениями');
