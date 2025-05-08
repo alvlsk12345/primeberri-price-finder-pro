@@ -16,58 +16,49 @@ interface PaginationProps {
 }
 
 export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPageChange }) => {
+  // Не отображаем пагинацию, если страница всего одна
   if (totalPages <= 1) {
     return null;
   }
 
-  // Handler for page change with additional validation and debugging
-  const handlePageChange = (page: number, e: React.MouseEvent) => {
+  // Обработчик клика по пагинации с предотвращением дефолтного поведения
+  const handlePageClick = (page: number) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // Предотвращаем дефолтное поведение ссылки для предотвращения перезагрузки страницы
     e.preventDefault();
-    e.stopPropagation(); // Stop event propagation to prevent any parent handlers
+    e.stopPropagation();
     
-    // Validate page value
+    // Дополнительная проверка, чтобы не вызывать обработчик для текущей страницы или недопустимой страницы
     if (page !== currentPage && page >= 1 && page <= totalPages) {
-      console.log(`Pagination: Changing from page ${currentPage} to page ${page}`);
+      console.log(`Pagination: Переход с ${currentPage} на страницу ${page}`);
       onPageChange(page);
     } else {
-      console.log(`Pagination: Invalid page change request - current: ${currentPage}, requested: ${page}, total: ${totalPages}`);
+      console.log(`Pagination: Отклонен переход на страницу ${page} (текущая: ${currentPage}, всего: ${totalPages})`);
     }
   };
 
-  // Function to generate pagination items
+  // Функция для генерации элементов пагинации
   const generatePaginationItems = () => {
     const items = [];
     const maxVisiblePages = 5;
     
-    // Logic to determine which page numbers to show
-    let startPage = 1;
-    let endPage = totalPages;
+    // Логика определения, какие страницы показывать
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
     
-    if (totalPages > maxVisiblePages) {
-      // Calculate start and end page based on current page
-      const halfWay = Math.floor(maxVisiblePages / 2);
-      
-      if (currentPage <= halfWay + 1) {
-        // Near the start
-        endPage = maxVisiblePages;
-      } else if (currentPage >= totalPages - halfWay) {
-        // Near the end
-        startPage = totalPages - maxVisiblePages + 1;
-      } else {
-        // Middle
-        startPage = currentPage - halfWay;
-        endPage = currentPage + halfWay;
-      }
+    // Корректировка, если мы находимся близко к концу
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
     }
     
-    // Generate page numbers
+    // Генерация номеров страниц
     for (let i = startPage; i <= endPage; i++) {
       items.push(
-        <PaginationItem key={i}>
+        <PaginationItem key={i} data-testid={`pagination-item-${i}`}>
           <PaginationLink 
             isActive={currentPage === i}
-            onClick={(e) => handlePageChange(i, e)}
+            onClick={handlePageClick(i)}
             href="#"
+            aria-current={currentPage === i ? "page" : undefined}
           >
             {i}
           </PaginationLink>
@@ -78,27 +69,29 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
     return items;
   };
 
-  // Using Shadcn UI Pagination component
   return (
     <div className="flex justify-center mt-6" data-testid="pagination-component">
       <ShadcnPagination>
         <PaginationContent>
+          {/* Кнопка "Предыдущая страница" */}
           <PaginationItem>
             <PaginationPrevious 
               href="#" 
-              onClick={(e) => handlePageChange(currentPage - 1, e)} 
+              onClick={handlePageClick(currentPage - 1)} 
               aria-disabled={currentPage <= 1}
               className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
               data-testid="pagination-previous"
             />
           </PaginationItem>
           
+          {/* Номера страниц */}
           {generatePaginationItems()}
           
+          {/* Кнопка "Следующая страница" */}
           <PaginationItem>
             <PaginationNext 
               href="#" 
-              onClick={(e) => handlePageChange(currentPage + 1, e)} 
+              onClick={handlePageClick(currentPage + 1)} 
               aria-disabled={currentPage >= totalPages}
               className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
               data-testid="pagination-next"

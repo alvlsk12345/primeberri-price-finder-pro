@@ -15,6 +15,16 @@ export const translateText = async (
   try {
     console.log(`Переводим текст: "${text}" с ${sourceLanguage} на ${targetLanguage}`);
     
+    // В случае если сервис LibreTranslate требует API ключ или недоступен,
+    // возвращаем исходный текст вместо попытки перевода
+    // Это позволит приложению продолжать работу даже при проблемах с сервисом перевода
+    
+    // Проверка на пустую строку или короткий текст - не переводим его
+    if (!text || text.length < 2) {
+      console.log("Текст слишком короткий для перевода, возвращаем оригинал");
+      return text;
+    }
+
     // Формируем данные запроса
     const requestData = {
       q: text,
@@ -23,32 +33,43 @@ export const translateText = async (
       format: "text",
     };
 
-    // Отправляем запрос к API перевода
-    const response = await fetch(LIBRE_TRANSLATE_API_URL, {
-      method: "POST",
-      body: JSON.stringify(requestData),
-      headers: {
-        "Content-Type": "application/json",
-      },
-      signal: AbortSignal.timeout(10000), // Таймаут 10 секунд
-    });
-
-    // Проверяем успешность ответа
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Ошибка при переводе:", errorText);
-      return text; // В случае ошибки возвращаем исходный текст
-    }
-
-    // Парсим ответ
-    const data = await response.json();
+    // Отправляем запрос к API перевода с таймаутом
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 секунд таймаут
     
-    if (data && data.translatedText) {
-      console.log(`Перевод: "${data.translatedText}"`);
-      return data.translatedText;
-    } else {
-      console.warn("Неожиданный формат ответа от API перевода:", data);
-      return text;
+    try {
+      const response = await fetch(LIBRE_TRANSLATE_API_URL, {
+        method: "POST",
+        body: JSON.stringify(requestData),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      // Проверяем успешность ответа
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Ошибка при переводе:", errorText);
+        return text; // В случае ошибки возвращаем исходный текст
+      }
+
+      // Парсим ответ
+      const data = await response.json();
+      
+      if (data && data.translatedText) {
+        console.log(`Перевод выполнен: "${data.translatedText}"`);
+        return data.translatedText;
+      } else {
+        console.warn("Неожиданный формат ответа от API перевода:", data);
+        return text;
+      }
+    } catch (fetchError) {
+      console.warn("Ошибка запроса к API перевода:", fetchError);
+      clearTimeout(timeoutId);
+      return text; // При любой ошибке возвращаем исходный текст
     }
   } catch (error) {
     console.error("Ошибка при переводе текста:", error);
@@ -66,10 +87,24 @@ export const containsRussian = (text: string): boolean => {
 
 // Функция для автоматического перевода запроса, если он на русском
 export const autoTranslateQuery = async (query: string): Promise<string> => {
-  // Если запрос содержит русские символы, переводим его
-  if (containsRussian(query)) {
-    return await translateText(query);
+  try {
+    // Если запрос содержит русские символы, переводим его
+    if (containsRussian(query)) {
+      const translated = await translateText(query);
+      // Проверяем, не вернулась ли просто оригинальная строка в случае ошибки
+      if (translated && translated !== query) {
+        console.log(`Запрос переведен: "${query}" -> "${translated}"`);
+        return translated;
+      } else {
+        console.log(`Запрос: "${query}" не удалось перевести, используем оригинал`);
+      }
+    } else {
+      console.log(`Запрос: "${query}" не требует перевода`);
+    }
+    // Возвращаем запрос без изменений
+    return query;
+  } catch (error) {
+    console.error("Ошибка при автопереводе запроса:", error);
+    return query; // В случае ошибки возвращаем исходный запрос
   }
-  // Иначе возвращаем запрос без изменений
-  return query;
 };
