@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ImageOff } from "lucide-react";
 
 type Product = {
   id: string;
@@ -19,6 +20,10 @@ type SearchResultsProps = {
 };
 
 export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect, selectedProduct }) => {
+  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement>) => {
+    event.currentTarget.src = "https://via.placeholder.com/150?text=Нет+изображения";
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {results.map((product) => (
@@ -31,12 +36,20 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect,
         >
           <CardContent className="p-4">
             <div className="flex flex-col items-center">
-              <div className="w-full h-[150px] mb-3 flex items-center justify-center">
-                <img 
-                  src={product.image} 
-                  alt={product.name} 
-                  className="max-h-full max-w-full object-contain"
-                />
+              <div className="w-full h-[150px] mb-3 flex items-center justify-center relative">
+                {product.image ? (
+                  <img 
+                    src={product.image} 
+                    alt={product.name} 
+                    className="max-h-full max-w-full object-contain"
+                    onError={handleImageError}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-gray-400">
+                    <ImageOff size={40} />
+                    <span className="mt-2 text-sm">Нет изображения</span>
+                  </div>
+                )}
               </div>
               
               <div className="w-full text-center">

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Copy, Link } from 'lucide-react';
 import { toast } from "@/components/ui/sonner";
 
 type Product = {
@@ -34,9 +34,12 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
 
   const handleCopyLink = () => {
     if (selectedProduct) {
-      // В реальной реализации здесь будет логика копирования ссылки
-      navigator.clipboard.writeText(searchQuery);
-      toast.success('Ссылка скопирована!');
+      // Формируем ссылку товара (в реальной реализации это была бы ссылка на сам товар)
+      // Используем данные выбранного товара для создания "псевдо-ссылки"
+      const productLink = `https://store.example.com/product/${selectedProduct.id}?name=${encodeURIComponent(selectedProduct.name)}&store=${encodeURIComponent(selectedProduct.store)}`;
+      
+      navigator.clipboard.writeText(productLink);
+      toast.success('Ссылка на товар скопирована!');
     } else {
       toast.error('Пожалуйста, выберите товар');
     }
@@ -49,7 +52,9 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         variant="outline" 
         className="flex-1"
       >
-        Копировать ссылку
+        <span className="flex items-center gap-2">
+          <Link size={18} /> Копировать ссылку
+        </span>
       </Button>
       <Button 
         onClick={handleGoToPrimeberri} 
