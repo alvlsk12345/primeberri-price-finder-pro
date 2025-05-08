@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { ImageOff, Star, Info } from "lucide-react";
+import { ImageOff, Star, Info, Loader2 } from "lucide-react";
 import { Product } from "@/services/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { isGoogleShoppingImage } from "@/services/imageService";
@@ -21,14 +21,31 @@ interface ProductDetailsDialogProps {
 export const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({ product }) => {
   // Проверяем, является ли изображение от Google Shopping
   const isGoogleImage = product.image && isGoogleShoppingImage(product.image);
+  
+  // Состояние для отслеживания загрузки описания
+  const [isDescriptionLoaded, setIsDescriptionLoaded] = useState<boolean>(true);
+  
+  // Состояние для открытия диалога
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+
+  // При открытии диалога отмечаем, что описание загружено
+  // (т.к. перевод происходит на стороне сервера при загрузке данных)
+  useEffect(() => {
+    if (isOpen) {
+      setIsDescriptionLoaded(true);
+    }
+  }, [isOpen]);
 
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button 
           variant="secondary" 
           size="icon" 
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsOpen(true);
+          }}
         >
           <Info size={16} />
         </Button>
@@ -122,7 +139,14 @@ export const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({ prod
         {product.description && (
           <div className="mt-4">
             <h4 className="font-semibold mb-1">Описание</h4>
-            <p className="text-sm">{product.description}</p>
+            {isDescriptionLoaded ? (
+              <p className="text-sm">{product.description}</p>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <p className="text-sm text-gray-500">Загрузка описания...</p>
+              </div>
+            )}
           </div>
         )}
         

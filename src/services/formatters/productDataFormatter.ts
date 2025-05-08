@@ -1,10 +1,9 @@
-
 import { Product, ProductFilters } from '../types';
 import { toast } from "@/components/ui/sonner";
 import { formatSingleProduct } from './singleProductFormatter';
 
 // Функция для обработки данных о товарах из Zylalabs API
-export const processZylalabsProductsData = (products: any[], filters?: ProductFilters): Product[] => {
+export const processZylalabsProductsData = async (products: any[], filters?: ProductFilters): Promise<Product[]> => {
   if (!Array.isArray(products) || products.length === 0) {
     console.log('Пустой массив продуктов или некорректный формат');
     toast.info('По вашему запросу ничего не найдено');
@@ -15,9 +14,13 @@ export const processZylalabsProductsData = (products: any[], filters?: ProductFi
   let invalidImageCounter = 0;
 
   // Обрабатываем товары с помощью функции форматирования
-  const processedProducts = products
-    .map((product: any, index: number) => formatSingleProduct(product, index, invalidImageCounter))
-    .filter(product => product !== null); // Фильтруем null продукты
+  const productPromises = products.map((product: any, index: number) => 
+    formatSingleProduct(product, index, invalidImageCounter)
+  );
+  
+  // Ждем завершения всех промисов
+  const processedProductsRaw = await Promise.all(productPromises);
+  const processedProducts = processedProductsRaw.filter(product => product !== null) as Product[];
   
   console.log(`Подготовлено товаров: ${processedProducts.length} из ${products.length}`);
   console.log(`Товаров без изображений: ${invalidImageCounter}`);

@@ -9,12 +9,19 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
   try {
     console.log('Начинаем поиск товаров по запросу:', params.query, 'страница:', params.page);
     
+    // Показываем уведомление о начале поиска
+    const searchToastId = `search-${Date.now()}`;
+    toast.loading('Поиск товаров...', { id: searchToastId });
+    
     // Получаем данные от Zylalabs API с учетом пагинации
     const response = await searchProductsViaZylalabs(params);
     console.log('Ответ от API получен:', response);
     
-    // Обрабатываем данные о товарах
-    const products = processZylalabsProductsData(response.products, params.filters);
+    // Обрабатываем данные о товарах с переводом описаний
+    const products = await processZylalabsProductsData(response.products, params.filters);
+    
+    // Закрываем уведомление о поиске
+    toast.dismiss(searchToastId);
     
     // Предполагаем, что на странице отображается до 12 товаров
     const totalPages = Math.ceil(response.total || products.length / 12);

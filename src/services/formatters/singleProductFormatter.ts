@@ -1,10 +1,10 @@
-
 import { Product } from '../types';
 import { processProductImage } from '../imageProcessor';
 import { getStoreNameFromUrl, isGoogleShoppingImage } from '../imageService';
+import { translateText } from '../translationService';
 
 // Функция для форматирования отдельного товара
-export const formatSingleProduct = (product: any, index: number, invalidImageCounter: number): Product | null => {
+export const formatSingleProduct = async (product: any, index: number, invalidImageCounter: number): Promise<Product | null> => {
   if (!product || typeof product !== 'object') {
     console.error('Некорректный товар:', product);
     invalidImageCounter++;
@@ -47,8 +47,23 @@ export const formatSingleProduct = (product: any, index: number, invalidImageCou
   // Подзаголовок (состояние товара или другая информация)
   const subtitle = product.condition || product.offer?.offer_badge || product.subtitle || "Популярный";
   
-  // Извлекаем дополнительную информацию для детального отображения
-  const description = product.product_description || product.description || product.offer?.offer_title || '';
+  // Извлекаем описание для перевода
+  const originalDescription = product.product_description || product.description || product.offer?.offer_title || '';
+  
+  // Переводим описание если оно есть (но не на русский, если уже на русском)
+  let translatedDescription = originalDescription;
+  try {
+    if (originalDescription && originalDescription.length > 10) {
+      // Переводим на русский если это не русский текст
+      translatedDescription = await translateText(originalDescription, 'en', 'ru');
+      console.log(`Описание переведено с ${translatedDescription !== originalDescription ? 'английского' : 'уже на русском'}`);
+    }
+  } catch (error) {
+    console.error('Ошибка при переводе описания:', error);
+    // Используем оригинальное описание при ошибке перевода
+    translatedDescription = originalDescription;
+  }
+  
   const availability = product.availability || product.stock_status || "В наличии";
   const brand = product.brand || source;
   
@@ -65,7 +80,7 @@ export const formatSingleProduct = (product: any, index: number, invalidImageCou
     link: link,
     rating: rating,
     source: source,
-    description: description,
+    description: translatedDescription,
     availability: availability,
     brand: brand,
     specifications: specifications,

@@ -9,19 +9,22 @@ const LIBRE_TRANSLATE_API_URL = "https://libretranslate.com/translate";
 // Функция для перевода текста с одного языка на другой
 export const translateText = async (
   text: string, 
-  sourceLanguage: string = "ru", 
-  targetLanguage: string = "en"
+  sourceLanguage: string = "en", 
+  targetLanguage: string = "ru"
 ): Promise<string> => {
   try {
-    console.log(`Переводим текст: "${text}" с ${sourceLanguage} на ${targetLanguage}`);
-    
-    // В случае если сервис LibreTranslate требует API ключ или недоступен,
-    // возвращаем исходный текст вместо попытки перевода
-    // Это позволит приложению продолжать работу даже при проблемах с сервисом перевода
+    console.log(`Переводим текст с ${sourceLanguage} на ${targetLanguage}: "${text.substring(0, 50)}..."`);
     
     // Проверка на пустую строку или короткий текст - не переводим его
     if (!text || text.length < 2) {
       console.log("Текст слишком короткий для перевода, возвращаем оригинал");
+      return text;
+    }
+
+    // Проверяем, нужен ли перевод (если текст уже на целевом языке)
+    if ((targetLanguage === 'ru' && containsRussian(text)) || 
+        (sourceLanguage === 'ru' && containsRussian(text) && targetLanguage !== 'ru')) {
+      console.log("Текст уже на целевом языке, возвращаем оригинал");
       return text;
     }
 
@@ -38,6 +41,9 @@ export const translateText = async (
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 секунд таймаут
     
     try {
+      // Добавляем уведомление о начале перевода
+      console.log(`Отправляем запрос на перевод текста длиной ${text.length} символов`);
+      
       const response = await fetch(LIBRE_TRANSLATE_API_URL, {
         method: "POST",
         body: JSON.stringify(requestData),
@@ -60,7 +66,7 @@ export const translateText = async (
       const data = await response.json();
       
       if (data && data.translatedText) {
-        console.log(`Перевод выполнен: "${data.translatedText}"`);
+        console.log(`Перевод выполнен успешно. Результат: "${data.translatedText.substring(0, 50)}..."`);
         return data.translatedText;
       } else {
         console.warn("Неожиданный формат ответа от API перевода:", data);
@@ -90,7 +96,7 @@ export const autoTranslateQuery = async (query: string): Promise<string> => {
   try {
     // Если запрос содержит русские символы, переводим его
     if (containsRussian(query)) {
-      const translated = await translateText(query);
+      const translated = await translateText(query, "ru", "en");
       // Проверяем, не вернулась ли просто оригинальная строка в случае ошибки
       if (translated && translated !== query) {
         console.log(`Запрос переведен: "${query}" -> "${translated}"`);
