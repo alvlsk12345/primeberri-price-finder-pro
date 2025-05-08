@@ -7,8 +7,14 @@ import { Product } from "@/services/types";
 import { ProductImage } from './ProductImage';
 import { ProductDetailsDialog } from './ProductDetailsDialog';
 import { translateText, containsRussian } from "@/services/translationService";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { MiniCostCalculator } from './MiniCostCalculator';
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger 
+} from "@/components/ui/popover";
+import { Loader2 } from "lucide-react";
 
 interface ProductCardProps {
   product: Product;
@@ -22,6 +28,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
   const [isTranslated, setIsTranslated] = useState<boolean>(false);
   const [originalTitle, setOriginalTitle] = useState<string>(product.title);
   const [showCalculator, setShowCalculator] = useState<boolean>(false);
+  
+  // Новые состояния для перевода описания в всплывающем окне
+  const [translatedDescription, setTranslatedDescription] = useState<string>("");
+  const [isDescriptionTranslated, setIsDescriptionTranslated] = useState<boolean>(false);
+  const [isPopoverOpen, setIsPopoverOpen] = useState<boolean>(false);
   
   // Функция для перевода заголовка товара
   const handleTranslate = async (e: React.MouseEvent) => {
@@ -59,6 +70,45 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
     } catch (error) {
       console.error("Ошибка при переводе:", error);
       toast("Не удалось перевести текст");
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  // Новая функция для перевода описания товара
+  const handleTranslateDescription = async () => {
+    if (!product.description) {
+      toast("Нет описания для перевода");
+      return;
+    }
+    
+    try {
+      setIsTranslating(true);
+      setIsPopoverOpen(true);
+      
+      // Определяем язык описания
+      const sourceLanguage = isDescriptionTranslated ? "ru" : "en";
+      const targetLanguage = sourceLanguage === "ru" ? "en" : "ru";
+      
+      // Если у нас уже есть переведенное описание, просто переключаем флаг
+      if (isDescriptionTranslated && translatedDescription) {
+        setIsDescriptionTranslated(false);
+        toast("Отображено оригинальное описание");
+      } else {
+        // Выполняем перевод
+        const translated = await translateText(
+          product.description,
+          sourceLanguage,
+          targetLanguage
+        );
+        
+        setTranslatedDescription(translated);
+        setIsDescriptionTranslated(true);
+        toast(`Описание переведено на ${targetLanguage === "ru" ? "русский" : "английский"}`);
+      }
+    } catch (error) {
+      console.error("Ошибка при переводе описания:", error);
+      toast("Не удалось перевести описание");
     } finally {
       setIsTranslating(false);
     }
@@ -117,6 +167,38 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
             <div className="text-xs text-gray-500">
               {product.availability}
             </div>
+            
+            {/* Добавляем кнопку для перевода описания с Popover */}
+            {product.description && (
+              <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-xs mt-2 w-full py-1 h-auto flex items-center justify-center gap-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleTranslateDescription();
+                    }}
+                  >
+                    {isTranslating ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Languages size={14} />
+                    )}
+                    <span>{isDescriptionTranslated ? "Оригинальное описание" : "Перевести описание"}</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 p-3 text-sm">
+                  <div className="font-semibold mb-1">
+                    {isDescriptionTranslated ? "Переведенное описание" : "Описание товара"}
+                  </div>
+                  <p className="text-xs">
+                    {isDescriptionTranslated ? translatedDescription : product.description}
+                  </p>
+                </PopoverContent>
+              </Popover>
+            )}
             
             {/* Кнопка для переключения калькулятора */}
             <Button 

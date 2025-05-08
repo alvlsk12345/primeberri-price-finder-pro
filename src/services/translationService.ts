@@ -27,6 +27,18 @@ export const translateText = async (
       console.log("Текст уже на целевом языке, возвращаем оригинал");
       return text;
     }
+    
+    // Для больших текстов, которые могут быть описаниями товаров,
+    // предварительно определим язык, чтобы уточнить направление перевода
+    if (text.length > 100) {
+      const detectedLanguage = containsRussian(text) ? "ru" : "en";
+      if (detectedLanguage === targetLanguage) {
+        console.log(`Текст уже на языке ${targetLanguage}, возвращаем оригинал`);
+        return text;
+      }
+      // Обновляем исходный язык на основе определения
+      sourceLanguage = detectedLanguage;
+    }
 
     // Формируем данные запроса
     const requestData = {
