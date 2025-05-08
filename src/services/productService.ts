@@ -26,7 +26,7 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY.trim()}`
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
         model: "gpt-4o",  // Изменено с gpt-3.5-turbo на gpt-4o
