@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { Button } from "@/components/ui/button";
 import {
   Pagination as ShadcnPagination,
   PaginationContent,
@@ -20,6 +19,16 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
   if (totalPages <= 1) {
     return null;
   }
+
+  // Handler for page change with debugging
+  const handlePageChange = (page: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    console.log('Changing to page:', page, 'from current page:', currentPage);
+    
+    if (page !== currentPage && page >= 1 && page <= totalPages) {
+      onPageChange(page);
+    }
+  };
 
   // Function to generate pagination items
   const generatePaginationItems = () => {
@@ -53,10 +62,8 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
         <PaginationItem key={i}>
           <PaginationLink 
             isActive={currentPage === i}
-            onClick={(e) => {
-              e.preventDefault();
-              onPageChange(i);
-            }}
+            onClick={(e) => handlePageChange(i, e)}
+            href="#"
           >
             {i}
           </PaginationLink>
@@ -67,7 +74,7 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
     return items;
   };
 
-  // Using Shadcn UI Pagination component for better accessibility and styling
+  // Using Shadcn UI Pagination component
   return (
     <div className="flex justify-center mt-6">
       <ShadcnPagination>
@@ -75,12 +82,7 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
           <PaginationItem>
             <PaginationPrevious 
               href="#" 
-              onClick={(e) => {
-                e.preventDefault();
-                if (currentPage > 1) {
-                  onPageChange(currentPage - 1);
-                }
-              }} 
+              onClick={(e) => handlePageChange(currentPage - 1, e)} 
               aria-disabled={currentPage <= 1}
               className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
             />
@@ -91,12 +93,7 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
           <PaginationItem>
             <PaginationNext 
               href="#" 
-              onClick={(e) => {
-                e.preventDefault();
-                if (currentPage < totalPages) {
-                  onPageChange(currentPage + 1);
-                }
-              }} 
+              onClick={(e) => handlePageChange(currentPage + 1, e)} 
               aria-disabled={currentPage >= totalPages}
               className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
             />
