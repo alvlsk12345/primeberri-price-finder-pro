@@ -46,7 +46,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     
     if (selectedProduct) {
       const productLink = getProductLink(selectedProduct);
-      window.open(productLink, '_blank');
+      window.open(productLink, '_blank', 'noopener,noreferrer');
     } else {
       toast.error('Пожалуйста, выберите товар');
     }
