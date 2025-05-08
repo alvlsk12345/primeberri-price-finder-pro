@@ -39,6 +39,16 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect,
     setImageError(prev => ({ ...prev, [productId]: false }));
   };
 
+  console.log('Рендерим результаты поиска:', results);
+
+  if (results.length === 0) {
+    return (
+      <div className="text-center p-6">
+        <p className="text-lg text-gray-500">Товары не найдены.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {results.map((product) => (
@@ -77,6 +87,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, onSelect,
                     loading="eager"
                     onLoadStart={() => handleImageLoadStart(product.id)}
                     referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
                   />
                 )}
               </div>

@@ -6,8 +6,22 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
   // Убедимся, что imageUrl - строка
   let processedUrl = typeof imageUrl === 'string' ? imageUrl : '';
   
+  // Если это пустая строка, ничего не делаем
+  if (!processedUrl) {
+    console.log(`Пустой URL изображения для индекса ${index}`);
+    return '';
+  }
+  
+  console.log(`Обрабатываем изображение: ${processedUrl}`);
+  
   // Форматируем URL изображения
   processedUrl = processedUrl.trim();
+  
+  // Для URL от Google Shopping (encrypted-tbn) используем их как есть
+  if (processedUrl.includes('encrypted-tbn')) {
+    console.log(`Обнаружен URL Google Shopping: ${processedUrl}`);
+    return processedUrl;
+  }
   
   // Добавляем протокол, если его нет
   if (processedUrl && !processedUrl.startsWith('http') && !processedUrl.startsWith('//')) {
@@ -28,4 +42,3 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
   // Добавляем уникальный параметр к URL
   return getUniqueImageUrl(processedUrl, index);
 };
-

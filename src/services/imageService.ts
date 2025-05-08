@@ -1,101 +1,65 @@
 
-// Улучшенная проверка валидности URL изображения
-export const isValidImageUrl = (url: string): boolean => {
+// Функции для работы с изображениями
+
+// Проверка валидности URL изображения
+export const isValidImageUrl = (url: string | undefined): boolean => {
   if (!url) return false;
   
+  // Разрешаем URL изображений от Google Shopping (encrypted-tbn)
+  if (url.includes('encrypted-tbn')) {
+    return true;
+  }
+  
+  // Базовая валидация URL
   try {
-    const parsed = new URL(url);
+    new URL(url);
     
-    // Проверяем протокол
-    if (!['http:', 'https:'].includes(parsed.protocol)) return false;
+    // Проверка расширений файлов изображений
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
+    const hasImageExtension = imageExtensions.some(ext => url.toLowerCase().includes(ext));
     
-    // Проверяем расширение файла или параметры, указывающие на изображение
-    const isImageExtension = url.match(/\.(jpeg|jpg|gif|png|webp|avif|tiff|svg)($|\?)/i) !== null;
+    // Проверка на содержание ключевых слов для изображений
+    const imageKeywords = ['image', 'img', 'photo', 'picture', 'product'];
+    const hasImageKeyword = imageKeywords.some(keyword => url.toLowerCase().includes(keyword));
     
-    // Проверяем, не содержит ли URL подозрительных паттернов
-    const hasSuspiciousDomain = url.includes('placeholder') || 
-                               url.includes('dummy') || 
-                               url.includes('sample');
-    
-    return isImageExtension && !hasSuspiciousDomain;
+    return hasImageExtension || hasImageKeyword || url.includes('cdn') || url.includes('media');
   } catch (e) {
+    console.error('Невалидный URL:', e);
     return false;
   }
 };
 
-// Удаляем параметры размера изображения для улучшения совместимости
-export const cleanImageUrl = (url: string): string => {
-  if (!url) return '';
-  
+// Добавление уникальных параметров к URL для предотвращения кеширования
+export const getUniqueImageUrl = (url: string, index: number): string => {
   try {
-    const parsedUrl = new URL(url);
+    // Проверка на пустой URL
+    if (!url) return '';
     
-    // Удаляем специфичные для CDN параметры размера
-    ['width', 'height', 'w', 'h', 'size', 'sz', 'resize', 'fit'].forEach(param => {
-      parsedUrl.searchParams.delete(param);
-    });
+    // Проверяем, содержит ли URL encrypted-tbn (Google Shopping)
+    // В этом случае нам нужно использовать URL как есть
+    if (url.includes('encrypted-tbn')) {
+      return url;
+    }
     
-    return parsedUrl.toString();
+    // Для других URL добавляем уникальный параметр
+    const uniqueParam = `lovable_nocache=${Date.now()}-${index}`;
+    const urlObj = new URL(url);
+    urlObj.searchParams.append(uniqueParam.split('=')[0], uniqueParam.split('=')[1]);
+    return urlObj.toString();
   } catch (e) {
+    console.error('Ошибка при обработке URL изображения:', e, url);
+    // В случае ошибки возвращаем исходный URL
     return url;
   }
 };
 
-// Функция для получения уникальной ссылки на изображение 
-export const getUniqueImageUrl = (baseUrl: string, index: number): string => {
-  // Проверяем валидность URL и очищаем его
-  if (!baseUrl) return '';
-  
+// Получение доменного имени из URL
+export const getDomainFromUrl = (url: string): string => {
   try {
-    // Если URL не начинается с http/https, возвращаем пустую строку
-    if (!baseUrl.startsWith('http')) return '';
-    
-    const cleanedUrl = cleanImageUrl(baseUrl);
-    
-    // Добавляем параметр времени для предотвращения кеширования
-    const separator = cleanedUrl.includes('?') ? '&' : '?';
-    return `${cleanedUrl}${separator}t=${Date.now()}-${index}`;
-    
+    const hostname = new URL(url).hostname;
+    // Удаляем www. из начала домена, если оно есть
+    return hostname.startsWith('www.') ? hostname.substring(4) : hostname;
   } catch (e) {
-    console.error('Ошибка при обработке URL изображения:', e);
     return '';
   }
-};
-
-// Заглушка для совместимости (пустая ссылка вместо fallback)
-export const getFallbackImage = (): string => {
-  return '';
-};
-
-// Функция проверки соответствия изображения названию товара
-export const validateImageTitleMatch = (imageUrl: string, title: string): boolean => {
-  // Это простая эвристика, которая может быть улучшена в будущем
-  if (!imageUrl || !title) return false;
-  
-  // Извлекаем ключевые слова из названия товара (бренды, типы товаров)
-  const titleLower = title.toLowerCase();
-  const keyBrands = ['nike', 'adidas', 'tommy hilfiger', 'puma', 'reebok', 'lacoste', 'gucci', 'zara'];
-  const keyProductTypes = ['куртка', 'кроссовки', 'футболка', 'джинсы', 'часы', 'сумка', 'рубашка', 'шапка'];
-  
-  // Ищем совпадения брендов в URL
-  const brandInUrl = keyBrands.some(brand => 
-    imageUrl.toLowerCase().includes(brand.replace(' ', '')) || 
-    imageUrl.toLowerCase().includes(brand.replace(' ', '-'))
-  );
-  
-  // Ищем совпадения типов товаров в URL
-  const productTypeInUrl = keyProductTypes.some(type => 
-    imageUrl.toLowerCase().includes(type) || 
-    imageUrl.toLowerCase().includes(type.slice(0, -1)) // Для обработки единственного числа
-  );
-  
-  // URL должен содержать хотя бы часть названия товара
-  const nameInUrl = titleLower.split(' ').some(word => {
-    // Игнорируем короткие слова (предлоги, союзы и т.д.)
-    if (word.length <= 2) return false;
-    return imageUrl.toLowerCase().includes(word);
-  });
-  
-  // URL содержит либо бренд, либо тип товара, либо часть названия
-  return brandInUrl || productTypeInUrl || nameInUrl;
 };

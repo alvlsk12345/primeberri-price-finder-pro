@@ -24,10 +24,23 @@ export const processZylalabsProductsData = (products: any[]): Product[] => {
     
     // Адаптируем поля под новый формат API
     const title = product.product_title || product.title || `Товар ${index + 1}`;
-    const imageUrl = product.product_photos?.[0] || product.image;
     
-    // Обрабатываем изображение товара
-    const processedImageUrl = processProductImage(imageUrl, index);
+    // Изменения здесь: обрабатываем различные форматы изображений
+    let imageUrl = '';
+    
+    // Попытка получить URL из массива product_photos
+    if (product.product_photos && Array.isArray(product.product_photos) && product.product_photos.length > 0) {
+      imageUrl = product.product_photos[0];
+      console.log(`Использую URL из product_photos: ${imageUrl}`);
+    } 
+    // Если не нашли, пробуем получить из поля image
+    else if (product.image) {
+      imageUrl = product.image;
+      console.log(`Использую URL из image: ${imageUrl}`);
+    }
+    
+    // Обрабатываем изображение товара (даже если это Google Shopping URL)
+    const processedImageUrl = imageUrl;
     
     // Если изображение не прошло валидацию, пропускаем товар
     if (!processedImageUrl) {
