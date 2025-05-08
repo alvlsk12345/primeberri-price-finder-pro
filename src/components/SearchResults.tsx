@@ -21,7 +21,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   totalPages,
   onPageChange
 }) => {
-  console.log('Рендерим результаты поиска:', results);
+  console.log('Рендерим результаты поиска:', results, 'Текущая страница:', currentPage, 'Всего страниц:', totalPages);
 
   if (results.length === 0) {
     return (
