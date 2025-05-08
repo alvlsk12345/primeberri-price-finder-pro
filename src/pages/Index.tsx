@@ -1,7 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 import { SearchResults } from "@/components/SearchResults";
 import { CostCalculator } from "@/components/CostCalculator";
@@ -11,7 +10,6 @@ import { PageFooter } from "@/components/PageFooter";
 import { PageHeader } from "@/components/PageHeader";
 import { ActionButtons } from "@/components/ActionButtons";
 import { searchProducts, type Product } from "@/services/productService";
-import { Link } from "react-router-dom";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -22,20 +20,6 @@ const Index = () => {
   const handleSearch = async () => {
     if (!searchQuery) {
       toast.error('Пожалуйста, введите запрос для поиска товара');
-      return;
-    }
-
-    // Проверяем наличие API ключа
-    const apiKey = localStorage.getItem('openai_api_key');
-    if (!apiKey) {
-      toast.error(
-        <div>
-          Необходимо добавить API ключ OpenAI.{' '}
-          <Link to="/settings" className="underline">
-            Перейти к настройкам
-          </Link>
-        </div>
-      );
       return;
     }
 

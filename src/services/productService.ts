@@ -1,3 +1,4 @@
+
 import { toast } from "@/components/ui/sonner";
 
 export type Product = {
@@ -9,6 +10,9 @@ export type Product = {
   store: string;
 };
 
+// Предустановленный API ключ (замените на ваш ключ)
+const OPENAI_API_KEY = "sk-ваш-ключ-здесь";  // Замените на ваш реальный ключ
+
 // Функция для использования OpenAI API для поиска товаров
 export const searchProducts = async (query: string): Promise<Product[]> => {
   try {
@@ -17,7 +21,7 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('openai_api_key')}` // Получаем ключ из localStorage
+        'Authorization': `Bearer ${OPENAI_API_KEY}` // Используем предустановленный ключ
       },
       body: JSON.stringify({
         model: "gpt-3.5-turbo",
@@ -68,7 +72,7 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
     }
   } catch (error) {
     console.error('Ошибка при поиске товаров:', error);
-    toast.error('Произошла ошибка при поиске товаров. Проверьте API ключ и соединение.');
+    toast.error('Произошла ошибка при поиске товаров.');
     
     // В случае ошибки возвращаем резервные данные
     return [
