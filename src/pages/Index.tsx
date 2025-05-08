@@ -9,15 +9,7 @@ import { BenefitsSection } from "@/components/BenefitsSection";
 import { PageFooter } from "@/components/PageFooter";
 import { PageHeader } from "@/components/PageHeader";
 import { ActionButtons } from "@/components/ActionButtons";
-
-type Product = {
-  id: string;
-  name: string;
-  price: number;
-  currency: string;
-  image: string;
-  store: string;
-};
+import { searchProducts, type Product } from "@/services/productService";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -33,40 +25,17 @@ const Index = () => {
 
     setIsLoading(true);
     try {
-      // В реальном приложении здесь был бы запрос к API
-      // Пока используем заглушку для демонстрации интерфейса
-      setTimeout(() => {
-        const mockResults = [
-          {
-            id: '1',
-            name: 'Кожаная сумка',
-            price: 250,
-            currency: 'EUR',
-            image: 'https://via.placeholder.com/150',
-            store: 'Zalando'
-          },
-          {
-            id: '2',
-            name: 'Спортивные кроссовки',
-            price: 180,
-            currency: 'EUR',
-            image: 'https://via.placeholder.com/150',
-            store: 'Amazon'
-          },
-          {
-            id: '3',
-            name: 'Дизайнерские джинсы',
-            price: 220,
-            currency: 'EUR',
-            image: 'https://via.placeholder.com/150',
-            store: 'H&M'
-          }
-        ];
-
-        setSearchResults(mockResults);
-        setIsLoading(false);
+      // Используем наш сервис для поиска товаров
+      const results = await searchProducts(searchQuery);
+      
+      setSearchResults(results);
+      setIsLoading(false);
+      
+      if (results.length > 0) {
         toast.success('Товары найдены!');
-      }, 1500);
+      } else {
+        toast.info('По вашему запросу ничего не найдено.');
+      }
     } catch (error) {
       console.error('Ошибка поиска:', error);
       toast.error('Произошла ошибка при поиске товаров');
