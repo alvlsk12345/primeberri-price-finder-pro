@@ -1,8 +1,7 @@
 
 import { Product, ProductFilters } from '../types';
-import { getStoreNameFromUrl } from '../imageService';
-import { processProductImage } from '../imageProcessor';
 import { toast } from "@/components/ui/sonner";
+import { formatSingleProduct } from './singleProductFormatter';
 
 // Функция для обработки данных о товарах из Zylalabs API
 export const processZylalabsProductsData = (products: any[], filters?: ProductFilters): Product[] => {
@@ -40,7 +39,7 @@ export const processZylalabsProductsData = (products: any[], filters?: ProductFi
 const applyProductFilters = (products: Product[], filters?: ProductFilters): Product[] => {
   if (!filters) return products;
   
-  const filteredProducts = products.filter((product: any) => {
+  const filteredProducts = products.filter((product: Product) => {
     // Фильтрация по цене
     if (filters.minPrice && product._numericPrice && product._numericPrice < filters.minPrice) {
       return false;

@@ -14,6 +14,7 @@ export type Product = {
   availability?: string;        // Доступность товара
   brand?: string;               // Бренд товара
   specifications?: {[key: string]: string}; // Спецификации товара
+  _numericPrice?: number;       // Внутреннее поле для фильтрации
 };
 
 // Тип для карты доменов магазинов
