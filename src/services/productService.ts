@@ -10,14 +10,19 @@ export type Product = {
   store: string;
 };
 
-// Предустановленный API ключ (замените на ваш ключ)
-const OPENAI_API_KEY = "sk-ваш-ключ-здесь";  // Замените на ваш реальный ключ
+// Функция для получения API ключа из localStorage
+const getApiKey = (): string => {
+  return localStorage.getItem('openai_api_key') || '';
+};
 
 // Функция для использования OpenAI API для поиска товаров
 export const searchProducts = async (query: string): Promise<Product[]> => {
   try {
+    // Получаем API ключ из localStorage
+    const apiKey = getApiKey();
+    
     // Проверка на корректность ключа API
-    if (!OPENAI_API_KEY || OPENAI_API_KEY === "sk-ваш-ключ-здесь") {
+    if (!apiKey) {
       throw new Error("API ключ не установлен или не валиден");
     }
 
@@ -26,10 +31,10 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "gpt-4o",  // Изменено с gpt-3.5-turbo на gpt-4o
+        model: "gpt-4o",  // Используем gpt-4o модель
         messages: [
           {
             role: "system",
