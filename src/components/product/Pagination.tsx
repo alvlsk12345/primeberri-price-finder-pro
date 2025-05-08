@@ -9,6 +9,7 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
+import { useToast } from "@/components/ui/use-toast";
 
 interface PaginationProps {
   currentPage: number;
@@ -17,12 +18,14 @@ interface PaginationProps {
 }
 
 export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPageChange }) => {
+  const { toast } = useToast();
+  
   // Не отображаем пагинацию, если страница всего одна
   if (totalPages <= 1) {
     return null;
   }
 
-  // Улучшенный обработчик клика по пагинации
+  // Улучшенный обработчик клика по пагинации с дополнительным индикатором загрузки
   const handlePageClick = (page: number) => (e: React.MouseEvent<HTMLAnchorElement>) => {
     // Предотвращаем дефолтное поведение ссылки для предотвращения перезагрузки страницы
     e.preventDefault();
@@ -31,12 +34,30 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
     // Дополнительная проверка, чтобы не вызывать обработчик для текущей страницы или недопустимой страницы
     if (page !== currentPage && page >= 1 && page <= totalPages) {
       console.log(`Pagination: Переход с ${currentPage} на страницу ${page}`);
+      
+      // Показываем уведомление о начале загрузки
+      const loadingToast = toast({
+        title: "Загрузка страницы...",
+        description: `Переход на страницу ${page}`,
+        duration: 3000,
+      });
+      
       // Добавляем небольшую задержку для стабильности обработки
       setTimeout(() => {
         onPageChange(page);
-      }, 10);
+        // При необходимости можно закрыть уведомление о загрузке здесь
+      }, 100);
     } else {
       console.log(`Pagination: Отклонен переход на страницу ${page} (текущая: ${currentPage}, всего: ${totalPages})`);
+      
+      // Если это недопустимая страница, показываем предупреждение
+      if (page > totalPages) {
+        toast({
+          title: "Предупреждение",
+          description: "Запрошенная страница не существует",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -98,18 +119,22 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
   };
 
   // Вспомогательная функция для создания элемента страницы пагинации
-  const generatePageItem = (pageNumber: number) => (
-    <PaginationItem key={pageNumber} data-testid={`pagination-item-${pageNumber}`}>
-      <PaginationLink 
-        isActive={currentPage === pageNumber}
-        onClick={handlePageClick(pageNumber)}
-        href="#"
-        aria-current={currentPage === pageNumber ? "page" : undefined}
-      >
-        {pageNumber}
-      </PaginationLink>
-    </PaginationItem>
-  );
+  const generatePageItem = (pageNumber: number) => {
+    const isDisabled = pageNumber > totalPages;
+    return (
+      <PaginationItem key={pageNumber} data-testid={`pagination-item-${pageNumber}`}>
+        <PaginationLink 
+          isActive={currentPage === pageNumber}
+          onClick={handlePageClick(pageNumber)}
+          href="#"
+          aria-current={currentPage === pageNumber ? "page" : undefined}
+          className={isDisabled ? "pointer-events-none opacity-50" : ""}
+        >
+          {pageNumber}
+        </PaginationLink>
+      </PaginationItem>
+    );
+  };
 
   return (
     <div className="flex justify-center mt-6" data-testid="pagination-component">

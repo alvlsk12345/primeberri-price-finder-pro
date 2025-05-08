@@ -1,7 +1,10 @@
+
 import React from 'react';
 import { Product } from "@/services/types";
 import { ProductList } from './product/ProductList';
 import { Pagination } from './product/Pagination';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 type SearchResultsProps = {
   results: Product[];
@@ -62,6 +65,16 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
 
   return (
     <div className="space-y-4" data-testid="search-results">
+      {currentPage > 1 && results.length > 0 && (
+        <Alert variant="warning" className="mb-4 border-amber-300 bg-amber-50">
+          <AlertCircle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-700">
+            Возможны проблемы при загрузке данных для страницы {currentPage}. 
+            Для полного результата попробуйте повторить поиск позже.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <ProductList 
         products={productsWithUniqueKeys}
         selectedProduct={selectedProduct}
