@@ -10,10 +10,10 @@ export const REQUEST_TIMEOUT = 60000; // 60 seconds timeout
 // Alternative CORS proxies to try if direct access fails
 const CORS_PROXIES = [
   "", // Direct connection (no proxy)
-  "https://corsproxy.io/?", // Primary CORS proxy
-  "https://api.allorigins.win/raw?url=", // Alternative CORS proxy
-  "https://cors.eu.org/", // EU based CORS proxy
-  "https://cors-anywhere.herokuapp.com/" // Original proxy that requires demo access
+  "https://proxy.cors.sh/", // New primary CORS proxy
+  "https://corsproxy.io/?", // Secondary CORS proxy
+  "https://cors-anywhere.herokuapp.com/", // Tertiary CORS proxy (requires demo access)
+  "https://api.allorigins.win/raw?url=" // Last resort proxy
 ];
 
 // Create a function to build API URL with appropriate proxy

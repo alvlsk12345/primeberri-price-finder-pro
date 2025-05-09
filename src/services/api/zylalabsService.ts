@@ -44,18 +44,16 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
-      // Set up request headers
+      // Set up request headers with additional CORS headers
       const headers: HeadersInit = {
         'Authorization': `Bearer ${ZYLALABS_API_KEY}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Cache-Control': 'no-cache'
+        'Cache-Control': 'no-cache',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Origin': window.location.origin,
+        'Referer': window.location.origin
       };
-      
-      // Add any additional headers needed for proxy
-      if (proxyIndex > 0) {
-        headers['X-Requested-With'] = 'XMLHttpRequest';
-      }
 
       const response = await fetch(apiUrl, {
         method: 'GET',
@@ -94,38 +92,17 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
           // Если не удалось распарсить как JSON, используем текст как есть
         }
         
-        // Для ошибок 403 и 404, меняем индекс прокси и повторяем
-        if ((response.status === 403 || response.status === 404) && proxyIndex < 4) {
-          console.warn(`Получен статус ${response.status}, пробуем другой прокси`);
-          proxyIndex = (proxyIndex + 1) % 5; // Use all 5 proxies
+        // Для всех ошибок сначала меняем индекс прокси и повторяем
+        proxyIndex = (proxyIndex + 1) % 5; // Try all 5 proxies
+        console.warn(`Получен статус ${response.status}, пробуем другой прокси`);
+        
+        // Если перебрали все прокси, увеличиваем счетчик попыток
+        if (proxyIndex === 0) {
           attempts++;
-          await sleep(RETRY_DELAY);
-          continue;
-        } else if (response.status === 503 || response.status === 502 || response.status === 504) {
-          // Повторяем запрос при временной недоступности сервиса
-          console.warn('Сервис временно недоступен, попытка повтора через', RETRY_DELAY);
-          lastError = new Error(`Сервис временно недоступен`);
-          attempts++;
-          await sleep(RETRY_DELAY);
-          continue;
-        } else if (response.status === 401) {
-          // Ошибка авторизации - неверный API-ключ
-          console.error('Ошибка авторизации API. Проверьте ключ API.');
-          toast.error('Ошибка авторизации API. Проверьте ключ API.');
-          return { ...getMockSearchResults(params.query), fromMock: true };
-        } else if (response.status === 429) {
-          // Превышен лимит запросов
-          console.error('Превышен лимит запросов к API');
-          toast.error('Превышен лимит запросов API. Используем демонстрационные данные.');
-          return { ...getMockSearchResults(params.query), fromMock: true };
-        } else {
-          // Другие ошибки API - пробуем другой прокси
-          console.warn(`Ошибка API ${response.status}, пробуем другой прокси`);
-          proxyIndex = (proxyIndex + 1) % 5; // Use all 5 proxies
-          attempts++;
-          await sleep(RETRY_DELAY);
-          continue;
         }
+        
+        await sleep(RETRY_DELAY);
+        continue;
       }
 
       // Парсим JSON ответ
@@ -163,15 +140,21 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
       // Если вероятная проблема с CORS, меняем прокси
       if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
         console.log('Произошла ошибка "Failed to fetch", пробуем другой прокси');
-        proxyIndex = (proxyIndex + 1) % 5; // Use all 5 proxies
+        proxyIndex = (proxyIndex + 1) % 5; // Try all 5 proxies
+        
+        // Если перебрали все прокси, увеличиваем счетчик попыток
+        if (proxyIndex === 0) {
+          attempts++;
+        }
+      } else {
+        // Другие ошибки - просто увеличиваем счетчик
+        attempts++;
       }
       
-      // Увеличиваем счетчик попыток
       lastError = error;
-      attempts++;
       
       if (attempts < MAX_RETRY_ATTEMPTS) {
-        console.log(`Повторная попытка ${attempts}/${MAX_RETRY_ATTEMPTS} через ${RETRY_DELAY}мс`);
+        console.log(`Повторная попытка через ${RETRY_DELAY}мс`);
         await sleep(RETRY_DELAY);
         continue; // Переходим к следующей попытке
       }
