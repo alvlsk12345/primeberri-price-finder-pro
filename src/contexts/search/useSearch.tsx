@@ -1,5 +1,5 @@
 
-import { useContext } from 'react';
+import React, { useContext } from 'react';
 import { SearchContext } from './SearchContext';
 
 // Custom hook for using the search context
