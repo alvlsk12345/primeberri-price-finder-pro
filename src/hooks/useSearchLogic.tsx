@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useSearchState } from './useSearchState';
 import { useSearchActions } from './useSearchActions';
 

@@ -1,0 +1,24 @@
+
+import { useState } from 'react';
+import { Product } from "@/services/types";
+
+export function useResultsState() {
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [cachedResults, setCachedResults] = useState<{[page: number]: Product[]}>({});
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isUsingDemoData, setIsUsingDemoData] = useState(false);
+  const [apiInfo, setApiInfo] = useState<Record<string, string> | undefined>(undefined);
+  
+  return {
+    searchResults,
+    setSearchResults,
+    cachedResults,
+    setCachedResults,
+    selectedProduct,
+    setSelectedProduct,
+    isUsingDemoData,
+    setIsUsingDemoData,
+    apiInfo,
+    setApiInfo,
+  };
+}
