@@ -1,109 +1,84 @@
 
-import { 
-  ZYLALABS_API_KEY, 
-  REQUEST_TIMEOUT, 
-  getApiBaseUrl,
-  RETRY_DELAY
-} from "../zylalabsConfig";
-import { handleApiError } from "../errorHandlerService";
 import { toast } from "@/components/ui/sonner";
+import { ZYLALABS_API_KEY } from '../zylalabsConfig';
 
 /**
- * Makes a fetch request to the Zylalabs API with proper error handling
+ * Fetch data from Zylalabs API with proper error handling
  */
-export const fetchFromZylalabs = async (
-  url: string, 
-  proxyIndex: number = 0
-): Promise<any> => {
-  // Set up request timeout
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+export const fetchFromZylalabs = async (url: string, proxyIndex: number = 0) => {
+  console.log('Making API request to:', url);
+  console.log('Using API key (first 10 chars):', ZYLALABS_API_KEY.substring(0, 10) + '...');
   
   try {
-    // Setup headers exactly as in Postman collection - Using proper Bearer token format
-    const headers: HeadersInit = {
+    // Set up headers with API key
+    const headers = {
       'Authorization': `Bearer ${ZYLALABS_API_KEY}`,
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     };
+    console.log('Headers:', headers);
     
-    // Log the request for debugging
-    console.log('Making API request to:', url);
-    console.log('Using API key (first 10 chars):', ZYLALABS_API_KEY.substring(0, 10) + '...');
-    console.log('Headers:', JSON.stringify(headers, null, 2));
-    
+    // Make API request
     const response = await fetch(url, {
       method: 'GET',
       headers: headers,
-      signal: controller.signal,
-      // Ensure we're sending the request correctly
-      mode: 'cors',
-      credentials: 'omit',
-      cache: 'no-store' // Disable caching to ensure fresh data
+      // Add cache control to avoid caching issues
+      cache: 'no-cache',
+      // Add longer timeout
+      signal: AbortSignal.timeout(15000)
     });
     
-    // Clear timeout once request is complete
-    clearTimeout(timeoutId);
-    
     // Log response status
-    console.log(`API response status: ${response.status}, ok: ${response.ok}`);
+    console.log('API response status:', response.status, 'ok:', response.ok);
     
+    // Check for non-successful responses
     if (!response.ok) {
-      // Try to get the error details for better debugging
-      let errorText = '';
+      let errorText;
       try {
         errorText = await response.text();
-        console.error("API Error Response Text:", errorText, "Status:", response.status);
-        
-        // Try to parse as JSON for structured error info
-        const errorData = JSON.parse(errorText);
-        console.error("API Error Data:", errorData);
-        
-        // Check for specific error types
-        if (errorData.message) {
-          if (errorData.message.includes('exceeded the allowed limit') || 
-              errorData.message.includes('limit exceeded')) {
-            toast.error('Превышен лимит запросов к API. Пожалуйста, попробуйте позже.');
-          } else if (response.status === 503) {
-            toast.error('API сервис временно недоступен. Используем демо-данные.');
-          } else {
-            toast.error(`Ошибка API: ${errorData.message}`);
-          }
+        // Try to parse as JSON for more detailed error
+        try {
+          const errorJson = JSON.parse(errorText);
+          console.error('API Error Response Text:', errorText, 'Status:', response.status);
+          
+          // Extract error message for user feedback
+          const errorMessage = errorJson.message || errorJson.error || `Ошибка API: ${response.status}`;
+          toast.error(errorMessage, {
+            id: `api-error-${Date.now()}`,
+            duration: 5000
+          });
+        } catch (e) {
+          console.error('API Error (not JSON):', errorText, 'Status:', response.status);
         }
       } catch (e) {
-        // If parsing fails, use text response as is
-        console.error("Could not parse error response:", e);
+        errorText = 'Cannot extract error text';
+        console.error('Failed to extract error text from response');
       }
       
-      throw new Error(`API error: ${response.status}`);
+      // Throw error to be caught by retry mechanism
+      const error = new Error(`API error: ${response.status}`);
+      console.error('API Error Data:', errorText && typeof errorText === 'string' ? 
+        (errorText.length > 500 ? errorText.substring(0, 500) + '...' : errorText) : 'No error data');
+      throw error;
     }
     
     // Parse successful response
-    const jsonResponse = await response.json();
-    console.log("API response received successfully");
+    const data = await response.json();
+    console.log('API Response received successfully, parsing...');
     
-    return jsonResponse;
-  } catch (error: any) {
-    // If error is related to request timeout
-    if (error.name === 'AbortError') {
-      console.error('API request timeout');
-      toast.error('Запрос к API занял слишком много времени. Используем демо-данные.');
-      throw new Error('API request timeout');
+    return data;
+  } catch (error) {
+    // Handle fetch errors (network issues, timeouts, etc)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Fetch error details:', error);
+    
+    // Don't show toast for every attempt as the retry mechanism will handle this
+    if (proxyIndex === 2) { // Only show on the last attempt
+      toast.error(`Не удалось соединиться с API. ${errorMessage}`, {
+        id: `api-connection-error-${Date.now()}`
+      });
     }
     
-    // Clean up and re-throw
-    clearTimeout(timeoutId);
-    console.error("API request failed:", error.message);
     throw error;
-  } finally {
-    clearTimeout(timeoutId);
   }
-};
-
-/**
- * Gets the appropriate API base URL based on the proxy index
- */
-export const getZylalabsApiUrl = (urlPath: string, proxyIndex: number = 0): string => {
-  const baseUrl = getApiBaseUrl(proxyIndex);
-  return `${baseUrl}${urlPath}`;
 };

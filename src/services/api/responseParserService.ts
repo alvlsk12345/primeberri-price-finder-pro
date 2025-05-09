@@ -5,6 +5,19 @@
 export const parseApiResponse = (data: any): { products: any[], total: number } => {
   console.log('Получен ответ от API, анализируем структуру...');
   
+  // Check for error/empty responses early
+  if (!data) {
+    console.error('Получен пустой ответ от API');
+    return { products: [], total: 0 };
+  }
+  
+  // If we received an error response
+  if (data.error || data.errors || data.message) {
+    console.error('API вернул ошибку:', 
+      data.error || data.errors || data.message || 'Неизвестная ошибка');
+    return { products: [], total: 0 };
+  }
+  
   // Add detailed logging of the response structure
   try {
     console.log('API response type:', typeof data);
