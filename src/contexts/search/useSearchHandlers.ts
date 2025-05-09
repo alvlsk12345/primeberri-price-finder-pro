@@ -201,11 +201,12 @@ export const useSearchHandlers = (
     console.log("Applying sort option:", option);
     setSortOption(option);
     
-    // Fix the type error: First get the current results, then apply sorting, then update state
-    const currentResults = searchResults;
-    const sortedResults = applySorting([...currentResults], option);
-    setSearchResults(sortedResults);
-  }, [setSortOption, setSearchResults, searchResults]);
+    // Get current results from the callback parameter, not directly accessing searchResults
+    setSearchResults(currentResults => {
+      // Apply sorting to current results
+      return applySorting([...currentResults], option);
+    });
+  }, [setSortOption, setSearchResults]);
 
   return {
     handleSearch,
@@ -215,3 +216,4 @@ export const useSearchHandlers = (
     handleSortChange
   };
 };
+
