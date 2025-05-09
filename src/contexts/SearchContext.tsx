@@ -2,7 +2,6 @@
 import React, { createContext, useState, useCallback, useContext, useEffect } from 'react';
 import { Product, ProductFilters } from "@/services/types";
 import { searchProducts } from "@/services/productService";
-import { autoTranslateQuery } from "@/services/translationService";
 import { toast } from "sonner";
 
 // Define the search context type
@@ -81,20 +80,9 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // Set current page before executing request
       setCurrentPage(page);
       
-      // Translate query to English if it's in Russian
-      let translatedQuery;
-      try {
-        translatedQuery = await autoTranslateQuery(queryToUse);
-        console.log(`Запрос: "${queryToUse}" ${translatedQuery !== queryToUse ? `был переведен на: "${translatedQuery}"` : 'не требует перевода'}`);
-      } catch (translateError) {
-        console.error('Ошибка при переводе запроса:', translateError);
-        translatedQuery = queryToUse; // Use original query if translation fails
-        toast.error('Произошла ошибка при переводе запроса, используем исходный текст');
-      }
-      
-      // Use translated query for search
+      // Use query directly - no translation needed
       const results = await searchProducts({
-        query: translatedQuery,
+        query: queryToUse,
         page: page,
         filters: filters
       });

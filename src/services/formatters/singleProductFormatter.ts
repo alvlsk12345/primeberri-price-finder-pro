@@ -1,7 +1,22 @@
 
 import { Product } from '../types';
-import { processImageUrl } from '../imageService';
-import { extractNumericPrice } from '../productFormatter';
+
+/**
+ * Извлекает числовое значение цены из строкового представления
+ */
+export const extractNumericPrice = (priceString: string): number | undefined => {
+  // Ищем все числовые значения в строке (включая десятичные)
+  const matches = priceString.match(/(\d+[.,]?\d*)/g);
+  
+  if (!matches || matches.length === 0) {
+    return undefined;
+  }
+  
+  // Берем первое найденное числовое значение и конвертируем его в число
+  // Заменяем запятую на точку для корректной конвертации
+  const numericValue = parseFloat(matches[0].replace(',', '.'));
+  return isNaN(numericValue) ? undefined : numericValue;
+};
 
 /**
  * Форматирует данные о товаре, полученные от Zylalabs API, в единый формат
@@ -31,13 +46,13 @@ export const formatSingleProduct = async (
     if (product.product_photos && product.product_photos.length > 0) {
       // Используем первое изображение из списка
       console.log(`Использую URL из product_photos: ${product.product_photos[0]}`);
-      image = await processImageUrl(product.product_photos[0], title);
+      image = product.product_photos[0];
     } else if (product.image) {
       // Используем указанное изображение
-      image = await processImageUrl(product.image, title);
+      image = product.image;
     } else if (product.thumbnail) {
       // Используем миниатюру
-      image = await processImageUrl(product.thumbnail, title);
+      image = product.thumbnail;
     }
     
     // URL страницы товара
