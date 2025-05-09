@@ -15,8 +15,8 @@ export const ProductCardPrice: React.FC<ProductCardPriceProps> = ({
 
   useEffect(() => {
     // Check if price is defined before processing
-    if (!price) {
-      console.warn('Product price is undefined, using default values');
+    if (!price || price === 'Цена не указана') {
+      console.warn('Product price is undefined or not specified, using default values');
       setEuroPrice("€0.00");
       setRussianDeliveryPrice("₽0.00");
       return;

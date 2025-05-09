@@ -58,7 +58,7 @@ export const parseApiResponse = (data: any): { products: any[], total: number } 
         console.log(`Найден массив в поле "${key}", проверяем содержимое...`);
         
         // Check if this array contains objects that look like products
-        if (data[key][0] && (data[key][0].title || data[key][0].name)) {
+        if (data[key][0] && (data[key][0].title || data[key][0].name || data[key][0].product_title)) {
           console.log(`Найден возможный массив товаров в поле "${key}"`);
           products = data[key];
           total = products.length;
@@ -67,20 +67,35 @@ export const parseApiResponse = (data: any): { products: any[], total: number } 
       }
     }
     
+    // If still no products found, try to extract from complicated nested structures
+    if (products.length === 0) {
+      console.log('Не найдены товары в первом уровне объекта, ищем глубже...');
+      // Check for product data inside nested objects
+      Object.keys(data).forEach(key => {
+        if (typeof data[key] === 'object' && data[key] !== null) {
+          if (data[key].products && Array.isArray(data[key].products)) {
+            console.log(`Найден массив товаров в поле ${key}.products`);
+            products = data[key].products;
+            total = data[key].total || products.length;
+          }
+        }
+      });
+    }
+    
     if (products.length === 0) {
       console.error('Не удалось найти массив товаров в ответе API');
-      throw new Error('Получены некорректные данные от API');
+      // Instead of throwing an error, return an empty array
+      return { products: [], total: 0 };
     }
   } else {
     // Log the actual received structure for debugging
-    console.error('Неожиданный формат ответа от API:', JSON.stringify(data).substring(0, 500) + '...');
-    throw new Error('Получены некорректные данные от API');
+    console.error('Неожиданный формат ответа от API:', typeof data, data ? Object.keys(data) : 'null');
+    return { products: [], total: 0 };
   }
   
   // Log product structure for the first item
   if (products.length > 0) {
     console.log('Структура первого товара:', Object.keys(products[0]).join(', '));
-    console.log('Пример первого товара:', JSON.stringify(products[0], null, 2));
     console.log(`Всего найдено ${products.length} товаров`);
   } else {
     console.log('API вернул пустой массив товаров');

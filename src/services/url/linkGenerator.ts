@@ -1,48 +1,42 @@
 
-import { Product } from "../types";
-import { createProductSlug } from "./slugCreator";
-import { getStoreMapEntry } from "./storeMapper";
-import { extractProductIdFromUrl } from "./productIdExtractor";
-import { isSearchEngineLink } from "./searchEngineDetector";
+import { Product } from '../types';
+import { extractProductId } from './productIdExtractor';
+import { getStoreMapEntry } from './storeMapper';
+import { createSlug } from './slugCreator';
+import { isSearchEngineLink } from './searchEngineDetector';
 
-// Функция для генерации прямой ссылки на товар
-export const getProductLink = (product: Product | undefined | null): string => {
+/**
+ * Генерирует ссылку на товар
+ */
+export const getProductLink = (product: Product | null): string => {
+  // Return a fallback URL if product is null
   if (!product) {
-    console.warn('Attempting to generate link for undefined/null product');
     return '#';
   }
-
-  // Если у товара уже есть ссылка и она не является поисковой - используем её
+  
+  // Use product's original link if available and not a search engine link
   if (product.link && !isSearchEngineLink(product.link)) {
-    console.log('Использую существующую ссылку:', product.link);
     return product.link;
   }
-
-  // Если у товара нет источника или названия
+  
+  // If we don't have source or title, we can't generate a proper link
   if (!product.source || !product.title) {
     console.warn('Product missing source or title, fallback to general link');
-    // Fallback к общему слагу и домену магазина, если есть
-    const slug = createProductSlug(product.title || 'product');
-    return product.source ? 
-      `https://${product.source.toLowerCase().replace(/\s+/g, '-')}.com/${slug}` : 
-      '#';
+    return '#';
   }
-
-  // Используем карту магазинов для генерации ссылки по шаблону
-  const storeDomain = getStoreMapEntry(product.source);
-  let productId = product.id;
-
-  // Пытаемся извлечь ID товара из имеющейся ссылки, если она есть
-  if (product.link) {
-    const extractedId = extractProductIdFromUrl(product.link, productId || '');
-    if (extractedId) {
-      productId = extractedId;
-    }
-  }
-
-  // Создаем слаг из названия товара
-  const slug = createProductSlug(product.title);
-
-  // Стандартный формат URL для большинства магазинов
-  return `https://${storeDomain}/product/${slug}/${productId || ''}`;
+  
+  // Get store name from domain
+  const storeName = getStoreMapEntry(product.source);
+  
+  // Extract product ID
+  const productId = extractProductId(product.id);
+  
+  // Create a URL-friendly slug from the product title
+  const productSlug = createSlug(product.title);
+  
+  // Generate a direct link based on store and product information
+  return `https://${storeName}.com/product/${productId}/${productSlug}`;
 };
+
+// Re-export other functions
+export { isSearchEngineLink } from './searchEngineDetector';

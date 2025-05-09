@@ -45,11 +45,12 @@ export const formatSingleProduct = async (
     const subtitle = product.subtitle || product.product_attributes?.Brand || '';
     
     // Цена и валюта
-    const price = product.offer?.price || product.price || 'Цена не указана';
-    const currency = product.currency || 'USD';
+    const price = product.offer?.price || product.price || '€0.00';
+    const currency = product.currency || 'EUR';
     
     // Извлекаем числовое значение цены для фильтрации
-    const _numericPrice = extractNumericPrice(price);
+    const numericPriceValue = extractNumericPrice(price);
+    const _numericPrice = numericPriceValue !== undefined ? numericPriceValue : 0;
     
     // URL изображения
     let image = '';
@@ -66,6 +67,9 @@ export const formatSingleProduct = async (
     } else if (product.product_photo) {
       // Еще одна возможная структура данных
       image = product.product_photo;
+    } else if (product.product_images && product.product_images.length > 0) {
+      // Еще один возможный формат данных
+      image = product.product_images[0];
     }
     
     // URL страницы товара
@@ -110,12 +114,29 @@ export const formatSingleProduct = async (
       id: formattedProduct.id,
       title: formattedProduct.title.substring(0, 30) + '...',
       hasImage: !!formattedProduct.image,
-      source: formattedProduct.source
+      source: formattedProduct.source,
+      price: formattedProduct.price
     });
     
     return formattedProduct;
   } catch (error) {
     console.error('Ошибка при форматировании товара:', error);
-    throw error;
+    // Return a fallback product object instead of throwing an error
+    return {
+      id: `error-${Date.now()}`,
+      title: 'Ошибка данных',
+      subtitle: '',
+      price: '€0.00',
+      currency: 'EUR',
+      image: '',
+      link: '',
+      rating: 0,
+      source: 'Ошибка',
+      description: 'Не удалось загрузить информацию о товаре',
+      availability: 'Недоступно',
+      brand: '',
+      specifications: {},
+      _numericPrice: 0
+    };
   }
 };
