@@ -1,12 +1,12 @@
 
 import { toast } from "@/components/ui/sonner";
 import { SearchParams } from "../types";
-import { ZYLALABS_API_KEY, MAX_RETRY_ATTEMPTS, RETRY_DELAY, REQUEST_TIMEOUT, checkApiKey, buildSearchUrl, sleep } from "./zylalabsConfig";
+import { ZYLALABS_API_KEY, MAX_RETRY_ATTEMPTS, RETRY_DELAY, REQUEST_TIMEOUT, checkApiKey, buildMultiCountrySearchUrl, sleep } from "./zylalabsConfig";
 import { getMockSearchResults } from "./mockDataService";
 import { handleApiError, handleFetchError } from "./errorHandlerService";
 import { parseApiResponse } from "./responseParserService";
 
-// Функция для поиска товаров через Zylalabs API с поддержкой пагинацией и повторными попытками
+// Функция для поиска товаров через Zylalabs API с поддержкой пагинацией, повторными попытками и множественными странами
 export const searchProductsViaZylalabs = async (params: SearchParams): Promise<any> => {
   // Проверяем наличие API ключа
   if (!checkApiKey()) {
@@ -16,17 +16,17 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
   let attempts = 0;
   let lastError = null;
 
+  // Используем страны из параметров или дефолтную страну
+  const countries = params.countries || ['gb'];
+  const language = params.language || 'en';
+  const page = params.page || 1;
+  
   while (attempts < MAX_RETRY_ATTEMPTS) {
     try {
       console.log(`Отправляем запрос к Zylalabs API... (попытка ${attempts + 1}/${MAX_RETRY_ATTEMPTS})`, params);
       
-      // Получаем основные параметры запроса
-      const country = params.country || 'gb'; // По умолчанию Великобритания
-      const language = params.language || 'en'; // Английский язык
-      const page = params.page || 1;
-      
-      // Формируем URL запроса
-      const apiUrl = buildSearchUrl(params.query, country, language, page);
+      // Формируем URL запроса для множественных стран
+      const apiUrl = buildMultiCountrySearchUrl(params.query, countries, language, page);
       console.log('URL запроса:', apiUrl);
       
       // Выполняем запрос к API с таймаутом

@@ -6,6 +6,7 @@ import { PriceRangeFilter } from './filter/PriceRangeFilter';
 import { BrandsFilter } from './filter/BrandsFilter';
 import { SourcesFilter } from './filter/SourcesFilter';
 import { RatingFilter } from './filter/RatingFilter';
+import { CountryFilter } from './filter/CountryFilter';
 
 interface FilterPanelProps {
   filters: ProductFilters;
@@ -76,6 +77,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     if (filters.maxPrice) count++;
     if (filters.brands && filters.brands.length > 0) count++;
     if (filters.sources && filters.sources.length > 0) count++;
+    if (filters.countries && filters.countries.length > 0) count++;
     if (filters.rating) count++;
     setActiveFiltersCount(count);
   }, [filters]);
@@ -127,6 +129,25 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     });
   };
   
+  // Обработчик изменения стран
+  const handleCountryChange = (country: string, checked: boolean) => {
+    setLocalFilters(prev => {
+      const currentCountries = prev.countries || [];
+      let newCountries;
+      
+      if (checked) {
+        newCountries = [...currentCountries, country];
+      } else {
+        newCountries = currentCountries.filter(c => c !== country);
+      }
+      
+      return {
+        ...prev,
+        countries: newCountries.length > 0 ? newCountries : undefined
+      };
+    });
+  };
+  
   // Обработчик изменения рейтинга
   const handleRatingChange = (values: number[]) => {
     setLocalFilters(prev => ({
@@ -153,6 +174,11 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
       resetFilters={resetFilters}
       applyFilters={applyFilters}
     >
+      <CountryFilter
+        selectedCountries={localFilters.countries || []}
+        onCountryChange={handleCountryChange}
+      />
+      
       <PriceRangeFilter 
         minPrice={localFilters.minPrice || priceRange[0]}
         maxPrice={localFilters.maxPrice || priceRange[1]}

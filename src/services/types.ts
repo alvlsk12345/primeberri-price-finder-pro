@@ -26,8 +26,8 @@ export type StoreMap = {
 export type SearchParams = {
   query: string;
   page: number;
-  country?: string;   // Код страны (gb, de, fr, и т.д.)
   language?: string;  // Язык результатов поиска (en, de, fr, и т.д.)
+  countries?: string[]; // Массив кодов стран для поиска
   filters?: ProductFilters;
 };
 
@@ -37,5 +37,6 @@ export type ProductFilters = {
   maxPrice?: number;
   brands?: string[];
   sources?: string[];
+  countries?: string[]; // Добавлен фильтр по странам
   rating?: number;
 };

@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, AlertCircle } from 'lucide-react';
 import { toast } from "@/components/ui/sonner";
-import { CountrySelector } from './search/CountrySelector';
 
 type SearchFormProps = {
   searchQuery: string;
@@ -77,16 +76,12 @@ export const SearchForm: React.FC<SearchFormProps> = ({
         </Button>
       </div>
       
-      <div className="flex justify-between items-center">
-        <CountrySelector />
-        
-        {hasError && (
-          <div className="flex items-center text-red-500 text-sm gap-1">
-            <AlertCircle size={14} />
-            <span>Произошла ошибка при поиске. Пожалуйста, попробуйте еще раз.</span>
-          </div>
-        )}
-      </div>
+      {hasError && (
+        <div className="flex items-center text-red-500 text-sm gap-1">
+          <AlertCircle size={14} />
+          <span>Произошла ошибка при поиске. Пожалуйста, попробуйте еще раз.</span>
+        </div>
+      )}
     </div>
   );
 };
