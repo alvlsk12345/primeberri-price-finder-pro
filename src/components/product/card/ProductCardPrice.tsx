@@ -74,7 +74,7 @@ export const ProductCardPrice: React.FC<ProductCardPriceProps> = ({
   };
   
   return (
-    <>
+    <div className="min-h-[4rem] flex flex-col justify-center">
       <div className="font-bold text-lg">
         {formattedPrice()}
       </div>
@@ -88,6 +88,6 @@ export const ProductCardPrice: React.FC<ProductCardPriceProps> = ({
           {availability}
         </div>
       )}
-    </>
+    </div>
   );
 };

@@ -43,7 +43,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
             productId={product.id} 
           />
           
-          <div className="w-full text-center flex flex-col flex-grow">
+          <div className="w-full text-center flex flex-col flex-grow mt-3 min-h-[12rem]">
             <ProductCardTitle 
               title={product.title}
               onStopPropagation={handleStopPropagation}
@@ -71,12 +71,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
             />
           </div>
           
-          <ProductCardActions 
-            product={product}
-            isSelected={isSelected}
-            onSelect={onSelect}
-            onStopPropagation={handleStopPropagation}
-          />
+          <div className="w-full mt-auto border-t pt-3">
+            <ProductCardActions 
+              product={product}
+              isSelected={isSelected}
+              onSelect={onSelect}
+              onStopPropagation={handleStopPropagation}
+            />
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -41,7 +41,7 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
   };
   
   return (
-    <div className="flex flex-col w-full mt-auto pt-3 gap-2">
+    <div className="flex flex-col gap-2">
       <ProductDetailsDialog product={product} />
       <Button 
         onClick={handlePrimeberriOrder}

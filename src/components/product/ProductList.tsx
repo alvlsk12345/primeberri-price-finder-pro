@@ -11,14 +11,15 @@ interface ProductListProps {
 
 export const ProductList: React.FC<ProductListProps> = ({ products, selectedProduct, onSelect }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {products.map((product) => (
-        <ProductCard
-          key={product.id}
-          product={product}
-          isSelected={selectedProduct?.id === product.id}
-          onSelect={onSelect}
-        />
+        <div key={product.id} className="flex">
+          <ProductCard
+            product={product}
+            isSelected={selectedProduct?.id === product.id}
+            onSelect={onSelect}
+          />
+        </div>
       ))}
     </div>
   );
