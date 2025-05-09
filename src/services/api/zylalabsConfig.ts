@@ -7,6 +7,10 @@ export const MAX_RETRY_ATTEMPTS = 3;
 export const RETRY_DELAY = 2000; // 2 seconds between retries
 export const REQUEST_TIMEOUT = 60000; // 60 seconds timeout
 
+// Rate limiting configuration based on plan
+export const RATE_LIMIT_PER_MINUTE = 60; // 60 requests per minute as per plan
+export const MONTHLY_QUOTA = 10000; // 10,000 requests per month as per plan
+
 // Корректный базовый URL из Postman коллекции
 export const ZYLALABS_BASE_URL = "https://zylalabs.com";
 
