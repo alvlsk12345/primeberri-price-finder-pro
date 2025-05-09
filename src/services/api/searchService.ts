@@ -21,22 +21,21 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
   }
   
   // Extract search parameters
-  const countries = params.countries || ['gb'];
+  const countries = params.countries || ['us']; // Changed default from 'gb' to 'us' as in Postman
   const language = params.language || 'en';
-  const page = params.page || 1;
+  const page = params.page || null; // Changed to null to match Postman (optional parameter)
   
-  // Log API key information (partial, for security)
-  const keyPreview = ZYLALABS_API_KEY ? `${ZYLALABS_API_KEY.substring(0, 5)}...` : 'отсутствует';
-  console.log(`Используем API ключ: ${keyPreview}`);
-  console.log(`Поиск товаров с параметрами: страна=${countries[0]}, язык=${language}, страница=${page}`);
+  // Log search parameters
+  console.log(`Поиск товаров: запрос="${params.query}", страна=${countries[0]}, язык=${language}, страница=${page || 'не указана'}`);
+  console.log(`Используем API ключ: ${ZYLALABS_API_KEY.substring(0, 10)}...`);
   
   try {
     // Execute search with retry capability
     return await withRetry(async (attempt, proxyIndex) => {
       console.log(`Отправляем запрос к Zylalabs API... (попытка ${attempt + 1}/${MAX_RETRY_ATTEMPTS})`, params);
-      console.log(`Используем прокси ${proxyIndex}`);
+      console.log(`Используем прокси индекс ${proxyIndex}`);
       
-      // Build the API URL with proper proxy
+      // Build the API URL with proper proxy - matching Postman collection format
       const apiUrl = buildMultiCountrySearchUrl(params.query, countries, language, page, proxyIndex);
       console.log('URL запроса:', apiUrl);
       
@@ -55,7 +54,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
         const parsedResult = parseApiResponse(data);
         console.log(`Успешно получено ${parsedResult.products?.length || 0} товаров`);
         
-        // Проверяем качество полученных ссылок
+        // Check quality of received links
         if (parsedResult.products && parsedResult.products.length > 0) {
           let searchLinkCounter = 0;
           let directLinkCounter = 0;
@@ -88,10 +87,10 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
     console.error('Не удалось получить данные после всех попыток, используем мок-данные');
     console.log('Используем мок-данные для запроса:', params.query);
     
-    // Генерируем расширенные мок-данные с учетом запроса пользователя
+    // Generate enhanced mock data based on user query
     const mockData = getMockSearchResults(params.query);
     
-    // Отображаем информативное уведомление
+    // Show informative notification
     toast.error('Не удалось подключиться к API поиска. Используем демонстрационные данные.');
     
     return { ...mockData, fromMock: true };

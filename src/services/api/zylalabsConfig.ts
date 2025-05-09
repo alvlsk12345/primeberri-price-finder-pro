@@ -19,22 +19,29 @@ const CORS_PROXIES = [
 // Create a function to build API URL with appropriate proxy
 export const getApiBaseUrl = (proxyIndex: number = 0): string => {
   const proxy = CORS_PROXIES[proxyIndex % CORS_PROXIES.length];
-  return `${proxy}https://zylalabs.com`; // Updated to use zylalabs.com instead of api.zylalabs.com
+  return `${proxy}https://zylalabs.com`; // Base URL is zylalabs.com
 };
 
-// API URL builder for single country search
+// API URL builder for single country search - Matching exactly with Postman collection format
 export const buildSearchUrl = (
   query: string, 
   country: string, 
   language: string, 
-  page: number, 
+  page: number | null = null, 
   proxyIndex: number = 0
 ): string => {
   const encodedQuery = encodeURIComponent(query);
   const baseUrl = getApiBaseUrl(proxyIndex);
   
-  // Updated path to match Postman collection
-  return `${baseUrl}/api/2033/real+time+product+search+api/1809/search+products?q=${encodedQuery}&country=${country}&language=${language}${page ? `&page=${page}` : ''}`;
+  // Exact path structure matching Postman collection
+  let url = `${baseUrl}/api/2033/real+time+product+search+api/1809/search+products?q=${encodedQuery}&country=${country}&language=${language}`;
+  
+  // Add page parameter only if it's a valid number
+  if (page !== null && !isNaN(Number(page))) {
+    url += `&page=${page}`;
+  }
+  
+  return url;
 };
 
 // API URL builder for multi-country search
@@ -42,11 +49,11 @@ export const buildMultiCountrySearchUrl = (
   query: string, 
   countries: string[], 
   language: string, 
-  page: number, 
+  page: number | null = null, 
   proxyIndex: number = 0
 ): string => {
-  // По умолчанию используем первую страну из списка или 'gb', если список пустой
-  const country = countries && countries.length > 0 ? countries[0] : 'gb';
+  // По умолчанию используем первую страну из списка или 'us', если список пустой (changed from 'gb' to 'us' as in Postman)
+  const country = countries && countries.length > 0 ? countries[0] : 'us';
   return buildSearchUrl(query, country, language, page, proxyIndex);
 };
 

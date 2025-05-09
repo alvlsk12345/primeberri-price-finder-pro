@@ -20,27 +20,25 @@ export const fetchFromZylalabs = async (
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
   
   try {
-    // Set up request headers
+    // Setup headers exactly as in Postman collection - Bearer token authentication
     const headers: HeadersInit = {
       'Authorization': `Bearer ${ZYLALABS_API_KEY}`,
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'Cache-Control': 'no-cache'
+      'Accept': 'application/json'
     };
     
-    // Add any additional headers needed for proxy
-    if (proxyIndex > 0) {
-      headers['X-Requested-With'] = 'XMLHttpRequest';
-    }
-    
-    console.log('Отправляемые заголовки:', Object.keys(headers).join(', '));
+    // Log the request for debugging
+    console.log('Making API request to:', url);
+    console.log('Using API key (first 10 chars):', ZYLALABS_API_KEY.substring(0, 10) + '...');
+    console.log('Headers:', Object.keys(headers).join(', '));
     
     const response = await fetch(url, {
       method: 'GET',
       headers: headers,
       signal: controller.signal,
       mode: 'cors',
-      credentials: 'omit'
+      credentials: 'omit',
+      cache: 'no-store' // Disable caching to ensure fresh data
     });
     
     // Clear timeout once request is complete
@@ -49,52 +47,56 @@ export const fetchFromZylalabs = async (
     // Log response status
     console.log(`API response status: ${response.status}, ok: ${response.ok}`);
     
-    // Handle error responses
     if (!response.ok) {
-      // Try to get the full error text for diagnostics
-      const responseText = await response.text();
-      console.error("API Error Response Text:", responseText, "Status:", response.status);
-      
+      // Try to get the error details for better debugging
+      let errorText = '';
       try {
-        // Attempt to parse response as JSON for more detailed error info
-        const errorData = JSON.parse(responseText);
+        errorText = await response.text();
+        console.error("API Error Response Text:", errorText, "Status:", response.status);
+        
+        // Try to parse as JSON for structured error info
+        const errorData = JSON.parse(errorText);
         console.error("API Error Data:", errorData);
         
-        // Check for usage limit exceeded
-        if (errorData.message && (
-          errorData.message.includes('exceeded the allowed limit') || 
-          errorData.message.includes('limit exceeded')
-        )) {
-          console.error('API usage limit exceeded');
-          toast.error('Превышен лимит запросов к API. Пожалуйста, попробуйте позже.');
-          throw new Error('API usage limit exceeded');
-        }
-        
-        // Handle 503 errors (service unavailable)
-        if (response.status === 503) {
-          console.error('API сервис временно недоступен');
-          toast.error('API сервис временно недоступен. Используем демо-данные.');
-          throw new Error('API service unavailable');
+        // Check for specific error types
+        if (errorData.message) {
+          if (errorData.message.includes('exceeded the allowed limit') || 
+              errorData.message.includes('limit exceeded')) {
+            toast.error('Превышен лимит запросов к API. Пожалуйста, попробуйте позже.');
+          } else if (response.status === 503) {
+            toast.error('API сервис временно недоступен. Используем демо-данные.');
+          } else {
+            toast.error(`Ошибка API: ${errorData.message}`);
+          }
         }
       } catch (e) {
-        // If parsing as JSON fails, use text as is
+        // If parsing fails, use text response as is
+        console.error("Could not parse error response:", e);
       }
       
       throw new Error(`API error: ${response.status}`);
     }
     
-    // Parse the successful response
-    return await response.json();
-  } catch (error) {
-    // Если ошибка связана с отменой запроса из-за таймаута
+    // Parse successful response
+    const jsonResponse = await response.json();
+    console.log("API response received successfully");
+    
+    // Log a sample of the response for debugging
+    const sampleResponse = JSON.stringify(jsonResponse).substring(0, 200) + '...';
+    console.log("Sample API response:", sampleResponse);
+    
+    return jsonResponse;
+  } catch (error: any) {
+    // If error is related to request timeout
     if (error.name === 'AbortError') {
-      console.error('Запрос к API отменен из-за таймаута');
+      console.error('API request timeout');
       toast.error('Запрос к API занял слишком много времени. Используем демо-данные.');
       throw new Error('API request timeout');
     }
     
-    // Очищаем таймаут и пробрасываем ошибку дальше
+    // Clean up and re-throw
     clearTimeout(timeoutId);
+    console.error("API request failed:", error.message);
     throw error;
   } finally {
     clearTimeout(timeoutId);
