@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { Product, ProductFilters } from "@/services/types";
 import { searchProducts } from "@/services/productService";
 import { toast } from "sonner";
@@ -23,10 +23,10 @@ export const useSearchHandlers = (
   setApiErrorMode: (errorMode: boolean) => void,
   setPageChangeCount: React.Dispatch<React.SetStateAction<number>>
 ) => {
-  // Product selection handler
-  const handleProductSelect = (product: Product) => {
+  // Product selection handler - memoized
+  const handleProductSelect = useCallback((product: Product) => {
     setSelectedProduct(product);
-  };
+  }, [setSelectedProduct]);
   
   // Memoized search function
   const handleSearch = useCallback(async (page: number = 1, forceNewSearch: boolean = false) => {
@@ -40,13 +40,13 @@ export const useSearchHandlers = (
     const queryToUse = searchQuery || lastSearchQuery;
     
     setIsLoading(true);
-    setApiErrorMode(false); // Сбрасываем состояние ошибки API перед новым запросом
+    setApiErrorMode(false); // Reset API error state before new request
     
     try {
       // If it's the same page for the same query and we have cached results
       const isSameQuery = queryToUse === lastSearchQuery;
       if (!forceNewSearch && isSameQuery && cachedResults[page]) {
-        console.log(`Используем кэшированные результаты для страницы ${page}`);
+        console.log(`Using cached results for page ${page}`);
         setSearchResults(cachedResults[page]);
         setCurrentPage(page);
         setIsLoading(false);
@@ -66,7 +66,7 @@ export const useSearchHandlers = (
       // Set current page before executing request
       setCurrentPage(page);
       
-      // Определяем страны для поиска - либо из фильтров, либо все
+      // Define countries for search - either from filters or all
       const searchCountries = filters.countries && filters.countries.length > 0 
         ? filters.countries
         : EUROPEAN_COUNTRIES.map(country => country.code);
@@ -80,10 +80,10 @@ export const useSearchHandlers = (
         filters: filters
       });
       
-      // Проверяем, были ли использованы мок-данные из-за ошибки API
+      // Check if mock data was used due to API error
       if (results.fromMock) {
         setApiErrorMode(true);
-        console.log('Использованы мок-данные из-за ошибки API');
+        console.log('Using mock data due to API error');
       }
       
       // Save found products to state and cache
@@ -91,26 +91,26 @@ export const useSearchHandlers = (
         setSearchResults(results.products);
         setCachedResults(prev => ({...prev, [page]: results.products}));
         setTotalPages(results.totalPages);
-        toast.success(`Найдено ${results.products.length} товаров!`);
+        toast.success(`Found ${results.products.length} products!`);
       } else {
         // Check if we have results in cache for current search query
         if (cachedResults[1] && cachedResults[1].length > 0 && isSameQuery) {
           setSearchResults(cachedResults[1]);
           setCurrentPage(1);
-          toast.info('Ошибка при загрузке страницы, показаны результаты первой страницы');
+          toast.info('Error loading page, showing first page results');
         } else {
           setSearchResults([]);
-          toast.info('По вашему запросу ничего не найдено.');
+          toast.info('No results found for your query.');
         }
       }
       
       // Mark that search has been performed
       setHasSearched(true);
     } catch (error) {
-      console.error('Ошибка поиска:', error);
-      toast.error('Произошла ошибка при поиске товаров');
+      console.error('Search error:', error);
+      toast.error('An error occurred while searching for products');
       
-      // Устанавливаем режим ошибки API
+      // Set API error mode
       setApiErrorMode(true);
       
       // If error occurs, check if we have cached results
@@ -121,7 +121,7 @@ export const useSearchHandlers = (
         // If no results for current page, return to first page
         setSearchResults(cachedResults[1]);
         setCurrentPage(1);
-        toast.info('Возврат к первой странице из-за ошибки');
+        toast.info('Returning to first page due to error');
       }
     } finally {
       setIsLoading(false);
@@ -130,8 +130,8 @@ export const useSearchHandlers = (
       setTotalPages, setCachedResults, setOriginalQuery, setLastSearchQuery, setHasSearched, 
       setIsLoading, setApiErrorMode]);
   
-  // Page change handler
-  const handlePageChange = (page: number) => {
+  // Page change handler - memoized
+  const handlePageChange = useCallback((page: number) => {
     if (page !== currentPage && page >= 1) {
       console.log(`Changing page from ${currentPage} to ${page}`);
       // Increment page change counter to force a re-render
@@ -141,13 +141,13 @@ export const useSearchHandlers = (
       // Then trigger a search with new page
       handleSearch(page);
     }
-  };
+  }, [currentPage, handleSearch, setCurrentPage, setPageChangeCount]);
   
-  // Filter change handler
-  const handleFilterChange = (newFilters: ProductFilters) => {
+  // Filter change handler - memoized
+  const handleFilterChange = useCallback((newFilters: ProductFilters) => {
     setCurrentPage(1); // Reset to first page when filters change
     handleSearch(1, true);
-  };
+  }, [handleSearch, setCurrentPage]);
 
   return {
     handleSearch,

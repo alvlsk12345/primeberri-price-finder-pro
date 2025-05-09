@@ -1,11 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Product, ProductFilters } from "@/services/types";
 import { SearchContext } from './SearchContext';
 import { useSearchHandlers } from './useSearchHandlers';
 
 // Provider component
 export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<Product[]>([]);
@@ -44,12 +45,13 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setPageChangeCount
   );
 
-  // Effect для отладки изменения страницы
+  // Effect for debugging page changes
   useEffect(() => {
     console.log(`Page change effect triggered: current page is ${currentPage}, change count: ${pageChangeCount}`);
   }, [currentPage, pageChangeCount]);
 
-  const value = {
+  // Memoize context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
     searchQuery,
     setSearchQuery,
     isLoading,
@@ -68,7 +70,23 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     handleProductSelect,
     handlePageChange,
     handleFilterChange,
-  };
+  }), [
+    searchQuery, 
+    isLoading, 
+    searchResults, 
+    selectedProduct, 
+    currentPage, 
+    totalPages, 
+    filters, 
+    originalQuery, 
+    lastSearchQuery, 
+    hasSearched, 
+    apiErrorMode, 
+    handleSearch, 
+    handleProductSelect, 
+    handlePageChange, 
+    handleFilterChange
+  ]);
 
   return <SearchContext.Provider value={value}>{children}</SearchContext.Provider>;
 };
