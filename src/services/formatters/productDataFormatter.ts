@@ -61,19 +61,25 @@ const sortProducts = (products: Product[], sortBy: SortOption): Product[] => {
   
   switch (sortBy) {
     case "price_asc": 
-      return sortedProducts.sort((a, b) => 
-        (a._numericPrice || 0) - (b._numericPrice || 0)
-      );
+      return sortedProducts.sort((a, b) => {
+        const priceA = a._numericPrice !== undefined ? a._numericPrice : 0;
+        const priceB = b._numericPrice !== undefined ? b._numericPrice : 0;
+        return priceA - priceB;
+      });
       
     case "price_desc": 
-      return sortedProducts.sort((a, b) => 
-        (b._numericPrice || 0) - (a._numericPrice || 0)
-      );
+      return sortedProducts.sort((a, b) => {
+        const priceA = a._numericPrice !== undefined ? a._numericPrice : 0;
+        const priceB = b._numericPrice !== undefined ? b._numericPrice : 0;
+        return priceB - priceA;
+      });
       
     case "rating_desc": 
-      return sortedProducts.sort((a, b) => 
-        b.rating - a.rating
-      );
+      return sortedProducts.sort((a, b) => {
+        const ratingA = a.rating !== undefined ? a.rating : 0;
+        const ratingB = b.rating !== undefined ? b.rating : 0;
+        return ratingB - ratingA;
+      });
       
     default:
       return sortedProducts;

@@ -2,7 +2,6 @@
 import { useRef } from 'react';
 import { Product, ProductFilters, SearchParams } from "@/services/types";
 import { searchProducts } from "@/services/productService";
-import { toast } from "@/components/ui/use-toast";
 
 type SearchExecutorProps = {
   isLoading: boolean;
@@ -48,7 +47,6 @@ export function useSearchExecutor({
     const searchTimeout = setTimeout(() => {
       if (isLoading) {
         setIsLoading(false);
-        // Отключаем всплывающие уведомления
         console.log('Поиск занял слишком много времени');
       }
     }, 10000); // 10 seconds timeout
@@ -97,23 +95,23 @@ export function useSearchExecutor({
       if (filters.sortBy) {
         switch(filters.sortBy) {
           case 'price_asc':
-            sortedProducts.sort((a, b) => {
-              const priceA = a._numericPrice || parseFloat(a.price) || 0;
-              const priceB = b._numericPrice || parseFloat(b.price) || 0;
+            sortedProducts = sortedProducts.sort((a, b) => {
+              const priceA = a._numericPrice !== undefined ? a._numericPrice : parseFloat(a.price) || 0;
+              const priceB = b._numericPrice !== undefined ? b._numericPrice : parseFloat(b.price) || 0;
               return priceA - priceB;
             });
             break;
           case 'price_desc':
-            sortedProducts.sort((a, b) => {
-              const priceA = a._numericPrice || parseFloat(a.price) || 0;
-              const priceB = b._numericPrice || parseFloat(b.price) || 0;
+            sortedProducts = sortedProducts.sort((a, b) => {
+              const priceA = a._numericPrice !== undefined ? a._numericPrice : parseFloat(a.price) || 0;
+              const priceB = b._numericPrice !== undefined ? b._numericPrice : parseFloat(b.price) || 0;
               return priceB - priceA;
             });
             break;
           case 'rating_desc':
-            sortedProducts.sort((a, b) => {
-              const ratingA = a.rating || 0;
-              const ratingB = b.rating || 0;
+            sortedProducts = sortedProducts.sort((a, b) => {
+              const ratingA = a.rating !== undefined ? a.rating : 0;
+              const ratingB = b.rating !== undefined ? b.rating : 0;
               return ratingB - ratingA;
             });
             break;
