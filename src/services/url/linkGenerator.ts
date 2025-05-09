@@ -2,7 +2,7 @@
 import { Product } from '../types';
 import { extractProductId } from './productIdExtractor';
 import { getStoreMapEntry } from './storeMapper';
-import { createSlug } from './slugCreator';
+import { createProductSlug } from './slugCreator';
 import { isSearchEngineLink } from './searchEngineDetector';
 
 /**
@@ -32,7 +32,7 @@ export const getProductLink = (product: Product | null): string => {
   const productId = extractProductId(product.id);
   
   // Create a URL-friendly slug from the product title
-  const productSlug = createSlug(product.title);
+  const productSlug = createProductSlug(product.title);
   
   // Generate a direct link based on store and product information
   return `https://${storeName}.com/product/${productId}/${productSlug}`;
