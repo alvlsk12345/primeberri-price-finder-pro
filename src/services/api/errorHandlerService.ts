@@ -43,7 +43,7 @@ export const handleApiError = async (response: Response): Promise<never> => {
       console.warn('CORS прокси требует активацию, попробуем другой прокси');
       throw new Error('CORS прокси требует активацию');
     }
-    toast.error(`Доступ запрещен: ${errorMessage}`);
+    toast.error(`Доступ запрещен (403): ${errorMessage}`);
     throw new Error(`Доступ запрещен: ${errorMessage}`);
   } else {
     toast.error(`Ошибка API: ${errorMessage}`);

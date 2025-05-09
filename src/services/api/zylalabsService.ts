@@ -11,7 +11,6 @@ import {
   sleep 
 } from "./zylalabsConfig";
 import { getMockSearchResults } from "./mockDataService";
-import { handleApiError, handleFetchError } from "./errorHandlerService";
 import { parseApiResponse } from "./responseParserService";
 
 // Функция для поиска товаров через Zylalabs API с поддержкой пагинацией, повторными попытками и множественными странами
@@ -19,6 +18,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
   // Проверяем наличие API ключа
   if (!checkApiKey()) {
     const mockResults = getMockSearchResults(params.query);
+    console.log('API ключ не найден, используем моковые данные');
     return { ...mockResults, fromMock: true };
   }
   
@@ -94,10 +94,10 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
           // Если не удалось распарсить как JSON, используем текст как есть
         }
         
-        // Для ошибки 403 с CORS proxy, меняем индекс прокси и повторяем
-        if (response.status === 403 && proxyIndex > 0) {
-          console.warn('CORS proxy вернул 403, пробуем другой прокси');
-          proxyIndex = (proxyIndex + 1) % 4; // Rotate through proxies
+        // Для ошибок 403 и 404, меняем индекс прокси и повторяем
+        if ((response.status === 403 || response.status === 404) && proxyIndex < 4) {
+          console.warn(`Получен статус ${response.status}, пробуем другой прокси`);
+          proxyIndex = (proxyIndex + 1) % 5; // Use all 5 proxies
           attempts++;
           await sleep(RETRY_DELAY);
           continue;
@@ -121,7 +121,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
         } else {
           // Другие ошибки API - пробуем другой прокси
           console.warn(`Ошибка API ${response.status}, пробуем другой прокси`);
-          proxyIndex = (proxyIndex + 1) % 4; // Rotate through proxies
+          proxyIndex = (proxyIndex + 1) % 5; // Use all 5 proxies
           attempts++;
           await sleep(RETRY_DELAY);
           continue;
@@ -159,12 +159,11 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
       
       // Для других ошибок - логируем и обрабатываем
       console.error("Fetch error:", error);
-      handleFetchError(error);
       
       // Если вероятная проблема с CORS, меняем прокси
       if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
         console.log('Произошла ошибка "Failed to fetch", пробуем другой прокси');
-        proxyIndex = (proxyIndex + 1) % 4; // Rotate through proxies
+        proxyIndex = (proxyIndex + 1) % 5; // Use all 5 proxies
       }
       
       // Увеличиваем счетчик попыток

@@ -4,14 +4,15 @@ export const ZYLALABS_API_KEY = "8103|qZi97eieReCKmFs6mwcg9Mf1H2JjJfGgdesU59tv";
 
 // Request configuration
 export const MAX_RETRY_ATTEMPTS = 3;
-export const RETRY_DELAY = 2000; // Increased delay between retries to 2 seconds
-export const REQUEST_TIMEOUT = 60000; // Increased timeout to 60 seconds
+export const RETRY_DELAY = 2000; // 2 seconds between retries
+export const REQUEST_TIMEOUT = 60000; // 60 seconds timeout
 
 // Alternative CORS proxies to try if direct access fails
 const CORS_PROXIES = [
   "", // Direct connection (no proxy)
-  "https://corsproxy.io/?", // New reliable CORS proxy
+  "https://corsproxy.io/?", // Primary CORS proxy
   "https://api.allorigins.win/raw?url=", // Alternative CORS proxy
+  "https://cors.eu.org/", // EU based CORS proxy
   "https://cors-anywhere.herokuapp.com/" // Original proxy that requires demo access
 ];
 

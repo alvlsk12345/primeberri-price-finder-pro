@@ -25,7 +25,7 @@ export const SearchResultsSection: React.FC = () => {
 
   return (
     <div className="mt-6">
-      {apiErrorMode && <SearchResultsAlert currentPage={currentPage} apiErrorMode={true} />}
+      {apiErrorMode && <SearchResultsAlert apiErrorMode={true} currentPage={currentPage} />}
       
       <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
         <h2 className="text-xl font-semibold">

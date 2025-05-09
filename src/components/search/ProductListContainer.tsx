@@ -5,6 +5,7 @@ import { ProductList } from '../product/ProductList';
 import { Pagination } from '../product/Pagination';
 import { SearchResultsAlert } from './SearchResultsAlert';
 import { toast } from "@/components/ui/sonner";
+import { useSearch } from "@/contexts/SearchContext";
 
 interface ProductListContainerProps {
   products: Product[];
@@ -23,6 +24,8 @@ export const ProductListContainer: React.FC<ProductListContainerProps> = ({
   totalPages,
   onPageChange
 }) => {
+  const { apiErrorMode } = useSearch();
+  
   // Enhanced page change handler with validation and feedback
   const handlePageChange = (page: number) => {
     console.log(`ProductListContainer: Changing page from ${currentPage} to ${page}`);
@@ -49,8 +52,8 @@ export const ProductListContainer: React.FC<ProductListContainerProps> = ({
 
   return (
     <div className="space-y-4">
-      {currentPage > 1 && products.length > 0 && (
-        <SearchResultsAlert currentPage={currentPage} />
+      {(currentPage > 1 || apiErrorMode) && products.length > 0 && (
+        <SearchResultsAlert currentPage={currentPage} apiErrorMode={apiErrorMode} />
       )}
       
       <ProductList 
@@ -59,11 +62,13 @@ export const ProductListContainer: React.FC<ProductListContainerProps> = ({
         onSelect={onSelect}
       />
       
-      <Pagination 
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
-      />
+      {totalPages > 1 && (
+        <Pagination 
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+      )}
     </div>
   );
 };
