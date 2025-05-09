@@ -41,7 +41,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       handleSearch();
     } catch (error) {
       console.error('Ошибка при попытке поиска:', error);
-      setHasError(true);
+      setHasError(false); // Reset error state to prevent UI hanging
       toast.error('Произошла ошибка при поиске. Пожалуйста, попробуйте снова.');
     }
   };
@@ -102,4 +102,3 @@ export const SearchForm: React.FC<SearchFormProps> = ({
     </div>
   );
 };
-

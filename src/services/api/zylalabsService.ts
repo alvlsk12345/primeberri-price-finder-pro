@@ -10,6 +10,8 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
   // Когда установлен режим принудительного использования демо-данных
   if (useDemoModeForced) {
     console.log('Принудительное использование демо-данных для запроса:', params.query);
+    // Добавим небольшую задержку для имитации запроса (не более 500мс)
+    await new Promise(resolve => setTimeout(resolve, 500));
     return getMockSearchResults(params.query);
   }
 

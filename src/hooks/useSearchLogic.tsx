@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Product, ProductFilters } from "@/services/types";
 import { searchProducts } from "@/services/productService";
 import { toast } from "sonner";
@@ -20,6 +20,18 @@ export function useSearchLogic() {
   const [pageChangeCount, setPageChangeCount] = useState(0);
   const [isUsingDemoData, setIsUsingDemoData] = useState(false);
   const [apiInfo, setApiInfo] = useState<Record<string, string> | undefined>(undefined);
+  
+  // Timeout reference to ensure we can cancel pending timeouts
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup function for component unmounting or before new searches
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Memoized search function
   const handleSearch = useCallback(async (page: number = 1, forceNewSearch: boolean = false) => {
@@ -29,11 +41,26 @@ export function useSearchLogic() {
       return;
     }
 
+    // Cancel any pending searches
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
     // Use current search query or last successful one
     const queryToUse = searchQuery || lastSearchQuery;
     
     setIsLoading(true);
     setIsUsingDemoData(false);
+    
+    // Set a timeout to ensure search doesn't hang for too long
+    const searchTimeout = setTimeout(() => {
+      if (isLoading) {
+        setIsLoading(false);
+        toast.error('Поиск занял слишком много времени. Попробуйте снова.');
+      }
+    }, 10000); // 10 seconds timeout
+    
+    searchTimeoutRef.current = searchTimeout;
     
     try {
       // If it's the same page for the same query and we have cached results
@@ -43,6 +70,7 @@ export function useSearchLogic() {
         setSearchResults(cachedResults[page]);
         setCurrentPage(page);
         setIsLoading(false);
+        clearTimeout(searchTimeout);
         return;
       }
       
@@ -121,9 +149,10 @@ export function useSearchLogic() {
         toast.info('Возврат к первой странице из-за ошибки');
       }
     } finally {
+      clearTimeout(searchTimeout);
       setIsLoading(false);
     }
-  }, [searchQuery, lastSearchQuery, filters, cachedResults, currentPage]);
+  }, [searchQuery, lastSearchQuery, filters, cachedResults, currentPage, isLoading]);
 
   // Product selection handler
   const handleProductSelect = (product: Product) => {

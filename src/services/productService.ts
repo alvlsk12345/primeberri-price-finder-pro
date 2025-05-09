@@ -1,7 +1,7 @@
 
 import { searchProductsViaZylalabs } from './api/zylalabsService';
 import { Product, SearchParams } from './types';
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { processZylalabsProductsData } from './formatters/productDataFormatter';
 
 // Функция для поиска товаров с поддержкой пагинации и фильтрации
@@ -13,15 +13,29 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
     const searchToastId = `search-${Date.now()}`;
     toast.loading('Поиск товаров...', { id: searchToastId });
     
-    // Получаем данные от Zylalabs API с учетом пагинации
-    const response = await searchProductsViaZylalabs(params);
+    // Установка таймаута для предотвращения зависания
+    const timeoutPromise = new Promise<{products: [], totalPages: number, isDemo: true}>((_, reject) => {
+      setTimeout(() => reject(new Error('Timeout')), 5000);
+    });
+    
+    // Получаем данные от Zylalabs API с учетом пагинации и добавляем таймаут
+    const response = await Promise.race([
+      searchProductsViaZylalabs(params),
+      timeoutPromise
+    ]).catch(error => {
+      console.warn('Поиск был прерван из-за таймаута или ошибки:', error);
+      return { products: [], total: 0, isDemo: true };
+    });
+    
     console.log('Ответ от API получен:', response);
+    
+    // Закрываем уведомление о поиске
+    toast.dismiss(searchToastId);
     
     // Проверяем наличие результатов поиска
     if (!response || !response.products || response.products.length === 0) {
-      toast.dismiss(searchToastId);
       toast.info('По вашему запросу ничего не найдено');
-      return { products: [], totalPages: 0 };
+      return { products: [], totalPages: 0, isDemo: true };
     }
     
     // Проверяем, используются ли демо-данные
@@ -32,9 +46,6 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
     
     // Обрабатываем данные о товарах
     const products = await processZylalabsProductsData(response.products, params.filters);
-    
-    // Закрываем уведомление о поиске
-    toast.dismiss(searchToastId);
     
     // Расчет общего количества страниц (приблизительное значение)
     const itemsPerPage = 12; // Стандартное количество элементов на странице
@@ -53,7 +64,7 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
   } catch (error) {
     console.error('Ошибка при поиске товаров:', error);
     toast.error('Произошла ошибка при поиске товаров');
-    return { products: [], totalPages: 0 };
+    return { products: [], totalPages: 0, isDemo: true };
   }
 };
 
