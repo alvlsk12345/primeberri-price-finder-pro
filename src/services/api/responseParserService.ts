@@ -2,7 +2,7 @@
 /**
  * Парсит и нормализует ответ от API, учитывая разные форматы данных
  */
-export const parseApiResponse = (data: any): { products: any[], total: number } => {
+export const parseApiResponse = (data: any): { products: any[], total: number, apiInfo?: Record<string, string> } => {
   console.log('Получен ответ от API:', data);
   
   let products = [];

@@ -3,12 +3,15 @@ import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { ZYLALABS_API_KEY } from "@/services/api/zylalabsConfig";
+import { useSearch } from "@/contexts/SearchContext";
 
 interface SearchResultsAlertProps {
   currentPage: number;
 }
 
 export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({ currentPage }) => {
+  const { isUsingDemoData } = useSearch();
+  
   // Mask the API key for security (show first 5 and last 4 characters)
   const maskedKey = ZYLALABS_API_KEY.length > 10 
     ? `${ZYLALABS_API_KEY.substring(0, 5)}...${ZYLALABS_API_KEY.substring(ZYLALABS_API_KEY.length - 4)}`
@@ -26,6 +29,7 @@ export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({ currentP
           <li>Проблемами с API ключом</li>
         </ul>
         <p className="mt-2">Используемый API ключ: {maskedKey}</p>
+        <p className="mt-2 text-xs">Для просмотра оставшихся запросов API, проверьте заголовок ответа 'X-Zyla-API-Calls-Monthly-Remaining'</p>
       </AlertDescription>
     </Alert>
   );

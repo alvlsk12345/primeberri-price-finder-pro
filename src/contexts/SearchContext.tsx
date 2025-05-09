@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useCallback, useContext, useEffect } from 'react';
 import { Product, ProductFilters } from "@/services/types";
 import { searchProducts } from "@/services/productService";
@@ -20,6 +21,7 @@ type SearchContextType = {
   lastSearchQuery: string;
   hasSearched: boolean;
   isUsingDemoData: boolean;
+  apiInfo?: Record<string, string>;
   handleSearch: (page?: number, forceNewSearch?: boolean) => Promise<void>;
   handleProductSelect: (product: Product) => void;
   handlePageChange: (page: number) => void;
@@ -44,6 +46,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [hasSearched, setHasSearched] = useState(false);
   const [pageChangeCount, setPageChangeCount] = useState(0);
   const [isUsingDemoData, setIsUsingDemoData] = useState(false);
+  const [apiInfo, setApiInfo] = useState<Record<string, string> | undefined>(undefined);
 
   // Memoized search function
   const handleSearch = useCallback(async (page: number = 1, forceNewSearch: boolean = false) => {
@@ -97,9 +100,11 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         filters: filters
       });
       
-      // Check if we're using demo data
+      // Check if we're using demo data and update state
       if (results.isDemo) {
         setIsUsingDemoData(true);
+        // Reset API info when using demo data
+        setApiInfo(undefined);
       }
       
       // Save found products to state and cache
@@ -189,6 +194,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     lastSearchQuery,
     hasSearched,
     isUsingDemoData,
+    apiInfo,
     handleSearch,
     handleProductSelect,
     handlePageChange,

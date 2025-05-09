@@ -7,7 +7,7 @@ import { handleApiError, handleFetchError } from "./errorHandlerService";
 import { parseApiResponse } from "./responseParserService";
 
 // Функция для поиска товаров через Zylalabs API с поддержкой пагинацией, повторными попытками и множественными странами
-export const searchProductsViaZylalabs = async (params: SearchParams): Promise<any> => {
+export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{products: any[], total: number, isDemo?: boolean, apiInfo?: Record<string, string>}> => {
   // Проверяем наличие API ключа
   if (!checkApiKey()) {
     toast.error("API ключ для Zylalabs не настроен");

@@ -3,6 +3,7 @@ import React from 'react';
 import { SearchResults } from "@/components/SearchResults";
 import { FilterPanel } from "@/components/FilterPanel";
 import { useSearch } from "@/contexts/SearchContext";
+import { ApiUsageInfo } from "@/components/search/ApiUsageInfo";
 
 export const SearchResultsSection: React.FC = () => {
   const { 
@@ -15,7 +16,8 @@ export const SearchResultsSection: React.FC = () => {
     filters,
     handleFilterChange,
     originalQuery,
-    isUsingDemoData
+    isUsingDemoData,
+    apiInfo
   } = useSearch();
 
   if (searchResults.length === 0) {
@@ -35,6 +37,9 @@ export const SearchResultsSection: React.FC = () => {
           results={searchResults}
         />
       </div>
+      
+      {apiInfo && Object.keys(apiInfo).length > 0 && <ApiUsageInfo />}
+      
       <SearchResults 
         results={searchResults} 
         onSelect={handleProductSelect} 
