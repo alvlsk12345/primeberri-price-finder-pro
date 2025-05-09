@@ -2,8 +2,9 @@
 import React, { KeyboardEvent, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, AlertCircle } from 'lucide-react';
+import { Search, AlertCircle, Info } from 'lucide-react';
 import { toast } from "@/components/ui/sonner";
+import { useDemoModeForced } from '@/services/api/mockDataService';
 
 type SearchFormProps = {
   searchQuery: string;
@@ -48,16 +49,25 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   return (
     <div className="space-y-3">
       <div className="flex flex-col sm:flex-row gap-3">
-        <Input
-          placeholder="Введите название товара, например, кожаная сумка, кроссовки Nike..."
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            if (hasError) setHasError(false);
-          }}
-          onKeyDown={handleKeyPress}
-          className={`flex-grow ${hasError ? 'border-red-500' : ''}`}
-        />
+        <div className="flex-grow relative">
+          <Input
+            placeholder="Введите название товара, например, кожаная сумка, кроссовки Nike..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              if (hasError) setHasError(false);
+            }}
+            onKeyDown={handleKeyPress}
+            className={`w-full ${hasError ? 'border-red-500' : ''}`}
+          />
+          {useDemoModeForced && (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded flex items-center">
+                <Info size={12} className="mr-1" /> Демо-режим
+              </span>
+            </div>
+          )}
+        </div>
         <Button 
           onClick={executeSearch} 
           disabled={isLoading || !searchQuery.trim()}
@@ -82,6 +92,14 @@ export const SearchForm: React.FC<SearchFormProps> = ({
           <span>Произошла ошибка при поиске. Пожалуйста, попробуйте еще раз.</span>
         </div>
       )}
+
+      {useDemoModeForced && (
+        <div className="flex items-center text-amber-600 text-sm gap-1 bg-amber-50 p-2 rounded">
+          <Info size={14} />
+          <span>Демонстрационный режим активен. Результаты поиска генерируются автоматически.</span>
+        </div>
+      )}
     </div>
   );
 };
+
