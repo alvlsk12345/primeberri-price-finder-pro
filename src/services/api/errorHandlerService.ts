@@ -34,7 +34,7 @@ export const handleApiError = async (response: Response): Promise<never> => {
   } else if (response.status === 400) {
     toast.error(`Некорректный запрос: ${errorMessage}`);
     throw new Error(`Некорректный запрос: ${errorMessage}`);
-  } else if (response.status === 503) {
+  } else if (response.status === 503 || response.status === 502 || response.status === 504) {
     console.warn('Сервис временно недоступен');
     throw new Error(`Сервис временно недоступен: ${errorMessage}`);
   } else {
@@ -55,7 +55,8 @@ export const handleFetchError = (error: any): void => {
   } else if (error.name === 'TypeError' && error.message.includes('NetworkError')) {
     toast.error('Проблема с сетью. Проверьте подключение к интернету');
   } else if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-    toast.error('Не удалось подключиться к API. Проверьте сетевое подключение или доступность сервера.');
+    toast.error('Не удалось подключиться к API. Проверяем альтернативные методы подключения...');
+    console.log('Произошла ошибка "Failed to fetch", возможно проблема с CORS или с сетевым соединением');
   } else {
     console.error('Ошибка API детали:', error);
     toast.error(`Ошибка при получении данных: ${error.message || 'Неизвестная ошибка'}`);

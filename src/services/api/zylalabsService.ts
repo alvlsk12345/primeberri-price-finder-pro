@@ -1,7 +1,15 @@
 
 import { toast } from "@/components/ui/sonner";
 import { SearchParams } from "../types";
-import { ZYLALABS_API_KEY, MAX_RETRY_ATTEMPTS, RETRY_DELAY, REQUEST_TIMEOUT, checkApiKey, buildMultiCountrySearchUrl, sleep } from "./zylalabsConfig";
+import { 
+  ZYLALABS_API_KEY, 
+  MAX_RETRY_ATTEMPTS, 
+  RETRY_DELAY, 
+  REQUEST_TIMEOUT, 
+  checkApiKey, 
+  buildMultiCountrySearchUrl, 
+  sleep 
+} from "./zylalabsConfig";
 import { getMockSearchResults } from "./mockDataService";
 import { handleApiError, handleFetchError } from "./errorHandlerService";
 import { parseApiResponse } from "./responseParserService";
@@ -15,6 +23,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
   
   let attempts = 0;
   let lastError = null;
+  let useProxy = false; // Start without proxy
 
   // Используем страны из параметров или дефолтную страну
   const countries = params.countries || ['gb'];
@@ -25,24 +34,35 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
     try {
       console.log(`Отправляем запрос к Zylalabs API... (попытка ${attempts + 1}/${MAX_RETRY_ATTEMPTS})`, params);
       
-      // Формируем URL запроса для множественных стран
-      const apiUrl = buildMultiCountrySearchUrl(params.query, countries, language, page);
+      // Toggle between direct and proxy methods on retries
+      if (attempts === 1) useProxy = true;
+      
+      // Формируем URL запроса для множественных стран с учетом прокси при необходимости
+      const apiUrl = buildMultiCountrySearchUrl(params.query, countries, language, page, useProxy);
       console.log('URL запроса:', apiUrl);
       
       // Выполняем запрос к API с таймаутом
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
+      // Set up request headers - conditional for proxy vs direct
+      const headers: HeadersInit = {
+        'Authorization': `Bearer ${ZYLALABS_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Cache-Control': 'no-cache'
+      };
+      
+      // Add origin header if using proxy
+      if (useProxy) {
+        headers['X-Requested-With'] = 'XMLHttpRequest';
+      }
+
       const response = await fetch(apiUrl, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${ZYLALABS_API_KEY}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
-        },
+        headers: headers,
         signal: controller.signal,
-        mode: 'cors',
+        mode: useProxy ? 'cors' : 'cors',
         credentials: 'omit'
       });
 
@@ -75,7 +95,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
           // Если не удалось распарсить как JSON, используем текст как есть
         }
         
-        if (response.status === 503) {
+        if (response.status === 503 || response.status === 502 || response.status === 504) {
           // Повторяем запрос при временной недоступности сервиса
           console.warn('Сервис временно недоступен, попытка повтора через', RETRY_DELAY);
           lastError = new Error(`Сервис временно недоступен`);
@@ -95,7 +115,9 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
         } else {
           // Другие ошибки API
           toast.error(`Ошибка API: ${response.status}`);
-          return getMockSearchResults(params.query);
+          attempts++;
+          await sleep(RETRY_DELAY);
+          continue;
         }
       }
 
@@ -147,6 +169,9 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
   // Если все попытки исчерпаны, используем мок-данные
   console.error('Все попытки запросов исчерпаны:', lastError);
   toast.error('Не удалось подключиться к API поиска. Используем демонстрационные данные.');
+  
+  // Показываем более подробное сообщение в консоли для отладки
+  console.log('Детали последней ошибки:', lastError);
   
   // Возвращаем мок-данные для демонстрации интерфейса
   return getMockSearchResults(params.query);

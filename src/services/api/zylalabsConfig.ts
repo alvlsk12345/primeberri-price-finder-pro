@@ -4,21 +4,32 @@ export const ZYLALABS_API_KEY = "8103|qZi97eieReCKmFs6mwcg9Mf1H2JjJfGgdesU59tv";
 
 // Request configuration
 export const MAX_RETRY_ATTEMPTS = 3;
-export const RETRY_DELAY = 1000;
-export const REQUEST_TIMEOUT = 30000; // Увеличиваем таймаут до 30 секунд
+export const RETRY_DELAY = 2000; // Increased delay between retries to 2 seconds
+export const REQUEST_TIMEOUT = 60000; // Increased timeout to 60 seconds
+
+// Create a function to check for CORS proxy if direct access fails
+export const getApiBaseUrl = (useProxy: boolean = false): string => {
+  // If using proxy, we'll route through a CORS proxy
+  if (useProxy) {
+    return "https://cors-anywhere.herokuapp.com/https://api.zylalabs.com";
+  }
+  return "https://api.zylalabs.com";
+};
 
 // API URL builder for single country search
-export const buildSearchUrl = (query: string, country: string, language: string, page: number): string => {
+export const buildSearchUrl = (query: string, country: string, language: string, page: number, useProxy: boolean = false): string => {
   const encodedQuery = encodeURIComponent(query);
+  const baseUrl = getApiBaseUrl(useProxy);
+  
   // Ensure we're using the correct API endpoint
-  return `https://api.zylalabs.com/api/2033/real+time+product+search+api/1809/search+products?q=${encodedQuery}&country=${country}&language=${language}&page=${page}&source=merchant`;
+  return `${baseUrl}/api/2033/real+time+product+search+api/1809/search+products?q=${encodedQuery}&country=${country}&language=${language}&page=${page}&source=merchant`;
 };
 
 // API URL builder for multi-country search
-export const buildMultiCountrySearchUrl = (query: string, countries: string[], language: string, page: number): string => {
+export const buildMultiCountrySearchUrl = (query: string, countries: string[], language: string, page: number, useProxy: boolean = false): string => {
   // По умолчанию используем первую страну из списка или 'gb', если список пустой
   const country = countries && countries.length > 0 ? countries[0] : 'gb';
-  return buildSearchUrl(query, country, language, page);
+  return buildSearchUrl(query, country, language, page, useProxy);
 };
 
 // Helper function to check API key presence
