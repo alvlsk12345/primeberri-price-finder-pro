@@ -46,6 +46,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
     // Fetch data from API - using the proxyIndex 0 for direct connection first
     let data;
     try {
+      // Fixed the error here - removed the second argument that was causing the TS error
       data = await fetchFromZylalabs(apiUrl);
       console.log("API Response data received successfully");
         
