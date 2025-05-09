@@ -24,13 +24,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
 
   return (
     <Card 
-      className={`cursor-pointer transition-all hover:shadow-md ${
+      className={`cursor-pointer transition-all hover:shadow-md h-full flex flex-col ${
         isSelected ? 'ring-2 ring-primary' : ''
       }`}
       onClick={() => onSelect(product)}
     >
-      <CardContent className="p-4 flex flex-col items-center">
-        <div className="flex flex-col items-center w-full">
+      <CardContent className="p-4 flex flex-col h-full">
+        <div className="flex flex-col items-center w-full h-full">
           <div className="relative w-full">
             <div className="absolute top-0 right-0 bg-primary text-white text-xs px-2 py-1 rounded-bl-md z-10">
               {product.subtitle}
@@ -43,7 +43,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
             productId={product.id} 
           />
           
-          <div className="w-full text-center">
+          <div className="w-full text-center flex flex-col flex-grow">
             <ProductCardTitle 
               title={product.title}
               onStopPropagation={handleStopPropagation}
