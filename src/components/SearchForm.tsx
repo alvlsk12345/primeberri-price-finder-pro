@@ -56,12 +56,12 @@ export const SearchForm: React.FC<SearchFormProps> = ({
             if (hasError) setHasError(false);
           }}
           onKeyDown={handleKeyPress}
-          className={`flex-grow ${hasError ? 'border-red-500' : ''} rounded-full px-6 py-6 border-2 focus-visible:ring-brand-red`}
+          className={`flex-grow ${hasError ? 'border-red-500' : ''}`}
         />
         <Button 
           onClick={executeSearch} 
           disabled={isLoading || !searchQuery.trim()}
-          className="min-w-[150px] rounded-full bg-brand-red hover:bg-brand-red/90 px-6 py-6"
+          className="min-w-[200px]"
         >
           {isLoading ? (
             <span className="flex items-center gap-2">
