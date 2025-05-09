@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Link } from 'lucide-react';
 import { toast } from "@/components/ui/sonner";
-import { getProductLink } from "@/services/urlService";
+import { getProductLink, isSearchEngineLink } from "@/services/urlService";
 import { Product } from "@/services/types";
 
 type ActionButtonsProps = {
@@ -30,11 +30,18 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     e.preventDefault();
     
     if (selectedProduct) {
-      // Получаем ссылку на товар из нашего сервиса
-      const productLink = getProductLink(selectedProduct);
+      // Приоритетно используем оригинальную ссылку, если она не поисковая
+      let linkToCopy = selectedProduct.link;
       
-      navigator.clipboard.writeText(productLink);
+      // Проверяем, является ли ссылка поисковой или отсутствует
+      if (!linkToCopy || isSearchEngineLink(linkToCopy)) {
+        // Если ссылка поисковая или отсутствует, генерируем новую
+        linkToCopy = getProductLink(selectedProduct);
+      }
+      
+      navigator.clipboard.writeText(linkToCopy);
       toast.success('Ссылка на товар скопирована!');
+      console.log('Скопирована ссылка:', linkToCopy);
     } else {
       toast.error('Пожалуйста, выберите товар');
     }
@@ -45,7 +52,15 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     e.preventDefault();
     
     if (selectedProduct) {
-      const productLink = getProductLink(selectedProduct);
+      // Приоритетно используем оригинальную ссылку, если она не поисковая
+      let productLink = selectedProduct.link;
+      
+      // Проверяем, является ли ссылка поисковой или отсутствует
+      if (!productLink || isSearchEngineLink(productLink)) {
+        // Если ссылка поисковая или отсутствует, генерируем новую
+        productLink = getProductLink(selectedProduct);
+      }
+      
       window.open(productLink, '_blank', 'noopener,noreferrer');
     } else {
       toast.error('Пожалуйста, выберите товар');

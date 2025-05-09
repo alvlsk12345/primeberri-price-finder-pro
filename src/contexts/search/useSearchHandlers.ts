@@ -32,6 +32,36 @@ export const useSearchHandlers = (
     setSelectedProduct(product);
   }, [setSelectedProduct]);
   
+  // Function to apply sorting to products
+  const applySorting = (products: Product[], sort: SortOption): Product[] => {
+    if (!products || products.length === 0) return products;
+    
+    const productsToSort = [...products];
+    
+    switch (sort) {
+      case 'price-asc':
+        return productsToSort.sort((a, b) => {
+          const priceA = (a as any)._numericPrice || 0;
+          const priceB = (b as any)._numericPrice || 0;
+          return priceA - priceB;
+        });
+      case 'price-desc':
+        return productsToSort.sort((a, b) => {
+          const priceA = (a as any)._numericPrice || 0;
+          const priceB = (b as any)._numericPrice || 0;
+          return priceB - priceA;
+        });
+      case 'popularity-desc':
+        return productsToSort.sort((a, b) => {
+          const ratingA = a.rating || 0;
+          const ratingB = b.rating || 0;
+          return ratingB - ratingA;
+        });
+      default:
+        return productsToSort;
+    }
+  };
+  
   // Memoized search function
   const handleSearch = useCallback(async (page: number = 1, forceNewSearch: boolean = false) => {
     // Check if there's a query for search
@@ -144,36 +174,6 @@ export const useSearchHandlers = (
       setTotalPages, setCachedResults, setOriginalQuery, setLastSearchQuery, setHasSearched, 
       setIsLoading, setApiErrorMode]);
   
-  // Function to apply sorting to products
-  const applySorting = (products: Product[], sort: SortOption): Product[] => {
-    if (!products || products.length === 0) return products;
-    
-    const productsToSort = [...products];
-    
-    switch (sort) {
-      case 'price-asc':
-        return productsToSort.sort((a, b) => {
-          const priceA = (a as any)._numericPrice || 0;
-          const priceB = (b as any)._numericPrice || 0;
-          return priceA - priceB;
-        });
-      case 'price-desc':
-        return productsToSort.sort((a, b) => {
-          const priceA = (a as any)._numericPrice || 0;
-          const priceB = (b as any)._numericPrice || 0;
-          return priceB - priceA;
-        });
-      case 'popularity-desc':
-        return productsToSort.sort((a, b) => {
-          const ratingA = a.rating || 0;
-          const ratingB = b.rating || 0;
-          return ratingB - ratingA;
-        });
-      default:
-        return productsToSort;
-    }
-  };
-  
   // Page change handler - memoized
   const handlePageChange = useCallback((page: number) => {
     if (page !== currentPage && page >= 1) {
@@ -202,7 +202,9 @@ export const useSearchHandlers = (
     setSortOption(option);
     
     // If we already have results, just sort them without making a new API call
-    setSearchResults(prevResults => applySorting([...prevResults], option));
+    setSearchResults((prevResults: Product[]) => {
+      return applySorting([...prevResults], option);
+    });
   }, [setSortOption, setSearchResults]);
 
   return {

@@ -36,11 +36,19 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
     e.preventDefault();
     onStopPropagation(e);
     
-    const productLink = getProductLink(product);
-    navigator.clipboard.writeText(productLink);
+    // Приоритетно используем оригинальную ссылку, если она не поисковая
+    let linkToCopy = product.link;
+    
+    // Проверяем, является ли ссылка поисковой или отсутствует
+    if (!linkToCopy || isSearchEngineLink(linkToCopy)) {
+      // Если ссылка поисковая или отсутствует, генерируем новую
+      linkToCopy = getProductLink(product);
+    }
+    
+    navigator.clipboard.writeText(linkToCopy);
     toast.success('Ссылка на товар скопирована!');
     
-    console.log('Скопирована ссылка:', productLink);
+    console.log('Скопирована ссылка:', linkToCopy);
   };
   
   const handleGoToPrimeberri = (e: React.MouseEvent) => {
