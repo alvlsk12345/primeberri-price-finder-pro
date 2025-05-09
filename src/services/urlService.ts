@@ -101,7 +101,13 @@ export const getStoreDomain = (storeName: string | undefined): string => {
 };
 
 // Функция для создания слага из имени продукта
-export const createProductSlug = (name: string): string => {
+export const createProductSlug = (name: string | undefined): string => {
+  // Добавляем проверку на null/undefined и обеспечиваем значение по умолчанию
+  if (!name) {
+    console.warn('Product name is undefined, using default slug');
+    return 'product';
+  }
+  
   return name.toLowerCase()
     .replace(/[^a-zа-яё0-9]/g, '-')
     .replace(/-+/g, '-')
@@ -185,6 +191,12 @@ export const extractProductId = (link: string | undefined, fallbackId: string): 
 
 // Получение реальной ссылки на страницу товара
 export const getProductLink = (product: Product): string => {
+  // Проверка на null/undefined для всего объекта продукта
+  if (!product) {
+    console.warn('Product object is undefined, returning default link');
+    return 'https://shop.example.com/product/undefined';
+  }
+  
   // Если у продукта есть прямая ссылка на магазин, которая не является поисковой, используем её напрямую
   if (product.link && 
      product.link.startsWith('http') && 
@@ -194,7 +206,7 @@ export const getProductLink = (product: Product): string => {
     return product.link;
   }
   
-  console.log('Создаю новую ссылку для', product.title);
+  console.log('Создаю новую ссылку для', product.title || 'неизвестный продукт');
   
   // Определяем домен магазина или используем запасной вариант
   const domain = getStoreDomain(product.source);
@@ -204,8 +216,11 @@ export const getProductLink = (product: Product): string => {
     extractProductId(product.link, product.id || `prod-${Date.now()}`) : 
     product.id || `prod-${Date.now()}`;
   
+  // Убедимся, что у нас есть заголовок продукта, иначе используем резервный
+  const productTitle = product.title || 'product';
+  
   // Создаем слаг для URL из имени продукта
-  const productSlug = createProductSlug(product.title);
+  const productSlug = createProductSlug(productTitle);
   
   // Формируем URL с правильными параметрами в зависимости от магазина
   // Специальные обработчики для конкретных магазинов
