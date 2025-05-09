@@ -64,10 +64,19 @@ export const ProductCardPrice: React.FC<ProductCardPriceProps> = ({
     }
   }, [parsedPrice]);
   
+  // Format the original price to show the currency symbol after the number
+  const formattedPrice = () => {
+    const priceMatch = price.match(/\d+([.,]\d+)?/);
+    if (priceMatch) {
+      return `${priceMatch[0]} €`;
+    }
+    return price;
+  };
+  
   return (
     <>
       <div className="font-bold text-lg">
-        {price}
+        {formattedPrice()}
       </div>
       {priceInRubles && (
         <div className="text-xs text-blue-600 font-medium">
