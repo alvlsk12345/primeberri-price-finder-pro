@@ -75,3 +75,6 @@ export const extractProductId = (link: string | undefined, fallbackId: string): 
   
   return fallbackId; // Используем fallbackId, если не удалось извлечь ID
 };
+
+// Add this function to match the import in linkGenerator.ts
+export const extractProductIdFromUrl = extractProductId;

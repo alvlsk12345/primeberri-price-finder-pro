@@ -34,7 +34,7 @@ export const getProductLink = (product: Product | undefined | null): string => {
 
   // Пытаемся извлечь ID товара из имеющейся ссылки, если она есть
   if (product.link) {
-    const extractedId = extractProductIdFromUrl(product.link);
+    const extractedId = extractProductIdFromUrl(product.link, productId || '');
     if (extractedId) {
       productId = extractedId;
     }

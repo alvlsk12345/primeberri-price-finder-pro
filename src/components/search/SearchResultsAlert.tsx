@@ -15,7 +15,7 @@ export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({
   // Если включен режим ошибки API
   if (apiErrorMode) {
     return (
-      <Alert variant="warning" className="bg-amber-50 border-amber-300">
+      <Alert variant="destructive" className="bg-amber-50 border-amber-300">
         <AlertTriangle className="h-4 w-4 text-amber-600" />
         <AlertTitle className="text-amber-800">Внимание</AlertTitle>
         <AlertDescription className="text-amber-700">

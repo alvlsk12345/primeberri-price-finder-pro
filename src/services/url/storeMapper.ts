@@ -55,3 +55,6 @@ export const getStoreDomain = (storeName: string | undefined): string => {
          storeName.toLowerCase().includes('mandm') ? 'mandmdirect.com' :
          'shop.example.com';
 };
+
+// Add this function to match the import in linkGenerator.ts
+export const getStoreMapEntry = getStoreDomain;
