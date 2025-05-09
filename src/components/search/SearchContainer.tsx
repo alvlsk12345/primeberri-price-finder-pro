@@ -7,8 +7,7 @@ import { ProductDetailsSection } from "@/components/product/ProductDetailsSectio
 export const SearchContainer: React.FC = () => {
   return <Card className="max-w-4xl mx-auto shadow-md">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Ищите товары в магазинах Европы,
-выбирайте и переходите на Primeberri для заказа</CardTitle>
+        <CardTitle className="text-2xl">Ищите товары в магазинах Европы, выбирайте и заказывайте на Primeberri </CardTitle>
         <CardDescription>Кликнув “Заказать на Primeberri”, вы получите скопированную ссылку для заказа</CardDescription>
       </CardHeader>
       <CardContent>

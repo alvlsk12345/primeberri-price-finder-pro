@@ -7,7 +7,7 @@ export const PageHeader: React.FC = () => {
   return <header className="bg-primary text-primary-foreground shadow-sm">
       <div className="container mx-auto py-4 px-4 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 text-2xl font-bold hover:opacity-90 transition-opacity">
-          <span>🌐 Поиск товаров для заказа на PrimeBerri</span>
+          <span> Поиск товаров для заказа на PrimeBerri</span>
         </Link>
         
         <div className="flex items-center gap-3">
