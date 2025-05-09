@@ -10,37 +10,12 @@ const storeMap: StoreMap = {
   'JD Sports': 'jdsports.com',
   'Nike Store': 'nike.com',
   'Nike.com': 'nike.com',
-  'Nike': 'nike.com',
   'Foot Locker': 'footlocker.eu',
   'Adidas': 'adidas.com',
   'H&M': 'hm.com',
   'Zara': 'zara.com',
   'Sportisimo': 'sportisimo.eu',
   'Интернет-магазин': 'shop.example.com'
-};
-
-// Список доменов поисковых систем, которые нужно исключить
-const searchEngines = [
-  'google.com',
-  'google.co.uk',
-  'google.ru',
-  'google.',
-  'yandex.ru',
-  'bing.com',
-  'shopping.google',
-];
-
-// Функция для проверки, является ли ссылка поисковой
-const isSearchEngineLink = (link: string): boolean => {
-  if (!link) return true;
-  
-  // Проверяем на общие паттерны поисковых ссылок
-  if (link.includes('/search?')) return true;
-  if (link.includes('query=')) return true;
-  if (link.includes('q=')) return true;
-  
-  // Проверяем на конкретные домены поисковиков
-  return searchEngines.some(engine => link.includes(engine));
 };
 
 // Функция для получения доменного имени магазина
@@ -56,36 +31,9 @@ export const createProductSlug = (name: string): string => {
     .replace(/^-|-$/g, ''); // Удаляем тире в начале и конце
 };
 
-// Функция для получения идентификатора продукта из ссылки или генерации кода товара
+// Функция для получения идентификатора продукта из ссылки
 export const extractProductId = (link: string, fallbackId: string): string => {
-  // Проверяем, является ли ссылка поисковой
-  if (isSearchEngineLink(link)) {
-    return fallbackId; // Используем fallbackId для поисковых ссылок
-  }
-  
-  // Конкретные шаблоны для разных магазинов
-  // Adidas: /fussballliebe-training-ball/IN9366.html
-  const adidasPattern = /\/([^\/]+)\/([A-Z0-9]{6})\.html/;
-  const adidasMatch = link.match(adidasPattern);
-  if (adidasMatch && adidasMatch[2]) {
-    return adidasMatch[2]; // Возвращаем код продукта, например IN9366
-  }
-  
-  // Nike: /t/air-force-1-07-shoes-WrLlWX/CW2288-111
-  const nikePattern = /\/t\/[^\/]+\/([A-Z0-9]+-[0-9]+)/;
-  const nikeMatch = link.match(nikePattern);
-  if (nikeMatch && nikeMatch[1]) {
-    return nikeMatch[1];
-  }
-  
-  // Amazon: /dp/B07PXGQC1Q/
-  const amazonPattern = /\/dp\/([A-Z0-9]{10})/;
-  const amazonMatch = link.match(amazonPattern);
-  if (amazonMatch && amazonMatch[1]) {
-    return amazonMatch[1];
-  }
-  
-  // Общие шаблоны для других магазинов
+  // Пытаемся найти ID в соответствии с разными форматами ссылок
   const patterns = [
     /\/([A-Za-z0-9]{10})\/?(\?|$)/, // Amazon ASIN
     /-([A-Za-z0-9]{7,12})\.html/, // Nike/Zalando
@@ -103,13 +51,10 @@ export const extractProductId = (link: string, fallbackId: string): string => {
   return fallbackId; // Используем fallbackId, если не удалось извлечь ID
 };
 
-// Получение реальной ссылки на страницу товара
+// Обновляем функцию для получения реальной ссылки на страницу товара
 export const getProductLink = (product: Product): string => {
-  // Если у продукта есть прямая ссылка на магазин, которая не является поисковой, используем её напрямую
-  if (product.link && 
-     product.link.startsWith('http') && 
-     !product.link.includes('undefined') && 
-     !isSearchEngineLink(product.link)) {
+  // Если у продукта есть валидная ссылка, используем её
+  if (product.link && product.link.startsWith('http') && !product.link.includes('undefined')) {
     return product.link;
   }
   
@@ -125,29 +70,16 @@ export const getProductLink = (product: Product): string => {
   const productSlug = createProductSlug(product.title);
   
   // Формируем URL с правильными параметрами в зависимости от магазина
-  if (domain.includes('amazon')) {
+  if (domain === 'amazon.com') {
     return `https://${domain}/dp/${productId}`;
-  } else if (domain.includes('ebay')) {
+  } else if (domain === 'ebay.com') {
     return `https://${domain}/itm/${productId}`;
-  } else if (domain.includes('nike')) {
+  } else if (domain === 'nike.com') {
     // Для Nike используем специальный формат
     return `https://${domain}/t/${productSlug}/${productId}.html`;
-  } else if (domain.includes('adidas')) {
-    // Для Adidas используем формат как в примере
-    return `https://${domain}/${productSlug}/${productId}.html`;
-  } else if (domain.includes('zalando')) {
+  } else if (domain === 'zalando.eu') {
     // Для Zalando
     return `https://${domain}/item/${productSlug}-${productId}.html`;
-  } else if (domain.includes('footlocker')) {
-    return `https://${domain}/en/product/~/${productId}.html`;
-  } else if (domain.includes('jdsports')) {
-    return `https://${domain}/product/${productSlug}/${productId}/`;
-  } else if (domain.includes('asos')) {
-    return `https://${domain}/products/${productSlug}/${productId}`;
-  } else if (domain.includes('zara')) {
-    return `https://${domain}/products/${productSlug}-p${productId}.html`;
-  } else if (domain.includes('hm')) {
-    return `https://${domain}/en_gb/productpage.${productId}.html`;
   } else {
     // Для других магазинов используем стандартный формат
     return `https://${domain}/product/${productSlug}-${productId}`;

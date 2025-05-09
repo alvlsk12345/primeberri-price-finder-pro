@@ -12,7 +12,7 @@ export const useSearchHandlers = (
   cachedResults: {[page: number]: Product[]},
   currentPage: number,
   setSelectedProduct: (product: Product | null) => void,
-  setSearchResults: (results: Product[] | ((prevResults: Product[]) => Product[])) => void,
+  setSearchResults: (results: Product[]) => void,
   setCurrentPage: (page: number) => void,
   setTotalPages: (pages: number) => void,
   setCachedResults: React.Dispatch<React.SetStateAction<{[page: number]: Product[]}>>,
@@ -91,6 +91,7 @@ export const useSearchHandlers = (
         setSearchResults(results.products);
         setCachedResults(prev => ({...prev, [page]: results.products}));
         setTotalPages(results.totalPages);
+        toast.success(`Found ${results.products.length} products!`);
       } else {
         // Check if we have results in cache for current search query
         if (cachedResults[1] && cachedResults[1].length > 0 && isSameQuery) {
