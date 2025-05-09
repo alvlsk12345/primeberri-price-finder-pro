@@ -24,7 +24,7 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
       return { products: [], totalPages: 0 };
     }
     
-    // Обрабатываем данные о товарах с переводом описаний
+    // Обрабатываем данные о товарах без перевода описаний
     const products = await processZylalabsProductsData(response.products, params.filters);
     
     // Закрываем уведомление о поиске

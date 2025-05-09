@@ -100,8 +100,9 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
       // Кодируем параметры запроса
       const encodedQuery = encodeURIComponent(params.query);
       const page = params.page || 1;
-      const country = params.country || 'us';
-      const language = params.language || 'en';
+      // Устанавливаем страну Россия и русский язык для получения результатов на русском
+      const country = 'ru';
+      const language = 'ru';
       
       // Добавляем параметр source=merchant, чтобы получать карточки из конечных магазинов
       const apiUrl = `https://zylalabs.com/api/2033/real+time+product+search+api/1809/search+products?q=${encodedQuery}&country=${country}&language=${language}&page=${page}&source=merchant`;
