@@ -2,9 +2,10 @@
 import React, { KeyboardEvent, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, AlertCircle, Info } from 'lucide-react';
+import { Search, AlertCircle, Info, Translate } from 'lucide-react';
 import { toast } from "@/components/ui/sonner";
 import { useDemoModeForced } from '@/services/api/mockDataService';
+import { containsCyrillicCharacters } from '@/services/translationService';
 
 type SearchFormProps = {
   searchQuery: string;
@@ -20,6 +21,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   isLoading 
 }) => {
   const [hasError, setHasError] = useState(false);
+  const isCyrillic = containsCyrillicCharacters(searchQuery);
   
   // Обработчик нажатия клавиши Enter
   const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -38,6 +40,12 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       }
       
       setHasError(false);
+      
+      // Показываем уведомление, если запрос на русском языке
+      if (isCyrillic) {
+        toast.info('Запрос будет переведен на английский для лучших результатов поиска');
+      }
+      
       handleSearch();
     } catch (error) {
       console.error('Ошибка при попытке поиска:', error);
@@ -60,18 +68,31 @@ export const SearchForm: React.FC<SearchFormProps> = ({
             onKeyDown={handleKeyPress}
             className={`w-full ${hasError ? 'border-red-500' : ''}`}
           />
-          {useDemoModeForced ? (
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded flex items-center">
-                <Info size={12} className="mr-1" /> Демо-режим
-              </span>
-            </div>
-          ) : (
+          
+          {isCyrillic && (
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
               <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded flex items-center">
-                <Info size={12} className="mr-1" /> API-режим
+                <Translate size={12} className="mr-1" /> Будет переведено
               </span>
             </div>
+          )}
+          
+          {!isCyrillic && (
+            <>
+              {useDemoModeForced ? (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded flex items-center">
+                    <Info size={12} className="mr-1" /> Демо-режим
+                  </span>
+                </div>
+              ) : (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded flex items-center">
+                    <Info size={12} className="mr-1" /> API-режим
+                  </span>
+                </div>
+              )}
+            </>
           )}
         </div>
         <Button 

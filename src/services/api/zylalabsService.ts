@@ -48,6 +48,9 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
     };
   }
   
+  // Проверка правильного URL API
+  console.log('Используется API эндпоинт: https://zylalabs.com/api/2033/real+time+product+search+api/1809/search+products');
+  
   // Создаем URL для запроса
   const url = buildMultiCountrySearchUrl(params.query, params.countries || [], language, page);
   console.log(`Выполняем запрос к API: ${url}`);

@@ -2,6 +2,7 @@
 import { useRef } from 'react';
 import { Product, ProductFilters, SearchParams } from "@/services/types";
 import { searchProducts } from "@/services/productService";
+import { translateToEnglish, containsCyrillicCharacters } from "@/services/translationService";
 
 type SearchExecutorProps = {
   isLoading: boolean;
@@ -54,6 +55,17 @@ export function useSearchExecutor({
     searchTimeoutRef.current = searchTimeout;
     
     try {
+      // Переводим запрос на английский, если он на русском
+      let searchText = queryToUse;
+      let translatedQuery = queryToUse;
+      
+      if (containsCyrillicCharacters(queryToUse)) {
+        console.log("Обнаружен запрос на русском языке. Выполняем перевод...");
+        translatedQuery = await translateToEnglish(queryToUse);
+        console.log(`Запрос "${queryToUse}" переведен как "${translatedQuery}"`);
+        searchText = translatedQuery;
+      }
+      
       // Set current page before executing request
       setCurrentPage(page);
       
@@ -66,7 +78,8 @@ export function useSearchExecutor({
       
       // Create search params
       const searchParams: SearchParams = {
-        query: queryToUse,
+        query: searchText,
+        originalQuery: queryToUse, // Сохраняем оригинальный запрос
         page: page,
         language: 'en', // Always use English for best results
         countries: searchCountries,
