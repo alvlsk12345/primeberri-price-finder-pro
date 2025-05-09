@@ -47,10 +47,7 @@ export const useSearchHandler = (
       const isSameQuery = queryToUse === lastSearchQuery;
       if (!forceNewSearch && isSameQuery && cachedResults[page]) {
         console.log(`Using cached results for page ${page}`);
-        let results = cachedResults[page];
-        
-        // Apply sorting to cached results if needed
-        results = applySorting(results, sortOption);
+        const results = applySorting([...cachedResults[page]], sortOption);
         
         setSearchResults(results);
         setCurrentPage(page);
@@ -94,7 +91,7 @@ export const useSearchHandler = (
       // Save found products to state and cache
       if (results.products.length > 0) {
         // Apply sorting before setting results
-        const sortedProducts = applySorting(results.products, sortOption);
+        const sortedProducts = applySorting([...results.products], sortOption);
         
         setSearchResults(sortedProducts);
         setCachedResults(prev => ({...prev, [page]: results.products}));
@@ -102,7 +99,7 @@ export const useSearchHandler = (
       } else {
         // Check if we have results in cache for current search query
         if (cachedResults[1] && cachedResults[1].length > 0 && isSameQuery) {
-          const sortedCachedProducts = applySorting(cachedResults[1], sortOption);
+          const sortedCachedProducts = applySorting([...cachedResults[1]], sortOption);
           setSearchResults(sortedCachedProducts);
           setCurrentPage(1);
           toast.info('Error loading page, showing first page results');
@@ -124,11 +121,11 @@ export const useSearchHandler = (
       // If error occurs, check if we have cached results
       if (cachedResults[currentPage] && cachedResults[currentPage].length > 0) {
         // If error occurred when changing pages, use current cached results
-        const sortedCachedProducts = applySorting(cachedResults[currentPage], sortOption);
+        const sortedCachedProducts = applySorting([...cachedResults[currentPage]], sortOption);
         setSearchResults(sortedCachedProducts);
       } else if (cachedResults[1] && cachedResults[1].length > 0) {
         // If no results for current page, return to first page
-        const sortedFirstPageProducts = applySorting(cachedResults[1], sortOption);
+        const sortedFirstPageProducts = applySorting([...cachedResults[1]], sortOption);
         setSearchResults(sortedFirstPageProducts);
         setCurrentPage(1);
         toast.info('Returning to first page due to error');
