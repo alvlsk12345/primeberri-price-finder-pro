@@ -60,10 +60,16 @@ export const SearchForm: React.FC<SearchFormProps> = ({
             onKeyDown={handleKeyPress}
             className={`w-full ${hasError ? 'border-red-500' : ''}`}
           />
-          {useDemoModeForced && (
+          {useDemoModeForced ? (
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
               <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded flex items-center">
                 <Info size={12} className="mr-1" /> Демо-режим
+              </span>
+            </div>
+          ) : (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded flex items-center">
+                <Info size={12} className="mr-1" /> API-режим
               </span>
             </div>
           )}
@@ -94,10 +100,15 @@ export const SearchForm: React.FC<SearchFormProps> = ({
         </div>
       )}
 
-      {useDemoModeForced && (
+      {useDemoModeForced ? (
         <div className="flex items-center text-amber-600 text-sm gap-1 bg-amber-50 p-2 rounded">
           <Info size={14} />
           <span>Демонстрационный режим активен. Результаты поиска генерируются автоматически.</span>
+        </div>
+      ) : (
+        <div className="flex items-center text-blue-600 text-sm gap-1 bg-blue-50 p-2 rounded">
+          <Info size={14} />
+          <span>API-режим активен. Результаты поиска получаются через Zylalabs API.</span>
         </div>
       )}
     </div>
