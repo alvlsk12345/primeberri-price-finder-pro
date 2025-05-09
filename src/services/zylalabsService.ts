@@ -11,7 +11,16 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
     console.log('Используется endpoint: https://zylalabs.com/api/2033/real+time+product+search+api/1809/search+products');
     
     // Используем обновленную версию из API
-    return await searchProductsViaZylalabsApi(params);
+    const result = await searchProductsViaZylalabsApi(params);
+    
+    // Проверяем наличие результатов
+    if (result && result.products && result.products.length > 0) {
+      console.log(`zylalabsService: Получено ${result.products.length} товаров`);
+      return result;
+    } else {
+      console.warn('zylalabsService: API вернул пустой результат');
+      return result;
+    }
   } catch (error) {
     console.error('Ошибка при вызове searchProductsViaZylalabsApi:', error);
     // Перехватываем все непредвиденные ошибки здесь, чтобы не прерывать работу приложения

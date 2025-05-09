@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { SearchParams } from "../types";
 import { getMockSearchResults, useDemoModeForced } from "./mockDataService";
 import { handleApiError, handleFetchError } from "./errorHandlerService";
+import { parseApiResponse } from "./responseParserService";
 import { 
   ZYLALABS_API_KEY, 
   buildMultiCountrySearchUrl, 
@@ -111,19 +112,50 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
       
       // Парсим JSON-ответ
       const data = await response.json();
-      console.log(`Получен ответ от API для запроса "${params.query}", найдено товаров:`, data.length || 0);
+      console.log('Получен ответ от API:', data);
+      
+      // Используем функцию parseApiResponse для корректной обработки структуры ответа
+      const { products, total, apiInfo: extractedApiInfo } = parseApiResponse(data, response.headers);
+      
+      // Объединяем информацию из заголовков с информацией от парсера
+      const combinedApiInfo = { ...apiInfo, ...(extractedApiInfo || {}) };
       
       // Проверяем, есть ли результаты
-      if (data && data.length > 0) {
+      if (products && products.length > 0) {
+        console.log(`Получены результаты от API для запроса "${params.query}", найдено товаров:`, products.length);
+        
+        // Преобразуем данные в формат Product
+        const formattedProducts = products.map(product => {
+          // Преобразуем в формат, понятный нашему приложению
+          return {
+            id: product.product_id || String(Math.random()),
+            title: product.product_title || product.title || "",
+            subtitle: product.product_description?.substring(0, 100) || "",
+            price: product.typical_price_range ? product.typical_price_range[0] : "$0",
+            currency: "USD", // По умолчанию USD, если нет данных
+            image: product.product_photos?.[0] || product.thumbnail || "",
+            link: product.product_page_url || "",
+            rating: product.product_rating || 0,
+            source: product.source || "google",
+            description: product.product_description || "",
+            availability: product.availability || "В наличии",
+            brand: product.brand || product.product_attributes?.Brand || "Nike",
+            _numericPrice: parseFloat((product.typical_price_range?.[0] || "0").replace(/[$€£]/g, '')),
+            country: country.toUpperCase(),
+            specifications: product.product_attributes || {}
+          };
+        });
+        
         return {
-          products: data,
-          totalPages: Math.ceil(data.length / 9) || 1,
+          products: formattedProducts,
+          totalPages: Math.ceil(total / 9) || 1,
           isDemo: false,
-          apiInfo
+          apiInfo: combinedApiInfo
         };
       } else {
         // Если нет результатов от API, проверяем нужно ли обеспечить минимальное 
         // количество результатов (указано в параметрах)
+        console.warn('API вернул пустой массив продуктов или структура ответа неверная');
         if (params.minResultCount && params.minResultCount > 0) {
           console.warn(`API вернул пустой результат. Дополняем демо-данными для минимального количества ${params.minResultCount}`);
           const mockResults = await getMockSearchResults(params.query, params.page);
@@ -131,7 +163,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
             ...mockResults,
             totalPages: Math.ceil((mockResults.total || mockResults.products.length) / 9),
             isDemo: true,
-            apiInfo
+            apiInfo: combinedApiInfo
           };
         }
         
@@ -140,7 +172,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
           products: [],
           totalPages: 0,
           isDemo: false,
-          apiInfo
+          apiInfo: combinedApiInfo
         };
       }
     } catch (error: any) {
