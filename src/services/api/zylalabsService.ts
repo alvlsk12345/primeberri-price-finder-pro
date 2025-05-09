@@ -52,7 +52,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
   // Проверка правильного URL API
   console.log('Используется API эндпоинт: https://zylalabs.com/api/2033/real+time+product+search+api/1809/search+products');
   
-  // Создаем URL для запроса
+  // Создаем URL для запроса с явным указанием источника merchant
   const url = buildMultiCountrySearchUrl(params.query, params.countries || [], language, page);
   console.log(`Выполняем запрос к API: ${url}`);
 
@@ -126,7 +126,25 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
         
         // Преобразуем данные в формат Product
         const formattedProducts = products.map(product => {
-          // Преобразуем в формат, понятный нашему приложению
+          // Определяем источник товара (магазин)
+          let source = "merchant"; // По умолчанию устанавливаем merchant
+          
+          // Попытка извлечь имя магазина из URL или других полей
+          if (product.product_page_url) {
+            try {
+              const url = new URL(product.product_page_url);
+              source = url.hostname.replace('www.', '').split('.')[0];
+            } catch (e) {
+              // Если не удалось извлечь из URL, используем merchant
+              console.log('Не удалось извлечь имя магазина из URL:', e);
+            }
+          }
+          
+          // Если в данных есть merchant_name, используем его
+          if (product.merchant_name || product.source_name) {
+            source = product.merchant_name || product.source_name;
+          }
+          
           return {
             id: product.product_id || String(Math.random()),
             title: product.product_title || product.title || "",
@@ -136,7 +154,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
             image: product.product_photos?.[0] || product.thumbnail || "",
             link: product.product_page_url || "",
             rating: product.product_rating || 0,
-            source: product.source || "google",
+            source: source, // Используем извлеченный источник
             description: product.product_description || "",
             availability: product.availability || "В наличии",
             brand: product.brand || product.product_attributes?.Brand || "Nike",

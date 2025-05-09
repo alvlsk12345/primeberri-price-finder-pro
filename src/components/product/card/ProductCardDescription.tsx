@@ -1,26 +1,38 @@
+
 import React from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { FileText } from "lucide-react";
+
 interface ProductCardDescriptionProps {
   description?: string;
   onStopPropagation: (e: React.MouseEvent) => void;
 }
+
 export const ProductCardDescription: React.FC<ProductCardDescriptionProps> = ({
   description,
   onStopPropagation
 }) => {
-  const [isPopoverOpen, setIsPopoverOpen] = React.useState<boolean>(false);
   if (!description) {
     return <div className="h-6"></div>; // Empty placeholder with fixed height
   }
-  return <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-      <PopoverTrigger asChild>
-        
-      </PopoverTrigger>
-      <PopoverContent className="w-72 p-3 text-sm">
-        <div className="font-semibold mb-1">Описание товара</div>
-        <p className="text-xs">{description}</p>
-      </PopoverContent>
-    </Popover>;
+
+  return (
+    <div className="flex justify-center mt-1 mb-2">
+      <HoverCard>
+        <HoverCardTrigger asChild>
+          <button
+            onClick={onStopPropagation}
+            className="flex items-center text-xs text-gray-600 hover:text-primary transition-colors"
+          >
+            <FileText size={14} className="mr-1" />
+            <span>Описание</span>
+          </button>
+        </HoverCardTrigger>
+        <HoverCardContent className="w-72 p-3 text-sm">
+          <div className="font-semibold mb-1">Описание товара</div>
+          <p className="text-xs">{description}</p>
+        </HoverCardContent>
+      </HoverCard>
+    </div>
+  );
 };

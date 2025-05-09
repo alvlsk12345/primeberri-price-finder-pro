@@ -10,7 +10,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
     // Проверка, что используется правильная конечная точка API
     console.log('Используется endpoint: https://zylalabs.com/api/2033/real+time+product+search+api/1809/search+products');
     
-    // Используем обновленную версию из API
+    // Используем обновленную версию из API с указанием source=merchant
     const result = await searchProductsViaZylalabsApi(params);
     
     // Проверяем наличие результатов
