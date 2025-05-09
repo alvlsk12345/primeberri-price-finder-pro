@@ -65,14 +65,14 @@ export const useFilterPanel = (
   // Подсчитываем количество активных фильтров
   useEffect(() => {
     let count = 0;
-    if (filters.minPrice) count++;
-    if (filters.maxPrice) count++;
-    if (filters.brands && filters.brands.length > 0) count++;
-    if (filters.sources && filters.sources.length > 0) count++;
-    if (filters.countries && filters.countries.length > 0) count++;
-    if (filters.rating) count++;
+    if (localFilters.minPrice) count++;
+    if (localFilters.maxPrice) count++;
+    if (localFilters.brands && localFilters.brands.length > 0) count++;
+    if (localFilters.sources && localFilters.sources.length > 0) count++;
+    if (localFilters.countries && localFilters.countries.length > 0) count++;
+    if (localFilters.rating) count++;
     setActiveFiltersCount(count);
-  }, [filters]);
+  }, [localFilters]);
   
   // Обработчик изменения слайдера цен
   const handlePriceChange = (values: number[]) => {

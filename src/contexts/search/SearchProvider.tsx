@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Product, ProductFilters } from "@/services/types";
 import { SearchContext } from './SearchContext';
 import { useSearchHandlers } from './useSearchHandlers';
+import { SortOption } from "@/components/sorting/SortingMenu";
 
 // Provider component
 export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -20,16 +21,19 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [hasSearched, setHasSearched] = useState(false);
   const [pageChangeCount, setPageChangeCount] = useState(0);
   const [apiErrorMode, setApiErrorMode] = useState(false);
+  const [sortOption, setSortOption] = useState<SortOption>('default');
 
   const { 
     handleSearch,
     handleProductSelect,
     handlePageChange,
-    handleFilterChange
+    handleFilterChange,
+    handleSortChange
   } = useSearchHandlers(
     searchQuery,
     lastSearchQuery,
     filters,
+    sortOption,
     cachedResults,
     currentPage,
     setSelectedProduct,
@@ -43,7 +47,8 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setIsLoading,
     setApiErrorMode,
     setPageChangeCount,
-    setFilters
+    setFilters,
+    setSortOption
   );
 
   // Effect for debugging page changes
@@ -67,10 +72,13 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     lastSearchQuery,
     hasSearched,
     apiErrorMode,
+    sortOption,
+    setSortOption,
     handleSearch,
     handleProductSelect,
     handlePageChange,
     handleFilterChange,
+    handleSortChange,
   }), [
     searchQuery, 
     isLoading, 
@@ -82,11 +90,13 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     originalQuery, 
     lastSearchQuery, 
     hasSearched, 
-    apiErrorMode, 
+    apiErrorMode,
+    sortOption,
     handleSearch, 
     handleProductSelect, 
     handlePageChange, 
-    handleFilterChange
+    handleFilterChange,
+    handleSortChange
   ]);
 
   return <SearchContext.Provider value={value}>{children}</SearchContext.Provider>;

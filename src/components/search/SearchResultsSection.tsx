@@ -7,6 +7,7 @@ import { SearchResultsAlert } from "./SearchResultsAlert";
 import { isSearchEngineLink, getProductLink } from "@/services/urlService";
 import { Product } from "@/services/types";
 import { toast } from "@/components/ui/sonner";
+import { SortingMenu } from "@/components/sorting/SortingMenu";
 
 export const SearchResultsSection: React.FC = () => {
   const { 
@@ -19,7 +20,9 @@ export const SearchResultsSection: React.FC = () => {
     filters,
     handleFilterChange,
     originalQuery,
-    apiErrorMode
+    apiErrorMode,
+    sortOption,
+    handleSortChange
   } = useSearch();
 
   // Улучшенная проверка ссылок при монтировании компонента
@@ -78,11 +81,17 @@ export const SearchResultsSection: React.FC = () => {
         <h2 className="text-xl font-semibold">
           Результаты поиска{originalQuery ? ` "${originalQuery}"` : ''}:
         </h2>
-        <FilterPanel 
-          filters={filters}
-          onFilterChange={handleFilterChange}
-          results={searchResults}
-        />
+        <div className="flex items-center gap-2">
+          <SortingMenu 
+            currentSort={sortOption}
+            onSortChange={handleSortChange}
+          />
+          <FilterPanel 
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            results={searchResults}
+          />
+        </div>
       </div>
       <SearchResults 
         results={searchResults} 
