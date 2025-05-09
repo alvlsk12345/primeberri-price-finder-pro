@@ -1,106 +1,95 @@
-import { useState, useCallback } from 'react';
-import { SearchContextType, FilterState, Product } from './SearchContext';
+
+import { useCallback } from 'react';
+import { Product, ProductFilters } from "@/services/types";
+import { SearchContextType } from './types';
+import { SortOption } from "@/components/sorting/SortingMenu";
 import { searchProductsViaZylalabs } from "@/services/api/zylalabsService";
 
-export const useSearchHandlers = (context: SearchContextType) => {
-  const handleSearch = useCallback(async (page: number = 1, resetPage: boolean = false) => {
-    context.setIsLoading(true);
-    context.setApiErrorMode(false);
+export const useSearchHandlers = (
+  searchQuery: string,
+  lastSearchQuery: string,
+  filters: ProductFilters,
+  sortOption: SortOption,
+  cachedResults: {[page: number]: Product[]},
+  currentPage: number,
+  setSelectedProduct: (product: Product | null) => void,
+  setSearchResults: (results: Product[]) => void,
+  setCurrentPage: (page: number) => void,
+  setTotalPages: (pages: number) => void,
+  setCachedResults: (results: {[page: number]: Product[]}) => void,
+  setLastSearchQuery: (query: string) => void,
+  setOriginalQuery: (query: string) => void,
+  setHasSearched: (hasSearched: boolean) => void,
+  setIsLoading: (isLoading: boolean) => void,
+  setApiErrorMode: (isError: boolean) => void,
+  setPageChangeCount: (count: number) => void,
+  setFilters: (filters: ProductFilters) => void,
+  setSortOption: (option: SortOption) => void
+) => {
+  // Handle search with pagination and caching
+  const handleSearch = useCallback(async (page: number = 1, forceNewSearch: boolean = false) => {
+    setIsLoading(true);
+    setApiErrorMode(false);
 
-    if (resetPage) {
-      context.setCurrentPage(1);
+    if (forceNewSearch) {
+      setCurrentPage(1);
       page = 1;
     }
 
     try {
       const searchParams = {
-        query: context.searchQuery,
+        query: searchQuery,
         page: page,
         countries: ['gb'],
         language: 'en',
-        filters: context.filters,
-        sort: context.sortOption
+        filters: filters,
+        sort: sortOption
       };
 
       const results = await searchProductsViaZylalabs(searchParams);
 
       if (results && results.products) {
-        context.setSearchResults(results.products);
-        context.setTotalPages(results.totalPages || 1);
-        context.setCurrentPage(page);
+        setSearchResults(results.products);
+        setTotalPages(results.totalPages || 1);
+        setCurrentPage(page);
       } else {
-        context.setSearchResults([]);
-        context.setTotalPages(1);
-        context.setCurrentPage(1);
+        setSearchResults([]);
+        setTotalPages(1);
+        setCurrentPage(1);
       }
     } catch (error: any) {
       console.error("Search failed:", error);
-      context.setApiErrorMode(true);
-      context.setSearchResults([]);
-      context.setTotalPages(1);
-      context.setCurrentPage(1);
+      setApiErrorMode(true);
+      setSearchResults([]);
+      setTotalPages(1);
+      setCurrentPage(1);
     } finally {
-      context.setIsLoading(false);
+      setIsLoading(false);
     }
-  }, [context.searchQuery, context.filters, context.sortOption, context]);
+  }, [searchQuery, filters, sortOption, setIsLoading, setApiErrorMode, setSearchResults, setTotalPages, setCurrentPage]);
 
   const handleProductSelect = useCallback((product: Product) => {
     console.log('Selected product:', product);
-    context.setSelectedProduct(product);
-  }, [context]);
+    setSelectedProduct(product);
+  }, [setSelectedProduct]);
 
   const handlePageChange = useCallback((newPage: number) => {
     console.log(`handlePageChange - Requesting page: ${newPage}`);
-      handleSearch(newPage);
+    handleSearch(newPage);
   }, [handleSearch]);
 
-  const handleFilterChange = useCallback((filterName: string, value: boolean) => {
-    console.log(`Filter change - Filter: ${filterName}, Value: ${value}`);
-    const updatedFilters = { ...context.filters, [filterName]: value };
-    context.setFilters(updatedFilters);
-  }, [context.filters, context]);
+  const handleFilterChange = useCallback((newFilters: ProductFilters) => {
+    console.log(`Filter change - New filters:`, newFilters);
+    setFilters(newFilters);
+  }, [setFilters]);
 
-  const handleSortChange = (sortOption: string) => {
+  const handleSortChange = useCallback((option: SortOption) => {
     // Update the sort option in state
-    context.setSortOption(sortOption);
+    setSortOption(option);
     
     // Sort the results based on the selected option
-    let sortedResults: Product[] = [];
-    
-    switch (sortOption) {
-      case 'relevance':
-        // Default sorting as returned by the API
-        sortedResults = [...context.searchResults];
-        break;
-      case 'price_asc':
-        sortedResults = [...context.searchResults].sort((a, b) => {
-          const priceA = parseFloat(a.price?.replace(/[^0-9.]/g, '') || '0');
-          const priceB = parseFloat(b.price?.replace(/[^0-9.]/g, '') || '0');
-          return priceA - priceB;
-        });
-        break;
-      case 'price_desc':
-        sortedResults = [...context.searchResults].sort((a, b) => {
-          const priceA = parseFloat(a.price?.replace(/[^0-9.]/g, '') || '0');
-          const priceB = parseFloat(b.price?.replace(/[^0-9.]/g, '') || '0');
-          return priceB - priceA;
-        });
-        break;
-      case 'popularity':
-        sortedResults = [...context.searchResults].sort((a, b) => {
-          const ratingA = a.rating || 0;
-          const ratingB = b.rating || 0;
-          return ratingB - ratingA;
-        });
-        break;
-      default:
-        sortedResults = [...context.searchResults];
-        break;
-    }
-    
-    // Direct assignment instead of using a setter function with previous state
-    context.setSearchResults(sortedResults);
-  };
+    console.log(`Sort change - New sort option: ${option}`);
+  }, [setSortOption]);
 
   return {
     handleSearch,

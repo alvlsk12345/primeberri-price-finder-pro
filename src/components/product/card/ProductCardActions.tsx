@@ -19,16 +19,16 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
   onSelect,
   onStopPropagation
 }) => {
-  // Проверяем ссылку на товар при монтировании компонента
+  // Check product link on component mount
   useEffect(() => {
     const originalLink = product.link || '';
     const processedLink = getProductLink(product);
     
-    // Проверяем, является ли оригинальная ссылка поисковой
+    // Check if original link is a search engine link
     if (originalLink && isSearchEngineLink(originalLink)) {
-      console.log(`Поисковая ссылка заменена для: ${product.title}`);
-      console.log(`  - Оригинал: ${originalLink.substring(0, 100)}...`);
-      console.log(`  - Замена на: ${processedLink}`);
+      console.log(`Search engine link replaced for: ${product.title}`);
+      console.log(`  - Original: ${originalLink.substring(0, 100)}...`);
+      console.log(`  - Replaced with: ${processedLink}`);
     }
   }, [product]);
 
@@ -36,22 +36,22 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
     e.preventDefault();
     onStopPropagation(e);
     
-    // Всегда используем сгенерированную прямую ссылку на товар в магазине
+    // Always use generated direct link to product in store
     const directLink = getProductLink(product);
     
     navigator.clipboard.writeText(directLink);
-    toast.success('Ссылка на товар скопирована!');
+    toast.success('Product link copied!');
     
-    console.log('Скопирована прямая ссылка:', directLink);
+    console.log('Copied direct link:', directLink);
   };
   
   const handleGoToPrimeberri = (e: React.MouseEvent) => {
     e.preventDefault();
     onStopPropagation(e);
     
-    // В реальной реализации здесь будет логика перехода на сайт Primeberri
+    // In real implementation, this would be logic to go to Primeberri site
     window.open('https://primeberri.com/', '_blank');
-    toast.success('Переход на сайт Primeberri');
+    toast.success('Going to Primeberri site');
   };
   
   return (
@@ -63,7 +63,7 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
           className="flex-1 h-8"
           onClick={handleCopyLink}
         >
-          <Copy size={16} className="mr-1" /> Скопировать ссылку
+          <Copy size={16} className="mr-1" /> Copy Link
         </Button>
       </div>
       
@@ -73,7 +73,7 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
         className="flex-1 h-8 text-xs px-2 mt-2"
         onClick={handleGoToPrimeberri}
       >
-        <ExternalLink size={16} className="mr-1" /> Заказать на Primeberri
+        <ExternalLink size={16} className="mr-1" /> Order on Primeberri
       </Button>
     </div>
   );
