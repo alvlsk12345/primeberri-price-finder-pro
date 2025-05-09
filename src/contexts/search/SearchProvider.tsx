@@ -42,7 +42,8 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setHasSearched,
     setIsLoading,
     setApiErrorMode,
-    setPageChangeCount
+    setPageChangeCount,
+    setFilters
   );
 
   // Effect for debugging page changes

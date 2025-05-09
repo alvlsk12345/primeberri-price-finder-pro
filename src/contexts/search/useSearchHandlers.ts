@@ -21,7 +21,8 @@ export const useSearchHandlers = (
   setHasSearched: (hasSearched: boolean) => void,
   setIsLoading: (isLoading: boolean) => void,
   setApiErrorMode: (errorMode: boolean) => void,
-  setPageChangeCount: React.Dispatch<React.SetStateAction<number>>
+  setPageChangeCount: React.Dispatch<React.SetStateAction<number>>,
+  setFilters: React.Dispatch<React.SetStateAction<ProductFilters>>
 ) => {
   // Product selection handler - memoized
   const handleProductSelect = useCallback((product: Product) => {
@@ -144,9 +145,12 @@ export const useSearchHandlers = (
   
   // Filter change handler - memoized
   const handleFilterChange = useCallback((newFilters: ProductFilters) => {
+    console.log("Applying filters:", newFilters);
+    // Update filters first, then trigger search
+    setFilters(newFilters);
     setCurrentPage(1); // Reset to first page when filters change
     handleSearch(1, true);
-  }, [handleSearch, setCurrentPage]);
+  }, [handleSearch, setCurrentPage, setFilters]);
 
   return {
     handleSearch,

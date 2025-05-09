@@ -20,6 +20,11 @@ export const useFilterPanel = (
   // Количество активных фильтров
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
   
+  // Обновляем локальные фильтры при изменении входящих фильтров
+  useEffect(() => {
+    setLocalFilters(filters);
+  }, [filters]);
+  
   // Вычисляем уникальные источники и бренды из результатов
   useEffect(() => {
     if (!results || results.length === 0) return;
@@ -54,9 +59,8 @@ export const useFilterPanel = (
     setAvailableBrands(brands);
     setPriceRange([minPrice, maxPrice]);
     
-    // Сбрасываем локальные фильтры к текущим основным фильтрам
-    setLocalFilters(filters);
-  }, [results, filters]);
+    // Не сбрасываем локальные фильтры здесь, чтобы не терять выбранные значения
+  }, [results]);
   
   // Подсчитываем количество активных фильтров
   useEffect(() => {
@@ -146,6 +150,7 @@ export const useFilterPanel = (
   
   // Применение фильтров
   const applyFilters = () => {
+    console.log("Applying filters from FilterPanel:", localFilters);
     onFilterChange(localFilters);
   };
   
