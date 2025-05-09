@@ -43,7 +43,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
     const apiUrl = buildMultiCountrySearchUrl(params.query, [countries[0]], language, page);
     console.log('Сформированный URL запроса:', apiUrl);
     
-    // Fetch data from API - only passing the apiUrl parameter
+    // Fetch data from API - только передаем apiUrl, без второго параметра
     let data;
     try {
       data = await fetchFromZylalabs(apiUrl);
