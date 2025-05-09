@@ -15,6 +15,7 @@ export type Product = {
   brand?: string;               // Бренд товара
   specifications?: {[key: string]: string}; // Спецификации товара
   _numericPrice?: number;       // Внутреннее поле для фильтрации
+  country?: string;             // Страна магазина
 };
 
 // Тип для карты доменов магазинов
@@ -29,6 +30,8 @@ export type SearchParams = {
   language?: string;  // Язык результатов поиска (en, de, fr, и т.д.)
   countries?: string[]; // Массив кодов стран для поиска
   filters?: ProductFilters;
+  requireGermanResults?: boolean; // Требовать результаты из немецких магазинов
+  minResultCount?: number; // Минимальное количество результатов
 };
 
 // Тип для фильтров товаров

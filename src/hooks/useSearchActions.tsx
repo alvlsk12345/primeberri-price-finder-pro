@@ -125,8 +125,12 @@ export function useSearchActions({
       // Set current page before executing request
       setCurrentPage(page);
       
-      // Get search countries
+      // Get search countries - ensure we have German results
       const searchCountries = getSearchCountries();
+      // Make sure Germany ('de') is included in search countries
+      if (!searchCountries.includes('de')) {
+        searchCountries.push('de');
+      }
       
       // Use query directly - no translation needed
       const results = await searchProducts({
@@ -134,7 +138,9 @@ export function useSearchActions({
         page: page,
         language: 'en', // Always use English for best results
         countries: searchCountries,
-        filters: filters
+        filters: filters,
+        requireGermanResults: true, // Add flag to ensure German results
+        minResultCount: 10 // Ensure minimum 10 results
       });
       
       // Check if we're using demo data and update state

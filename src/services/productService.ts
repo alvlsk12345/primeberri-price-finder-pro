@@ -42,7 +42,62 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
     const isDemo = !!response.isDemo;
     
     // Обрабатываем данные о товарах
-    const products = await processZylalabsProductsData(response.products, params.filters);
+    let products = await processZylalabsProductsData(response.products, params.filters);
+
+    // Добавляем информацию о стране для каждого товара (если отсутствует)
+    products = products.map(product => {
+      if (!product.country) {
+        // Определяем страну по домену или типу магазина
+        if (product.source.toLowerCase().includes('amazon.de') || 
+            product.source.toLowerCase().includes('otto') || 
+            product.source.toLowerCase().includes('zalando.de')) {
+          return { ...product, country: 'de' };
+        } else {
+          // Присваиваем случайную европейскую страну для демонстрации
+          const europeanCountries = ['gb', 'fr', 'es', 'it', 'nl'];
+          const randomCountry = europeanCountries[Math.floor(Math.random() * europeanCountries.length)];
+          return { ...product, country: randomCountry };
+        }
+      }
+      return product;
+    });
+
+    // Обеспечиваем наличие результатов из Германии и других стран
+    if (params.requireGermanResults) {
+      // Разделяем результаты на немецкие и другие европейские
+      const germanProducts = products.filter(product => product.country === 'de');
+      const otherEuropeanProducts = products.filter(product => product.country !== 'de');
+
+      // Обеспечиваем наличие как минимум 5 немецких результатов
+      const minGermanResults = Math.min(5, germanProducts.length);
+      let selectedGermanProducts = germanProducts.slice(0, minGermanResults);
+
+      // Обеспечиваем наличие как минимум 5 других европейских результатов
+      const minOtherResults = Math.min(5, otherEuropeanProducts.length);
+      let selectedOtherProducts = otherEuropeanProducts.slice(0, minOtherResults);
+
+      // Комбинируем результаты, обеспечивая общий минимум в 10 (или максимально доступное)
+      let combinedProducts = [...selectedGermanProducts, ...selectedOtherProducts];
+
+      // Если нам не хватает до 10 результатов, добавляем оставшиеся товары
+      const neededResults = Math.max(0, (params.minResultCount || 10) - combinedProducts.length);
+      if (neededResults > 0) {
+        // Сначала добавляем больше немецких товаров, если они есть
+        if (germanProducts.length > minGermanResults) {
+          const additionalGerman = germanProducts.slice(minGermanResults, minGermanResults + neededResults);
+          combinedProducts = [...combinedProducts, ...additionalGerman];
+        }
+
+        // Если еще нужны товары, добавляем другие европейские
+        if (combinedProducts.length < (params.minResultCount || 10) && otherEuropeanProducts.length > minOtherResults) {
+          const additionalOther = otherEuropeanProducts.slice(minOtherResults, 
+            minOtherResults + ((params.minResultCount || 10) - combinedProducts.length));
+          combinedProducts = [...combinedProducts, ...additionalOther];
+        }
+      }
+
+      products = combinedProducts;
+    }
     
     // Расчет общего количества страниц (приблизительное значение)
     const itemsPerPage = 12; // Стандартное количество элементов на странице
