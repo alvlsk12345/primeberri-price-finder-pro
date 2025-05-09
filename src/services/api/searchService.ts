@@ -6,7 +6,7 @@ import { getMockSearchResults } from "./mockDataService";
 import { parseApiResponse } from "./responseParserService";
 import { withRetry } from "./retryService";
 import { fetchFromZylalabs, getZylalabsApiUrl } from "./clients/zylalabsApiClient";
-import { isSearchEngineLink } from "../urlService";
+import { isSearchEngineLink } from "../url";
 
 /**
  * Searches for products using Zylalabs API with pagination, retry support,
@@ -87,8 +87,14 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
     // If all retries fail, return mock data
     console.error('Не удалось получить данные после всех попыток, используем мок-данные');
     console.log('Используем мок-данные для запроса:', params.query);
+    
+    // Генерируем расширенные мок-данные с учетом запроса пользователя
+    const mockData = getMockSearchResults(params.query);
+    
+    // Отображаем информативное уведомление
     toast.error('Не удалось подключиться к API поиска. Используем демонстрационные данные.');
-    return { ...getMockSearchResults(params.query), fromMock: true };
+    
+    return { ...mockData, fromMock: true };
   }
 };
 

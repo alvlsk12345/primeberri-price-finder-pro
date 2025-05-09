@@ -2,7 +2,8 @@
 import { 
   ZYLALABS_API_KEY, 
   REQUEST_TIMEOUT, 
-  getApiBaseUrl 
+  getApiBaseUrl,
+  RETRY_DELAY
 } from "../zylalabsConfig";
 import { handleApiError } from "../errorHandlerService";
 import { toast } from "@/components/ui/sonner";
@@ -65,8 +66,15 @@ export const fetchFromZylalabs = async (
           errorData.message.includes('limit exceeded')
         )) {
           console.error('API usage limit exceeded');
-          toast.error('Превышен лимит запросов к API. Пожалуйста, обратитесь в поддержку.');
+          toast.error('Превышен лимит запросов к API. Пожалуйста, попробуйте позже.');
           throw new Error('API usage limit exceeded');
+        }
+        
+        // Handle 503 errors (service unavailable)
+        if (response.status === 503) {
+          console.error('API сервис временно недоступен');
+          toast.error('API сервис временно недоступен. Используем демо-данные.');
+          throw new Error('API service unavailable');
         }
       } catch (e) {
         // If parsing as JSON fails, use text as is
@@ -77,6 +85,17 @@ export const fetchFromZylalabs = async (
     
     // Parse the successful response
     return await response.json();
+  } catch (error) {
+    // Если ошибка связана с отменой запроса из-за таймаута
+    if (error.name === 'AbortError') {
+      console.error('Запрос к API отменен из-за таймаута');
+      toast.error('Запрос к API занял слишком много времени. Используем демо-данные.');
+      throw new Error('API request timeout');
+    }
+    
+    // Очищаем таймаут и пробрасываем ошибку дальше
+    clearTimeout(timeoutId);
+    throw error;
   } finally {
     clearTimeout(timeoutId);
   }

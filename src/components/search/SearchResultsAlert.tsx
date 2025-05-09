@@ -1,45 +1,44 @@
 
 import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Info } from "lucide-react";
 
 interface SearchResultsAlertProps {
+  apiErrorMode: boolean;
   currentPage: number;
-  apiErrorMode?: boolean;
 }
 
-export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({ currentPage, apiErrorMode = false }) => {
+export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({ 
+  apiErrorMode,
+  currentPage
+}) => {
+  // Если включен режим ошибки API
   if (apiErrorMode) {
     return (
-      <Alert className="mb-4 border-red-300 bg-red-50">
-        <AlertCircle className="h-4 w-4 text-red-600" />
-        <AlertTitle className="text-red-700">Проблема с подключением к API</AlertTitle>
-        <AlertDescription className="text-red-700">
-          <p className="font-medium mb-1">Не удалось подключиться к API поиска</p>
-          <p className="text-sm">Причины могут быть следующими:</p>
-          <ul className="text-sm list-disc pl-5 mt-1">
-            <li>Проблемы с соединением или CORS</li>
-            <li>Временная недоступность API Zylalabs</li>
-            <li>Ограничения API ключа или его устаревание</li>
-            <li>Временная недоступность прокси-серверов</li>
-          </ul>
-          <p className="text-sm mt-2 font-medium">В данный момент отображаются демонстрационные данные. Попробуйте:</p>
-          <ul className="text-sm list-disc pl-5 mt-1">
-            <li>Обновить страницу</li>
-            <li>Проверить ваше интернет-соединение</li>
-            <li>Проверить актуальность API-ключа в настройках</li>
-          </ul>
+      <Alert variant="warning" className="bg-amber-50 border-amber-300">
+        <AlertTriangle className="h-4 w-4 text-amber-600" />
+        <AlertTitle className="text-amber-800">Внимание</AlertTitle>
+        <AlertDescription className="text-amber-700">
+          Не удалось подключиться к сервису поиска. Отображаются демонстрационные данные.
+          Пожалуйста, повторите попытку позже или обратитесь в поддержку.
         </AlertDescription>
       </Alert>
     );
   }
-  
+
+  // Если отображается первая страница
+  if (currentPage === 1) {
+    return null;
+  }
+
+  // Для страниц с пагинацией
   return (
-    <Alert className="mb-4 border-amber-300 bg-amber-50">
-      <AlertTriangle className="h-4 w-4 text-amber-600" />
-      <AlertDescription className="text-amber-700">
-        Возможны проблемы при загрузке данных для страницы {currentPage}. 
-        Для полного результата попробуйте повторить поиск позже.
+    <Alert variant="default" className="bg-blue-50 border-blue-200">
+      <Info className="h-4 w-4 text-blue-600" />
+      <AlertTitle className="text-blue-800">Информация</AlertTitle>
+      <AlertDescription className="text-blue-700">
+        Вы просматриваете страницу {currentPage} результатов поиска. 
+        Для возврата к первой странице используйте кнопки пагинации.
       </AlertDescription>
     </Alert>
   );

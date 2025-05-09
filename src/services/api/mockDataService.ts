@@ -1,70 +1,84 @@
-
-import { toast } from "@/components/ui/sonner";
-
 /**
- * Generates mock search results for demonstration purposes
- * when the API is unavailable or when testing
+ * Generates mock search results for use when API is not available
+ * @param query The search query
  */
 export const getMockSearchResults = (query: string) => {
-  console.log('Используем мок-данные для запроса:', query);
+  // Формируем название для главного демо-товара на основе запроса
+  const mainProductName = query ? 
+    `${query} - демонстрационный товар` : 
+    'Демонстрационный товар';
   
-  // Using more reliable image placeholders that work with CORS
-  const getImageUrl = (text: string) => 
-    `https://dummyimage.com/300x300/e3e3e3/333333&text=${encodeURIComponent(text)}`;
+  // Создаем случайную цену в пределах от 10 до 1000
+  const randomPrice = () => (Math.floor(Math.random() * 990) + 10).toFixed(2);
   
-  // Базовые элементы для всех запросов
-  const baseProducts = [
-    {
-      id: 'mock-1',
-      title: 'Демонстрационный товар 1',
-      subtitle: 'Тестовый товар для демонстрации функционала',
-      price: '1999 руб.',
-      currency: 'RUB',
-      image: getImageUrl('Demo+1'),
-      link: 'https://example.com/product1',
-      rating: 4.5,
-      source: 'Demo Shop',
-      description: 'Это демонстрационный товар, созданный системой при недоступности API поиска.',
-      availability: 'В наличии',
-      brand: 'Demo Brand',
-    },
-    {
-      id: 'mock-2',
-      title: 'Демонстрационный товар 2',
-      subtitle: 'Альтернативный тестовый товар',
-      price: '3499 руб.',
-      currency: 'RUB',
-      image: getImageUrl('Demo+2'),
-      link: 'https://example.com/product2',
-      rating: 3.8,
-      source: 'Example Store',
-      description: 'Это второй демонстрационный товар для тестирования интерфейса.',
-      availability: 'Под заказ',
-      brand: 'Test Brand',
-    },
+  // Выбираем валюту случайным образом
+  const currencies = ['EUR', 'USD', 'GBP'];
+  const randomCurrency = () => currencies[Math.floor(Math.random() * currencies.length)];
+  
+  // Преобразуем запрос в формат URL
+  const slugifiedQuery = query.toLowerCase().replace(/\s+/g, '-');
+  
+  // Создаем текстовое описание для товара
+  const description = query ? 
+    `Демонстрационный товар ${query} для проверки работы приложения. Данные генерируются локально.` :
+    'Демонстрационный товар для проверки работы приложения. Данные генерируются локально.';
+  
+  // Статические изображения для демо-товаров
+  const demoImages = [
+    `https://dummyimage.com/300x300/e3e3e3/333333&text=${encodeURIComponent(query)}`,
+    'https://dummyimage.com/300x300/e3e3e3/333333&text=Demo+1',
+    'https://dummyimage.com/300x300/e3e3e3/333333&text=Demo+2',
   ];
   
-  // Добавляем товар, связанный с запросом пользователя
-  const queryRelatedProduct = {
-    id: 'mock-query',
-    title: `${query} - демонстрационный товар`,
-    subtitle: `Товар, связанный с запросом "${query}"`,
-    price: '2499 руб.',
-    currency: 'RUB',
-    image: getImageUrl(query),
-    link: 'https://example.com/product-query',
-    rating: 4.2,
-    source: 'Search Demo',
-    description: `Это демонстрационный товар, связанный с вашим запросом "${query}". Создан при недоступности API поиска.`,
-    availability: 'Ограниченное количество',
-    brand: query.split(' ')[0] || 'Query Brand',
-  };
-  
-  // Уведомление пользователя о демонстрационном режиме
-  toast.info('Используются демо-данные, так как API временно недоступен');
-  
+  // Генерируем уникальные ID и информацию о магазинах
   return {
-    products: [queryRelatedProduct, ...baseProducts],
-    total: 3
+    products: [
+      {
+        id: `demo-${Date.now()}-1`,
+        title: mainProductName,
+        price: `${randomPrice()} ${randomCurrency()}`,
+        currency: randomCurrency(),
+        image: demoImages[0],
+        link: `https://example.com/product-query`,
+        rating: 4.7,
+        source: 'Search Demo',
+        subtitle: 'Демо товар',
+        description: description,
+        availability: 'В наличии',
+        brand: query.split(' ')[0] || 'Demo Brand',
+        specifications: {
+          'Категория': 'Демонстрация',
+          'Тип': 'Демонстрационный товар'
+        }
+      },
+      {
+        id: `demo-${Date.now()}-2`,
+        title: 'Демонстрационный товар 1',
+        price: `${randomPrice()} ${randomCurrency()}`,
+        currency: randomCurrency(),
+        image: demoImages[1],
+        link: 'https://example.com/product1',
+        rating: 4.2,
+        source: 'Demo Shop',
+        subtitle: 'Демо',
+        description: 'Демонстрационные данные для тестирования интерфейса.',
+        availability: 'Предзаказ'
+      },
+      {
+        id: `demo-${Date.now()}-3`,
+        title: 'Демонстрационный товар 2',
+        price: `${randomPrice()} ${randomCurrency()}`,
+        currency: randomCurrency(),
+        image: demoImages[2],
+        link: 'https://example.com/product2',
+        rating: 3.8,
+        source: 'Demo Market',
+        subtitle: 'Демо',
+        description: 'Тестовые данные, сгенерированные системой.'
+      }
+    ],
+    total_results: 3,
+    total_pages: 1,
+    page: 1
   };
 };
