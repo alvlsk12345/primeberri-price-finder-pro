@@ -16,7 +16,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
   // Validate API key
   if (!checkApiKey()) {
     const mockResults = getMockSearchResults(params.query);
-    console.log('API ключ не найден, используем моковые данные');
+    console.log('API ключ не найден или некорректный, используем моковые данные');
     return { ...mockResults, fromMock: true };
   }
   

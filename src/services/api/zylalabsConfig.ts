@@ -1,6 +1,6 @@
 
 // API configuration constants
-export const ZYLALABS_API_KEY = "8109|6Jvdck7HZmg7NdU3iQmwmKIuGSabv2S882fxhEA4";
+export const ZYLALABS_API_KEY = "8112|xU0WDZhKkWVo7rczutXwzGKzEwBtNPhHbsAYbtrM";
 
 // Request configuration
 export const MAX_RETRY_ATTEMPTS = 3;
@@ -19,7 +19,7 @@ const CORS_PROXIES = [
 // Create a function to build API URL with appropriate proxy
 export const getApiBaseUrl = (proxyIndex: number = 0): string => {
   const proxy = CORS_PROXIES[proxyIndex % CORS_PROXIES.length];
-  return `${proxy}https://zylalabs.com`; // Updated to use zylalabs.com instead of api.zylalabs.com
+  return `${proxy}https://api.zylalabs.com`; // Правильный базовый URL для API
 };
 
 // API URL builder for single country search
@@ -33,8 +33,8 @@ export const buildSearchUrl = (
   const encodedQuery = encodeURIComponent(query);
   const baseUrl = getApiBaseUrl(proxyIndex);
   
-  // Updated path to match Postman collection
-  return `${baseUrl}/api/2033/real+time+product+search+api/1809/search+products?q=${encodedQuery}&country=${country}&language=${language}${page ? `&page=${page}` : ''}`;
+  // Updated path to match API documentation
+  return `${baseUrl}/api/2033/search+products?q=${encodedQuery}&country=${country}&language=${language}${page ? `&page=${page}` : ''}`;
 };
 
 // API URL builder for multi-country search

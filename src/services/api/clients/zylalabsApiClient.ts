@@ -33,6 +33,8 @@ export const fetchFromZylalabs = async (
     }
     
     console.log('Отправляемые заголовки:', Object.keys(headers).join(', '));
+    console.log('Используемый API ключ:', ZYLALABS_API_KEY.substring(0, 5) + '...');
+    console.log('Полный URL запроса:', url);
     
     const response = await fetch(url, {
       method: 'GET',
