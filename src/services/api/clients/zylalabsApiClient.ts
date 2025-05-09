@@ -33,6 +33,9 @@ export const fetchFromZylalabs = async (
     }
     
     console.log('Отправляемые заголовки:', Object.keys(headers).join(', '));
+    console.log('URL запроса:', url);
+    console.log('API ключ (первые 5 символов):', ZYLALABS_API_KEY ? ZYLALABS_API_KEY.substring(0, 5) + '...' : 'отсутствует');
+    console.log('Используемый прокси индекс:', proxyIndex);
     
     const response = await fetch(url, {
       method: 'GET',
@@ -68,8 +71,16 @@ export const fetchFromZylalabs = async (
           toast.error('Превышен лимит запросов к API. Пожалуйста, обратитесь в поддержку.');
           throw new Error('API usage limit exceeded');
         }
+        
+        // Проверка на проблемы с API сервером
+        if (response.status === 503) {
+          console.error('API сервер временно недоступен (status 503)');
+          toast.error('API сервер временно недоступен. Используются демо-данные.');
+          throw new Error('API server unavailable (503)');
+        }
       } catch (e) {
         // If parsing as JSON fails, use text as is
+        console.error('Не удалось распарсить ошибку как JSON:', e);
       }
       
       throw new Error(`API error: ${response.status}`);
@@ -77,6 +88,10 @@ export const fetchFromZylalabs = async (
     
     // Parse the successful response
     return await response.json();
+  } catch (e) {
+    console.error('Ошибка при выполнении запроса к API:', e);
+    clearTimeout(timeoutId);
+    throw e;
   } finally {
     clearTimeout(timeoutId);
   }

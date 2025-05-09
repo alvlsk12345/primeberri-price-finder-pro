@@ -12,7 +12,7 @@ export const useSearchHandlers = (
   cachedResults: {[page: number]: Product[]},
   currentPage: number,
   setSelectedProduct: (product: Product | null) => void,
-  setSearchResults: (results: Product[]) => void,
+  setSearchResults: (results: Product[] | ((prevResults: Product[]) => Product[])) => void,
   setCurrentPage: (page: number) => void,
   setTotalPages: (pages: number) => void,
   setCachedResults: React.Dispatch<React.SetStateAction<{[page: number]: Product[]}>>,
