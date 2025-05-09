@@ -24,12 +24,7 @@ export const fetchFromZylalabs = async (
       'Accept': 'application/json'
     };
     
-    // Add any additional headers needed for proxy
-    if (proxyIndex > 0) {
-      headers['X-Requested-With'] = 'XMLHttpRequest';
-    }
-    
-    console.log('Отправляем запрос к Zylalabs API с параметрами:');
+    console.log('Отправляем запрос к Zylalabs API:');
     console.log('URL запроса:', url);
     console.log('Используемый прокси индекс:', proxyIndex);
     console.log('Заголовок авторизации: Bearer', ZYLALABS_API_KEY ? ZYLALABS_API_KEY.substring(0, 5) + '...' : 'отсутствует');
@@ -77,6 +72,10 @@ export const fetchFromZylalabs = async (
     console.log('API response successfully parsed to JSON:', 
       jsonResponse.success ? 'success=true' : 'success=false', 
       jsonResponse.response ? 'response present' : 'no response');
+    
+    // Вывод первых 300 символов ответа для отладки
+    console.log('API response format:', JSON.stringify(jsonResponse).substring(0, 300) + '...');
+    
     return jsonResponse;
   } catch (e) {
     console.error('Ошибка при выполнении запроса к API:', e);

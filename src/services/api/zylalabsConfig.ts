@@ -7,6 +7,9 @@ export const MAX_RETRY_ATTEMPTS = 3;
 export const RETRY_DELAY = 2000; // 2 seconds between retries
 export const REQUEST_TIMEOUT = 60000; // 60 seconds timeout
 
+// Корректный базовый URL из Postman коллекции
+export const ZYLALABS_BASE_URL = "https://zylalabs.com";
+
 // Alternative CORS proxies to try if direct access fails
 const CORS_PROXIES = [
   "", // Direct connection (no proxy)
@@ -19,7 +22,7 @@ const CORS_PROXIES = [
 // Create a function to build API URL with appropriate proxy
 export const getApiBaseUrl = (proxyIndex: number = 0): string => {
   const proxy = CORS_PROXIES[proxyIndex % CORS_PROXIES.length];
-  return `${proxy}https://zylalabs.com`; // Базовый URL из Postman коллекции
+  return `${proxy}${ZYLALABS_BASE_URL}`;
 };
 
 // API URL builder for single country search (точное соответствие Postman коллекции)
@@ -37,7 +40,7 @@ export const buildSearchUrl = (
   let url = `${baseUrl}/api/2033/real+time+product+search+api/1809/search+products?q=${encodedQuery}&country=${country}&language=${language}`;
   
   // Добавляем page только если он указан (как в Postman)
-  if (page) {
+  if (page && page > 1) {
     url += `&page=${page}`;
   }
   

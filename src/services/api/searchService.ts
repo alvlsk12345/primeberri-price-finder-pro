@@ -22,30 +22,28 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
   // Extract search parameters
   const countries = params.countries || ['us']; // Default to 'us' as in Postman
   const language = params.language || 'en';
-  const page = params.page || null; // Null для необязательного параметра как в Postman
+  const page = params.page && params.page > 1 ? params.page : null; // Null для страницы 1 по Postman
   
-  // Log API key information (partial, for security)
-  console.log(`Поиск товаров с параметрами: страна=${countries[0]}, язык=${language}, страница=${page || 'не указана'}`);
+  console.log(`Поиск товаров с параметрами: запрос="${params.query}", страна=${countries[0]}, язык=${language}, страница=${page || '1 (не указана)'}`);
   
   try {
     // Execute search with retry capability
     return await withRetry(async (attempt, proxyIndex) => {
       console.log(`Отправляем запрос к Zylalabs API... (попытка ${attempt + 1}/${MAX_RETRY_ATTEMPTS})`);
-      console.log(`Используем прокси ${proxyIndex}`);
+      console.log(`Используем прокси индекс ${proxyIndex}`);
       
       // Build the API URL with proper proxy - точное соответствие Postman
       const apiUrl = buildMultiCountrySearchUrl(params.query, countries, language, page, proxyIndex);
-      console.log('URL запроса:', apiUrl);
+      console.log('Сформированный URL запроса:', apiUrl);
       
       // Fetch data from API
       let data;
       try {
         data = await fetchFromZylalabs(apiUrl, proxyIndex);
-        console.log("API Response data received successfully:", 
-          data.success ? 'success=true' : 'success=false', 
-          data.response ? 'response present' : 'no response');
+        console.log("API Response data received successfully");
           
-        if (data.success === false && data.message) {
+        if (data && data.success === false && data.message) {
+          console.error('API вернул ошибку с сообщением:', data.message);
           throw new Error(`API error: ${data.message}`);
         }
       } catch (e) {
@@ -69,7 +67,10 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
     console.error('Не удалось получить данные после всех попыток, используем мок-данные');
     console.log('Используем мок-данные для запроса:', params.query);
     toast.error('Не удалось подключиться к API поиска. Используем демонстрационные данные.');
+    
+    // Добавляем больше диагностики
+    console.error('Финальная ошибка API запроса:', error.message, error.stack);
+    
     return { ...getMockSearchResults(params.query), fromMock: true };
   }
 };
-
