@@ -1,10 +1,12 @@
 
 import { useRef } from 'react';
 import { Product, ProductFilters } from "@/services/types";
-import { useSearchExecutor } from './search/useSearchExecutor';
-import { useSearchCache } from './search/useSearchCache';
+import { useSearchExecutionActions } from './search/useSearchExecutionActions';
+import { useProductSelectionActions } from './search/useProductSelectionActions';
+import { usePaginationActions } from './search/usePaginationActions';
+import { useFilterActions } from './search/useFilterActions';
 
-// Types for state management props
+// Типы для пропсов управления состоянием
 type SearchStateProps = {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -70,116 +72,45 @@ export function useSearchActions(props: SearchStateProps) {
     getSearchCountries
   } = props;
 
-  // Use our new refactored hooks
-  const { executeSearch, cleanupSearch } = useSearchExecutor({
+  // Используем наши новые хуки для различных действий
+  const { handleSearch, cleanupSearch } = useSearchExecutionActions({
+    searchQuery,
+    lastSearchQuery,
+    setLastSearchQuery,
     isLoading,
     setIsLoading,
+    searchResults,
     setSearchResults,
     cachedResults,
     setCachedResults,
+    currentPage,
     setCurrentPage,
-    setTotalPages,
+    filters,
+    setOriginalQuery,
     setHasSearched,
     setIsUsingDemoData,
-    setApiInfo
+    setApiInfo,
+    getSearchCountries
   });
   
-  const { getCachedResults, handleSearchFailure } = useSearchCache({
-    cachedResults,
-    setSearchResults,
-    setCurrentPage
+  const { handleProductSelect } = useProductSelectionActions({
+    setSelectedProduct
   });
-
-  // Main search function
-  const handleSearch = async (page: number = 1, forceNewSearch: boolean = false) => {
-    console.log(`handleSearch called with page: ${page}, forceNewSearch: ${forceNewSearch}`);
-    
-    // Check if there's a query for search
-    if (!searchQuery && !lastSearchQuery) {
-      console.log('Пожалуйста, введите запрос для поиска товара');
-      return;
-    }
-
-    // Use current search query or last successful one
-    const queryToUse = searchQuery || lastSearchQuery;
-    
-    // Важно: всегда устанавливаем текущую страницу перед проверкой кеша
-    setCurrentPage(page);
-    
-    // If it's the same page for the same query and we have cached results
-    const cachedResultsForQuery = getCachedResults(queryToUse, lastSearchQuery, page);
-    if (!forceNewSearch && cachedResultsForQuery) {
-      console.log(`Используем кэшированные результаты для страницы ${page}`);
-      setSearchResults(cachedResultsForQuery);
-      return;
-    }
-    
-    // Save original query (for display to user)
-    setOriginalQuery(queryToUse);
-    
-    // If this is a new search query, reset cache
-    const isSameQuery = queryToUse === lastSearchQuery;
-    if (!isSameQuery || forceNewSearch) {
-      console.log(`Новый запрос или принудительный поиск. Очищаем кэш.`);
-      setLastSearchQuery(queryToUse);
-      // Reset results cache for new query
-      setCachedResults({});
-    }
-    
-    try {
-      // Execute search
-      console.log(`Выполняем поиск для запроса "${queryToUse}", страница: ${page}`);
-      const result = await executeSearch(
-        queryToUse,
-        page,
-        lastSearchQuery,
-        filters,
-        getSearchCountries
-      );
-      
-      // If search was unsuccessful, try to use cached results
-      if (!result.success) {
-        // Check if we have results in cache for current search query
-        console.log(`Поиск не удался. Проверяем кэш.`);
-        if (cachedResults[1] && cachedResults[1].length > 0 && isSameQuery) {
-          setSearchResults(cachedResults[1]);
-          setCurrentPage(1);
-          console.log('Ошибка при загрузке страницы, показаны результаты первой страницы');
-        }
-      }
-    } catch (error) {
-      console.error(`Ошибка при выполнении поиска:`, error);
-      handleSearchFailure(currentPage);
-    }
-  };
-
-  // Product selection handler
-  const handleProductSelect = (product: Product) => {
-    setSelectedProduct(product);
-  };
   
-  // Page change handler
-  const handlePageChange = (page: number) => {
-    if (page !== currentPage && page >= 1 && page <= totalPages) {
-      console.log(`Changing page from ${currentPage} to ${page}`);
-      // Increment the counter
-      setPageChangeCount(pageChangeCount + 1);
-      // Важное исправление: перед выполнением поиска устанавливаем текущую страницу
-      // Trigger a search with new page
-      handleSearch(page);
-    }
-  };
+  // Для paginationActions нам нужна ссылка на handleSearch, поэтому создаем его после
+  const { handlePageChange } = usePaginationActions({
+    currentPage,
+    totalPages,
+    pageChangeCount,
+    setPageChangeCount,
+    handleSearch
+  });
   
-  // Модифицированный Filter change handler - применяет фильтры сразу
-  const handleFilterChange = (newFilters: ProductFilters) => {
-    // Устанавливаем новые фильтры
-    setFilters(newFilters);
-    
-    // Сразу выполняем поиск с новыми фильтрами
-    console.log("Автоматически применяем фильтры после изменения");
-    // Reset to first page when filters change and force new search
-    handleSearch(1, true);
-  };
+  // Для filterActions также нужна ссылка на handleSearch
+  const { handleFilterChange } = useFilterActions({
+    setFilters,
+    handleSearch
+  });
 
   return {
     handleSearch,

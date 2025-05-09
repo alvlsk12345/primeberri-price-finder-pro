@@ -23,7 +23,7 @@ export function useSearchErrorHandler({
       return { success: true, products: lastSuccessfulResults.current, recovered: true };
     }
     
-    return { success: false, products: [], error };
+    return { success: false, products: [] };
   };
   
   // Функция для отображения сообщений об ошибках пользователю
