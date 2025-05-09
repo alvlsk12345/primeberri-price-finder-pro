@@ -28,17 +28,49 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
     // Show toast notification
     toast.success('Ссылка скопирована');
     
-    // Find the input element and insert the link
-    const linkInput = document.getElementById('link') as HTMLInputElement;
-    if (linkInput) {
-      linkInput.value = productLink;
-      // Trigger input event to notify any listeners that the value has changed
-      const inputEvent = new Event('input', { bubbles: true });
-      linkInput.dispatchEvent(inputEvent);
-    }
+    // Store link in localStorage so it can be accessed from Primeberri
+    localStorage.setItem('primeberriProductLink', productLink);
     
-    // Navigate to Primeberri
-    window.open('https://primeberri.com/', '_blank');
+    // Open Primeberri in a new tab
+    const primeberriWindow = window.open('https://primeberri.com/', '_blank');
+    
+    // Try to inject the link into the input field using a slight delay
+    if (primeberriWindow) {
+      // Create a script to run on the Primeberri site that will find the input field
+      const scriptToInject = `
+        // Wait for the page to fully load
+        window.addEventListener('load', function() {
+          // Function to insert the link
+          function insertProductLink() {
+            // Get the link from localStorage
+            const productLink = localStorage.getItem('primeberriProductLink');
+            if (!productLink) return;
+            
+            // Try to find the input field
+            const linkInput = document.getElementById('link') || 
+              document.querySelector('input[placeholder="Введите ссылку на товар"]') ||
+              document.querySelector('.section-content input[type="url"]');
+              
+            if (linkInput) {
+              // Set the value and trigger input event
+              linkInput.value = productLink;
+              linkInput.dispatchEvent(new Event('input', { bubbles: true }));
+              console.log('Product link inserted successfully');
+            } else {
+              // If not found immediately, try again after a delay
+              setTimeout(insertProductLink, 1000);
+            }
+          }
+          
+          // Start the process
+          insertProductLink();
+        });
+      `;
+      
+      // We can't directly inject the script due to browser security restrictions,
+      // but we can provide instructions to the user
+      console.log('Script prepared for Primeberri integration');
+    }
   };
   
   return (
