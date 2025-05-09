@@ -57,6 +57,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
             <ProductCardPrice 
               price={product.price}
               availability={product.availability}
+              currency={product.currency}
             />
             
             <ProductCardDescription 
