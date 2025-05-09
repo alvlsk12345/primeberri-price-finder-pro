@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { ProductFilters, Product } from "@/services/types";
+import { ProductFilters, Product, SortOption } from "@/services/types";
 import { FilterContainer } from './filter/FilterContainer';
 import { PriceRangeFilter } from './filter/PriceRangeFilter';
 import { BrandsFilter } from './filter/BrandsFilter';
 import { SourcesFilter } from './filter/SourcesFilter';
 import { RatingFilter } from './filter/RatingFilter';
 import { CountryFilter } from './filter/CountryFilter';
+import { SortFilter } from './filter/SortFilter';
 
 interface FilterPanelProps {
   filters: ProductFilters;
@@ -79,6 +80,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     if (filters.sources && filters.sources.length > 0) count++;
     if (filters.countries && filters.countries.length > 0) count++;
     if (filters.rating) count++;
+    if (filters.sortBy) count++;
     setActiveFiltersCount(count);
   }, [filters]);
   
@@ -156,6 +158,14 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     }));
   };
   
+  // Обработчик изменения сортировки
+  const handleSortChange = (sortBy: SortOption) => {
+    setLocalFilters(prev => ({
+      ...prev,
+      sortBy: sortBy || undefined
+    }));
+  };
+  
   // Применение фильтров
   const applyFilters = () => {
     onFilterChange(localFilters);
@@ -174,6 +184,11 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
       resetFilters={resetFilters}
       applyFilters={applyFilters}
     >
+      <SortFilter 
+        sortBy={localFilters.sortBy || ""}
+        onSortChange={handleSortChange}
+      />
+
       <CountryFilter
         selectedCountries={localFilters.countries || []}
         onCountryChange={handleCountryChange}

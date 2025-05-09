@@ -1,5 +1,5 @@
 
-import { Product, ProductFilters } from '../types';
+import { Product, ProductFilters, SortOption } from '../types';
 import { formatSingleProduct } from './singleProductFormatter';
 
 /**
@@ -38,12 +38,45 @@ export const processZylalabsProductsData = async (
     if (filters) {
       filteredProducts = applyFilters(validProducts, filters);
       console.log(`После применения фильтров осталось товаров: ${filteredProducts.length}`);
+      
+      // Сортируем продукты, если указана опция сортировки
+      if (filters.sortBy) {
+        filteredProducts = sortProducts(filteredProducts, filters.sortBy);
+        console.log(`Товары отсортированы по: ${filters.sortBy}`);
+      }
     }
     
     return filteredProducts;
   } catch (error) {
     console.error('Ошибка при обработке данных о товарах:', error);
     return [];
+  }
+};
+
+/**
+ * Сортирует товары по заданному критерию
+ */
+const sortProducts = (products: Product[], sortBy: SortOption): Product[] => {
+  const sortedProducts = [...products]; // Создаём копию, чтобы не менять исходный массив
+  
+  switch (sortBy) {
+    case "price_asc": 
+      return sortedProducts.sort((a, b) => 
+        (a._numericPrice || 0) - (b._numericPrice || 0)
+      );
+      
+    case "price_desc": 
+      return sortedProducts.sort((a, b) => 
+        (b._numericPrice || 0) - (a._numericPrice || 0)
+      );
+      
+    case "rating_desc": 
+      return sortedProducts.sort((a, b) => 
+        b.rating - a.rating
+      );
+      
+    default:
+      return sortedProducts;
   }
 };
 
@@ -81,6 +114,13 @@ const applyFilters = (products: Product[], filters: ProductFilters): Product[] =
     // Фильтр по рейтингу
     if (filters.rating && product.rating < filters.rating) {
       return false;
+    }
+    
+    // Фильтр по стране
+    if (filters.countries && filters.countries.length > 0 && product.country) {
+      if (!filters.countries.includes(product.country)) {
+        return false;
+      }
     }
     
     return true;

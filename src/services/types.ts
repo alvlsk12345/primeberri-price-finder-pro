@@ -34,6 +34,9 @@ export type SearchParams = {
   minResultCount?: number; // Минимальное количество результатов
 };
 
+// Тип для сортировки товаров
+export type SortOption = "price_asc" | "price_desc" | "rating_desc" | "";
+
 // Тип для фильтров товаров
 export type ProductFilters = {
   minPrice?: number;
@@ -42,4 +45,5 @@ export type ProductFilters = {
   sources?: string[];
   countries?: string[]; // Добавлен фильтр по странам
   rating?: number;
+  sortBy?: SortOption; // Добавлена опция сортировки
 };
