@@ -1,13 +1,9 @@
 
 import { useCallback } from 'react';
 import { Product, ProductFilters } from "@/services/types";
+import { SearchContextType } from './types';
 import { SortOption } from "@/components/sorting/SortingMenu";
-import { useSearchHandler } from './handlers/searchHandlers';
-import { useProductSelectHandler } from './handlers/productHandler';
-import { usePageChangeHandler } from './handlers/pageHandler';
-import { useFilterChangeHandler } from './handlers/filterHandler';
-import { useSortChangeHandler } from './handlers/sortHandler';
-import { applySorting } from './utils/sortingUtils';
+import { searchProductsViaZylalabs } from "@/services/api/zylalabsService";
 
 export const useSearchHandlers = (
   searchQuery: string,
@@ -20,63 +16,80 @@ export const useSearchHandlers = (
   setSearchResults: (results: Product[]) => void,
   setCurrentPage: (page: number) => void,
   setTotalPages: (pages: number) => void,
-  setCachedResults: React.Dispatch<React.SetStateAction<{[page: number]: Product[]}>>,
+  setCachedResults: (results: {[page: number]: Product[]}) => void,
   setLastSearchQuery: (query: string) => void,
   setOriginalQuery: (query: string) => void,
   setHasSearched: (hasSearched: boolean) => void,
   setIsLoading: (isLoading: boolean) => void,
-  setApiErrorMode: (errorMode: boolean) => void,
-  setPageChangeCount: React.Dispatch<React.SetStateAction<number>>,
-  setFilters: React.Dispatch<React.SetStateAction<ProductFilters>>,
-  setSortOption: React.Dispatch<React.SetStateAction<SortOption>>
+  setApiErrorMode: (isError: boolean) => void,
+  setPageChangeCount: (count: number) => void,
+  setFilters: (filters: ProductFilters) => void,
+  setSortOption: (option: SortOption) => void
 ) => {
-  // Get the main search handler
-  const handleSearch = useSearchHandler(
-    searchQuery,
-    lastSearchQuery,
-    filters,
-    sortOption,
-    cachedResults,
-    currentPage,
-    setSelectedProduct,
-    setSearchResults,
-    setCurrentPage,
-    setTotalPages,
-    setCachedResults,
-    setLastSearchQuery,
-    setOriginalQuery,
-    setHasSearched,
-    setIsLoading,
-    setApiErrorMode,
-    applySorting
-  );
-  
-  // Product selection handler
-  const handleProductSelect = useProductSelectHandler(setSelectedProduct);
-  
-  // Page change handler
-  const handlePageChange = usePageChangeHandler(
-    currentPage,
-    handleSearch,
-    setCurrentPage,
-    setPageChangeCount
-  );
-  
-  // Filter change handler
-  const handleFilterChange = useFilterChangeHandler(
-    handleSearch,
-    setCurrentPage,
-    setFilters
-  );
-  
-  // Sort change handler - pass the current search results
-  const handleSortChange = useSortChangeHandler(
-    setSortOption,
-    setSearchResults,
-    // Pass the current results from the SearchProvider
-    [],  // This will be updated in SearchProvider
-    applySorting
-  );
+  // Handle search with pagination and caching
+  const handleSearch = useCallback(async (page: number = 1, forceNewSearch: boolean = false) => {
+    setIsLoading(true);
+    setApiErrorMode(false);
+
+    if (forceNewSearch) {
+      setCurrentPage(1);
+      page = 1;
+    }
+
+    try {
+      const searchParams = {
+        query: searchQuery,
+        page: page,
+        countries: ['gb'],
+        language: 'en',
+        filters: filters,
+        sort: sortOption
+      };
+
+      const results = await searchProductsViaZylalabs(searchParams);
+
+      if (results && results.products) {
+        setSearchResults(results.products);
+        setTotalPages(results.totalPages || 1);
+        setCurrentPage(page);
+      } else {
+        setSearchResults([]);
+        setTotalPages(1);
+        setCurrentPage(1);
+      }
+    } catch (error: any) {
+      console.error("Search failed:", error);
+      setApiErrorMode(true);
+      setSearchResults([]);
+      setTotalPages(1);
+      setCurrentPage(1);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [searchQuery, filters, sortOption, setIsLoading, setApiErrorMode, setSearchResults, setTotalPages, setCurrentPage]);
+
+  const handleProductSelect = useCallback((product: Product) => {
+    console.log('Selected product:', product);
+    setSelectedProduct(product);
+  }, [setSelectedProduct]);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    console.log(`handlePageChange - Requesting page: ${newPage}`);
+    handleSearch(newPage);
+  }, [handleSearch]);
+
+  const handleFilterChange = useCallback((newFilters: ProductFilters) => {
+    console.log(`Filter change - New filters:`, newFilters);
+    setFilters(newFilters);
+  }, [setFilters]);
+
+  const handleSortChange = useCallback((option: SortOption) => {
+    // Update the sort option in state
+    setSortOption(option);
+    
+    // Sort the results based on the selected option
+    console.log(`Sort change - New sort option: ${option}`);
+  }, [setSortOption]);
 
   return {
     handleSearch,

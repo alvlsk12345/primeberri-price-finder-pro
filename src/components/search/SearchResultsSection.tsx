@@ -4,7 +4,7 @@ import { SearchResults } from "@/components/SearchResults";
 import { FilterPanel } from "@/components/FilterPanel";
 import { useSearch } from "@/contexts/search";
 import { SearchResultsAlert } from "./SearchResultsAlert";
-import { isSearchEngineLink, getProductLink } from "@/services/urlService";
+import { isSearchEngineLink, getProductLink } from "@/services/url";
 import { Product } from "@/services/types";
 import { toast } from "@/components/ui/sonner";
 import { SortingMenu } from "@/components/sorting/SortingMenu";
@@ -32,36 +32,19 @@ export const SearchResultsSection: React.FC = () => {
       let searchLinksCount = 0;
       let fixedLinksCount = 0;
       
-      // Создаем копию результатов для обработки
-      const processedResults = [...searchResults];
-      
-      searchResults.forEach((product, index) => {
-        // Проверка на поисковые ссылки
+      // Проверяем ссылки каждого результата
+      searchResults.forEach((product) => {
         if (product.link && isSearchEngineLink(product.link)) {
           searchLinksCount++;
-          
-          // Генерируем прямую ссылку на товар в магазине
-          const directLink = getProductLink(product);
-          
-          if (directLink && !isSearchEngineLink(directLink)) {
-            // Заменяем поисковую ссылку на прямую
-            processedResults[index] = {
-              ...product,
-              link: directLink
-            };
-            fixedLinksCount++;
-            console.log(`Ссылка исправлена для ${product.title}: ${directLink}`);
-          }
         }
       });
       
       if (searchLinksCount > 0) {
         console.warn(`Внимание: ${searchLinksCount} из ${searchResults.length} ссылок ведут на поисковые системы`);
-        console.log(`Исправлено ${fixedLinksCount} ссылок на прямые ссылки магазинов`);
         
-        if (fixedLinksCount > 0) {
-          // Уведомляем пользователя о замене ссылок
-          toast.success(`Исправлено ${fixedLinksCount} ссылок на прямые ссылки магазинов`);
+        // Показываем уведомление о поисковых ссылках
+        if (searchLinksCount === searchResults.length) {
+          toast.warning('Все ссылки на товары являются поисковыми. Рекомендуем посетить сайт магазина.');
         }
       } else {
         console.log('Все ссылки на товары корректные');
@@ -75,13 +58,20 @@ export const SearchResultsSection: React.FC = () => {
 
   return (
     <div className="mt-6">
-      {apiErrorMode && <SearchResultsAlert apiErrorMode={true} currentPage={currentPage} />}
+      {apiErrorMode && 
+        <div className="mb-4">
+          <SearchResultsAlert 
+            apiErrorMode={true} 
+            currentPage={currentPage} 
+          />
+        </div>
+      }
       
       <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
         <h2 className="text-xl font-semibold">
           Результаты поиска{originalQuery ? ` "${originalQuery}"` : ''}:
         </h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <SortingMenu 
             currentSort={sortOption}
             onSortChange={handleSortChange}

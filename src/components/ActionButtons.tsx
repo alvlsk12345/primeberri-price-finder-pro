@@ -1,9 +1,9 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Link, ExternalLink } from 'lucide-react';
+import { ArrowRight, Link } from 'lucide-react';
 import { toast } from "@/components/ui/sonner";
-import { getProductLink } from "@/services/urlService";
+import { getProductLink } from "@/services/url";
 import { Product } from "@/services/types";
 
 type ActionButtonsProps = {
@@ -30,12 +30,12 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     e.preventDefault();
     
     if (selectedProduct) {
-      // Получаем ссылку на товар из нашего сервиса
-      const productLink = getProductLink(selectedProduct);
+      // Всегда используем сгенерированную прямую ссылку на товар в магазине
+      const directLink = getProductLink(selectedProduct);
       
-      navigator.clipboard.writeText(productLink);
+      navigator.clipboard.writeText(directLink);
       toast.success('Ссылка на товар скопирована!');
-      console.log('Скопирована ссылка:', productLink);
+      console.log('Скопирована прямая ссылка:', directLink);
     } else {
       toast.error('Пожалуйста, выберите товар');
     }
@@ -46,9 +46,10 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     e.preventDefault();
     
     if (selectedProduct) {
-      const productLink = getProductLink(selectedProduct);
-      window.open(productLink, '_blank', 'noopener,noreferrer');
-      console.log('Переход по ссылке:', productLink);
+      // Всегда используем сгенерированную прямую ссылку на товар в магазине
+      const directLink = getProductLink(selectedProduct);
+      
+      window.open(directLink, '_blank', 'noopener,noreferrer');
     } else {
       toast.error('Пожалуйста, выберите товар');
     }
@@ -71,7 +72,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         className="flex-1"
       >
         <span className="flex items-center gap-2">
-          <ExternalLink size={18} /> Перейти к товару
+          Перейти к товару <ArrowRight size={18} />
         </span>
       </Button>
       <Button 
