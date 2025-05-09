@@ -20,7 +20,7 @@ export const fetchFromZylalabs = async (
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
   
   try {
-    // Setup headers exactly as in Postman collection - Bearer token authentication
+    // Setup headers exactly as in Postman collection - Using proper Bearer token format
     const headers: HeadersInit = {
       'Authorization': `Bearer ${ZYLALABS_API_KEY}`,
       'Content-Type': 'application/json',
@@ -30,12 +30,13 @@ export const fetchFromZylalabs = async (
     // Log the request for debugging
     console.log('Making API request to:', url);
     console.log('Using API key (first 10 chars):', ZYLALABS_API_KEY.substring(0, 10) + '...');
-    console.log('Headers:', Object.keys(headers).join(', '));
+    console.log('Headers:', JSON.stringify(headers, null, 2));
     
     const response = await fetch(url, {
       method: 'GET',
       headers: headers,
       signal: controller.signal,
+      // Ensure we're sending the request correctly
       mode: 'cors',
       credentials: 'omit',
       cache: 'no-store' // Disable caching to ensure fresh data
@@ -82,8 +83,7 @@ export const fetchFromZylalabs = async (
     console.log("API response received successfully");
     
     // Log a sample of the response for debugging
-    const sampleResponse = JSON.stringify(jsonResponse).substring(0, 200) + '...';
-    console.log("Sample API response:", sampleResponse);
+    console.log("Full API response:", JSON.stringify(jsonResponse, null, 2));
     
     return jsonResponse;
   } catch (error: any) {

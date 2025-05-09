@@ -14,9 +14,15 @@ export const parseApiResponse = (data: any): { products: any[], total: number } 
       console.log('API response data keys:', Object.keys(data.data));
     }
     
-    if (data && data.status) {
-      console.log('API response status:', data.status);
+    if (data && data.data && data.data.products) {
+      // Log first product structure
+      console.log('First product sample:', JSON.stringify(data.data.products[0], null, 2));
     }
+    
+    // Log full response (limited to avoid console overflow)
+    console.log('Full API response (truncated):', 
+      JSON.stringify(data).substring(0, 1000) + 
+      (JSON.stringify(data).length > 1000 ? '...' : ''));
   } catch (e) {
     console.error('Error inspecting API response:', e);
   }
@@ -45,6 +51,24 @@ export const parseApiResponse = (data: any): { products: any[], total: number } 
     console.log('Обнаружен формат с полем results');
     products = data.results;
     total = data.total || products.length;
+  } else if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+    // Try to find any array that might contain products
+    console.log('Пробуем найти массив товаров в ответе...');
+    
+    for (const key in data) {
+      if (Array.isArray(data[key]) && data[key].length > 0 && 
+          data[key][0] && (data[key][0].title || data[key][0].name)) {
+        console.log(`Найден возможный массив товаров в поле "${key}"`);
+        products = data[key];
+        total = products.length;
+        break;
+      }
+    }
+    
+    if (products.length === 0) {
+      console.error('Не удалось найти массив товаров в ответе API');
+      throw new Error('Получены некорректные данные от API');
+    }
   } else {
     // Log the actual received structure for debugging
     console.error('Неожиданный формат ответа от API:', JSON.stringify(data).substring(0, 500) + '...');
@@ -54,6 +78,7 @@ export const parseApiResponse = (data: any): { products: any[], total: number } 
   // Log product structure for the first item
   if (products.length > 0) {
     console.log('Структура первого товара:', Object.keys(products[0]).join(', '));
+    console.log('Пример первого товара:', JSON.stringify(products[0], null, 2));
   }
   
   console.log(`Успешно извлечено ${products.length} товаров из ответа API`);

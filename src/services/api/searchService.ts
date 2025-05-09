@@ -1,11 +1,11 @@
 
 import { toast } from "@/components/ui/sonner";
 import { SearchParams } from "../types";
-import { checkApiKey, buildMultiCountrySearchUrl } from "./zylalabsConfig";
+import { checkApiKey, buildMultiCountrySearchUrl, ZYLALABS_API_KEY, MAX_RETRY_ATTEMPTS } from "./zylalabsConfig";
 import { getMockSearchResults } from "./mockDataService";
 import { parseApiResponse } from "./responseParserService";
 import { withRetry } from "./retryService";
-import { fetchFromZylalabs, getZylalabsApiUrl } from "./clients/zylalabsApiClient";
+import { fetchFromZylalabs } from "./clients/zylalabsApiClient";
 import { isSearchEngineLink } from "../url";
 
 /**
@@ -21,9 +21,9 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
   }
   
   // Extract search parameters
-  const countries = params.countries || ['us']; // Changed default from 'gb' to 'us' as in Postman
+  const countries = params.countries || ['us']; // Using 'us' as default to match Postman
   const language = params.language || 'en';
-  const page = params.page || null; // Changed to null to match Postman (optional parameter)
+  const page = params.page || null; // Using null to match Postman optional parameter
   
   // Log search parameters
   console.log(`Поиск товаров: запрос="${params.query}", страна=${countries[0]}, язык=${language}, страница=${page || 'не указана'}`);
@@ -98,4 +98,3 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
 };
 
 // Import needed constants for proxy and API key validation
-import { ZYLALABS_API_KEY, MAX_RETRY_ATTEMPTS } from "./zylalabsConfig";
