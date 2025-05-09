@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Info } from "lucide-react";
+import { FileTextIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Product } from "@/services/types";
 import { 
@@ -52,13 +52,13 @@ export const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({ prod
       <DialogTrigger asChild>
         <Button 
           variant="secondary" 
-          size="icon" 
           onClick={(e) => {
             e.stopPropagation();
             setIsOpen(true);
           }}
         >
-          <Info size={16} />
+          <FileTextIcon size={16} className="mr-1" />
+          Карточка товара
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
