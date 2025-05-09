@@ -16,9 +16,6 @@ export const ProductImage: React.FC<ProductImageProps> = ({ image, title, produc
 
   // Проверяем, является ли изображение от Google Shopping
   const isGoogleImage = image && image.includes('encrypted-tbn');
-  
-  // Use a placeholder if image is null or empty string
-  const actualImage = image || '/public/placeholder.svg';
 
   // Обработчик для ошибок загрузки изображений
   const handleImageError = () => {
@@ -29,6 +26,7 @@ export const ProductImage: React.FC<ProductImageProps> = ({ image, title, produc
 
   // Обработчик для успешной загрузки изображения
   const handleImageLoad = () => {
+    console.log('Изображение успешно загружено:', image);
     setImageLoading(false);
     setImageError(false);
   };
