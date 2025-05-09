@@ -1,62 +1,44 @@
-
 import React, { useState } from 'react';
 import { FileTextIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Product } from "@/services/types";
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 // Import our new components
 import { ProductDetailsImage } from "./details/ProductDetailsImage";
 import { ProductDetailsInfo } from "./details/ProductDetailsInfo";
 import { ProductDetailsDescription } from "./details/ProductDetailsDescription";
 import { ProductDetailsSpecifications } from "./details/ProductDetailsSpecifications";
-
 interface ProductDetailsDialogProps {
   product: Product;
 }
-
-export const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({ product }) => {
+export const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({
+  product
+}) => {
   // Состояние для открытия диалога
   const [isOpen, setIsOpen] = useState<boolean>(false);
-
   const renderProductDetails = () => {
     try {
-      return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+      return <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <div className="flex items-center justify-center bg-gray-50 p-4 rounded-md">
             <ProductDetailsImage image={product.image} title={product.title} />
           </div>
           
           <ProductDetailsInfo product={product} />
-        </div>
-      );
+        </div>;
     } catch (error) {
       console.error('Ошибка при отображении информации о товаре:', error);
-      return (
-        <div className="p-4 text-center">
+      return <div className="p-4 text-center">
           <p className="text-red-500">Произошла ошибка при загрузке информации о товаре</p>
-        </div>
-      );
+        </div>;
     }
   };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+  return <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button 
-          variant="secondary" 
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsOpen(true);
-          }}
-        >
+        <Button variant="secondary" onClick={e => {
+        e.stopPropagation();
+        setIsOpen(true);
+      }} className="text-center">
           <FileTextIcon size={16} className="mr-1" />
           Карточка товара
         </Button>
@@ -69,15 +51,9 @@ export const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({ prod
         
         {renderProductDetails()}
         
-        <ProductDetailsDescription 
-          description={product.description} 
-          isOpen={isOpen} 
-        />
+        <ProductDetailsDescription description={product.description} isOpen={isOpen} />
         
-        <ProductDetailsSpecifications 
-          specifications={product.specifications} 
-        />
+        <ProductDetailsSpecifications specifications={product.specifications} />
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>;
 };
