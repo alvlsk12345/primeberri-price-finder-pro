@@ -20,6 +20,8 @@ export const useFilterPanel = (
   // Количество активных фильтров
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
   
+  // ВАЖНО: Все хуки useEffect должны быть в одном и том же порядке при каждом рендере
+  
   // Обновляем локальные фильтры при изменении входящих фильтров
   useEffect(() => {
     setLocalFilters(filters);
@@ -58,8 +60,6 @@ export const useFilterPanel = (
     setAvailableSources(sources);
     setAvailableBrands(brands);
     setPriceRange([minPrice, maxPrice]);
-    
-    // Не сбрасываем локальные фильтры здесь, чтобы не терять выбранные значения
   }, [results]);
   
   // Подсчитываем количество активных фильтров
