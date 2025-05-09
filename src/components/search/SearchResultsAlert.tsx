@@ -12,8 +12,8 @@ export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({ currentP
     <Alert className="mb-4 border-amber-300 bg-amber-50">
       <AlertCircle className="h-4 w-4 text-amber-600" />
       <AlertDescription className="text-amber-700">
-        Возможны проблемы при загрузке данных для страницы {currentPage}. 
-        Для полного результата попробуйте повторить поиск позже.
+        Проблемы при загрузке данных для страницы {currentPage}. 
+        Используются демонстрационные данные. Ваш API ключ: 8112|xU0WDZ...btrM
       </AlertDescription>
     </Alert>
   );
