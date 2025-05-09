@@ -13,7 +13,7 @@ export const ProductList: React.FC<ProductListProps> = ({ products, selectedProd
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {products.map((product) => (
-        <div key={product.id} className="flex">
+        <div key={product.id} className="flex h-full">
           <ProductCard
             product={product}
             isSelected={selectedProduct?.id === product.id}
