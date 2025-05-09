@@ -1,6 +1,6 @@
 
 // API configuration constants
-export const ZYLALABS_API_KEY = "8109|6Jvdck7HZmg7NdU3iQmwmKIuGSabv2S882fxhEA4";
+export const ZYLALABS_API_KEY = "8112|xU0WDZhKkWVo7rczutXwzGKzEwBtNPhHbsAYbtrM";
 
 // Request configuration
 export const MAX_RETRY_ATTEMPTS = 3;
