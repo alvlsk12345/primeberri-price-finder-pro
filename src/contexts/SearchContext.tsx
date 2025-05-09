@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useCallback, useContext, useEffect } from 'react';
 import { Product, ProductFilters } from "@/services/types";
 import { searchProducts } from "@/services/productService";
@@ -20,6 +19,7 @@ type SearchContextType = {
   originalQuery: string;
   lastSearchQuery: string;
   hasSearched: boolean;
+  isUsingDemoData: boolean;
   handleSearch: (page?: number, forceNewSearch?: boolean) => Promise<void>;
   handleProductSelect: (product: Product) => void;
   handlePageChange: (page: number) => void;
@@ -43,6 +43,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [lastSearchQuery, setLastSearchQuery] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [pageChangeCount, setPageChangeCount] = useState(0);
+  const [isUsingDemoData, setIsUsingDemoData] = useState(false);
 
   // Memoized search function
   const handleSearch = useCallback(async (page: number = 1, forceNewSearch: boolean = false) => {
@@ -56,6 +57,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const queryToUse = searchQuery || lastSearchQuery;
     
     setIsLoading(true);
+    setIsUsingDemoData(false);
     
     try {
       // If it's the same page for the same query and we have cached results
@@ -95,12 +97,20 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         filters: filters
       });
       
+      // Check if we're using demo data
+      if (results.isDemo) {
+        setIsUsingDemoData(true);
+      }
+      
       // Save found products to state and cache
       if (results.products.length > 0) {
         setSearchResults(results.products);
         setCachedResults(prev => ({...prev, [page]: results.products}));
         setTotalPages(results.totalPages);
-        toast.success(`Найдено ${results.products.length} товаров!`);
+        
+        if (!results.isDemo) {
+          toast.success(`Найдено ${results.products.length} товаров!`);
+        }
       } else {
         // Check if we have results in cache for current search query
         if (cachedResults[1] && cachedResults[1].length > 0 && isSameQuery) {
@@ -178,6 +188,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     originalQuery,
     lastSearchQuery,
     hasSearched,
+    isUsingDemoData,
     handleSearch,
     handleProductSelect,
     handlePageChange,

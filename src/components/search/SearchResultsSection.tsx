@@ -14,7 +14,8 @@ export const SearchResultsSection: React.FC = () => {
     handlePageChange,
     filters,
     handleFilterChange,
-    originalQuery
+    originalQuery,
+    isUsingDemoData
   } = useSearch();
 
   if (searchResults.length === 0) {
@@ -25,6 +26,7 @@ export const SearchResultsSection: React.FC = () => {
     <div className="mt-6">
       <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
         <h2 className="text-xl font-semibold">
+          {isUsingDemoData ? '[ДЕМО] ' : ''}
           Результаты поиска{originalQuery ? ` "${originalQuery}"` : ''}:
         </h2>
         <FilterPanel 
@@ -40,6 +42,7 @@ export const SearchResultsSection: React.FC = () => {
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={handlePageChange}
+        isDemo={isUsingDemoData}
       />
     </div>
   );

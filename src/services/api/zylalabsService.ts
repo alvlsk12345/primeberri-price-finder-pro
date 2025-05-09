@@ -1,5 +1,5 @@
 
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { SearchParams } from "../types";
 import { ZYLALABS_API_KEY, MAX_RETRY_ATTEMPTS, RETRY_DELAY, REQUEST_TIMEOUT, checkApiKey, buildMultiCountrySearchUrl, sleep } from "./zylalabsConfig";
 import { getMockSearchResults } from "./mockDataService";
@@ -10,11 +10,13 @@ import { parseApiResponse } from "./responseParserService";
 export const searchProductsViaZylalabs = async (params: SearchParams): Promise<any> => {
   // Проверяем наличие API ключа
   if (!checkApiKey()) {
+    toast.error("API ключ для Zylalabs не настроен");
     return getMockSearchResults(params.query);
   }
   
   let attempts = 0;
   let lastError = null;
+  let responseHeaders = null;
 
   // Используем страны из параметров или дефолтную страну
   const countries = params.countries || ['gb'];
@@ -37,19 +39,40 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${ZYLALABS_API_KEY}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Origin': window.location.origin,
         },
         signal: controller.signal
       });
 
       clearTimeout(timeoutId);
 
+      // Сохраняем заголовки ответа для анализа ограничений API
+      responseHeaders = {};
+      response.headers.forEach((value, name) => {
+        if (name.toLowerCase().startsWith('x-zyla')) {
+          responseHeaders[name] = value;
+          console.log(`${name}: ${value}`);
+        }
+      });
+      
       // Обрабатываем ошибки API
       if (!response.ok) {
         if (response.status === 503) {
+          // Получаем дополнительную информацию об ошибке
+          let errorBody = null;
+          try {
+            errorBody = await response.json();
+            console.warn('Ошибка 503, детали:', errorBody);
+          } catch (e) {
+            console.warn('Не удалось получить JSON с деталями ошибки 503');
+          }
+          
           // Повторяем запрос при временной недоступности сервиса
           console.warn('Сервис временно недоступен, попытка повтора через', RETRY_DELAY);
-          lastError = new Error(`Сервис временно недоступен`);
+          lastError = new Error(`Сервис временно недоступен: ${errorBody?.message || ''}`);
           attempts++;
           await sleep(RETRY_DELAY);
           continue;
@@ -65,10 +88,22 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
       // Проверяем структуру данных и нормализуем ответ
       try {
         const parsedResult = parseApiResponse(data);
+        
+        // Если данные получены успешно, но их нет, возвращаем пустой результат
+        if (parsedResult.products.length === 0) {
+          toast.info("По вашему запросу ничего не найдено в Zylalabs API");
+          return { products: [], total: 0 };
+        }
+        
+        // Добавляем информацию о лимитах API из заголовков
+        if (responseHeaders) {
+          parsedResult.apiInfo = responseHeaders;
+        }
+        
         return parsedResult;
       } catch (error) {
         console.error('Ошибка при парсинге ответа:', error);
-        toast.warning('Получены некорректные данные от API');
+        toast.warning('Получены некорректные данные от API Zylalabs');
         return getMockSearchResults(params.query);
       }
     } catch (error: any) {
@@ -98,7 +133,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
   
   // Если все попытки исчерпаны, используем мок-данные
   console.error('Все попытки запросов исчерпаны:', lastError);
-  toast.error('Не удалось подключиться к API поиска. Используем демонстрационные данные.');
+  toast.error('Не удалось подключиться к API поиска (исчерпаны все попытки). Используем демонстрационные данные.');
   
   // Возвращаем мок-данные для демонстрации интерфейса
   return getMockSearchResults(params.query);
