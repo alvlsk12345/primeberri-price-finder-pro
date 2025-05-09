@@ -6,13 +6,18 @@ import { handleApiError, handleFetchError } from "./errorHandlerService";
 
 // Функция для поиска товаров через Zylalabs API с поддержкой пагинацией,
 // но в текущей реализации всегда возвращает демо-данные
-export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{products: any[], total: number, isDemo: boolean, apiInfo?: Record<string, string>}> => {
+export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{products: any[], total: number, totalPages: number, isDemo: boolean, apiInfo: Record<string, string>}> => {
   // Когда установлен режим принудительного использования демо-данных
   if (useDemoModeForced) {
     console.log('Принудительное использование демо-данных для запроса:', params.query);
     // Добавим небольшую задержку для имитации запроса (не более 500мс)
     await new Promise(resolve => setTimeout(resolve, 500));
-    return getMockSearchResults(params.query);
+    const results = await getMockSearchResults(params.query);
+    return {
+      ...results,
+      totalPages: Math.ceil((results.total || results.products.length) / 12),
+      apiInfo: {}
+    };
   }
 
   // Код ниже не используется в текущей версии, но оставлен для будущей реализации
@@ -24,6 +29,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
     // Добавляем пустой объект apiInfo для совместимости
     return {
       ...mockResults,
+      totalPages: Math.ceil((mockResults.total || mockResults.products.length) / 12),
       apiInfo: {}
     };
   } catch (error: any) {
@@ -35,6 +41,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
     const mockResults = await getMockSearchResults(params.query);
     return {
       ...mockResults,
+      totalPages: Math.ceil((mockResults.total || mockResults.products.length) / 12),
       apiInfo: {}
     };
   }

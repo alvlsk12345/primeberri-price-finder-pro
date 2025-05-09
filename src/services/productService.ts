@@ -14,7 +14,7 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
     toast.loading('Поиск товаров...', { id: searchToastId });
     
     // Установка таймаута для предотвращения зависания
-    const timeoutPromise = new Promise<{products: [], totalPages: number, isDemo: true}>((_, reject) => {
+    const timeoutPromise = new Promise<{products: [], totalPages: number, isDemo: true, apiInfo: Record<string, string>}>((_, reject) => {
       setTimeout(() => reject(new Error('Timeout')), 5000);
     });
     
@@ -24,7 +24,7 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
       timeoutPromise
     ]).catch(error => {
       console.warn('Поиск был прерван из-за таймаута или ошибки:', error);
-      return { products: [], total: 0, isDemo: true, apiInfo: {} };
+      return { products: [], totalPages: 0, total: 0, isDemo: true, apiInfo: {} };
     });
     
     console.log('Ответ от API получен:', response);
@@ -35,21 +35,18 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
     // Проверяем наличие результатов поиска
     if (!response || !response.products || response.products.length === 0) {
       toast.info('По вашему запросу ничего не найдено');
-      return { products: [], totalPages: 0, isDemo: true };
+      return { products: [], totalPages: 0, isDemo: true, apiInfo: {} };
     }
     
     // Проверяем, используются ли демо-данные
     const isDemo = !!response.isDemo;
-    
-    // Получаем информацию об API, если она доступна
-    const apiInfo = response.apiInfo || {};
     
     // Обрабатываем данные о товарах
     const products = await processZylalabsProductsData(response.products, params.filters);
     
     // Расчет общего количества страниц (приблизительное значение)
     const itemsPerPage = 12; // Стандартное количество элементов на странице
-    const totalItems = response.total || products.length;
+    const totalItems = response.totalPages || response.total || products.length;
     const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
     
     // Информируем пользователя о результатах
@@ -60,11 +57,16 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
     }
     
     // Возвращаем результаты с флагом демо-данных и информацией об API
-    return { products, totalPages, isDemo, apiInfo };
+    return { 
+      products, 
+      totalPages, 
+      isDemo, 
+      apiInfo: response.apiInfo || {} 
+    };
   } catch (error) {
     console.error('Ошибка при поиске товаров:', error);
     toast.error('Произошла ошибка при поиске товаров');
-    return { products: [], totalPages: 0, isDemo: true };
+    return { products: [], totalPages: 0, isDemo: true, apiInfo: {} };
   }
 };
 
