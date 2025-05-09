@@ -1,9 +1,10 @@
+
 import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Product } from "@/services/types";
 import { toast } from "@/components/ui/sonner";
 import { Copy, ExternalLink } from "lucide-react";
-import { getProductLink, isSearchEngineLink } from "@/services/url";
+import { getProductLink, isSearchEngineLink } from "@/services/urlService";
 
 interface ProductCardActionsProps {
   product: Product;
