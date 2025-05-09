@@ -25,7 +25,7 @@ export const ProductCardDescription: React.FC<ProductCardDescriptionProps> = ({
         <Button 
           variant="ghost" 
           size="sm" 
-          className="h-6 px-2 text-xs flex gap-1 items-center" 
+          className="h-6 px-2 text-xs flex gap-1 items-center mx-auto" 
           onClick={onStopPropagation}
         >
           <FileText size={14} />

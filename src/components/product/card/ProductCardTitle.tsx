@@ -16,13 +16,13 @@ export const ProductCardTitle: React.FC<ProductCardTitleProps> = ({
   const isDemoProduct = title.includes('[ДЕМО]');
   
   return (
-    <div className="flex items-center justify-between mb-2">
-      <h3 className="font-semibold text-base line-clamp-2 flex-1 text-left h-12">
+    <div className="flex items-center justify-center mb-2">
+      <h3 className="font-semibold text-base line-clamp-2 text-center h-12">
         {isDemoProduct ? (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild onClick={onStopPropagation}>
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1 justify-center">
                   <span>{title.replace('[ДЕМО] ', '')}</span>
                   <Info size={14} className="text-amber-500 flex-shrink-0" />
                 </span>
