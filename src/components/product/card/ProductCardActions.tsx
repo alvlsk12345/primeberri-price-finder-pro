@@ -28,17 +28,26 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
     // Show toast notification
     toast.success('Ссылка скопирована');
     
+    // Find the input element and insert the link
+    const linkInput = document.getElementById('link') as HTMLInputElement;
+    if (linkInput) {
+      linkInput.value = productLink;
+      // Trigger input event to notify any listeners that the value has changed
+      const inputEvent = new Event('input', { bubbles: true });
+      linkInput.dispatchEvent(inputEvent);
+    }
+    
     // Navigate to Primeberri
     window.open('https://primeberri.com/', '_blank');
   };
   
   return (
-    <div className="flex w-full mt-3 gap-2 justify-center">
+    <div className="flex flex-col w-full mt-3 items-center gap-2">
       <ProductDetailsDialog product={product} />
       <Button 
         onClick={handlePrimeberriOrder}
         variant="outline"
-        className="flex items-center gap-2"
+        className="flex items-center gap-2 w-full justify-center"
       >
         <img 
           src="/lovable-uploads/f3068d76-e0d6-47bb-9c0b-63b57087fd80.png" 
