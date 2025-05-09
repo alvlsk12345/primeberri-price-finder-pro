@@ -176,34 +176,34 @@ export const getMockSearchResults = (query: string, page: number = 1) => {
   };
   
   // Создаем итоговый список из минимум 10 товаров
-  let demoProducts = [queryRelatedProduct, ...baseProducts];
+  let allDemoProducts = [queryRelatedProduct, ...baseProducts];
   
   // Убеждаемся, что у нас есть товары из всех стран по фильтру европейских стран
   const countryProducts: {[key: string]: Product[]} = {};
   
   // Разделяем товары по странам
   EUROPEAN_COUNTRIES.forEach(country => {
-    countryProducts[country.code] = demoProducts.filter(p => p.country === country.code);
+    countryProducts[country.code] = allDemoProducts.filter(p => p.country === country.code);
   });
   
   // Гарантируем, что немецкие товары (приоритетные) идут в начале списка
   const germanProducts = countryProducts['de'] || [];
-  const otherProducts = demoProducts.filter(p => p.country !== 'de');
+  const otherProducts = allDemoProducts.filter(p => p.country !== 'de');
   
   // Составляем финальный список с приоритетом германских товаров
-  demoProducts = [...germanProducts, ...otherProducts];
+  allDemoProducts = [...germanProducts, ...otherProducts];
   
   // Гарантируем минимум 10 результатов
-  while (demoProducts.length < 10) {
+  while (allDemoProducts.length < 10) {
     // Создаем дополнительные товары при необходимости
     const extraProduct = {
-      id: `mock-extra-${demoProducts.length}`,
-      title: `[ДЕМО] Дополнительный товар ${demoProducts.length}: ${query}`,
+      id: `mock-extra-${allDemoProducts.length}`,
+      title: `[ДЕМО] Дополнительный товар ${allDemoProducts.length}: ${query}`,
       subtitle: 'Германия',
       price: `${Math.floor(50 + Math.random() * 200)}.${Math.floor(Math.random() * 99)} €`,
       currency: 'EUR',
       image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=300&h=300',
-      link: `https://amazon.de/product-extra-${demoProducts.length}`,
+      link: `https://amazon.de/product-extra-${allDemoProducts.length}`,
       rating: Math.floor(30 + Math.random() * 20) / 10,
       source: 'Amazon.de',
       description: `Дополнительный товар для обеспечения минимального количества результатов поиска.`,
@@ -211,14 +211,26 @@ export const getMockSearchResults = (query: string, page: number = 1) => {
       brand: 'Extra Brand',
       country: 'de'
     };
-    demoProducts.push(extraProduct);
+    allDemoProducts.push(extraProduct);
   }
   
-  // Добавляем поддержку пагинации - создаем дополнительные товары для разных страниц
-  if (page > 1) {
-    const pageSpecificProducts = [];
-    for (let i = 0; i < 9; i++) {
-      pageSpecificProducts.push({
+  // Пример с 10 товарами: 9 на первой странице и 1 на второй странице
+  const totalItems = 10;
+  const itemsPerPage = 9;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  
+  // Определяем, какие товары должны быть показаны на текущей странице
+  let demoProducts = [];
+  if (page === 1) {
+    // На первой странице показываем первые 9 товаров
+    demoProducts = allDemoProducts.slice(0, 9);
+  } else if (page === 2) {
+    // На второй странице показываем оставшийся 1 товар
+    demoProducts = allDemoProducts.slice(9, 10);
+  } else {
+    // Для других страниц (если такие запросы будут) создаем уникальные товары
+    for (let i = 0; i < itemsPerPage && i < 3; i++) {
+      demoProducts.push({
         id: `mock-page-${page}-item-${i}`,
         title: `[ДЕМО] Страница ${page}, товар ${i + 1}: ${query}`,
         subtitle: 'Германия',
@@ -234,12 +246,9 @@ export const getMockSearchResults = (query: string, page: number = 1) => {
         country: i % 3 === 0 ? 'de' : (i % 3 === 1 ? 'gb' : 'fr')
       });
     }
-    demoProducts = pageSpecificProducts;
   }
-  
-  // Определяем общее количество страниц для демо-данных
-  const totalItems = 50;  // Пусть будет фиксированное общее количество товаров для демо
-  const totalPages = Math.ceil(totalItems / 9);
+
+  console.log(`Страница ${page}: возвращаем ${demoProducts.length} из ${totalItems} товаров`);
   
   toast.info('Демонстрационный режим: используются тестовые данные');
   
