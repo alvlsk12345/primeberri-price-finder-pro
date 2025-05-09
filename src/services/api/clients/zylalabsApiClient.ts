@@ -82,9 +82,6 @@ export const fetchFromZylalabs = async (
     const jsonResponse = await response.json();
     console.log("API response received successfully");
     
-    // Log a sample of the response for debugging
-    console.log("Full API response:", JSON.stringify(jsonResponse, null, 2));
-    
     return jsonResponse;
   } catch (error: any) {
     // If error is related to request timeout

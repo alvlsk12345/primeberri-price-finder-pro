@@ -5,6 +5,10 @@ import { Product } from '../types';
  * Извлекает числовое значение цены из строкового представления
  */
 export const extractNumericPrice = (priceString: string): number | undefined => {
+  if (!priceString || typeof priceString !== 'string') {
+    return undefined;
+  }
+  
   // Ищем все числовые значения в строке (включая десятичные)
   const matches = priceString.match(/(\d+[.,]?\d*)/g);
   
@@ -25,6 +29,12 @@ export const formatSingleProduct = async (
   product: any
 ): Promise<Product> => {
   try {
+    console.log('Форматирование товара:', product ? (product.title || product.product_title || 'Без названия') : 'null');
+    
+    if (!product) {
+      throw new Error('Получены пустые данные о товаре');
+    }
+    
     // Извлекаем идентификатор из разных форматов ответа
     const id = product.product_id || product.id || `product-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     
@@ -53,6 +63,9 @@ export const formatSingleProduct = async (
     } else if (product.thumbnail) {
       // Используем миниатюру
       image = product.thumbnail;
+    } else if (product.product_photo) {
+      // Еще одна возможная структура данных
+      image = product.product_photo;
     }
     
     // URL страницы товара
@@ -62,7 +75,7 @@ export const formatSingleProduct = async (
     const rating = parseFloat(product.product_rating) || product.rating || 0;
     
     // Источник (магазин)
-    const source = product.offer?.store_name || product.source || 'Неизвестный источник';
+    const source = product.offer?.store_name || product.source || product.store || 'Неизвестный источник';
     
     // Описание товара
     const description = product.product_description || product.description || '';
@@ -76,7 +89,7 @@ export const formatSingleProduct = async (
     // Спецификации товара (характеристики)
     const specifications = product.product_attributes || {};
     
-    return {
+    const formattedProduct = {
       id,
       title,
       subtitle,
@@ -92,6 +105,15 @@ export const formatSingleProduct = async (
       specifications,
       _numericPrice
     };
+    
+    console.log('Товар успешно отформатирован:', {
+      id: formattedProduct.id,
+      title: formattedProduct.title.substring(0, 30) + '...',
+      hasImage: !!formattedProduct.image,
+      source: formattedProduct.source
+    });
+    
+    return formattedProduct;
   } catch (error) {
     console.error('Ошибка при форматировании товара:', error);
     throw error;

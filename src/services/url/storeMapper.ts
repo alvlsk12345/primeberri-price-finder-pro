@@ -3,10 +3,7 @@
 // Instead create a new file that re-exports the needed functions from the original
 // This is a compatibility layer
 
-// Re-exporting from the original file
-export { getStoreMapEntry } from "@/services/url/storeMapper";
-
-// Provide a local implementation if it doesn't exist in the original file
+// Helper function to extract store name from domain
 export const getStoreMapEntry = (storeDomain: string): string => {
   // This is a simple implementation that will work until the original is fixed
   const domainParts = storeDomain.split('.');

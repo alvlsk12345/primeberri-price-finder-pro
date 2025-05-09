@@ -12,11 +12,9 @@ export const parseApiResponse = (data: any): { products: any[], total: number } 
     
     if (data && data.data) {
       console.log('API response data keys:', Object.keys(data.data));
-    }
-    
-    if (data && data.data && data.data.products) {
-      // Log first product structure
-      console.log('First product sample:', JSON.stringify(data.data.products[0], null, 2));
+      if (data.data.products && data.data.products.length > 0) {
+        console.log('First product sample:', JSON.stringify(data.data.products[0], null, 2));
+      }
     }
     
     // Log full response (limited to avoid console overflow)
@@ -56,12 +54,16 @@ export const parseApiResponse = (data: any): { products: any[], total: number } 
     console.log('Пробуем найти массив товаров в ответе...');
     
     for (const key in data) {
-      if (Array.isArray(data[key]) && data[key].length > 0 && 
-          data[key][0] && (data[key][0].title || data[key][0].name)) {
-        console.log(`Найден возможный массив товаров в поле "${key}"`);
-        products = data[key];
-        total = products.length;
-        break;
+      if (Array.isArray(data[key]) && data[key].length > 0) {
+        console.log(`Найден массив в поле "${key}", проверяем содержимое...`);
+        
+        // Check if this array contains objects that look like products
+        if (data[key][0] && (data[key][0].title || data[key][0].name)) {
+          console.log(`Найден возможный массив товаров в поле "${key}"`);
+          products = data[key];
+          total = products.length;
+          break;
+        }
       }
     }
     
@@ -79,8 +81,10 @@ export const parseApiResponse = (data: any): { products: any[], total: number } 
   if (products.length > 0) {
     console.log('Структура первого товара:', Object.keys(products[0]).join(', '));
     console.log('Пример первого товара:', JSON.stringify(products[0], null, 2));
+    console.log(`Всего найдено ${products.length} товаров`);
+  } else {
+    console.log('API вернул пустой массив товаров');
   }
   
-  console.log(`Успешно извлечено ${products.length} товаров из ответа API`);
   return { products, total };
 };
