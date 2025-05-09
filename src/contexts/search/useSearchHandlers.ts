@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { Product, ProductFilters } from "@/services/types";
 import { searchProducts } from "@/services/productService";
@@ -196,17 +195,11 @@ export const useSearchHandlers = (
     handleSearch(1, true);
   }, [handleSearch, setCurrentPage, setFilters]);
   
-  // Sort change handler - memoized
+  // Sort change handler - memoized - just sets the option without performing the sort
   const handleSortChange = useCallback((option: SortOption) => {
     console.log("Applying sort option:", option);
     setSortOption(option);
-    
-    // Get current results from the callback parameter, not directly accessing searchResults
-    setSearchResults(currentResults => {
-      // Apply sorting to current results
-      return applySorting([...currentResults], option);
-    });
-  }, [setSortOption, setSearchResults]);
+  }, [setSortOption]);
 
   return {
     handleSearch,
@@ -216,4 +209,3 @@ export const useSearchHandlers = (
     handleSortChange
   };
 };
-

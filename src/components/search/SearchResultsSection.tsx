@@ -1,5 +1,4 @@
-
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { SearchResults } from "@/components/SearchResults";
 import { FilterPanel } from "@/components/FilterPanel";
 import { useSearch } from "@/contexts/search";
@@ -7,11 +6,12 @@ import { SearchResultsAlert } from "./SearchResultsAlert";
 import { isSearchEngineLink, getProductLink } from "@/services/urlService";
 import { Product } from "@/services/types";
 import { toast } from "@/components/ui/sonner";
-import { SortingMenu } from "@/components/sorting/SortingMenu";
+import { SortingMenu, SortOption } from "@/components/sorting/SortingMenu";
 
 export const SearchResultsSection: React.FC = () => {
   const { 
     searchResults, 
+    setSearchResults,
     selectedProduct, 
     currentPage, 
     totalPages, 
@@ -68,6 +68,48 @@ export const SearchResultsSection: React.FC = () => {
       }
     }
   }, [searchResults]);
+  
+  // Function to apply sorting to products - defined in component
+  const applySorting = useCallback((products: Product[], sort: SortOption): Product[] => {
+    if (!products || products.length === 0) return products;
+    
+    const productsToSort = [...products];
+    
+    switch (sort) {
+      case 'price-asc':
+        return productsToSort.sort((a, b) => {
+          const priceA = (a as any)._numericPrice || 0;
+          const priceB = (b as any)._numericPrice || 0;
+          return priceA - priceB;
+        });
+      case 'price-desc':
+        return productsToSort.sort((a, b) => {
+          const priceA = (a as any)._numericPrice || 0;
+          const priceB = (b as any)._numericPrice || 0;
+          return priceB - priceA;
+        });
+      case 'popularity-desc':
+        return productsToSort.sort((a, b) => {
+          const ratingA = a.rating || 0;
+          const ratingB = b.rating || 0;
+          return ratingB - ratingA;
+        });
+      default:
+        return productsToSort;
+    }
+  }, []);
+
+  // Handler for sort option changes
+  const handleSortOptionChange = useCallback((option: SortOption) => {
+    // First update the sort option in the state
+    handleSortChange(option);
+    
+    // Then manually sort and update results
+    if (searchResults && searchResults.length > 0) {
+      const sortedResults = applySorting([...searchResults], option);
+      setSearchResults(sortedResults);
+    }
+  }, [searchResults, applySorting, handleSortChange, setSearchResults]);
 
   if (searchResults.length === 0) {
     return null;
@@ -84,7 +126,7 @@ export const SearchResultsSection: React.FC = () => {
         <div className="flex items-center gap-2">
           <SortingMenu 
             currentSort={sortOption}
-            onSortChange={handleSortChange}
+            onSortChange={handleSortOptionChange}
           />
           <FilterPanel 
             filters={filters}

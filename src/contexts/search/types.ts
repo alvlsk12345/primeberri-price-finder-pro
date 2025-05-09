@@ -8,6 +8,7 @@ export type SearchContextType = {
   setSearchQuery: (query: string) => void;
   isLoading: boolean;
   searchResults: Product[];
+  setSearchResults: (results: Product[]) => void; // Add this line
   selectedProduct: Product | null;
   setSelectedProduct: (product: Product | null) => void;
   currentPage: number;

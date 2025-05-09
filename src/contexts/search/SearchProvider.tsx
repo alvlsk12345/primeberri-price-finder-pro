@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Product, ProductFilters } from "@/services/types";
 import { SearchContext } from './SearchContext';
 import { useSearchHandlers } from './useSearchHandlers';
@@ -62,6 +62,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setSearchQuery,
     isLoading,
     searchResults,
+    setSearchResults, // Add setSearchResults to the context value
     selectedProduct,
     setSelectedProduct,
     currentPage,
@@ -83,6 +84,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     searchQuery, 
     isLoading, 
     searchResults, 
+    setSearchResults, // Add setSearchResults to dependency array
     selectedProduct, 
     currentPage, 
     totalPages, 
