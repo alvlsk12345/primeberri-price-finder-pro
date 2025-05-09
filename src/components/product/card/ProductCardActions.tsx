@@ -19,19 +19,16 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
   onSelect,
   onStopPropagation
 }) => {
-  // Check product link on component mount
+  // Проверяем ссылку на товар при монтировании компонента
   useEffect(() => {
-    // Ensure product is defined before accessing properties
-    if (!product) return;
-    
     const originalLink = product.link || '';
     const processedLink = getProductLink(product);
     
-    // Check if original link is a search engine link
+    // Проверяем, является ли оригинальная ссылка поисковой
     if (originalLink && isSearchEngineLink(originalLink)) {
-      console.log(`Search engine link replaced for: ${product.title}`);
-      console.log(`  - Original: ${originalLink.substring(0, 100)}...`);
-      console.log(`  - Replaced with: ${processedLink}`);
+      console.log(`Поисковая ссылка заменена для: ${product.title}`);
+      console.log(`  - Оригинал: ${originalLink.substring(0, 100)}...`);
+      console.log(`  - Замена на: ${processedLink}`);
     }
   }, [product]);
 
@@ -39,28 +36,20 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
     e.preventDefault();
     onStopPropagation(e);
     
-    // Ensure product is defined before proceeding
-    if (!product) {
-      toast.error('Cannot copy link: product information is missing');
-      return;
-    }
+    const productLink = getProductLink(product);
+    navigator.clipboard.writeText(productLink);
+    toast.success('Ссылка на товар скопирована!');
     
-    // Always use generated direct link to product in store
-    const directLink = getProductLink(product);
-    
-    navigator.clipboard.writeText(directLink);
-    toast.success('Product link copied!');
-    
-    console.log('Copied direct link:', directLink);
+    console.log('Скопирована ссылка:', productLink);
   };
   
   const handleGoToPrimeberri = (e: React.MouseEvent) => {
     e.preventDefault();
     onStopPropagation(e);
     
-    // In real implementation, this would be logic to go to Primeberri site
+    // В реальной реализации здесь будет логика перехода на сайт Primeberri
     window.open('https://primeberri.com/', '_blank');
-    toast.success('Going to Primeberri site');
+    toast.success('Переход на сайт Primeberri');
   };
   
   return (
@@ -72,7 +61,7 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
           className="flex-1 h-8"
           onClick={handleCopyLink}
         >
-          <Copy size={16} className="mr-1" /> Copy Link
+          <Copy size={16} className="mr-1" /> Скопировать ссылку
         </Button>
       </div>
       
@@ -82,7 +71,7 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
         className="flex-1 h-8 text-xs px-2 mt-2"
         onClick={handleGoToPrimeberri}
       >
-        <ExternalLink size={16} className="mr-1" /> Order on Primeberri
+        <ExternalLink size={16} className="mr-1" /> Заказать на Primeberri
       </Button>
     </div>
   );

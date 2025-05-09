@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Product, ProductFilters } from "@/services/types";
 import { SearchContext } from './SearchContext';
 import { useSearchHandlers } from './useSearchHandlers';

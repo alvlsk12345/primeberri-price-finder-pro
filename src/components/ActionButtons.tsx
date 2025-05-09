@@ -30,12 +30,11 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     e.preventDefault();
     
     if (selectedProduct) {
-      // Всегда используем сгенерированную прямую ссылку на товар в магазине
-      const directLink = getProductLink(selectedProduct);
+      // Получаем ссылку на товар из нашего сервиса
+      const productLink = getProductLink(selectedProduct);
       
-      navigator.clipboard.writeText(directLink);
+      navigator.clipboard.writeText(productLink);
       toast.success('Ссылка на товар скопирована!');
-      console.log('Скопирована прямая ссылка:', directLink);
     } else {
       toast.error('Пожалуйста, выберите товар');
     }
@@ -46,10 +45,8 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     e.preventDefault();
     
     if (selectedProduct) {
-      // Всегда используем сгенерированную прямую ссылку на товар в магазине
-      const directLink = getProductLink(selectedProduct);
-      
-      window.open(directLink, '_blank', 'noopener,noreferrer');
+      const productLink = getProductLink(selectedProduct);
+      window.open(productLink, '_blank', 'noopener,noreferrer');
     } else {
       toast.error('Пожалуйста, выберите товар');
     }

@@ -14,14 +14,6 @@ export const ProductCardPrice: React.FC<ProductCardPriceProps> = ({
   const [russianDeliveryPrice, setRussianDeliveryPrice] = useState<string>("₽0.00");
 
   useEffect(() => {
-    // Check if price is defined before processing
-    if (!price) {
-      console.warn('Product price is undefined, using default values');
-      setEuroPrice("€0.00");
-      setRussianDeliveryPrice("₽0.00");
-      return;
-    }
-    
     // Извлекаем числовое значение из строки цены
     const priceMatch = price.match(/\d+([.,]\d+)?/);
     const numericPrice = priceMatch ? parseFloat(priceMatch[0].replace(',', '.')) : 0;
