@@ -21,6 +21,9 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
 }) => {
   // Check product link on component mount
   useEffect(() => {
+    // Ensure product is defined before accessing properties
+    if (!product) return;
+    
     const originalLink = product.link || '';
     const processedLink = getProductLink(product);
     
@@ -35,6 +38,12 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
   const handleCopyLink = (e: React.MouseEvent) => {
     e.preventDefault();
     onStopPropagation(e);
+    
+    // Ensure product is defined before proceeding
+    if (!product) {
+      toast.error('Cannot copy link: product information is missing');
+      return;
+    }
     
     // Always use generated direct link to product in store
     const directLink = getProductLink(product);
