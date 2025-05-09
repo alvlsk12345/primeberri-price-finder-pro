@@ -2,7 +2,7 @@
 import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { getApiKey } from "@/services/api/zylalabsConfig";
+import { getApiKey, ZYLALABS_API_KEY } from "@/services/api/zylalabsConfig";
 import { useSearch } from "@/contexts/SearchContext";
 
 interface SearchResultsAlertProps {
