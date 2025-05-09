@@ -59,6 +59,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
           <div className="w-full text-center">
             <ProductCardTitle 
               title={product.title}
+              product={product}
               onStopPropagation={handleStopPropagation}
             />
             

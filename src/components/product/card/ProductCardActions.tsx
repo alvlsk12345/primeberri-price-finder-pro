@@ -2,7 +2,6 @@
 import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Product } from "@/services/types";
-import { ProductDetailsDialog } from '../ProductDetailsDialog';
 import { toast } from "@/components/ui/sonner";
 import { Copy, ExternalLink } from "lucide-react";
 import { getProductLink, isSearchEngineLink } from "@/services/urlService";
@@ -55,10 +54,6 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
   
   return (
     <div className="flex w-full mt-3 gap-2 flex-col">
-      <div className="flex gap-2 w-full">
-        <ProductDetailsDialog product={product} />
-      </div>
-      
       <div className="flex gap-2 w-full">
         <Button 
           variant="outline" 
