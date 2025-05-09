@@ -73,13 +73,15 @@ export const extractProductId = (link: string, fallbackId: string): string => {
   return fallbackId; // Используем fallbackId, если не удалось извлечь ID
 };
 
-// Обновляем функцию для получения реальной ссылки на страницу товара
+// Получение реальной ссылки на страницу товара
 export const getProductLink = (product: Product): string => {
   // Если у продукта есть прямая ссылка на магазин, используем её напрямую
+  // Исключаем ссылки на поисковые системы и неопределенные ссылки
   if (product.link && 
      (product.link.startsWith('http') && 
       !product.link.includes('undefined') && 
-      !product.link.includes('google.com/search'))) {
+      !product.link.includes('google.com/search') &&
+      !product.link.includes('google.com/shopping'))) {
     return product.link;
   }
   
@@ -108,6 +110,16 @@ export const getProductLink = (product: Product): string => {
   } else if (domain.includes('zalando')) {
     // Для Zalando
     return `https://${domain}/item/${productSlug}-${productId}.html`;
+  } else if (domain.includes('footlocker')) {
+    return `https://${domain}/en/product/~/${productId}.html`;
+  } else if (domain.includes('jdsports')) {
+    return `https://${domain}/product/${productSlug}/${productId}/`;
+  } else if (domain.includes('asos')) {
+    return `https://${domain}/products/${productSlug}/${productId}`;
+  } else if (domain.includes('zara')) {
+    return `https://${domain}/products/${productSlug}-p${productId}.html`;
+  } else if (domain.includes('hm')) {
+    return `https://${domain}/en_gb/productpage.${productId}.html`;
   } else {
     // Для других магазинов используем стандартный формат
     return `https://${domain}/product/${productSlug}-${productId}`;
