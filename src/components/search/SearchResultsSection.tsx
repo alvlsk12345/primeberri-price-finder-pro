@@ -4,6 +4,7 @@ import { SearchResults } from "@/components/SearchResults";
 import { FilterSection } from "@/components/search/FilterSection";
 import { useSearch } from "@/contexts/SearchContext";
 import { ApiUsageInfo } from "@/components/search/ApiUsageInfo";
+import { SortButtons } from "../filter/SortButtons";
 
 export const SearchResultsSection: React.FC = () => {
   const { 
@@ -15,7 +16,9 @@ export const SearchResultsSection: React.FC = () => {
     handlePageChange,
     originalQuery,
     isUsingDemoData,
-    apiInfo
+    apiInfo,
+    filters,
+    handleFilterChange
   } = useSearch();
 
   if (searchResults.length === 0) {
@@ -29,7 +32,13 @@ export const SearchResultsSection: React.FC = () => {
           {isUsingDemoData ? '[ДЕМО] ' : ''}
           Результаты поиска{originalQuery ? ` "${originalQuery}"` : ''}:
         </h2>
-        <FilterSection />
+        <div className="flex flex-wrap gap-3 items-center">
+          <SortButtons 
+            sortBy={filters.sortBy || ""}
+            onSortChange={(sortBy) => handleFilterChange({ ...filters, sortBy })}
+          />
+          <FilterSection />
+        </div>
       </div>
       
       {apiInfo && Object.keys(apiInfo).length > 0 && <ApiUsageInfo />}
