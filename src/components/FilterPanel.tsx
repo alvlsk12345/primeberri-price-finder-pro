@@ -55,6 +55,64 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     setLocalFilters(emptyFilters);
     onFilterChange(emptyFilters);
   };
+
+  // Адаптеры для обработчиков, которые преобразуют типы параметров
+  const handleCountryChangeAdapter = (country: string, checked: boolean) => {
+    const updatedCountries = [...(localFilters.countries || [])];
+    if (checked) {
+      if (!updatedCountries.includes(country)) {
+        updatedCountries.push(country);
+      }
+    } else {
+      const index = updatedCountries.indexOf(country);
+      if (index !== -1) {
+        updatedCountries.splice(index, 1);
+      }
+    }
+    handleCountryChange(updatedCountries);
+  };
+
+  const handlePriceChangeAdapter = (values: number[]) => {
+    if (values.length === 2) {
+      handlePriceChange(values[0], values[1]);
+    }
+  };
+
+  const handleBrandChangeAdapter = (brand: string, checked: boolean) => {
+    const updatedBrands = [...(localFilters.brands || [])];
+    if (checked) {
+      if (!updatedBrands.includes(brand)) {
+        updatedBrands.push(brand);
+      }
+    } else {
+      const index = updatedBrands.indexOf(brand);
+      if (index !== -1) {
+        updatedBrands.splice(index, 1);
+      }
+    }
+    handleBrandChange(updatedBrands);
+  };
+
+  const handleSourceChangeAdapter = (source: string, checked: boolean) => {
+    const updatedSources = [...(localFilters.sources || [])];
+    if (checked) {
+      if (!updatedSources.includes(source)) {
+        updatedSources.push(source);
+      }
+    } else {
+      const index = updatedSources.indexOf(source);
+      if (index !== -1) {
+        updatedSources.splice(index, 1);
+      }
+    }
+    handleSourceChange(updatedSources);
+  };
+
+  const handleRatingChangeAdapter = (values: number[]) => {
+    if (values.length > 0) {
+      handleRatingChange(values[0]);
+    }
+  };
   
   return (
     <FilterContainer 
@@ -64,31 +122,31 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     >
       <CountryFilter
         selectedCountries={localFilters.countries || []}
-        onCountryChange={handleCountryChange}
+        onCountryChange={handleCountryChangeAdapter}
       />
       
       <PriceRangeFilter 
         minPrice={localFilters.minPrice || priceRange[0]}
         maxPrice={localFilters.maxPrice || priceRange[1]}
         priceRange={priceRange}
-        onPriceChange={handlePriceChange}
+        onPriceChange={handlePriceChangeAdapter}
       />
       
       <BrandsFilter 
         availableBrands={availableBrands}
         selectedBrands={localFilters.brands || []}
-        onBrandChange={handleBrandChange}
+        onBrandChange={handleBrandChangeAdapter}
       />
       
       <SourcesFilter 
         availableSources={availableSources}
         selectedSources={localFilters.sources || []}
-        onSourceChange={handleSourceChange}
+        onSourceChange={handleSourceChangeAdapter}
       />
       
       <RatingFilter 
         rating={localFilters.rating || 0}
-        onRatingChange={handleRatingChange}
+        onRatingChange={handleRatingChangeAdapter}
       />
     </FilterContainer>
   );
