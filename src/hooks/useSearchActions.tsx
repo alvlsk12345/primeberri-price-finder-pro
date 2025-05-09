@@ -1,7 +1,6 @@
 
 import { useRef } from 'react';
 import { Product, ProductFilters } from "@/services/types";
-import { toast } from "sonner";
 import { useSearchExecutor } from './search/useSearchExecutor';
 import { useSearchCache } from './search/useSearchCache';
 
@@ -97,7 +96,7 @@ export function useSearchActions(props: SearchStateProps) {
     
     // Check if there's a query for search
     if (!searchQuery && !lastSearchQuery) {
-      toast.error('Пожалуйста, введите запрос для поиска товара');
+      console.log('Пожалуйста, введите запрос для поиска товара');
       return;
     }
 
@@ -143,7 +142,7 @@ export function useSearchActions(props: SearchStateProps) {
         if (cachedResults[1] && cachedResults[1].length > 0 && isSameQuery) {
           setSearchResults(cachedResults[1]);
           setCurrentPage(1);
-          toast.info('Ошибка при загрузке страницы, показаны результаты первой страницы');
+          console.log('Ошибка при загрузке страницы, показаны результаты первой страницы');
         }
       }
     } catch (error) {

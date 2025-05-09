@@ -5,7 +5,6 @@ import { SearchContainer } from "@/components/search/SearchContainer";
 import { BenefitsSection } from "@/components/BenefitsSection";
 import { PageFooter } from "@/components/PageFooter";
 import { PageHeader } from "@/components/PageHeader";
-import { Toaster } from "@/components/ui/sonner";
 
 const Index = () => {
   return (
@@ -20,7 +19,6 @@ const Index = () => {
         <BenefitsSection />
         <PageFooter />
       </main>
-      <Toaster position="top-right" />
     </div>
   );
 };

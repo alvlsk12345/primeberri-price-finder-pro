@@ -2,7 +2,7 @@
 import { useRef } from 'react';
 import { Product, ProductFilters, SearchParams } from "@/services/types";
 import { searchProducts } from "@/services/productService";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast";
 
 type SearchExecutorProps = {
   isLoading: boolean;
@@ -48,7 +48,8 @@ export function useSearchExecutor({
     const searchTimeout = setTimeout(() => {
       if (isLoading) {
         setIsLoading(false);
-        toast.error('Поиск занял слишком много времени. Попробуйте снова.');
+        // Отключаем всплывающие уведомления
+        console.log('Поиск занял слишком много времени');
       }
     }, 10000); // 10 seconds timeout
     
@@ -90,28 +91,54 @@ export function useSearchExecutor({
         setApiInfo(results.apiInfo);
       }
       
+      // Apply sorting to results if needed
+      let sortedProducts = [...results.products];
+      
+      if (filters.sortBy) {
+        switch(filters.sortBy) {
+          case 'price_asc':
+            sortedProducts.sort((a, b) => {
+              const priceA = a._numericPrice || parseFloat(a.price) || 0;
+              const priceB = b._numericPrice || parseFloat(b.price) || 0;
+              return priceA - priceB;
+            });
+            break;
+          case 'price_desc':
+            sortedProducts.sort((a, b) => {
+              const priceA = a._numericPrice || parseFloat(a.price) || 0;
+              const priceB = b._numericPrice || parseFloat(b.price) || 0;
+              return priceB - priceA;
+            });
+            break;
+          case 'rating_desc':
+            sortedProducts.sort((a, b) => {
+              const ratingA = a.rating || 0;
+              const ratingB = b.rating || 0;
+              return ratingB - ratingA;
+            });
+            break;
+        }
+      }
+      
       // Save found products to state and cache
-      if (results.products.length > 0) {
-        setSearchResults(results.products);
+      if (sortedProducts.length > 0) {
+        setSearchResults(sortedProducts);
         // Create a new object instead of using a function
         const newCache = { ...cachedResults };
-        newCache[page] = results.products;
+        newCache[page] = sortedProducts;
         setCachedResults(newCache);
         setTotalPages(results.totalPages);
         
-        if (!results.isDemo) {
-          toast.success(`Найдено ${results.products.length} товаров!`);
-        }
+        console.log(`Найдено ${sortedProducts.length} товаров!`);
         
-        return { success: true, products: results.products };
+        return { success: true, products: sortedProducts };
       } 
       
       setSearchResults([]);
-      toast.info('По вашему запросу ничего не найдено.');
+      console.log('По вашему запросу ничего не найдено.');
       return { success: false, products: [] };
     } catch (error) {
       console.error('Ошибка поиска:', error);
-      toast.error('Произошла ошибка при поиске товаров');
       return { success: false, error };
     } finally {
       clearTimeout(searchTimeout);
