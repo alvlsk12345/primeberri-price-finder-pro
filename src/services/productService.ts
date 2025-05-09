@@ -24,7 +24,7 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
       timeoutPromise
     ]).catch(error => {
       console.warn('Поиск был прерван из-за таймаута или ошибки:', error);
-      return { products: [], totalPages: 0, total: 0, isDemo: true, apiInfo: {} };
+      return { products: [], totalPages: 0, isDemo: true, apiInfo: {} };
     });
     
     console.log('Ответ от API получен:', response);
@@ -46,8 +46,7 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
     
     // Расчет общего количества страниц (приблизительное значение)
     const itemsPerPage = 12; // Стандартное количество элементов на странице
-    const totalItems = response.totalPages || response.total || products.length;
-    const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+    const totalPages = response.totalPages || Math.max(1, Math.ceil(products.length / itemsPerPage));
     
     // Информируем пользователя о результатах
     if (products.length > 0) {

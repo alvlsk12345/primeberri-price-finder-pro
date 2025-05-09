@@ -6,7 +6,7 @@ import { handleApiError, handleFetchError } from "./errorHandlerService";
 
 // Функция для поиска товаров через Zylalabs API с поддержкой пагинацией,
 // но в текущей реализации всегда возвращает демо-данные
-export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{products: any[], total: number, totalPages: number, isDemo: boolean, apiInfo: Record<string, string>}> => {
+export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{products: any[], totalPages: number, isDemo: boolean, apiInfo: Record<string, string>}> => {
   // Когда установлен режим принудительного использования демо-данных
   if (useDemoModeForced) {
     console.log('Принудительное использование демо-данных для запроса:', params.query);
