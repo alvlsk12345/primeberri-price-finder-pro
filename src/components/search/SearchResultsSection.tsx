@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { SearchResults } from "@/components/SearchResults";
-import { FilterPanel } from "@/components/FilterPanel";
+import { FilterSection } from "@/components/search/FilterSection";
 import { useSearch } from "@/contexts/SearchContext";
 import { ApiUsageInfo } from "@/components/search/ApiUsageInfo";
 
@@ -13,8 +13,6 @@ export const SearchResultsSection: React.FC = () => {
     totalPages, 
     handleProductSelect,
     handlePageChange,
-    filters,
-    handleFilterChange,
     originalQuery,
     isUsingDemoData,
     apiInfo
@@ -31,11 +29,7 @@ export const SearchResultsSection: React.FC = () => {
           {isUsingDemoData ? '[ДЕМО] ' : ''}
           Результаты поиска{originalQuery ? ` "${originalQuery}"` : ''}:
         </h2>
-        <FilterPanel 
-          filters={filters}
-          onFilterChange={handleFilterChange}
-          results={searchResults}
-        />
+        <FilterSection />
       </div>
       
       {apiInfo && Object.keys(apiInfo).length > 0 && <ApiUsageInfo />}
