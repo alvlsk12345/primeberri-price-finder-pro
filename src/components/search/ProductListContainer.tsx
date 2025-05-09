@@ -1,11 +1,10 @@
-
 import React from 'react';
 import { Product } from "@/services/types";
 import { ProductList } from '../product/ProductList';
 import { Pagination } from '../product/Pagination';
 import { SearchResultsAlert } from './SearchResultsAlert';
 import { toast } from "@/components/ui/sonner";
-import { useSearch } from "@/contexts/SearchContext";
+import { useSearch } from "@/contexts/search";
 
 interface ProductListContainerProps {
   products: Product[];

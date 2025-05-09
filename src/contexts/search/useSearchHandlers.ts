@@ -1,51 +1,33 @@
 
-import React, { createContext, useState, useCallback, useContext, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Product, ProductFilters } from "@/services/types";
 import { searchProducts } from "@/services/productService";
 import { toast } from "sonner";
 import { EUROPEAN_COUNTRIES } from "@/components/filter/CountryFilter";
 
-// Define the search context type
-type SearchContextType = {
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
-  isLoading: boolean;
-  searchResults: Product[];
-  selectedProduct: Product | null;
-  setSelectedProduct: (product: Product | null) => void;
-  currentPage: number;
-  totalPages: number;
-  filters: ProductFilters;
-  setFilters: (filters: ProductFilters) => void;
-  originalQuery: string;
-  lastSearchQuery: string;
-  hasSearched: boolean;
-  apiErrorMode: boolean; // Добавляем свойство apiErrorMode в тип
-  handleSearch: (page?: number, forceNewSearch?: boolean) => Promise<void>;
-  handleProductSelect: (product: Product) => void;
-  handlePageChange: (page: number) => void;
-  handleFilterChange: (newFilters: ProductFilters) => void;
-};
-
-// Create context with default values
-const SearchContext = createContext<SearchContextType | undefined>(undefined);
-
-// Provider component
-export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [searchResults, setSearchResults] = useState<Product[]>([]);
-  const [cachedResults, setCachedResults] = useState<{[page: number]: Product[]}>({});
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [filters, setFilters] = useState<ProductFilters>({});
-  const [originalQuery, setOriginalQuery] = useState('');
-  const [lastSearchQuery, setLastSearchQuery] = useState('');
-  const [hasSearched, setHasSearched] = useState(false);
-  const [pageChangeCount, setPageChangeCount] = useState(0);
-  const [apiErrorMode, setApiErrorMode] = useState(false); // Добавляем состояние для отслеживания ошибок API
-
+export const useSearchHandlers = (
+  searchQuery: string,
+  lastSearchQuery: string,
+  filters: ProductFilters,
+  cachedResults: {[page: number]: Product[]},
+  currentPage: number,
+  setSelectedProduct: (product: Product | null) => void,
+  setSearchResults: (results: Product[]) => void,
+  setCurrentPage: (page: number) => void,
+  setTotalPages: (pages: number) => void,
+  setCachedResults: React.Dispatch<React.SetStateAction<{[page: number]: Product[]}>>,
+  setLastSearchQuery: (query: string) => void,
+  setOriginalQuery: (query: string) => void,
+  setHasSearched: (hasSearched: boolean) => void,
+  setIsLoading: (isLoading: boolean) => void,
+  setApiErrorMode: (errorMode: boolean) => void,
+  setPageChangeCount: React.Dispatch<React.SetStateAction<number>>
+) => {
+  // Product selection handler
+  const handleProductSelect = (product: Product) => {
+    setSelectedProduct(product);
+  };
+  
   // Memoized search function
   const handleSearch = useCallback(async (page: number = 1, forceNewSearch: boolean = false) => {
     // Check if there's a query for search
@@ -144,16 +126,13 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, lastSearchQuery, filters, cachedResults, currentPage]);
-
-  // Product selection handler
-  const handleProductSelect = (product: Product) => {
-    setSelectedProduct(product);
-  };
+  }, [searchQuery, lastSearchQuery, filters, cachedResults, currentPage, setSearchResults, setCurrentPage, 
+      setTotalPages, setCachedResults, setOriginalQuery, setLastSearchQuery, setHasSearched, 
+      setIsLoading, setApiErrorMode]);
   
   // Page change handler
   const handlePageChange = (page: number) => {
-    if (page !== currentPage && page >= 1 && page <= totalPages) {
+    if (page !== currentPage && page >= 1) {
       console.log(`Changing page from ${currentPage} to ${page}`);
       // Increment page change counter to force a re-render
       setPageChangeCount(prev => prev + 1);
@@ -166,45 +145,14 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   
   // Filter change handler
   const handleFilterChange = (newFilters: ProductFilters) => {
-    setFilters(newFilters);
-    // Reset to first page when filters change
+    setCurrentPage(1); // Reset to first page when filters change
     handleSearch(1, true);
   };
 
-  // Effect для отладки изменения страницы
-  useEffect(() => {
-    console.log(`Page change effect triggered: current page is ${currentPage}, change count: ${pageChangeCount}`);
-  }, [currentPage, pageChangeCount]);
-
-  const value = {
-    searchQuery,
-    setSearchQuery,
-    isLoading,
-    searchResults,
-    selectedProduct,
-    setSelectedProduct,
-    currentPage,
-    totalPages,
-    filters,
-    setFilters,
-    originalQuery,
-    lastSearchQuery,
-    hasSearched,
-    apiErrorMode, // Добавляем apiErrorMode в контекст
+  return {
     handleSearch,
     handleProductSelect,
     handlePageChange,
-    handleFilterChange,
+    handleFilterChange
   };
-
-  return <SearchContext.Provider value={value}>{children}</SearchContext.Provider>;
-};
-
-// Custom hook for using the search context
-export const useSearch = () => {
-  const context = useContext(SearchContext);
-  if (context === undefined) {
-    throw new Error('useSearch must be used within a SearchProvider');
-  }
-  return context;
 };

@@ -2,7 +2,7 @@
 import React from 'react';
 import { SearchResults } from "@/components/SearchResults";
 import { FilterPanel } from "@/components/FilterPanel";
-import { useSearch } from "@/contexts/SearchContext";
+import { useSearch } from "@/contexts/search";
 import { SearchResultsAlert } from "./SearchResultsAlert";
 
 export const SearchResultsSection: React.FC = () => {

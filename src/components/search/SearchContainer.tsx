@@ -1,11 +1,10 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SearchForm } from "@/components/SearchForm";
 import { SearchResultsSection } from "@/components/search/SearchResultsSection";
 import { NoResultsMessage } from "@/components/search/NoResultsMessage";
 import { ProductDetailsSection } from "@/components/product/ProductDetailsSection";
-import { useSearch } from "@/contexts/SearchContext";
+import { useSearch } from "@/contexts/search";
 
 export const SearchContainer: React.FC = () => {
   const { searchQuery, setSearchQuery, handleSearch, isLoading } = useSearch();
