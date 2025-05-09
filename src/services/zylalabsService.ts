@@ -1,8 +1,8 @@
 
 import { toast } from "sonner";
-import { SearchParams } from "../types";
-import { getMockSearchResults, useDemoModeForced } from "./mockDataService";
-import { handleApiError, handleFetchError } from "./errorHandlerService";
+import { SearchParams } from "./types";
+import { getMockSearchResults, useDemoModeForced } from "./api/mockDataService";
+import { handleApiError, handleFetchError } from "./api/errorHandlerService";
 
 // Функция для поиска товаров через Zylalabs API с поддержкой пагинацией,
 // но в текущей реализации всегда возвращает демо-данные

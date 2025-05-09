@@ -15,7 +15,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
     const results = await getMockSearchResults(params.query);
     return {
       ...results,
-      totalPages: Math.ceil((results.total || results.products.length) / 12),
+      totalPages: Math.ceil((results.total || results.products.length) / 9),
       apiInfo: {}
     };
   }
@@ -29,7 +29,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
     // Добавляем пустой объект apiInfo для совместимости
     return {
       ...mockResults,
-      totalPages: Math.ceil((mockResults.total || mockResults.products.length) / 12),
+      totalPages: Math.ceil((mockResults.total || mockResults.products.length) / 9),
       apiInfo: {}
     };
   } catch (error: any) {
@@ -41,7 +41,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
     const mockResults = await getMockSearchResults(params.query);
     return {
       ...mockResults,
-      totalPages: Math.ceil((mockResults.total || mockResults.products.length) / 12),
+      totalPages: Math.ceil((mockResults.total || mockResults.products.length) / 9),
       apiInfo: {}
     };
   }
