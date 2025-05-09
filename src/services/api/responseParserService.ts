@@ -10,8 +10,14 @@ export const parseApiResponse = (data: any): { products: any[], total: number, t
   let total = 0;
   let totalPages = 1;
   
-  // Check for Postman collection response format first
-  if (data && data.response && data.success === true) {
+  // Проверка ответа на ошибки от API
+  if (data && data.success === false && data.message) {
+    console.error('API вернул ошибку:', data.message);
+    throw new Error(`API вернул ошибку: ${data.message}`);
+  }
+  
+  // Check for Postman collection response format first (primary format)
+  if (data && data.success === true && data.response) {
     console.log('Обнаружен формат API из Postman коллекции');
     if (Array.isArray(data.response)) {
       products = data.response;
@@ -20,6 +26,10 @@ export const parseApiResponse = (data: any): { products: any[], total: number, t
       products = data.response.products;
       total = data.response.total_results || products.length;
       totalPages = data.response.total_pages || Math.ceil(total / 10);
+    } else {
+      console.log('Структура ответа отличается от ожидаемой:', data.response);
+      products = data.response || [];
+      total = products.length;
     }
   } 
   // Check for various other API response formats

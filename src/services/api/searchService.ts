@@ -1,7 +1,7 @@
 
 import { toast } from "@/components/ui/sonner";
 import { SearchParams } from "../types";
-import { checkApiKey, buildMultiCountrySearchUrl } from "./zylalabsConfig";
+import { checkApiKey, buildMultiCountrySearchUrl, MAX_RETRY_ATTEMPTS } from "./zylalabsConfig";
 import { getMockSearchResults } from "./mockDataService";
 import { parseApiResponse } from "./responseParserService";
 import { withRetry } from "./retryService";
@@ -22,20 +22,18 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
   // Extract search parameters
   const countries = params.countries || ['us']; // Default to 'us' as in Postman
   const language = params.language || 'en';
-  const page = params.page || null; // Use null to match Postman optional parameter
+  const page = params.page || null; // Null для необязательного параметра как в Postman
   
   // Log API key information (partial, for security)
-  const keyPreview = ZYLALABS_API_KEY ? `${ZYLALABS_API_KEY.substring(0, 5)}...` : 'отсутствует';
-  console.log(`Используем API ключ: ${keyPreview}`);
   console.log(`Поиск товаров с параметрами: страна=${countries[0]}, язык=${language}, страница=${page || 'не указана'}`);
   
   try {
     // Execute search with retry capability
     return await withRetry(async (attempt, proxyIndex) => {
-      console.log(`Отправляем запрос к Zylalabs API... (попытка ${attempt + 1}/${MAX_RETRY_ATTEMPTS})`, params);
+      console.log(`Отправляем запрос к Zylalabs API... (попытка ${attempt + 1}/${MAX_RETRY_ATTEMPTS})`);
       console.log(`Используем прокси ${proxyIndex}`);
       
-      // Build the API URL with proper proxy - updated to match Postman structure
+      // Build the API URL with proper proxy - точное соответствие Postman
       const apiUrl = buildMultiCountrySearchUrl(params.query, countries, language, page, proxyIndex);
       console.log('URL запроса:', apiUrl);
       
@@ -43,7 +41,13 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
       let data;
       try {
         data = await fetchFromZylalabs(apiUrl, proxyIndex);
-        console.log("API Response data received successfully");
+        console.log("API Response data received successfully:", 
+          data.success ? 'success=true' : 'success=false', 
+          data.response ? 'response present' : 'no response');
+          
+        if (data.success === false && data.message) {
+          throw new Error(`API error: ${data.message}`);
+        }
       } catch (e) {
         console.error('Ошибка при запросе к API:', e);
         throw e;
@@ -69,5 +73,3 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
   }
 };
 
-// Import needed constants for proxy and API key validation
-import { ZYLALABS_API_KEY, MAX_RETRY_ATTEMPTS } from "./zylalabsConfig";

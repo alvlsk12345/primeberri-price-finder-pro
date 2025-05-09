@@ -4,8 +4,6 @@ import {
   REQUEST_TIMEOUT, 
   getApiBaseUrl 
 } from "../zylalabsConfig";
-import { handleApiError } from "../errorHandlerService";
-import { toast } from "@/components/ui/sonner";
 
 /**
  * Makes a fetch request to the Zylalabs API with proper error handling
@@ -23,8 +21,7 @@ export const fetchFromZylalabs = async (
     const headers: HeadersInit = {
       'Authorization': `Bearer ${ZYLALABS_API_KEY}`,
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'Cache-Control': 'no-cache'
+      'Accept': 'application/json'
     };
     
     // Add any additional headers needed for proxy
@@ -32,10 +29,10 @@ export const fetchFromZylalabs = async (
       headers['X-Requested-With'] = 'XMLHttpRequest';
     }
     
-    console.log('Отправляемые заголовки:', Object.keys(headers).join(', '));
+    console.log('Отправляем запрос к Zylalabs API с параметрами:');
     console.log('URL запроса:', url);
-    console.log('API ключ (первые 5 символов):', ZYLALABS_API_KEY ? ZYLALABS_API_KEY.substring(0, 5) + '...' : 'отсутствует');
     console.log('Используемый прокси индекс:', proxyIndex);
+    console.log('Заголовок авторизации: Bearer', ZYLALABS_API_KEY ? ZYLALABS_API_KEY.substring(0, 5) + '...' : 'отсутствует');
     
     const response = await fetch(url, {
       method: 'GET', // Using GET as specified in Postman collection
@@ -55,33 +52,17 @@ export const fetchFromZylalabs = async (
     if (!response.ok) {
       // Try to get the full error text for diagnostics
       const responseText = await response.text();
-      console.error("API Error Response Text:", responseText, "Status:", response.status);
+      console.error("API Error Response:", responseText);
       
       try {
         // Attempt to parse response as JSON for more detailed error info
         const errorData = JSON.parse(responseText);
         console.error("API Error Data:", errorData);
         
-        // Check for specific error messages from Zylalabs API
-        if (errorData.message) {
+        // Если это ошибка от Zylalabs API с полем message и success=false
+        if (errorData.success === false && errorData.message) {
           console.error('API error message:', errorData.message);
-          
-          // Check for usage limit exceeded
-          if (
-            errorData.message.includes('exceeded the allowed limit') || 
-            errorData.message.includes('limit exceeded')
-          ) {
-            console.error('API usage limit exceeded');
-            toast.error('Превышен лимит запросов к API. Пожалуйста, обратитесь в поддержку.');
-            throw new Error('API usage limit exceeded');
-          }
-          
-          // Check for API server issues
-          if (response.status === 503) {
-            console.error('API сервер временно недоступен (status 503)');
-            toast.error('API сервер временно недоступен. Используются демо-данные.');
-            throw new Error('API server unavailable (503)');
-          }
+          throw new Error(`API error: ${errorData.message}`);
         }
       } catch (e) {
         // If parsing as JSON fails, use text as is
@@ -93,7 +74,9 @@ export const fetchFromZylalabs = async (
     
     // Parse the successful response
     const jsonResponse = await response.json();
-    console.log('API response successfully parsed to JSON');
+    console.log('API response successfully parsed to JSON:', 
+      jsonResponse.success ? 'success=true' : 'success=false', 
+      jsonResponse.response ? 'response present' : 'no response');
     return jsonResponse;
   } catch (e) {
     console.error('Ошибка при выполнении запроса к API:', e);

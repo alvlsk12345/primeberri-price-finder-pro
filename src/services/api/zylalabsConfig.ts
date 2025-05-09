@@ -19,33 +19,40 @@ const CORS_PROXIES = [
 // Create a function to build API URL with appropriate proxy
 export const getApiBaseUrl = (proxyIndex: number = 0): string => {
   const proxy = CORS_PROXIES[proxyIndex % CORS_PROXIES.length];
-  return `${proxy}https://zylalabs.com`; // Updated to match Postman collection URL
+  return `${proxy}https://zylalabs.com`; // Базовый URL из Postman коллекции
 };
 
-// API URL builder for single country search
+// API URL builder for single country search (точное соответствие Postman коллекции)
 export const buildSearchUrl = (
   query: string, 
-  country: string, 
-  language: string, 
-  page: number | null = null, 
+  country: string = 'us', // Значение по умолчанию из Postman
+  language: string = 'en', // Значение по умолчанию из Postman
+  page: number | null = null, // Необязательный параметр как в Postman
   proxyIndex: number = 0
 ): string => {
   const encodedQuery = encodeURIComponent(query);
   const baseUrl = getApiBaseUrl(proxyIndex);
   
-  // Updated path to exactly match the Postman collection
-  return `${baseUrl}/api/2033/real+time+product+search+api/1809/search+products?q=${encodedQuery}&country=${country}&language=${language}${page ? `&page=${page}` : ''}`;
+  // Собираем URL точно как в Postman коллекции
+  let url = `${baseUrl}/api/2033/real+time+product+search+api/1809/search+products?q=${encodedQuery}&country=${country}&language=${language}`;
+  
+  // Добавляем page только если он указан (как в Postman)
+  if (page) {
+    url += `&page=${page}`;
+  }
+  
+  return url;
 };
 
 // API URL builder for multi-country search
 export const buildMultiCountrySearchUrl = (
   query: string, 
-  countries: string[], 
-  language: string, 
+  countries: string[] = ['us'], // Значение по умолчанию из Postman
+  language: string = 'en', 
   page: number | null = null, 
   proxyIndex: number = 0
 ): string => {
-  // Use the first country from the list or 'us' if list is empty (updated to match Postman default)
+  // Use the first country from the list or 'us' as default (как в Postman)
   const country = countries && countries.length > 0 ? countries[0] : 'us';
   return buildSearchUrl(query, country, language, page, proxyIndex);
 };
