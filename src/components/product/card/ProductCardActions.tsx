@@ -68,16 +68,16 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
         >
           <Copy size={16} className="mr-1" /> Скопировать ссылку
         </Button>
-        
-        <Button 
-          variant="default" 
-          size="sm" 
-          className="flex-1 h-8 text-xs px-2"
-          onClick={handleGoToPrimeberri}
-        >
-          <ExternalLink size={16} className="mr-1" /> Заказать на Primeberri
-        </Button>
       </div>
+      
+      <Button 
+        variant="default" 
+        size="sm" 
+        className="flex-1 h-8 text-xs px-2 mt-2"
+        onClick={handleGoToPrimeberri}
+      >
+        <ExternalLink size={16} className="mr-1" /> Заказать на Primeberri
+      </Button>
     </div>
   );
 };
