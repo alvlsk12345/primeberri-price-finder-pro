@@ -12,7 +12,7 @@ export const ProductCardRating: React.FC<ProductCardRatingProps> = ({
   rating
 }) => {
   return (
-    <div className="text-sm mb-2 flex items-center justify-center">
+    <div className="text-sm my-2 flex items-center justify-start h-5">
       <span className="mr-1 text-xs">{source}</span>
       <div className="flex items-center">
         <Star size={14} className="text-yellow-500 fill-yellow-500" />

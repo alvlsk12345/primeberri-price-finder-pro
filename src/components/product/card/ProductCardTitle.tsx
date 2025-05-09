@@ -17,7 +17,7 @@ export const ProductCardTitle: React.FC<ProductCardTitleProps> = ({
   
   return (
     <div className="flex items-center justify-between mb-2">
-      <h3 className="font-semibold text-base line-clamp-2 flex-1 text-left">
+      <h3 className="font-semibold text-base line-clamp-2 flex-1 text-left h-12">
         {isDemoProduct ? (
           <TooltipProvider>
             <Tooltip>
