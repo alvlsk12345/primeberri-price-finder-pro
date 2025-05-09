@@ -8,10 +8,12 @@ import {
   REQUEST_TIMEOUT, 
   checkApiKey, 
   buildMultiCountrySearchUrl, 
-  sleep 
+  sleep,
+  getApiHeaders
 } from "./zylalabsConfig";
 import { getMockSearchResults } from "./mockDataService";
 import { parseApiResponse } from "./responseParserService";
+import { handleApiError, handleFetchError } from "./errorHandlerService";
 
 // Функция для поиска товаров через Zylalabs API с поддержкой пагинацией, повторными попытками и множественными странами
 export const searchProductsViaZylalabs = async (params: SearchParams): Promise<any> => {
@@ -44,25 +46,19 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
-      // Set up request headers with additional CORS headers
-      const headers: HeadersInit = {
-        'Authorization': `Bearer ${ZYLALABS_API_KEY}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Cache-Control': 'no-cache',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Origin': window.location.origin,
-        'Referer': window.location.origin
-      };
-
-      const response = await fetch(apiUrl, {
+      // Получаем заголовки в зависимости от типа прокси
+      const headers = getApiHeaders(proxyIndex);
+      
+      // Настройка параметров запроса
+      const fetchOptions: RequestInit = {
         method: 'GET',
         headers: headers,
         signal: controller.signal,
         mode: 'cors',
         credentials: 'omit'
-      });
+      };
 
+      const response = await fetch(apiUrl, fetchOptions);
       clearTimeout(timeoutId);
 
       // Логируем статус ответа
@@ -74,26 +70,39 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
         const responseText = await response.text();
         console.error("API Error Response Text:", responseText, "Status:", response.status);
         
-        try {
-          // Пытаемся распарсить ответ как JSON для более подробной информации
-          const errorData = JSON.parse(responseText);
-          console.error("API Error Data:", errorData);
-          
-          // Проверяем наличие сообщения о превышении лимита
-          if (errorData.message && (
-              errorData.message.includes('exceeded the allowed limit') || 
-              errorData.message.includes('limit exceeded')
-            )) {
-            console.error('API usage limit exceeded');
-            toast.error('Превышен лимит запросов к API. Пожалуйста, обратитесь в поддержку.');
-            return { ...getMockSearchResults(params.query), fromMock: true };
+        // Особая обработка для api.allorigins.win/get
+        if (proxyIndex === 1) {
+          try {
+            const allOriginsResponse = JSON.parse(responseText);
+            if (allOriginsResponse && allOriginsResponse.contents) {
+              // Успешный ответ от allorigins, но нужно распарсить содержимое
+              try {
+                const apiResponse = JSON.parse(allOriginsResponse.contents);
+                console.log("API Response через allorigins:", apiResponse);
+                
+                // Проверяем структуру данных и нормализуем ответ
+                const parsedResult = parseApiResponse(apiResponse);
+                return { ...parsedResult, fromMock: false };
+              } catch (e) {
+                console.error('Ошибка при парсинге ответа от allorigins:', e);
+              }
+            }
+          } catch (e) {
+            console.error('Невозможно распарсить ответ allorigins:', e);
           }
-        } catch (e) {
-          // Если не удалось распарсить как JSON, используем текст как есть
+        }
+        
+        // Обрабатываем ограничения API
+        if (responseText.includes('exceeded the allowed limit') || 
+            responseText.includes('limit exceeded') ||
+            responseText.includes('API rate limit exceeded')) {
+          console.error('API usage limit exceeded');
+          toast.error('Превышен лимит запросов к API. Пожалуйста, обратитесь в поддержку.');
+          return { ...getMockSearchResults(params.query), fromMock: true };
         }
         
         // Для всех ошибок сначала меняем индекс прокси и повторяем
-        proxyIndex = (proxyIndex + 1) % 5; // Try all 5 proxies
+        proxyIndex = (proxyIndex + 1) % CORS_PROXIES.length; // Try all proxies
         console.warn(`Получен статус ${response.status}, пробуем другой прокси`);
         
         // Если перебрали все прокси, увеличиваем счетчик попыток
@@ -108,11 +117,22 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
       // Парсим JSON ответ
       let data;
       try {
-        data = await response.json();
+        // Особая обработка для allorigins.win/get
+        if (proxyIndex === 1) {
+          const allOriginsResponse = await response.json();
+          data = JSON.parse(allOriginsResponse.contents);
+        } else {
+          data = await response.json();
+        }
         console.log("API Response data:", data);
       } catch (e) {
         console.error('Ошибка при парсинге ответа API:', e);
-        throw new Error('Не удалось обработать ответ API');
+        
+        // Пробуем другой прокси при ошибке парсинга
+        proxyIndex = (proxyIndex + 1) % CORS_PROXIES.length;
+        if (proxyIndex === 0) attempts++;
+        await sleep(RETRY_DELAY);
+        continue;
       }
       
       // Проверяем структуру данных и нормализуем ответ
@@ -140,23 +160,20 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
       // Если вероятная проблема с CORS, меняем прокси
       if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
         console.log('Произошла ошибка "Failed to fetch", пробуем другой прокси');
-        proxyIndex = (proxyIndex + 1) % 5; // Try all 5 proxies
+        proxyIndex = (proxyIndex + 1) % CORS_PROXIES.length; // Try all proxies
         
         // Если перебрали все прокси, увеличиваем счетчик попыток
         if (proxyIndex === 0) {
           attempts++;
         }
+        console.log('Повторная попытка через ' + RETRY_DELAY + 'мс');
+        await sleep(RETRY_DELAY);
+        continue; // Переходим к следующей попытке
       } else {
         // Другие ошибки - просто увеличиваем счетчик
         attempts++;
-      }
-      
-      lastError = error;
-      
-      if (attempts < MAX_RETRY_ATTEMPTS) {
-        console.log(`Повторная попытка через ${RETRY_DELAY}мс`);
         await sleep(RETRY_DELAY);
-        continue; // Переходим к следующей попытке
+        continue;
       }
     }
   }
@@ -170,4 +187,27 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
   
   // Возвращаем мок-данные для демонстрации интерфейса с флагом fromMock
   return { ...getMockSearchResults(params.query), fromMock: true };
+};
+
+// Метод для отладки - проверяет доступность API
+export const checkApiAvailability = async (): Promise<boolean> => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // короткий таймаут
+    
+    // Проверка доступа напрямую
+    const response = await fetch('https://api.zylalabs.com/api/ping', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${ZYLALABS_API_KEY}`
+      },
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    return response.ok;
+  } catch (error) {
+    console.warn('API недоступен напрямую:', error);
+    return false;
+  }
 };
