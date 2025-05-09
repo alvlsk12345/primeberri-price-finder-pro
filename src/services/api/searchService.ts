@@ -27,6 +27,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
   // Log API key information (partial, for security)
   const keyPreview = ZYLALABS_API_KEY ? `${ZYLALABS_API_KEY.substring(0, 5)}...` : 'отсутствует';
   console.log(`Используем API ключ: ${keyPreview}`);
+  console.log(`Поиск товаров с параметрами: страна=${countries[0]}, язык=${language}, страница=${page}`);
   
   try {
     // Execute search with retry capability
@@ -42,7 +43,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
       let data;
       try {
         data = await fetchFromZylalabs(apiUrl, proxyIndex);
-        console.log("API Response data:", data);
+        console.log("API Response data received successfully");
       } catch (e) {
         console.error('Ошибка при запросе к API:', e);
         throw e;
@@ -51,6 +52,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
       // Parse and normalize the API response
       try {
         const parsedResult = parseApiResponse(data);
+        console.log(`Успешно получено ${parsedResult.products?.length || 0} товаров`);
         return { ...parsedResult, fromMock: false };
       } catch (error) {
         console.error('Ошибка при парсинге ответа:', error);

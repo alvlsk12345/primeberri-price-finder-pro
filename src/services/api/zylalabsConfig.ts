@@ -19,7 +19,7 @@ const CORS_PROXIES = [
 // Create a function to build API URL with appropriate proxy
 export const getApiBaseUrl = (proxyIndex: number = 0): string => {
   const proxy = CORS_PROXIES[proxyIndex % CORS_PROXIES.length];
-  return `${proxy}https://api.zylalabs.com`;
+  return `${proxy}https://zylalabs.com`; // Updated to use zylalabs.com instead of api.zylalabs.com
 };
 
 // API URL builder for single country search
@@ -33,8 +33,8 @@ export const buildSearchUrl = (
   const encodedQuery = encodeURIComponent(query);
   const baseUrl = getApiBaseUrl(proxyIndex);
   
-  // Ensure we're using the correct API endpoint
-  return `${baseUrl}/api/2033/real+time+product+search+api/1809/search+products?q=${encodedQuery}&country=${country}&language=${language}&page=${page}&source=merchant`;
+  // Updated path to match Postman collection
+  return `${baseUrl}/api/2033/real+time+product+search+api/1809/search+products?q=${encodedQuery}&country=${country}&language=${language}${page ? `&page=${page}` : ''}`;
 };
 
 // API URL builder for multi-country search
