@@ -1,6 +1,6 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 
@@ -12,6 +12,7 @@ interface ErrorBoundaryProps {
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
+  errorInfo: ErrorInfo | null;
 }
 
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -19,11 +20,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     super(props);
     this.state = {
       hasError: false,
-      error: null
+      error: null,
+      errorInfo: null
     };
   }
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
     // Update state so the next render shows the fallback UI
     return { hasError: true, error };
   }
@@ -33,15 +35,34 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     console.error('Error caught by ErrorBoundary:', error);
     console.error('Error component stack:', errorInfo.componentStack);
     
+    // Update state to include errorInfo for debugging
+    this.setState({ errorInfo });
+    
     // Notify the user about the error
     toast.error("Произошла ошибка в приложении");
+    
+    // Check if this is an API-related error
+    const isApiError = error.message && (
+      error.message.includes('API') || 
+      error.message.includes('fetch') ||
+      error.message.includes('503') ||
+      error.message.includes('network')
+    );
+    
+    // Show more specific toast for API errors
+    if (isApiError) {
+      toast.error("Проблема с подключением к API. Отображаются демонстрационные данные.");
+    }
   }
 
   resetError = (): void => {
     this.setState({
       hasError: false,
-      error: null
+      error: null,
+      errorInfo: null
     });
+    
+    toast.success("Восстановление состояния после ошибки");
   }
 
   render(): ReactNode {
@@ -62,13 +83,21 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           </h3>
           <p className="text-red-700 mb-4">
             Произошла ошибка при загрузке компонента поиска.
+            {this.state.error && (
+              <span className="block text-sm mt-1 opacity-75">
+                {this.state.error.toString().includes('API') 
+                  ? 'Проблема с доступом к API. Возможно, сервис временно недоступен.'
+                  : this.state.error.toString()}
+              </span>
+            )}
           </p>
           <div className="flex justify-center">
             <Button 
               onClick={this.resetError}
               variant="destructive"
-              className="mx-auto"
+              className="mx-auto flex items-center gap-2"
             >
+              <RefreshCw size={16} />
               Попробовать снова
             </Button>
           </div>
