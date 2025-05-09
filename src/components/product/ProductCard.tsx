@@ -29,8 +29,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
       }`}
       onClick={() => onSelect(product)}
     >
-      <CardContent className="p-4">
-        <div className="flex flex-col items-center">
+      <CardContent className="p-4 flex flex-col items-center">
+        <div className="flex flex-col items-center w-full">
           <div className="relative w-full">
             <div className="absolute top-0 right-0 bg-primary text-white text-xs px-2 py-1 rounded-bl-md z-10">
               {product.subtitle}
