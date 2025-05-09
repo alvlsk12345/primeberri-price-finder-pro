@@ -1,8 +1,9 @@
 
 import { useRef } from 'react';
 import { Product, ProductFilters } from "@/services/types";
-import { searchProducts } from "@/services/productService";
 import { toast } from "sonner";
+import { useSearchExecutor } from './search/useSearchExecutor';
+import { useSearchCache } from './search/useSearchCache';
 
 // Types for state management props
 type SearchStateProps = {
@@ -37,39 +38,58 @@ type SearchStateProps = {
   getSearchCountries: () => string[];
 };
 
-export function useSearchActions({
-  searchQuery,
-  setSearchQuery,
-  isLoading,
-  setIsLoading,
-  searchResults,
-  setSearchResults,
-  cachedResults,
-  setCachedResults,
-  selectedProduct,
-  setSelectedProduct,
-  currentPage,
-  setCurrentPage,
-  totalPages,
-  setTotalPages,
-  pageChangeCount,
-  setPageChangeCount,
-  filters,
-  setFilters,
-  originalQuery,
-  setOriginalQuery,
-  lastSearchQuery,
-  setLastSearchQuery,
-  hasSearched,
-  setHasSearched,
-  isUsingDemoData,
-  setIsUsingDemoData,
-  apiInfo,
-  setApiInfo,
-  getSearchCountries
-}: SearchStateProps) {
-  // Timeout reference to ensure we can cancel pending timeouts
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+export function useSearchActions(props: SearchStateProps) {
+  const {
+    searchQuery,
+    setSearchQuery,
+    isLoading,
+    setIsLoading,
+    searchResults,
+    setSearchResults,
+    cachedResults,
+    setCachedResults,
+    selectedProduct,
+    setSelectedProduct,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    setTotalPages,
+    pageChangeCount,
+    setPageChangeCount,
+    filters,
+    setFilters,
+    originalQuery,
+    setOriginalQuery,
+    lastSearchQuery,
+    setLastSearchQuery,
+    hasSearched,
+    setHasSearched,
+    isUsingDemoData,
+    setIsUsingDemoData,
+    apiInfo,
+    setApiInfo,
+    getSearchCountries
+  } = props;
+
+  // Use our new refactored hooks
+  const { executeSearch, cleanupSearch } = useSearchExecutor({
+    isLoading,
+    setIsLoading,
+    setSearchResults,
+    cachedResults,
+    setCachedResults,
+    setCurrentPage,
+    setTotalPages,
+    setHasSearched,
+    setIsUsingDemoData,
+    setApiInfo
+  });
+  
+  const { getCachedResults, handleSearchFailure } = useSearchCache({
+    cachedResults,
+    setSearchResults,
+    setCurrentPage
+  });
 
   // Main search function
   const handleSearch = async (page: number = 1, forceNewSearch: boolean = false) => {
@@ -79,123 +99,50 @@ export function useSearchActions({
       return;
     }
 
-    // Cancel any pending searches
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
     // Use current search query or last successful one
     const queryToUse = searchQuery || lastSearchQuery;
     
-    setIsLoading(true);
-    setIsUsingDemoData(false);
+    // If it's the same page for the same query and we have cached results
+    const cachedResultsForQuery = getCachedResults(queryToUse, lastSearchQuery, page);
+    if (!forceNewSearch && cachedResultsForQuery) {
+      console.log(`Используем кэшированные результаты для страницы ${page}`);
+      setSearchResults(cachedResultsForQuery);
+      setCurrentPage(page);
+      return;
+    }
     
-    // Set a timeout to ensure search doesn't hang for too long
-    const searchTimeout = setTimeout(() => {
-      if (isLoading) {
-        setIsLoading(false);
-        toast.error('Поиск занял слишком много времени. Попробуйте снова.');
-      }
-    }, 10000); // 10 seconds timeout
+    // Save original query (for display to user)
+    setOriginalQuery(queryToUse);
     
-    searchTimeoutRef.current = searchTimeout;
+    // If this is a new search query, save it
+    const isSameQuery = queryToUse === lastSearchQuery;
+    if (!isSameQuery || forceNewSearch) {
+      setLastSearchQuery(queryToUse);
+      // Reset results cache for new query
+      setCachedResults({});
+    }
     
     try {
-      // If it's the same page for the same query and we have cached results
-      const isSameQuery = queryToUse === lastSearchQuery;
-      if (!forceNewSearch && isSameQuery && cachedResults[page]) {
-        console.log(`Используем кэшированные результаты для страницы ${page}`);
-        setSearchResults(cachedResults[page]);
-        setCurrentPage(page);
-        setIsLoading(false);
-        clearTimeout(searchTimeout);
-        return;
-      }
+      // Execute search
+      const result = await executeSearch(
+        queryToUse,
+        page,
+        lastSearchQuery,
+        filters,
+        getSearchCountries
+      );
       
-      // Save original query (for display to user)
-      setOriginalQuery(queryToUse);
-      
-      // If this is a new search query, save it
-      if (!isSameQuery || forceNewSearch) {
-        setLastSearchQuery(queryToUse);
-        // Reset results cache for new query
-        setCachedResults({});
-      }
-      
-      // Set current page before executing request
-      setCurrentPage(page);
-      
-      // Get search countries - ensure we have German results
-      const searchCountries = getSearchCountries();
-      // Make sure Germany ('de') is included in search countries
-      if (!searchCountries.includes('de')) {
-        searchCountries.push('de');
-      }
-      
-      // Use query directly - no translation needed
-      const results = await searchProducts({
-        query: queryToUse,
-        page: page,
-        language: 'en', // Always use English for best results
-        countries: searchCountries,
-        filters: filters,
-        requireGermanResults: true, // Add flag to ensure German results
-        minResultCount: 10 // Ensure minimum 10 results
-      });
-      
-      // Check if we're using demo data and update state
-      if (results.isDemo) {
-        setIsUsingDemoData(true);
-        // Reset API info when using demo data
-        setApiInfo(undefined);
-      } else if (results.apiInfo) {
-        // Update API info if available
-        setApiInfo(results.apiInfo);
-      }
-      
-      // Save found products to state and cache
-      if (results.products.length > 0) {
-        setSearchResults(results.products);
-        // Fixed: Directly create a new object instead of using a function
-        const newCache = { ...cachedResults };
-        newCache[page] = results.products;
-        setCachedResults(newCache);
-        setTotalPages(results.totalPages);
-        
-        if (!results.isDemo) {
-          toast.success(`Найдено ${results.products.length} товаров!`);
-        }
-      } else {
+      // If search was unsuccessful, try to use cached results
+      if (!result.success) {
         // Check if we have results in cache for current search query
         if (cachedResults[1] && cachedResults[1].length > 0 && isSameQuery) {
           setSearchResults(cachedResults[1]);
           setCurrentPage(1);
           toast.info('Ошибка при загрузке страницы, показаны результаты первой страницы');
-        } else {
-          setSearchResults([]);
-          toast.info('По вашему запросу ничего не найдено.');
         }
       }
-      
-      // Mark that search has been performed
-      setHasSearched(true);
     } catch (error) {
-      console.error('Ошибка поиска:', error);
-      toast.error('Произошла ошибка при поиске товаров');
-      
-      // If error occurs, check if we have cached results
-      if (cachedResults[currentPage] && cachedResults[currentPage].length > 0) {
-        // If error occurred when changing pages, use current cached results
-        setSearchResults(cachedResults[currentPage]);
-      } else if (cachedResults[1] && cachedResults[1].length > 0) {
-        // If no results for current page, return to first page
-        setSearchResults(cachedResults[1]);
-        setCurrentPage(1);
-        toast.info('Возврат к первой странице из-за ошибки');
-      }
-    } finally {
-      clearTimeout(searchTimeout);
-      setIsLoading(false);
+      handleSearchFailure(currentPage);
     }
   };
 
@@ -208,7 +155,7 @@ export function useSearchActions({
   const handlePageChange = (page: number) => {
     if (page !== currentPage && page >= 1 && page <= totalPages) {
       console.log(`Changing page from ${currentPage} to ${page}`);
-      // Fixed: Directly increment the counter
+      // Increment the counter
       setPageChangeCount(pageChangeCount + 1);
       // Set current page first
       setCurrentPage(page);
@@ -222,13 +169,6 @@ export function useSearchActions({
     setFilters(newFilters);
     // Reset to first page when filters change
     handleSearch(1, true);
-  };
-
-  // Cleanup function for component unmounting
-  const cleanupSearch = () => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
   };
 
   return {
