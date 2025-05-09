@@ -43,6 +43,17 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
     console.log('Скопирована ссылка:', productLink);
   };
   
+  const handleVisitProduct = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onStopPropagation(e);
+    
+    const productLink = getProductLink(product);
+    window.open(productLink, '_blank', 'noopener,noreferrer');
+    toast.success('Переход на страницу товара');
+    
+    console.log('Переход по ссылке:', productLink);
+  };
+  
   const handleGoToPrimeberri = (e: React.MouseEvent) => {
     e.preventDefault();
     onStopPropagation(e);
@@ -62,6 +73,15 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
           onClick={handleCopyLink}
         >
           <Copy size={16} className="mr-1" /> Скопировать ссылку
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="flex-1 h-8"
+          onClick={handleVisitProduct}
+        >
+          <ExternalLink size={16} className="mr-1" /> Открыть
         </Button>
       </div>
       

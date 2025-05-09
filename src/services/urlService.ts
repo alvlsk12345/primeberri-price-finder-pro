@@ -24,6 +24,7 @@ const storeMap: StoreMap = {
   'Adidas': 'adidas.com',
   'Adidas UK': 'adidas.co.uk',
   'H&M': 'hm.com',
+  'H&M UK': 'www2.hm.com',
   'Zara': 'zara.com',
   'Zara UK': 'zara.com',
   'Sportisimo': 'sportisimo.eu',
@@ -56,7 +57,11 @@ const searchEngines = [
   'search/results',
   'catalogid:',
   'gpcid:',
-  'prds='
+  'prds=',
+  'headlineOffer',
+  'imageDocid:',
+  'gl=',
+  'hl='
 ];
 
 // Улучшенная функция для проверки, является ли ссылка поисковой
@@ -77,6 +82,8 @@ export const isSearchEngineLink = (link: string): boolean => {
   if (lowerCaseLink.includes('gpcid:')) return true;
   if (lowerCaseLink.includes('headlineOfferId')) return true;
   if (lowerCaseLink.includes('imageDocid:')) return true;
+  if (lowerCaseLink.includes('gl=')) return true;
+  if (lowerCaseLink.includes('hl=')) return true;
   
   // Проверяем на конкретные домены поисковиков
   return searchEngines.some(engine => lowerCaseLink.includes(engine));
@@ -97,6 +104,7 @@ export const getStoreDomain = (storeName: string | undefined): string => {
          storeName.toLowerCase().includes('nike') ? 'nike.com' :
          storeName.toLowerCase().includes('adidas') ? 'adidas.com' :
          storeName.toLowerCase().includes('mandm') ? 'mandmdirect.com' :
+         storeName.toLowerCase().includes('h&m') ? 'www2.hm.com' :
          'shop.example.com';
 };
 
@@ -115,12 +123,19 @@ export const extractProductId = (link: string | undefined, fallbackId: string): 
     return fallbackId; // Используем fallbackId для поисковых ссылок или отсутствующих ссылок
   }
   
-  // Пытаемся извлечь идентификатор магазина из поисковой ссылки
+  // Пытаемся извлечь идентификатор из Google shopping ссылки
   if (link.includes('google.com') && link.includes('mid:')) {
     const midMatch = link.match(/mid:([0-9]+)/);
     if (midMatch && midMatch[1]) {
-      return midMatch[1]; // Возвращаем найденный ID из ссылки Google
+      return midMatch[1];
     }
+  }
+
+  // H&M: https://www2.hm.com/en_gb/productpage.1257562002.html
+  const hmPattern = /productpage\.([0-9]+)\.html/;
+  const hmMatch = link.match(hmPattern);
+  if (hmMatch && hmMatch[1]) {
+    return hmMatch[1];
   }
 
   // Извлечение из ссылок MandM Direct
@@ -207,8 +222,10 @@ export const getProductLink = (product: Product): string => {
   // Создаем слаг для URL из имени продукта
   const productSlug = createProductSlug(product.title);
   
-  // Формируем URL с правильными параметрами в зависимости от магазина
-  // Специальные обработчики для конкретных магазинов
+  // H&M
+  if (domain.includes('hm.com')) {
+    return `https://www2.hm.com/en_gb/productpage.${productId}.html`;
+  }
   
   // MandM Direct
   if (domain.includes('mandmdirect')) {
@@ -245,7 +262,7 @@ export const getProductLink = (product: Product): string => {
   } else if (domain.includes('zara')) {
     return `https://www.${domain}/products/${productSlug}-p${productId}.html`;
   } else if (domain.includes('hm')) {
-    return `https://www.${domain}/en_gb/productpage.${productId}.html`;
+    return `https://www2.hm.com/en_gb/productpage.${productId}.html`;
   } else if (domain.includes('sportsdirect')) {
     return `https://www.${domain}/product/puma-${productSlug}-${productId}`;
   } else if (domain.includes('decathlon')) {

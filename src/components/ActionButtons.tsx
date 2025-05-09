@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Link } from 'lucide-react';
+import { ArrowRight, Link, ExternalLink } from 'lucide-react';
 import { toast } from "@/components/ui/sonner";
 import { getProductLink } from "@/services/urlService";
 import { Product } from "@/services/types";
@@ -35,6 +35,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       
       navigator.clipboard.writeText(productLink);
       toast.success('Ссылка на товар скопирована!');
+      console.log('Скопирована ссылка:', productLink);
     } else {
       toast.error('Пожалуйста, выберите товар');
     }
@@ -47,6 +48,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     if (selectedProduct) {
       const productLink = getProductLink(selectedProduct);
       window.open(productLink, '_blank', 'noopener,noreferrer');
+      console.log('Переход по ссылке:', productLink);
     } else {
       toast.error('Пожалуйста, выберите товар');
     }
@@ -69,7 +71,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         className="flex-1"
       >
         <span className="flex items-center gap-2">
-          Перейти к товару <ArrowRight size={18} />
+          <ExternalLink size={18} /> Перейти к товару
         </span>
       </Button>
       <Button 
