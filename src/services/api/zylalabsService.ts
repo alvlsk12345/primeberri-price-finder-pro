@@ -18,7 +18,8 @@ import { parseApiResponse } from "./responseParserService";
 export const searchProductsViaZylalabs = async (params: SearchParams): Promise<any> => {
   // Проверяем наличие API ключа
   if (!checkApiKey()) {
-    return getMockSearchResults(params.query);
+    const mockResults = getMockSearchResults(params.query);
+    return { ...mockResults, fromMock: true };
   }
   
   let attempts = 0;
@@ -89,7 +90,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
             )) {
             console.error('API usage limit exceeded');
             toast.error('Превышен лимит запросов к API. Пожалуйста, обратитесь в поддержку.');
-            return getMockSearchResults(params.query);
+            return { ...getMockSearchResults(params.query), fromMock: true };
           }
         } catch (e) {
           // Если не удалось распарсить как JSON, используем текст как есть
@@ -106,12 +107,12 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
           // Ошибка авторизации - неверный API-ключ
           console.error('Ошибка авторизации API. Проверьте ключ API.');
           toast.error('Ошибка авторизации API. Проверьте ключ API.');
-          return getMockSearchResults(params.query);
+          return { ...getMockSearchResults(params.query), fromMock: true };
         } else if (response.status === 429) {
           // Превышен лимит запросов
           console.error('Превышен лимит запросов к API');
           toast.error('Превышен лимит запросов API. Используем демонстрационные данные.');
-          return getMockSearchResults(params.query);
+          return { ...getMockSearchResults(params.query), fromMock: true };
         } else {
           // Другие ошибки API
           toast.error(`Ошибка API: ${response.status}`);
@@ -134,11 +135,11 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
       // Проверяем структуру данных и нормализуем ответ
       try {
         const parsedResult = parseApiResponse(data);
-        return parsedResult;
+        return { ...parsedResult, fromMock: false };
       } catch (error) {
         console.error('Ошибка при парсинге ответа:', error);
         toast.warning('Получены некорректные данные от API');
-        return getMockSearchResults(params.query);
+        return { ...getMockSearchResults(params.query), fromMock: true };
       }
     } catch (error: any) {
       // Обрабатываем ошибку прерывания запроса при истечении таймаута
@@ -173,6 +174,6 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
   // Показываем более подробное сообщение в консоли для отладки
   console.log('Детали последней ошибки:', lastError);
   
-  // Возвращаем мок-данные для демонстрации интерфейса
-  return getMockSearchResults(params.query);
+  // Возвращаем мок-данные для демонстрации интерфейса с флагом fromMock
+  return { ...getMockSearchResults(params.query), fromMock: true };
 };
