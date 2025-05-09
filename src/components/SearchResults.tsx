@@ -49,6 +49,9 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     return { ...product, id: uniqueId };
   });
 
+  // Limit to 9 products per page
+  const paginatedProducts = productsWithUniqueKeys.slice(0, 9);
+
   // Handle page change with validation and debouncing
   const handlePageChange = (page: number) => {
     console.log(`SearchResults: Page change requested from ${currentPage} to ${page}`);
@@ -63,7 +66,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   return (
     <div data-testid="search-results">
       <ProductListContainer 
-        products={productsWithUniqueKeys}
+        products={paginatedProducts}
         selectedProduct={selectedProduct}
         onSelect={onSelect}
         currentPage={currentPage}

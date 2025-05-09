@@ -100,7 +100,7 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
     }
     
     // Расчет общего количества страниц (приблизительное значение)
-    const itemsPerPage = 12; // Стандартное количество элементов на странице
+    const itemsPerPage = 9; // Изменено с 12 на 9 элементов на странице
     const totalPages = response.totalPages || Math.max(1, Math.ceil(products.length / itemsPerPage));
     
     // Информируем пользователя о результатах
