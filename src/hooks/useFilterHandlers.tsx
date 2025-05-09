@@ -1,78 +1,57 @@
 
 import { ProductFilters } from "@/services/types";
 
-interface FilterHandlersProps {
+type UseFilterHandlersProps = {
   localFilters: ProductFilters;
   setLocalFilters: (filters: ProductFilters) => void;
-}
+  onFilterChange?: (filters: ProductFilters) => void;
+};
 
-export function useFilterHandlers({ localFilters, setLocalFilters }: FilterHandlersProps) {
-  // Обработчик изменения слайдера цен
-  const handlePriceChange = (values: number[]) => {
-    setLocalFilters({
-      ...localFilters,
-      minPrice: values[0],
-      maxPrice: values[1]
-    });
+export function useFilterHandlers({
+  localFilters,
+  setLocalFilters,
+  onFilterChange
+}: UseFilterHandlersProps) {
+  // Вспомогательная функция для автоприменения фильтров
+  const applyFilters = (newFilters: ProductFilters) => {
+    if (onFilterChange) {
+      onFilterChange(newFilters);
+    }
+  };
+
+  // Обработчик изменения ценового диапазона
+  const handlePriceChange = (minPrice?: number, maxPrice?: number) => {
+    const newFilters = { ...localFilters, minPrice, maxPrice };
+    setLocalFilters(newFilters);
+    applyFilters(newFilters); // Автоприменение
   };
   
   // Обработчик изменения брендов
-  const handleBrandChange = (brand: string, checked: boolean) => {
-    const currentBrands = localFilters.brands || [];
-    let newBrands;
-    
-    if (checked) {
-      newBrands = [...currentBrands, brand];
-    } else {
-      newBrands = currentBrands.filter(b => b !== brand);
-    }
-    
-    setLocalFilters({
-      ...localFilters,
-      brands: newBrands.length > 0 ? newBrands : undefined
-    });
+  const handleBrandChange = (brands: string[]) => {
+    const newFilters = { ...localFilters, brands };
+    setLocalFilters(newFilters);
+    applyFilters(newFilters); // Автоприменение
   };
   
   // Обработчик изменения источников
-  const handleSourceChange = (source: string, checked: boolean) => {
-    const currentSources = localFilters.sources || [];
-    let newSources;
-    
-    if (checked) {
-      newSources = [...currentSources, source];
-    } else {
-      newSources = currentSources.filter(s => s !== source);
-    }
-    
-    setLocalFilters({
-      ...localFilters,
-      sources: newSources.length > 0 ? newSources : undefined
-    });
+  const handleSourceChange = (sources: string[]) => {
+    const newFilters = { ...localFilters, sources };
+    setLocalFilters(newFilters);
+    applyFilters(newFilters); // Автоприменение
   };
   
   // Обработчик изменения стран
-  const handleCountryChange = (country: string, checked: boolean) => {
-    const currentCountries = localFilters.countries || [];
-    let newCountries;
-    
-    if (checked) {
-      newCountries = [...currentCountries, country];
-    } else {
-      newCountries = currentCountries.filter(c => c !== country);
-    }
-    
-    setLocalFilters({
-      ...localFilters,
-      countries: newCountries.length > 0 ? newCountries : undefined
-    });
+  const handleCountryChange = (countries: string[]) => {
+    const newFilters = { ...localFilters, countries };
+    setLocalFilters(newFilters);
+    applyFilters(newFilters); // Автоприменение
   };
   
   // Обработчик изменения рейтинга
-  const handleRatingChange = (values: number[]) => {
-    setLocalFilters({
-      ...localFilters,
-      rating: values[0]
-    });
+  const handleRatingChange = (rating?: number) => {
+    const newFilters = { ...localFilters, rating };
+    setLocalFilters(newFilters);
+    applyFilters(newFilters); // Автоприменение
   };
   
   return {

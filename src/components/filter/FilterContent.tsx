@@ -22,6 +22,7 @@ export const FilterContent: React.FC<FilterContentProps> = ({
         <FilterActions 
           resetFilters={resetFilters}
           applyFilters={applyFilters}
+          autoApply={true} // Включаем автоприменение фильтров
         />
       </div>
     </PopoverContent>

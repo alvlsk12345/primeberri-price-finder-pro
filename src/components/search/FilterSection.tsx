@@ -10,10 +10,15 @@ export const FilterSection: React.FC = () => {
     searchResults
   } = useSearch();
   
+  // Для немедленного применения фильтров передаем изменения напрямую
+  const handleFilterUpdate = (newFilters) => {
+    handleFilterChange(newFilters);
+  };
+  
   return (
     <FilterPanel 
       filters={filters} 
-      onFilterChange={handleFilterChange}
+      onFilterChange={handleFilterUpdate}
       results={searchResults}
     />
   );

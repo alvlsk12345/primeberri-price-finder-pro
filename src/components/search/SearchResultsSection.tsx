@@ -41,8 +41,8 @@ export const SearchResultsSection: React.FC = () => {
         </h2>
         <div className="flex flex-wrap gap-3 items-center">
           <SortButtons 
-            sortBy={filters.sortBy || ""}
-            onSortChange={handleSortChange} // Используем новый обработчик
+            sortBy={filters.sortBy || "" as SortOption}
+            onSortChange={handleSortChange}
           />
           <FilterSection />
         </div>

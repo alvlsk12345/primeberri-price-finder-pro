@@ -31,16 +31,20 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     activeFiltersCount
   } = useFilterPanel(filters, results);
   
-  // Получаем обработчики событий из хука
+  // Получаем обработчики событий из хука, предопределяя autoApply = true
   const {
     handlePriceChange,
     handleBrandChange,
     handleSourceChange,
     handleCountryChange,
     handleRatingChange
-  } = useFilterHandlers({ localFilters, setLocalFilters });
+  } = useFilterHandlers({ 
+    localFilters, 
+    setLocalFilters, 
+    onFilterChange // Передаем onFilterChange для автоприменения
+  });
   
-  // Применение фильтров
+  // Применение фильтров - будет вызываться и автоматически через useFilterHandlers
   const applyFilters = () => {
     onFilterChange(localFilters);
   };
