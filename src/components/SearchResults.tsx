@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Product } from "@/services/types";
 import { NoSearchResults } from './search/NoSearchResults';
@@ -11,7 +10,6 @@ type SearchResultsProps = {
   currentPage: number;
   totalPages: number; 
   onPageChange: (page: number) => void;
-  isDemo?: boolean;
 };
 
 export const SearchResults: React.FC<SearchResultsProps> = ({ 
@@ -20,15 +18,13 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   selectedProduct,
   currentPage,
   totalPages,
-  onPageChange,
-  isDemo = false
+  onPageChange
 }) => {
   console.log('SearchResults render:', {
     resultsCount: results?.length || 0,
     currentPage,
     totalPages,
-    hasSelectedProduct: !!selectedProduct,
-    isDemo
+    hasSelectedProduct: !!selectedProduct
   });
 
   // Check if results are available
@@ -69,7 +65,6 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={handlePageChange}
-        isDemo={isDemo}
       />
     </div>
   );

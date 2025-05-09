@@ -5,10 +5,11 @@ import { SearchForm } from "@/components/SearchForm";
 import { SearchResultsSection } from "@/components/search/SearchResultsSection";
 import { NoResultsMessage } from "@/components/search/NoResultsMessage";
 import { ProductDetailsSection } from "@/components/product/ProductDetailsSection";
-import { useSearch } from "@/contexts/SearchContext";
+import { ApiUsageIndicator } from "@/components/search/ApiUsageIndicator";
+import { useSearch } from "@/contexts/search";
 
 export const SearchContainer: React.FC = () => {
-  const { searchQuery, setSearchQuery, handleSearch, isLoading } = useSearch();
+  const { searchQuery, setSearchQuery, handleSearch, isLoading, hasSearched } = useSearch();
 
   return (
     <Card className="max-w-4xl mx-auto shadow-md">
@@ -28,6 +29,9 @@ export const SearchContainer: React.FC = () => {
             handleSearch={() => handleSearch(1, true)}
             isLoading={isLoading}
           />
+          
+          {/* Only show API usage indicator after search has been performed */}
+          {hasSearched && <ApiUsageIndicator />}
 
           <NoResultsMessage />
           <SearchResultsSection />

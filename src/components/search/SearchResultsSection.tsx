@@ -2,8 +2,8 @@
 import React from 'react';
 import { SearchResults } from "@/components/SearchResults";
 import { FilterPanel } from "@/components/FilterPanel";
-import { useSearch } from "@/contexts/SearchContext";
-import { ApiUsageInfo } from "@/components/search/ApiUsageInfo";
+import { useSearch } from "@/contexts/search";
+import { SearchResultsAlert } from "./SearchResultsAlert";
 
 export const SearchResultsSection: React.FC = () => {
   const { 
@@ -16,8 +16,7 @@ export const SearchResultsSection: React.FC = () => {
     filters,
     handleFilterChange,
     originalQuery,
-    isUsingDemoData,
-    apiInfo
+    apiErrorMode
   } = useSearch();
 
   if (searchResults.length === 0) {
@@ -26,9 +25,10 @@ export const SearchResultsSection: React.FC = () => {
 
   return (
     <div className="mt-6">
+      {apiErrorMode && <SearchResultsAlert apiErrorMode={true} currentPage={currentPage} />}
+      
       <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
         <h2 className="text-xl font-semibold">
-          {isUsingDemoData ? '[ДЕМО] ' : ''}
           Результаты поиска{originalQuery ? ` "${originalQuery}"` : ''}:
         </h2>
         <FilterPanel 
@@ -37,9 +37,6 @@ export const SearchResultsSection: React.FC = () => {
           results={searchResults}
         />
       </div>
-      
-      {apiInfo && Object.keys(apiInfo).length > 0 && <ApiUsageInfo />}
-      
       <SearchResults 
         results={searchResults} 
         onSelect={handleProductSelect} 
@@ -47,7 +44,6 @@ export const SearchResultsSection: React.FC = () => {
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={handlePageChange}
-        isDemo={isUsingDemoData}
       />
     </div>
   );
