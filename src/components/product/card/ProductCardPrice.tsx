@@ -35,9 +35,11 @@ export const ProductCardPrice: React.FC<ProductCardPriceProps> = ({
     // Расчет цены с доставкой в Россию: (цена с сайта * 1,05)*105.92
     const deliveryPrice = (priceInEuro * 1.05) * 105.92;
 
-    // Форматирование цен для отображения
+    // Форматирование цен для отображения с разделителями разрядов
     setEuroPrice(`€${priceInEuro.toFixed(2)}`);
-    setRussianDeliveryPrice(`₽${deliveryPrice.toFixed(2)}`);
+    
+    // Форматирование цены с доставкой с разделителями разрядов
+    setRussianDeliveryPrice(`₽${new Intl.NumberFormat('ru-RU').format(Math.round(deliveryPrice))}`);
   }, [price]);
 
   return (
@@ -46,7 +48,7 @@ export const ProductCardPrice: React.FC<ProductCardPriceProps> = ({
         {euroPrice}
       </div>
       <div className="text-sm text-gray-700 font-medium">
-        Цена с доставкой: {russianDeliveryPrice}
+        Цена с доставкой в Россию: {russianDeliveryPrice}
       </div>
       {availability && (
         <div className="text-xs text-gray-500 mt-1">

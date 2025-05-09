@@ -53,8 +53,11 @@ export const extractProductId = (link: string, fallbackId: string): string => {
 
 // Обновляем функцию для получения реальной ссылки на страницу товара
 export const getProductLink = (product: Product): string => {
-  // Если у продукта есть валидная ссылка, используем её
-  if (product.link && product.link.startsWith('http') && !product.link.includes('undefined')) {
+  // Если у продукта есть прямая ссылка на магазин, используем её напрямую
+  if (product.link && 
+     (product.link.startsWith('http') && 
+      !product.link.includes('undefined') && 
+      !product.link.includes('google.com/search'))) {
     return product.link;
   }
   

@@ -55,9 +55,9 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
         ) : (
           <Button 
             variant="default"
-            className="flex-1"
-            disabled
+            className="flex-1 opacity-0 pointer-events-none"
           >
+            {/* Скрытая кнопка для сохранения расположения элементов */}
             Выбрано
           </Button>
         )}
@@ -78,7 +78,7 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
         <Button 
           variant="default" 
           size="sm" 
-          className="flex-1 h-8"
+          className="flex-1 h-8 text-xs px-1"
           onClick={handleGoToPrimeberri}
         >
           <ExternalLink size={16} className="mr-1" /> Primeberri
