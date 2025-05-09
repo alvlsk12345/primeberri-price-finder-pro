@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Link } from 'lucide-react';
 import { toast } from "@/components/ui/sonner";
-import { getProductLink, isSearchEngineLink } from "@/services/urlService";
+import { getProductLink } from "@/services/urlService";
 import { Product } from "@/services/types";
 
 type ActionButtonsProps = {
@@ -30,18 +30,12 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     e.preventDefault();
     
     if (selectedProduct) {
-      // Приоритетно используем оригинальную ссылку, если она не поисковая
-      let linkToCopy = selectedProduct.link;
+      // Всегда используем сгенерированную прямую ссылку на товар в магазине
+      const directLink = getProductLink(selectedProduct);
       
-      // Проверяем, является ли ссылка поисковой или отсутствует
-      if (!linkToCopy || isSearchEngineLink(linkToCopy)) {
-        // Если ссылка поисковая или отсутствует, генерируем новую
-        linkToCopy = getProductLink(selectedProduct);
-      }
-      
-      navigator.clipboard.writeText(linkToCopy);
+      navigator.clipboard.writeText(directLink);
       toast.success('Ссылка на товар скопирована!');
-      console.log('Скопирована ссылка:', linkToCopy);
+      console.log('Скопирована прямая ссылка:', directLink);
     } else {
       toast.error('Пожалуйста, выберите товар');
     }
@@ -52,16 +46,10 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     e.preventDefault();
     
     if (selectedProduct) {
-      // Приоритетно используем оригинальную ссылку, если она не поисковая
-      let productLink = selectedProduct.link;
+      // Всегда используем сгенерированную прямую ссылку на товар в магазине
+      const directLink = getProductLink(selectedProduct);
       
-      // Проверяем, является ли ссылка поисковой или отсутствует
-      if (!productLink || isSearchEngineLink(productLink)) {
-        // Если ссылка поисковая или отсутствует, генерируем новую
-        productLink = getProductLink(selectedProduct);
-      }
-      
-      window.open(productLink, '_blank', 'noopener,noreferrer');
+      window.open(directLink, '_blank', 'noopener,noreferrer');
     } else {
       toast.error('Пожалуйста, выберите товар');
     }

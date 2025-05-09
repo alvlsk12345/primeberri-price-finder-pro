@@ -36,19 +36,13 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
     e.preventDefault();
     onStopPropagation(e);
     
-    // Приоритетно используем оригинальную ссылку, если она не поисковая
-    let linkToCopy = product.link;
+    // Всегда используем сгенерированную прямую ссылку на товар в магазине
+    const directLink = getProductLink(product);
     
-    // Проверяем, является ли ссылка поисковой или отсутствует
-    if (!linkToCopy || isSearchEngineLink(linkToCopy)) {
-      // Если ссылка поисковая или отсутствует, генерируем новую
-      linkToCopy = getProductLink(product);
-    }
-    
-    navigator.clipboard.writeText(linkToCopy);
+    navigator.clipboard.writeText(directLink);
     toast.success('Ссылка на товар скопирована!');
     
-    console.log('Скопирована ссылка:', linkToCopy);
+    console.log('Скопирована прямая ссылка:', directLink);
   };
   
   const handleGoToPrimeberri = (e: React.MouseEvent) => {
