@@ -24,7 +24,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
   
   let attempts = 0;
   let lastError = null;
-  let useProxy = false; // Start without proxy
+  let proxyIndex = 0; // Start with direct connection (no proxy)
 
   // Используем страны из параметров или дефолтную страну
   const countries = params.countries || ['gb'];
@@ -34,19 +34,17 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
   while (attempts < MAX_RETRY_ATTEMPTS) {
     try {
       console.log(`Отправляем запрос к Zylalabs API... (попытка ${attempts + 1}/${MAX_RETRY_ATTEMPTS})`, params);
+      console.log(`Используем прокси ${proxyIndex}`);
       
-      // Toggle between direct and proxy methods on retries
-      if (attempts === 1) useProxy = true;
-      
-      // Формируем URL запроса для множественных стран с учетом прокси при необходимости
-      const apiUrl = buildMultiCountrySearchUrl(params.query, countries, language, page, useProxy);
+      // Формируем URL запроса для множественных стран с учетом текущего индекса прокси
+      const apiUrl = buildMultiCountrySearchUrl(params.query, countries, language, page, proxyIndex);
       console.log('URL запроса:', apiUrl);
       
       // Выполняем запрос к API с таймаутом
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
-      // Set up request headers - conditional for proxy vs direct
+      // Set up request headers
       const headers: HeadersInit = {
         'Authorization': `Bearer ${ZYLALABS_API_KEY}`,
         'Content-Type': 'application/json',
@@ -54,8 +52,8 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
         'Cache-Control': 'no-cache'
       };
       
-      // Add origin header if using proxy
-      if (useProxy) {
+      // Add any additional headers needed for proxy
+      if (proxyIndex > 0) {
         headers['X-Requested-With'] = 'XMLHttpRequest';
       }
 
@@ -63,7 +61,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
         method: 'GET',
         headers: headers,
         signal: controller.signal,
-        mode: useProxy ? 'cors' : 'cors',
+        mode: 'cors',
         credentials: 'omit'
       });
 
@@ -96,7 +94,14 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
           // Если не удалось распарсить как JSON, используем текст как есть
         }
         
-        if (response.status === 503 || response.status === 502 || response.status === 504) {
+        // Для ошибки 403 с CORS proxy, меняем индекс прокси и повторяем
+        if (response.status === 403 && proxyIndex > 0) {
+          console.warn('CORS proxy вернул 403, пробуем другой прокси');
+          proxyIndex = (proxyIndex + 1) % 4; // Rotate through proxies
+          attempts++;
+          await sleep(RETRY_DELAY);
+          continue;
+        } else if (response.status === 503 || response.status === 502 || response.status === 504) {
           // Повторяем запрос при временной недоступности сервиса
           console.warn('Сервис временно недоступен, попытка повтора через', RETRY_DELAY);
           lastError = new Error(`Сервис временно недоступен`);
@@ -114,8 +119,9 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
           toast.error('Превышен лимит запросов API. Используем демонстрационные данные.');
           return { ...getMockSearchResults(params.query), fromMock: true };
         } else {
-          // Другие ошибки API
-          toast.error(`Ошибка API: ${response.status}`);
+          // Другие ошибки API - пробуем другой прокси
+          console.warn(`Ошибка API ${response.status}, пробуем другой прокси`);
+          proxyIndex = (proxyIndex + 1) % 4; // Rotate through proxies
           attempts++;
           await sleep(RETRY_DELAY);
           continue;
@@ -154,6 +160,12 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
       // Для других ошибок - логируем и обрабатываем
       console.error("Fetch error:", error);
       handleFetchError(error);
+      
+      // Если вероятная проблема с CORS, меняем прокси
+      if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+        console.log('Произошла ошибка "Failed to fetch", пробуем другой прокси');
+        proxyIndex = (proxyIndex + 1) % 4; // Rotate through proxies
+      }
       
       // Увеличиваем счетчик попыток
       lastError = error;

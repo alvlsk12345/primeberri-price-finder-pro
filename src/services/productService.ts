@@ -21,7 +21,7 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
     if (!response || !response.products || response.products.length === 0) {
       toast.dismiss(searchToastId);
       toast.info('По вашему запросу ничего не найдено');
-      return { products: [], totalPages: 0 };
+      return { products: [], totalPages: 0, fromMock: response.fromMock };
     }
     
     // Обрабатываем данные о товарах
@@ -37,7 +37,12 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
     
     // Информируем пользователя о результатах
     if (products.length > 0) {
-      toast.success(`Найдено ${products.length} товаров${totalPages > 1 ? `, стр. ${params.page}/${totalPages}` : ''}`);
+      // Если используются мок-данные, сообщаем об этом
+      if (response.fromMock) {
+        toast.success(`Найдено ${products.length} демонстрационных товаров (режим без API)`);
+      } else {
+        toast.success(`Найдено ${products.length} товаров${totalPages > 1 ? `, стр. ${params.page}/${totalPages}` : ''}`);
+      }
     } else {
       toast.info('По вашему запросу ничего не найдено');
     }
