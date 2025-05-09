@@ -36,12 +36,15 @@ export const fetchFromZylalabs = async (
     console.log('Используемый API ключ:', ZYLALABS_API_KEY.substring(0, 5) + '...');
     console.log('Полный URL запроса:', url);
     
+    // Добавляем режимы для обхода CORS-ограничений
     const response = await fetch(url, {
       method: 'GET',
       headers: headers,
       signal: controller.signal,
       mode: 'cors',
-      credentials: 'omit'
+      credentials: 'omit',
+      redirect: 'follow',
+      referrerPolicy: 'no-referrer'
     });
     
     // Clear timeout once request is complete

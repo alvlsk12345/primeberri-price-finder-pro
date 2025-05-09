@@ -1,11 +1,11 @@
 
 import { toast } from "@/components/ui/sonner";
 import { SearchParams } from "../types";
-import { checkApiKey, buildMultiCountrySearchUrl } from "./zylalabsConfig";
+import { checkApiKey, buildMultiCountrySearchUrl, ZYLALABS_API_KEY } from "./zylalabsConfig";
 import { getMockSearchResults } from "./mockDataService";
 import { parseApiResponse } from "./responseParserService";
 import { withRetry } from "./retryService";
-import { fetchFromZylalabs, getZylalabsApiUrl } from "./clients/zylalabsApiClient";
+import { fetchFromZylalabs } from "./clients/zylalabsApiClient";
 import { isSearchEngineLink } from "../urlService";
 
 /**
@@ -93,4 +93,4 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
 };
 
 // Import needed constants for proxy and API key validation
-import { ZYLALABS_API_KEY, MAX_RETRY_ATTEMPTS } from "./zylalabsConfig";
+import { MAX_RETRY_ATTEMPTS } from "./zylalabsConfig";

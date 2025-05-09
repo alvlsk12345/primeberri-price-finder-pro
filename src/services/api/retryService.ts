@@ -45,6 +45,13 @@ export const withRetry = async <T>(
       if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
         console.log('Произошла ошибка "Failed to fetch", пробуем другой прокси');
         proxyIndex = (proxyIndex + 1) % 5; // Use all 5 proxies
+        
+        // Try again with different proxy without incrementing main attempts counter
+        if (attempts < MAX_RETRY_ATTEMPTS - 1) {
+          console.log(`Пробуем прокси №${proxyIndex} без увеличения счетчика попыток`);
+          await sleep(RETRY_DELAY);
+          continue;
+        }
       }
       
       // For specific HTTP errors, try different proxy
