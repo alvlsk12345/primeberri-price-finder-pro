@@ -1,5 +1,4 @@
-
-import { Product, ProductFilters } from "@/services/types";
+import { Product } from "@/services/types";
 import { EUROPEAN_COUNTRIES } from "@/components/filter/CountryFilter";
 import { 
   getBaseProducts, 
