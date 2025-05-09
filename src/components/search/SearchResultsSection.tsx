@@ -25,6 +25,12 @@ export const SearchResultsSection: React.FC = () => {
     return null;
   }
 
+  // Обновленный обработчик сортировки - сразу применяет изменения
+  const handleSortChange = (sortBy: string) => {
+    // Обновляем текущие фильтры с новым методом сортировки и сразу применяем
+    handleFilterChange({ ...filters, sortBy });
+  };
+
   return (
     <div className="mt-6">
       <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
@@ -35,7 +41,7 @@ export const SearchResultsSection: React.FC = () => {
         <div className="flex flex-wrap gap-3 items-center">
           <SortButtons 
             sortBy={filters.sortBy || ""}
-            onSortChange={(sortBy) => handleFilterChange({ ...filters, sortBy })}
+            onSortChange={handleSortChange} // Используем новый обработчик
           />
           <FilterSection />
         </div>

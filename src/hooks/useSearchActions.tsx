@@ -1,4 +1,3 @@
-
 import { useRef } from 'react';
 import { Product, ProductFilters } from "@/services/types";
 import { useSearchExecutor } from './search/useSearchExecutor';
@@ -167,10 +166,14 @@ export function useSearchActions(props: SearchStateProps) {
     }
   };
   
-  // Filter change handler
+  // Модифицированный Filter change handler - применяет фильтры сразу
   const handleFilterChange = (newFilters: ProductFilters) => {
+    // Устанавливаем новые фильтры
     setFilters(newFilters);
-    // Reset to first page when filters change
+    
+    // Сразу выполняем поиск с новыми фильтрами
+    console.log("Автоматически применяем фильтры после изменения");
+    // Reset to first page when filters change and force new search
     handleSearch(1, true);
   };
 
