@@ -10,7 +10,8 @@ export const REQUEST_TIMEOUT = 15000;
 // API URL builder for single country search
 export const buildSearchUrl = (query: string, country: string, language: string, page: number): string => {
   const encodedQuery = encodeURIComponent(query);
-  return `https://zylalabs.com/api/2033/real+time+product+search+api/1809/search+products?q=${encodedQuery}&country=${country}&language=${language}&page=${page}&source=merchant`;
+  // Updated API endpoint with correct formatting and parameters
+  return `https://api.zylalabs.com/api/2033/real+time+product+search+api/1809/search+products?q=${encodedQuery}&country=${country}&language=${language}&page=${page}&source=merchant`;
 };
 
 // API URL builder for multi-country search

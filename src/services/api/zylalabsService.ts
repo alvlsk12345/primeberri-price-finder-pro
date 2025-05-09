@@ -46,6 +46,9 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
 
       // Обрабатываем ошибки API
       if (!response.ok) {
+        const responseText = await response.text();
+        console.log("API Response:", responseText);
+        
         if (response.status === 503) {
           // Повторяем запрос при временной недоступности сервиса
           console.warn('Сервис временно недоступен, попытка повтора через', RETRY_DELAY);
@@ -55,12 +58,13 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
           continue;
         } else {
           // Обработка других ошибок
-          await handleApiError(response);
+          throw new Error(`API error: ${response.status} ${responseText}`);
         }
       }
 
       // Парсим JSON ответ
       const data = await response.json();
+      console.log("API Response data:", data);
       
       // Проверяем структуру данных и нормализуем ответ
       try {
@@ -82,6 +86,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
       }
       
       // Для других ошибок - логируем и обрабатываем
+      console.error("Fetch error:", error);
       handleFetchError(error);
       
       // Увеличиваем счетчик попыток

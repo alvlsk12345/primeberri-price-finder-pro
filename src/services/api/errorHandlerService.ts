@@ -8,13 +8,19 @@ export const handleApiError = async (response: Response): Promise<never> => {
   let errorMessage = '';
   
   try {
-    const errorResponse = await response.json();
-    errorMessage = errorResponse.message || `Ошибка API: ${response.status}`;
+    const errorText = await response.text();
+    let errorResponse;
+    try {
+      errorResponse = JSON.parse(errorText);
+      errorMessage = errorResponse.message || errorResponse.error || `Ошибка API: ${response.status}`;
+    } catch (e) {
+      errorMessage = errorText || `Ошибка API: ${response.status}`;
+    }
   } catch (e) {
-    errorMessage = await response.text() || `Ошибка API: ${response.status}`;
+    errorMessage = `Ошибка API: ${response.status}`;
   }
   
-  console.error('Ошибка от API Zylalabs:', errorMessage);
+  console.error('Ошибка от API Zylalabs:', errorMessage, 'Status:', response.status);
   
   // Особая обработка для разных статусных кодов
   if (response.status === 401) {
@@ -45,7 +51,8 @@ export const handleFetchError = (error: any): void => {
   } else if (error.name === 'TypeError' && error.message.includes('NetworkError')) {
     toast.error('Проблема с сетью. Проверьте подключение к интернету');
   } else {
-    toast.error('Ошибка при получении данных о товарах');
+    console.error('Ошибка API детали:', error);
+    toast.error(`Ошибка при получении данных: ${error.message || 'Неизвестная ошибка'}`);
   }
   
   console.error('Ошибка при запросе к API:', error);
