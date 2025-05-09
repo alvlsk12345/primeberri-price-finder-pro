@@ -30,18 +30,23 @@ export const handleApiError = async (response: Response): Promise<never> => {
   // Особая обработка для разных статусных кодов
   if (response.status === 401) {
     toast.error("Ошибка авторизации API. Проверьте ключ API.");
+    console.log("Используем демо-данные из-за ошибки авторизации API");
     throw new Error("Ошибка авторизации API Zylalabs");
   } else if (response.status === 429) {
     toast.error("Превышен лимит запросов API. Пожалуйста, попробуйте позже.");
+    console.log("Используем демо-данные из-за превышения лимита API");
     throw new Error("Превышен лимит запросов API Zylalabs");
   } else if (response.status === 400) {
     toast.error(`Некорректный запрос: ${errorMessage}`);
+    console.log("Используем демо-данные из-за некорректного запроса API");
     throw new Error(`Некорректный запрос: ${errorMessage}`);
   } else if (response.status === 503) {
-    toast.error(`Сервис Zylalabs временно недоступен`);
+    toast.error(`Сервис Zylalabs временно недоступен. Используем демо-данные.`);
+    console.log("Используем демо-данные из-за недоступности API (503)");
     throw new Error(`Сервис временно недоступен: ${errorMessage}`);
   } else {
     toast.error(`Ошибка API (${response.status}): ${errorMessage}`);
+    console.log(`Используем демо-данные из-за ошибки API ${response.status}`);
     throw new Error(`Ошибка API Zylalabs: ${errorMessage}`);
   }
 };
@@ -60,12 +65,12 @@ export const handleFetchError = (error: any): void => {
   
   if (error.name === 'AbortError') {
     console.warn('Запрос был отменен из-за истечения времени ожидания');
-    toast.error('Превышено время ожидания ответа от сервера Zylalabs');
+    toast.error('Превышено время ожидания ответа от сервера Zylalabs. Используем демо-данные.', { duration: 5000 });
   } else if (error.name === 'TypeError' && error.message.includes('NetworkError')) {
-    toast.error('Проблема с сетью. Проверьте подключение к интернету');
+    toast.error('Проблема с сетью. Проверьте подключение к интернету. Используем демо-данные.');
   } else if (error.message && error.message.includes('CORS')) {
-    toast.error('Ошибка CORS при обращении к API. Это может быть связано с ограничениями безопасности браузера.');
+    toast.error('Ошибка CORS при обращении к API. Используем демо-данные.', { duration: 5000 });
   } else {
-    toast.error('Ошибка при получении данных о товарах');
+    toast.error('Ошибка при получении данных о товарах. Используем демо-данные.', { duration: 5000 });
   }
 };

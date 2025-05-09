@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import { Product, ProductFilters, SearchParams } from "@/services/types";
 import { searchProducts } from "@/services/productService";
 import { translateToEnglish, containsCyrillicCharacters } from "@/services/translationService";
+import { toast } from "sonner";
 
 type SearchExecutorProps = {
   isLoading: boolean;
@@ -31,6 +32,8 @@ export function useSearchExecutor({
 }: SearchExecutorProps) {
   // Timeout reference to ensure we can cancel pending timeouts
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Сохраняем предыдущие результаты для восстановления при ошибке
+  const lastSuccessfulResultsRef = useRef<Product[]>([]);
   
   // Execute search with given parameters
   const executeSearch = async (
@@ -42,15 +45,15 @@ export function useSearchExecutor({
   ) => {
     console.log(`executeSearch called with page: ${page}, query: ${queryToUse}`);
     setIsLoading(true);
-    setIsUsingDemoData(false);
     
     // Set a timeout to ensure search doesn't hang for too long
     const searchTimeout = setTimeout(() => {
       if (isLoading) {
         setIsLoading(false);
         console.log('Поиск занял слишком много времени');
+        toast.error('Поиск занял слишком много времени. Попробуйте еще раз или используйте другой запрос.', { duration: 5000 });
       }
-    }, 10000); // 10 seconds timeout
+    }, 35000); // 35 секунд таймаут (увеличен)
     
     searchTimeoutRef.current = searchTimeout;
     
@@ -58,12 +61,25 @@ export function useSearchExecutor({
       // Переводим запрос на английский, если он на русском
       let searchText = queryToUse;
       let translatedQuery = queryToUse;
+      let wasTranslated = false;
       
       if (containsCyrillicCharacters(queryToUse)) {
         console.log("Обнаружен запрос на русском языке. Выполняем перевод...");
-        translatedQuery = await translateToEnglish(queryToUse);
-        console.log(`Запрос "${queryToUse}" переведен как "${translatedQuery}"`);
-        searchText = translatedQuery;
+        try {
+          translatedQuery = await translateToEnglish(queryToUse);
+          console.log(`Запрос "${queryToUse}" переведен как "${translatedQuery}"`);
+          searchText = translatedQuery;
+          wasTranslated = true;
+          
+          // Уведомляем пользователя о переводе
+          if (translatedQuery && translatedQuery !== queryToUse) {
+            toast.info(`Запрос переведен для поиска: ${translatedQuery}`, { duration: 3000 });
+          }
+        } catch (translateError) {
+          console.error("Ошибка при переводе запроса:", translateError);
+          // Продолжаем с оригинальным запросом
+          searchText = queryToUse;
+        }
       }
       
       // Всегда устанавливаем текущую страницу перед выполнением запроса
@@ -86,7 +102,8 @@ export function useSearchExecutor({
         countries: searchCountries,
         filters: filters,
         requireGermanResults: true, // Add flag to ensure German results
-        minResultCount: 10 // Ensure minimum 10 results
+        minResultCount: 12, // Увеличено минимальное количество результатов
+        wasTranslated // Флаг, указывающий, был ли запрос переведен
       };
       
       // Execute the search
@@ -99,6 +116,7 @@ export function useSearchExecutor({
         // Reset API info when using demo data
         setApiInfo(undefined);
       } else if (results.apiInfo) {
+        setIsUsingDemoData(false);
         // Update API info if available
         setApiInfo(results.apiInfo);
       }
@@ -165,6 +183,7 @@ export function useSearchExecutor({
       if (sortedProducts.length > 0) {
         console.log(`После применения фильтров и сортировки осталось ${sortedProducts.length} товаров`);
         setSearchResults(sortedProducts);
+        lastSuccessfulResultsRef.current = sortedProducts; // Сохраняем успешные результаты
         
         // Create a new object instead of using a function
         const newCache = { ...cachedResults };
@@ -177,11 +196,28 @@ export function useSearchExecutor({
         return { success: true, products: sortedProducts };
       } 
       
+      if (lastSuccessfulResultsRef.current.length > 0) {
+        // Если текущий запрос не вернул результатов, но у нас есть предыдущие результаты
+        console.log('По запросу ничего не найдено, возвращаем предыдущие результаты');
+        toast.info('По вашему запросу ничего не найдено. Показываем предыдущие результаты.', { duration: 3000 });
+        setSearchResults(lastSuccessfulResultsRef.current);
+        return { success: true, products: lastSuccessfulResultsRef.current };
+      }
+      
       setSearchResults([]);
       console.log('По вашему запросу ничего не найдено.');
+      toast.error('По вашему запросу ничего не найдено. Попробуйте изменить запрос.', { duration: 4000 });
       return { success: false, products: [] };
     } catch (error) {
       console.error('Ошибка поиска:', error);
+      
+      if (lastSuccessfulResultsRef.current.length > 0) {
+        // В случае ошибки возвращаем последние успешные результаты
+        console.log('Произошла ошибка при поиске, возвращаем предыдущие результаты');
+        setSearchResults(lastSuccessfulResultsRef.current);
+        return { success: true, products: lastSuccessfulResultsRef.current, recovered: true };
+      }
+      
       return { success: false, error };
     } finally {
       clearTimeout(searchTimeout);

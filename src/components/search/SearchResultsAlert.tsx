@@ -10,7 +10,7 @@ interface SearchResultsAlertProps {
 }
 
 export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({ currentPage }) => {
-  const { isUsingDemoData } = useSearch();
+  const { isUsingDemoData, apiInfo } = useSearch();
   
   // Получаем API ключ для отображения
   const apiKey = getApiKey() || 'Не указан';
@@ -19,6 +19,9 @@ export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({ currentP
   const maskedKey = apiKey !== 'Не указан' && apiKey.length > 10 
     ? `${apiKey.substring(0, 5)}...${apiKey.substring(apiKey.length - 4)}`
     : apiKey;
+    
+  // Если не используются демо-данные, не показываем уведомление
+  if (!isUsingDemoData) return null;
 
   return (
     <Alert className="mb-4 border-amber-300 bg-amber-50">
@@ -33,6 +36,7 @@ export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({ currentP
         </ul>
         <p className="mt-2">Используемый API ключ: {maskedKey}</p>
         <p className="mt-2 text-xs">Для просмотра оставшихся запросов API, проверьте заголовок ответа 'X-Zyla-API-Calls-Monthly-Remaining'</p>
+        <p className="mt-1 text-xs">Пробуем показать доступные демо-товары для вашего запроса. Попробуйте повторить запрос через несколько минут.</p>
       </AlertDescription>
     </Alert>
   );

@@ -1,4 +1,3 @@
-
 import { SearchParams } from "../types";
 import { handleApiError, handleFetchError } from "./errorHandlerService";
 import { generateMockSearchResults } from "./mock/mockSearchGenerator";
@@ -6,8 +5,8 @@ import { generateMockSearchResults } from "./mock/mockSearchGenerator";
 // Базовый URL API
 const BASE_URL = "https://zylalabs.com/api/2033/real+time+product+search+api/1809/search+products";
 
-// Тайм-аут запросов в миллисекундах
-const REQUEST_TIMEOUT = 15000; // 15 секунд
+// Увеличенный таймаут запросов в миллисекундах (с 15 до 30 секунд)
+const REQUEST_TIMEOUT = 30000; // 30 секунд
 
 // API ключ для Zylalabs
 export const ZYLALABS_API_KEY = '8112|xU0WDZhKkWVo7rczutXwzGKzEwBtNPhHbsAYbtrM';
@@ -80,6 +79,29 @@ export const buildZylalabsUrl = (params: SearchParams): string => {
   return url;
 };
 
+// Кеш успешных ответов API (новое)
+const apiResponseCache: Record<string, {timestamp: number, data: any}> = {};
+const CACHE_TTL = 3600000; // TTL кеша - 1 час
+
+// Функция для получения запроса из кеша
+const getCachedResponse = (url: string) => {
+  const cachedItem = apiResponseCache[url];
+  if (cachedItem && (Date.now() - cachedItem.timestamp < CACHE_TTL)) {
+    console.log('Используем кешированные данные для URL:', url);
+    return cachedItem.data;
+  }
+  return null;
+};
+
+// Функция для сохранения запроса в кеш
+const setCacheResponse = (url: string, data: any) => {
+  apiResponseCache[url] = {
+    timestamp: Date.now(),
+    data
+  };
+  console.log('Данные сохранены в кеш для URL:', url);
+};
+
 // Функция для выполнения запроса к API Zylalabs
 export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any> => {
   const apiKey = getApiKey();
@@ -93,6 +115,15 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
   // Формирование URL запроса
   const url = buildZylalabsUrl(params);
   console.log('Запрос к API с URL:', url);
+  
+  // Проверяем кеш перед запросом
+  const cachedResponse = getCachedResponse(url);
+  if (cachedResponse) {
+    return {
+      ...cachedResponse,
+      fromCache: true
+    };
+  }
   
   // Создание контроллера для отмены запроса по таймауту
   const controller = new AbortController();
@@ -123,7 +154,7 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
     console.log('API вернул данные:', data);
     
     // Обработка ответа
-    return {
+    const result = {
       products: data.products || [],
       totalPages: data.total_pages || 1,
       isDemo: false,
@@ -133,6 +164,11 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
         source: 'Zylalabs API'
       }
     };
+    
+    // Кешируем успешный результат
+    setCacheResponse(url, result);
+    
+    return result;
   } catch (error) {
     // Очистка таймера
     clearTimeout(timeoutId);
