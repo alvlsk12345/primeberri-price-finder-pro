@@ -2,12 +2,13 @@
 import { SearchParams } from "../types";
 import { handleApiError, handleFetchError } from "./errorHandlerService";
 import { generateMockSearchResults } from "./mock/mockSearchGenerator";
+import { useDemoModeForced } from "./mock/mockServiceConfig";
 
 // Базовый URL API
 const BASE_URL = "https://zylalabs.com/api/2033/real+time+product+search+api/1809/search+products";
 
-// Увеличенный таймаут запросов в миллисекундах (с 30 до 45 секунд)
-const REQUEST_TIMEOUT = 45000; // 45 секунд
+// Увеличенный таймаут запросов в миллисекундах (с 45 до 60 секунд)
+const REQUEST_TIMEOUT = 60000; // 60 секунд
 
 // API ключ для Zylalabs
 export const ZYLALABS_API_KEY = '8112|xU0WDZhKkWVo7rczutXwzGKzEwBtNPhHbsAYbtrM';
@@ -81,9 +82,9 @@ export const buildZylalabsUrl = (params: SearchParams): string => {
   return url;
 };
 
-// Кеш успешных ответов API (новое)
+// Кеш успешных ответов API (улучшенный)
 const apiResponseCache: Record<string, {timestamp: number, data: any}> = {};
-const CACHE_TTL = 3600000; // TTL кеша - 1 час
+const CACHE_TTL = 7200000; // Увеличиваем TTL кеша до 2 часов (было 1 час)
 
 // Функция для получения запроса из кеша
 const getCachedResponse = (url: string) => {
@@ -97,6 +98,24 @@ const getCachedResponse = (url: string) => {
 
 // Функция для сохранения запроса в кеш
 const setCacheResponse = (url: string, data: any) => {
+  // Ограничиваем размер кеша (максимум 50 запросов)
+  const cacheKeys = Object.keys(apiResponseCache);
+  if (cacheKeys.length >= 50) {
+    // Удаляем самый старый элемент кеша
+    let oldestKey = cacheKeys[0];
+    let oldestTime = apiResponseCache[oldestKey].timestamp;
+    
+    cacheKeys.forEach(key => {
+      if (apiResponseCache[key].timestamp < oldestTime) {
+        oldestKey = key;
+        oldestTime = apiResponseCache[key].timestamp;
+      }
+    });
+    
+    console.log('Кеш переполнен, удаляем самый старый элемент:', oldestKey);
+    delete apiResponseCache[oldestKey];
+  }
+  
   apiResponseCache[url] = {
     timestamp: Date.now(),
     data
@@ -106,6 +125,12 @@ const setCacheResponse = (url: string, data: any) => {
 
 // Функция для выполнения запроса к API Zylalabs
 export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any> => {
+  // Проверка на принудительное использование демо-режима
+  if (useDemoModeForced) {
+    console.log('Принудительное использование демо-режима. Запрос API пропущен.');
+    return generateMockSearchResults(params.query, params.page);
+  }
+  
   const apiKey = getApiKey();
   
   // Проверка наличия ключа API
@@ -163,7 +188,8 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
       apiInfo: {
         totalResults: data.total_results ? `${data.total_results}` : '0',
         searchTime: data.search_time ? `${data.search_time}s` : 'н/д',
-        source: 'Zylalabs API'
+        source: 'Zylalabs API',
+        remainingCalls: response.headers.get('X-Zyla-API-Calls-Monthly-Remaining') || 'н/д'
       }
     };
     

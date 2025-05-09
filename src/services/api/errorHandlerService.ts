@@ -20,12 +20,19 @@ export const handleApiError = async (response: Response): Promise<never> => {
     }
   }
   
+  // Получение всех заголовков для анализа
+  const headers = Object.fromEntries([...response.headers.entries()]);
+  
   console.error('Ошибка от API Zylalabs:', {
     status: response.status,
     message: errorMessage,
     details: errorDetails,
-    headers: Object.fromEntries([...response.headers.entries()])
+    headers: headers
   });
+  
+  // Проверяем количество оставшихся запросов в заголовках
+  const remainingCalls = headers['x-zyla-api-calls-monthly-remaining'];
+  const limitExceeded = headers['x-zyla-api-calls-monthly-limit'];
   
   // Особая обработка для разных статусных кодов
   if (response.status === 401) {
@@ -33,8 +40,9 @@ export const handleApiError = async (response: Response): Promise<never> => {
     console.log("Используем демо-данные из-за ошибки авторизации API");
     throw new Error("Ошибка авторизации API Zylalabs");
   } else if (response.status === 429) {
-    toast.error("Превышен лимит запросов API. Пожалуйста, попробуйте позже.");
-    console.log("Используем демо-данные из-за превышения лимита API");
+    const resetTime = headers['x-zyla-api-calls-reset-time'] || 'неизвестное время';
+    toast.error(`Превышен лимит запросов API. Лимит будет восстановлен через: ${resetTime}.`);
+    console.log(`Используем демо-данные из-за превышения лимита API. Осталось запросов: ${remainingCalls || 0}`);
     throw new Error("Превышен лимит запросов API Zylalabs");
   } else if (response.status === 400) {
     toast.error(`Некорректный запрос: ${errorMessage}`);

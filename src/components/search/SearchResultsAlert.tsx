@@ -1,16 +1,18 @@
 
 import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, RotateCw } from "lucide-react";
 import { getApiKey, ZYLALABS_API_KEY } from "@/services/api/zylalabsConfig";
 import { useSearch } from "@/contexts/SearchContext";
+import { useDemoModeForced } from "@/services/api/mock/mockServiceConfig";
+import { Button } from "@/components/ui/button";
 
 interface SearchResultsAlertProps {
   currentPage: number;
 }
 
 export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({ currentPage }) => {
-  const { isUsingDemoData, apiInfo } = useSearch();
+  const { isUsingDemoData, apiInfo, handleSearch } = useSearch();
   
   // Получаем API ключ для отображения
   const apiKey = getApiKey() || 'Не указан';
@@ -19,24 +21,53 @@ export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({ currentP
   const maskedKey = apiKey !== 'Не указан' && apiKey.length > 10 
     ? `${apiKey.substring(0, 5)}...${apiKey.substring(apiKey.length - 4)}`
     : apiKey;
-    
-  // Если не используются демо-данные, не показываем уведомление
-  if (!isUsingDemoData) return null;
+  
+  // Проверяем, активирован ли принудительный демо-режим
+  const isDemoForced = useDemoModeForced;
+  
+  // Если не используются демо-данные и не активирован принудительный демо-режим, не показываем уведомление
+  if (!isUsingDemoData && !isDemoForced) return null;
+  
+  // Функция для повторной попытки поиска
+  const handleRetry = () => {
+    handleSearch(currentPage, true); // Принудительно выполняем новый поиск
+  };
 
   return (
     <Alert className="mb-4 border-amber-300 bg-amber-50">
       <AlertCircle className="h-4 w-4 text-amber-600" />
-      <AlertTitle className="font-medium text-amber-800">Используются демонстрационные данные</AlertTitle>
+      <AlertTitle className="font-medium text-amber-800">
+        {isDemoForced 
+          ? "Активирован принудительный демо-режим" 
+          : "Используются демонстрационные данные"}
+      </AlertTitle>
       <AlertDescription className="text-amber-700">
-        <p>API Zylalabs временно недоступен (ошибка 503). Это может быть связано с:</p>
-        <ul className="list-disc pl-5 mt-2 space-y-1">
-          <li>Временной недоступностью сервиса Zylalabs</li>
-          <li>Превышением лимита запросов</li>
-          <li>Проблемами с API ключом</li>
-        </ul>
-        <p className="mt-2">Используемый API ключ: {maskedKey}</p>
-        <p className="mt-2 text-xs">Для просмотра оставшихся запросов API, проверьте заголовок ответа 'X-Zyla-API-Calls-Monthly-Remaining'</p>
-        <p className="mt-1 text-xs">Пробуем показать доступные демо-товары для вашего запроса. Попробуйте повторить запрос через несколько минут.</p>
+        {isDemoForced ? (
+          <p>Демо-режим активирован в настройках приложения. API Zylalabs не используется.</p>
+        ) : (
+          <>
+            <p>API Zylalabs временно недоступен. Это может быть связано с:</p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              <li>Временной недоступностью сервиса Zylalabs</li>
+              <li>Превышением лимита запросов</li>
+              <li>Проблемами с API ключом</li>
+            </ul>
+            <p className="mt-2">Используемый API ключ: {maskedKey}</p>
+            {apiInfo && apiInfo.remainingCalls && (
+              <p className="mt-2 text-sm">Оставшиеся запросы API: {apiInfo.remainingCalls}</p>
+            )}
+            <div className="mt-3 flex justify-end">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={handleRetry}
+                className="flex items-center gap-1 text-amber-800 border-amber-400 hover:bg-amber-100"
+              >
+                <RotateCw className="h-3 w-3" /> Повторить запрос
+              </Button>
+            </div>
+          </>
+        )}
       </AlertDescription>
     </Alert>
   );
