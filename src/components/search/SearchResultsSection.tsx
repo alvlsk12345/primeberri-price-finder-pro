@@ -6,7 +6,7 @@ import { useSearch } from "@/contexts/SearchContext";
 import { ApiUsageInfo } from "@/components/search/ApiUsageInfo";
 import { SortButtons } from "../filter/SortButtons";
 import { SortOption } from "@/services/types";
-import { Translate } from "lucide-react";
+import { Languages } from "lucide-react";
 
 export const SearchResultsSection: React.FC = () => {
   const { 
@@ -44,7 +44,7 @@ export const SearchResultsSection: React.FC = () => {
           Результаты поиска{originalQuery ? ` "${originalQuery}"` : ''}
           {wasTranslated && (
             <span className="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded flex items-center inline-flex">
-              <Translate size={14} className="mr-1" /> Запрос переведен
+              <Languages size={14} className="mr-1" /> Запрос переведен
             </span>
           )}:
         </h2>

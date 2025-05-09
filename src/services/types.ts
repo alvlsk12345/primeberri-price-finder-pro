@@ -26,6 +26,7 @@ export type StoreMap = {
 // Тип для параметров поиска с пагинацией
 export type SearchParams = {
   query: string;
+  originalQuery?: string;       // Добавлено поле для оригинального запроса на русском
   page: number;
   language?: string;  // Язык результатов поиска (en, de, fr, и т.д.)
   countries?: string[]; // Массив кодов стран для поиска

@@ -2,7 +2,7 @@
 import React, { KeyboardEvent, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, AlertCircle, Info, Translate } from 'lucide-react';
+import { Search, AlertCircle, Info, Languages } from 'lucide-react';
 import { toast } from "@/components/ui/sonner";
 import { useDemoModeForced } from '@/services/api/mockDataService';
 import { containsCyrillicCharacters } from '@/services/translationService';
@@ -72,7 +72,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
           {isCyrillic && (
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
               <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded flex items-center">
-                <Translate size={12} className="mr-1" /> Будет переведено
+                <Languages size={12} className="mr-1" /> Будет переведено
               </span>
             </div>
           )}
