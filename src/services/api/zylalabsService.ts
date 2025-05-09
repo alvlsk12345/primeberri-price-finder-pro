@@ -14,7 +14,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
     console.log('Принудительное использование демо-данных для запроса:', params.query, 'страница:', params.page);
     // Добавим небольшую задержку для имитации запроса (не более 500мс)
     await new Promise(resolve => setTimeout(resolve, 500));
-    const results = await getMockSearchResults(params.query, params.page);
+    const results = await getMockSearchResults(params.query);
     return {
       ...results,
       totalPages: Math.ceil((results.total || results.products.length) / 9),
@@ -27,7 +27,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
     console.log(`Возвращаем демо-данные вместо реального API-запроса для страницы ${params.page}`);
     // В демонстрационном режиме нет информации от API, 
     // но структура объекта должна соответствовать
-    const mockResults = await getMockSearchResults(params.query, params.page);
+    const mockResults = await getMockSearchResults(params.query);
     // Добавляем пустой объект apiInfo для совместимости
     return {
       ...mockResults,
@@ -40,7 +40,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
     toast.error('Не удалось подключиться к API. Используются демонстрационные данные.');
     
     // Всегда возвращаем демо-данные при ошибках
-    const mockResults = await getMockSearchResults(params.query, params.page);
+    const mockResults = await getMockSearchResults(params.query);
     return {
       ...mockResults,
       totalPages: Math.ceil((mockResults.total || mockResults.products.length) / 9),

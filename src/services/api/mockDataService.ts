@@ -7,8 +7,8 @@ import { EUROPEAN_COUNTRIES } from "@/components/filter/CountryFilter";
  * Генерирует демо-результаты поиска для демонстрации работы приложения
  * когда API недоступно или для тестирования интерфейса
  */
-export const getMockSearchResults = (query: string) => {
-  console.log('Используем демо-данные для запроса:', query);
+export const getMockSearchResults = (query: string, page: number = 1) => {
+  console.log('Используем демо-данные для запроса:', query, 'страница:', page);
   
   // Создаем базовый набор товаров из разных стран для демо-режима
   const baseProducts: Product[] = [
@@ -214,11 +214,39 @@ export const getMockSearchResults = (query: string) => {
     demoProducts.push(extraProduct);
   }
   
+  // Добавляем поддержку пагинации - создаем дополнительные товары для разных страниц
+  if (page > 1) {
+    const pageSpecificProducts = [];
+    for (let i = 0; i < 9; i++) {
+      pageSpecificProducts.push({
+        id: `mock-page-${page}-item-${i}`,
+        title: `[ДЕМО] Страница ${page}, товар ${i + 1}: ${query}`,
+        subtitle: 'Германия',
+        price: `${Math.floor(50 + Math.random() * 200)}.${Math.floor(Math.random() * 99)} €`,
+        currency: 'EUR',
+        image: `https://images.unsplash.com/photo-${1570000000 + (page * 1000) + i}?auto=format&fit=crop&w=300&h=300`,
+        link: `https://amazon.de/product-page-${page}-${i}`,
+        rating: Math.floor(30 + Math.random() * 20) / 10,
+        source: 'Amazon.de',
+        description: `Товар со страницы ${page}. Дополнительное описание для запроса "${query}".`,
+        availability: 'В наличии',
+        brand: `Brand ${page}.${i}`,
+        country: i % 3 === 0 ? 'de' : (i % 3 === 1 ? 'gb' : 'fr')
+      });
+    }
+    demoProducts = pageSpecificProducts;
+  }
+  
+  // Определяем общее количество страниц для демо-данных
+  const totalItems = 50;  // Пусть будет фиксированное общее количество товаров для демо
+  const totalPages = Math.ceil(totalItems / 9);
+  
   toast.info('Демонстрационный режим: используются тестовые данные');
   
   return {
     products: demoProducts,
-    total: demoProducts.length,
+    total: totalItems,
+    totalPages: totalPages,
     isDemo: true
   };
 };
