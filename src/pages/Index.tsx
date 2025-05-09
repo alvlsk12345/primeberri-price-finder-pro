@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { SearchProvider } from "@/contexts/search";
+import { SearchProvider } from "@/contexts/SearchContext";
 import { SearchContainer } from "@/components/search/SearchContainer";
 import { BenefitsSection } from "@/components/BenefitsSection";
 import { PageFooter } from "@/components/PageFooter";

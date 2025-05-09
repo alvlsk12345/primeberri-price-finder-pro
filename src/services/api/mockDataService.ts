@@ -8,10 +8,6 @@ import { toast } from "@/components/ui/sonner";
 export const getMockSearchResults = (query: string) => {
   console.log('Используем мок-данные для запроса:', query);
   
-  // Using more reliable image placeholders that work with CORS
-  const getImageUrl = (text: string) => 
-    `https://dummyimage.com/300x300/e3e3e3/333333&text=${encodeURIComponent(text)}`;
-  
   // Базовые элементы для всех запросов
   const baseProducts = [
     {
@@ -20,7 +16,7 @@ export const getMockSearchResults = (query: string) => {
       subtitle: 'Тестовый товар для демонстрации функционала',
       price: '1999 руб.',
       currency: 'RUB',
-      image: getImageUrl('Demo+1'),
+      image: 'https://via.placeholder.com/300x300?text=Демо+Товар+1',
       link: 'https://example.com/product1',
       rating: 4.5,
       source: 'Demo Shop',
@@ -34,7 +30,7 @@ export const getMockSearchResults = (query: string) => {
       subtitle: 'Альтернативный тестовый товар',
       price: '3499 руб.',
       currency: 'RUB',
-      image: getImageUrl('Demo+2'),
+      image: 'https://via.placeholder.com/300x300?text=Демо+Товар+2',
       link: 'https://example.com/product2',
       rating: 3.8,
       source: 'Example Store',
@@ -51,7 +47,7 @@ export const getMockSearchResults = (query: string) => {
     subtitle: `Товар, связанный с запросом "${query}"`,
     price: '2499 руб.',
     currency: 'RUB',
-    image: getImageUrl(query),
+    image: `https://via.placeholder.com/300x300?text=${encodeURIComponent(query)}`,
     link: 'https://example.com/product-query',
     rating: 4.2,
     source: 'Search Demo',
