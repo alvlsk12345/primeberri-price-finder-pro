@@ -91,7 +91,6 @@ export const useSearchHandlers = (
         setSearchResults(results.products);
         setCachedResults(prev => ({...prev, [page]: results.products}));
         setTotalPages(results.totalPages);
-        toast.success(`Found ${results.products.length} products!`);
       } else {
         // Check if we have results in cache for current search query
         if (cachedResults[1] && cachedResults[1].length > 0 && isSameQuery) {

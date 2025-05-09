@@ -61,6 +61,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
   } catch (error) {
     // If all retries fail, return mock data
     console.error('Не удалось получить данные после всех попыток, используем мок-данные');
+    console.log('Используем мок-данные для запроса:', params.query);
     toast.error('Не удалось подключиться к API поиска. Используем демонстрационные данные.');
     return { ...getMockSearchResults(params.query), fromMock: true };
   }
