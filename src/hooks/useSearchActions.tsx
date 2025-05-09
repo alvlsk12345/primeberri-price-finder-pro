@@ -150,8 +150,10 @@ export function useSearchActions({
       // Save found products to state and cache
       if (results.products.length > 0) {
         setSearchResults(results.products);
-        // Fix: Use correct type for setCachedResults
-        setCachedResults((prev) => ({...prev, [page]: results.products}));
+        // Fixed: Directly create a new object instead of using a function
+        const newCache = { ...cachedResults };
+        newCache[page] = results.products;
+        setCachedResults(newCache);
         setTotalPages(results.totalPages);
         
         if (!results.isDemo) {
@@ -200,8 +202,8 @@ export function useSearchActions({
   const handlePageChange = (page: number) => {
     if (page !== currentPage && page >= 1 && page <= totalPages) {
       console.log(`Changing page from ${currentPage} to ${page}`);
-      // Fix: Use correct type for setPageChangeCount
-      setPageChangeCount((prev) => prev + 1);
+      // Fixed: Directly increment the counter
+      setPageChangeCount(pageChangeCount + 1);
       // Set current page first
       setCurrentPage(page);
       // Then trigger a search with new page
