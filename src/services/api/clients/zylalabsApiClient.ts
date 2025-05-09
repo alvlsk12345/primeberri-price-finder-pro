@@ -10,10 +10,7 @@ import { toast } from "@/components/ui/sonner";
 /**
  * Makes a fetch request to the Zylalabs API with rate limiting and proper error handling
  */
-export const fetchFromZylalabs = async (
-  url: string, 
-  proxyIndex: number = 0
-): Promise<any> => {
+export const fetchFromZylalabs = async (url: string): Promise<any> => {
   return withRateLimiting(async () => {
     // Set up request timeout
     const controller = new AbortController();
@@ -37,7 +34,6 @@ export const fetchFromZylalabs = async (
       
       console.log('Отправляем запрос к Zylalabs API:');
       console.log('URL запроса:', url);
-      console.log('Используемый прокси индекс:', proxyIndex);
       console.log('Заголовок авторизации: Bearer', ZYLALABS_API_KEY ? ZYLALABS_API_KEY.substring(0, 5) + '...' : 'отсутствует');
       
       const response = await fetch(url, {
