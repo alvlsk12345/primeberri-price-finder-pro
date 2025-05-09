@@ -1,13 +1,16 @@
 
 import { SearchParams } from "../types";
 import { handleApiError, handleFetchError } from "./errorHandlerService";
-import { getDemoSearchResults } from "./mock/mockSearchGenerator";
+import { generateMockSearchResults } from "./mock/mockSearchGenerator";
 
 // Базовый URL API
 const BASE_URL = "https://zylalabs.com/api/2033/real+time+product+search+api/1809/search+products";
 
 // Тайм-аут запросов в миллисекундах
 const REQUEST_TIMEOUT = 15000; // 15 секунд
+
+// API ключ для Zylalabs
+export const ZYLALABS_API_KEY = '';
 
 // Получение API-ключа из локального хранилища
 export const getApiKey = (): string | null => {
@@ -46,8 +49,8 @@ export const buildZylalabsUrl = (params: SearchParams): string => {
     }
     
     // Минимальный рейтинг
-    if (params.filters.minRating) {
-      url += `&minRating=${params.filters.minRating}`;
+    if (params.filters.rating) {
+      url += `&minRating=${params.filters.rating}`;
     }
     
     // Бренды (если указаны)
@@ -72,7 +75,7 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
   // Проверка наличия ключа API
   if (!apiKey) {
     console.log('Отсутствует API ключ, используем демо-данные');
-    return getDemoSearchResults(params);
+    return generateMockSearchResults(params.query, params.page);
   }
   
   // Формирование URL запроса
@@ -127,6 +130,6 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
     
     // Возврат демо-данных в случае ошибки
     console.log('Ошибка при запросе к API, используем демо-данные');
-    return getDemoSearchResults(params);
+    return generateMockSearchResults(params.query, params.page);
   }
 };

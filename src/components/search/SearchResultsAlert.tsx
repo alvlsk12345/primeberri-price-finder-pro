@@ -2,7 +2,7 @@
 import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { ZYLALABS_API_KEY } from "@/services/api/zylalabsConfig";
+import { getApiKey } from "@/services/api/zylalabsConfig";
 import { useSearch } from "@/contexts/SearchContext";
 
 interface SearchResultsAlertProps {
@@ -12,10 +12,13 @@ interface SearchResultsAlertProps {
 export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({ currentPage }) => {
   const { isUsingDemoData } = useSearch();
   
-  // Mask the API key for security (show first 5 and last 4 characters)
-  const maskedKey = ZYLALABS_API_KEY.length > 10 
-    ? `${ZYLALABS_API_KEY.substring(0, 5)}...${ZYLALABS_API_KEY.substring(ZYLALABS_API_KEY.length - 4)}`
-    : "Не указан";
+  // Получаем API ключ для отображения
+  const apiKey = getApiKey() || 'Не указан';
+  
+  // Маскируем API ключ для безопасности (показываем первые 5 и последние 4 символа)
+  const maskedKey = apiKey !== 'Не указан' && apiKey.length > 10 
+    ? `${apiKey.substring(0, 5)}...${apiKey.substring(apiKey.length - 4)}`
+    : apiKey;
 
   return (
     <Alert className="mb-4 border-amber-300 bg-amber-50">
