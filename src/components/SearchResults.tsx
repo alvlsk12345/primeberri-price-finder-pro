@@ -1,9 +1,8 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Product } from "@/services/types";
 import { NoSearchResults } from './search/NoSearchResults';
 import { ProductListContainer } from './search/ProductListContainer';
-import { getProductLink } from "@/services/urlService";
 
 type SearchResultsProps = {
   results: Product[];
@@ -12,6 +11,7 @@ type SearchResultsProps = {
   currentPage: number;
   totalPages: number; 
   onPageChange: (page: number) => void;
+  isDemo?: boolean;
 };
 
 export const SearchResults: React.FC<SearchResultsProps> = ({ 
@@ -20,27 +20,16 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   selectedProduct,
   currentPage,
   totalPages,
-  onPageChange
+  onPageChange,
+  isDemo = false
 }) => {
   console.log('SearchResults render:', {
     resultsCount: results?.length || 0,
     currentPage,
     totalPages,
-    hasSelectedProduct: !!selectedProduct
+    hasSelectedProduct: !!selectedProduct,
+    isDemo
   });
-
-  // Проверяем и логируем ссылки на товары при изменении результатов
-  useEffect(() => {
-    if (results && results.length > 0) {
-      console.log('Проверка ссылок на товары:');
-      results.slice(0, 3).forEach((product, index) => {
-        const generatedLink = getProductLink(product);
-        console.log(`Товар ${index + 1}: ${product.title}`);
-        console.log(`  - API ссылка: ${product.link || 'отсутствует'}`);
-        console.log(`  - Сгенерированная ссылка: ${generatedLink}`);
-      });
-    }
-  }, [results]);
 
   // Check if results are available
   if (!results || results.length === 0) {
@@ -80,6 +69,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={handlePageChange}
+        isDemo={isDemo}
       />
     </div>
   );

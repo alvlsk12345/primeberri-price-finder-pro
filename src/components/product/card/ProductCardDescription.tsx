@@ -27,19 +27,19 @@ export const ProductCardDescription: React.FC<ProductCardDescriptionProps> = ({
     <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
       <PopoverTrigger asChild>
         <Button 
-          variant="outline" 
-          size="icon" 
-          className="h-8 w-8 rounded-full bg-white/90 backdrop-blur-sm shadow-md hover:bg-white"
+          variant="ghost" 
+          size="sm" 
+          className="text-xs mt-2 w-full py-1 h-auto flex items-center justify-center gap-1"
           onClick={(e) => {
             onStopPropagation(e);
             setIsPopoverOpen(true);
           }}
         >
           <FileText size={14} />
-          <span className="sr-only">Показать описание</span>
+          <span>Показать описание</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-3 text-sm" side="top">
+      <PopoverContent className="w-72 p-3 text-sm">
         <div className="font-semibold mb-1">Описание товара</div>
         <p className="text-xs">{description}</p>
       </PopoverContent>

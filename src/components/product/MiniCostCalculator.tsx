@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { getExchangeRate } from "@/services/exchangeService";
 import { Product } from "@/services/types";
 
 type MiniCostCalculatorProps = {
@@ -7,40 +8,39 @@ type MiniCostCalculatorProps = {
 };
 
 export const MiniCostCalculator: React.FC<MiniCostCalculatorProps> = ({ product }) => {
+  const [exchangeRate, setExchangeRate] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [parsedPrice, setParsedPrice] = useState(0);
-  const [euroPrice, setEuroPrice] = useState(0);
-  const [russianDeliveryPrice, setRussianDeliveryPrice] = useState(0);
+  const [totalPrice, setTotalPrice] = useState(0);
 
-  // Извлекаем числовое значение из строки цены и конвертируем всё в евро
+  // Извлекаем числовое значение из строкового формата цены
   useEffect(() => {
-    setIsLoading(true);
-    
     const priceMatch = product.price.match(/\d+([.,]\d+)?/);
     const extractedPrice = priceMatch ? parseFloat(priceMatch[0].replace(',', '.')) : 0;
     setParsedPrice(extractedPrice);
-
-    // Определяем валюту из строки цены
-    const currencyMatch = product.price.match(/[€$£₽]/);
-    const currency = currencyMatch ? currencyMatch[0] : "€";
-
-    // Конвертация в евро 
-    let priceInEuro = extractedPrice;
-    if (currency === "$") {
-      priceInEuro = extractedPrice * 0.92; // Примерный курс доллара к евро
-    } else if (currency === "£") {
-      priceInEuro = extractedPrice * 1.18; // Примерный курс фунта к евро
-    } else if (currency === "₽") {
-      priceInEuro = extractedPrice / 105; // Примерный курс рубля к евро
-    }
-    setEuroPrice(priceInEuro);
-
-    // Расчет цены с доставкой в Россию по новой формуле
-    const deliveryPrice = (priceInEuro * 1.05) * 105.92;
-    setRussianDeliveryPrice(deliveryPrice);
-    
-    setIsLoading(false);
   }, [product.price]);
+
+  // Получаем курс валюты
+  useEffect(() => {
+    const fetchExchangeRate = async () => {
+      setIsLoading(true);
+      const rate = await getExchangeRate(product.currency);
+      setExchangeRate(rate);
+      setIsLoading(false);
+    };
+    
+    fetchExchangeRate();
+  }, [product.currency]);
+
+  // Расчет общей стоимости
+  useEffect(() => {
+    if (exchangeRate === null) return;
+    
+    // Рассчитываем общую стоимость в рублях
+    const priceInRub = parsedPrice * exchangeRate;
+    setTotalPrice(priceInRub);
+    
+  }, [parsedPrice, exchangeRate]);
 
   if (isLoading) {
     return (
@@ -53,13 +53,18 @@ export const MiniCostCalculator: React.FC<MiniCostCalculatorProps> = ({ product 
   return (
     <div className="mt-2 p-2 bg-gray-50 rounded-md text-xs">
       <div className="flex justify-between items-center mb-1">
-        <span className="text-gray-600">Цена:</span>
-        <span className="font-semibold">€{euroPrice.toFixed(2)}</span>
+        <span className="text-gray-600">Стоимость:</span>
+        <span className="font-semibold">{product.price}</span>
       </div>
       
       <div className="flex justify-between items-center mb-1">
-        <span className="text-gray-600">С доставкой в РФ:</span>
-        <span className="font-semibold">₽{russianDeliveryPrice.toFixed(2)}</span>
+        <span className="text-gray-600">В рублях:</span>
+        <span className="font-semibold">{totalPrice.toFixed(2)} ₽</span>
+      </div>
+      
+      <div className="flex justify-between items-center text-xs pt-1 border-t border-gray-200">
+        <span>Курс:</span>
+        <span>1 {product.currency} = {exchangeRate} ₽</span>
       </div>
     </div>
   );

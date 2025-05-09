@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { useSearch } from "@/contexts/search";
+import { useSearch } from "@/contexts/SearchContext";
 
 export const NoResultsMessage: React.FC = () => {
   const { hasSearched, searchResults, isLoading } = useSearch();

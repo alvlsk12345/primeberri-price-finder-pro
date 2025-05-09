@@ -7,6 +7,7 @@ import { ProductCardTitle } from './card/ProductCardTitle';
 import { ProductCardRating } from './card/ProductCardRating';
 import { ProductCardPrice } from './card/ProductCardPrice';
 import { ProductCardDescription } from './card/ProductCardDescription';
+import { ProductCardCalculator } from './card/ProductCardCalculator';
 import { ProductCardActions } from './card/ProductCardActions';
 
 interface ProductCardProps {
@@ -24,41 +25,27 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
   return (
     <Card 
       className={`cursor-pointer transition-all hover:shadow-md ${
-        isSelected ? 'ring-2 ring-primary shadow-lg' : 'hover:translate-y-[-4px]'
+        isSelected ? 'ring-2 ring-primary' : ''
       }`}
       onClick={() => onSelect(product)}
     >
       <CardContent className="p-4">
         <div className="flex flex-col items-center">
-          <div className="relative w-full mb-4">
-            {product.subtitle && (
-              <div className="absolute top-0 right-0 bg-primary text-white text-xs px-2 py-1 rounded-bl-md z-10">
-                {product.subtitle}
-              </div>
-            )}
-            
-            <div className="relative group">
-              <ProductImage 
-                image={product.image} 
-                title={product.title} 
-                productId={product.id} 
-              />
-              
-              {product.description && (
-                <div className="absolute top-2 right-2">
-                  <ProductCardDescription 
-                    description={product.description}
-                    onStopPropagation={handleStopPropagation}
-                  />
-                </div>
-              )}
+          <div className="relative w-full">
+            <div className="absolute top-0 right-0 bg-primary text-white text-xs px-2 py-1 rounded-bl-md z-10">
+              {product.subtitle}
             </div>
           </div>
+          
+          <ProductImage 
+            image={product.image} 
+            title={product.title} 
+            productId={product.id} 
+          />
           
           <div className="w-full text-center">
             <ProductCardTitle 
               title={product.title}
-              product={product}
               onStopPropagation={handleStopPropagation}
             />
             
@@ -70,6 +57,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
             <ProductCardPrice 
               price={product.price}
               availability={product.availability}
+            />
+            
+            <ProductCardDescription 
+              description={product.description}
+              onStopPropagation={handleStopPropagation}
+            />
+            
+            <ProductCardCalculator 
+              product={product}
+              onStopPropagation={handleStopPropagation}
             />
           </div>
           
