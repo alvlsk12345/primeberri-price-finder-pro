@@ -103,7 +103,7 @@ export function useSearchExecutor({
         filters: filters,
         requireGermanResults: true, // Add flag to ensure German results
         minResultCount: 12, // Увеличено минимальное количество результатов
-        wasTranslated // Флаг, указывающий, был ли запрос переведен
+        // Удаляем свойство wasTranslated, так как оно не существует в типе SearchParams
       };
       
       // Execute the search
