@@ -14,13 +14,6 @@ export const ProductCardPrice: React.FC<ProductCardPriceProps> = ({
   const [russianDeliveryPrice, setRussianDeliveryPrice] = useState<string>("₽0.00");
 
   useEffect(() => {
-    // Защита от undefined или null
-    if (!price) {
-      setEuroPrice("€0.00");
-      setRussianDeliveryPrice("₽0.00");
-      return;
-    }
-
     // Извлекаем числовое значение из строки цены
     const priceMatch = price.match(/\d+([.,]\d+)?/);
     const numericPrice = priceMatch ? parseFloat(priceMatch[0].replace(',', '.')) : 0;
@@ -57,6 +50,11 @@ export const ProductCardPrice: React.FC<ProductCardPriceProps> = ({
       <div className="text-sm text-gray-700 font-medium">
         Цена с доставкой Вам в Россию: {russianDeliveryPrice}
       </div>
+      {availability && (
+        <div className="text-xs text-gray-500 mt-1">
+          {availability}
+        </div>
+      )}
     </>
   );
 };

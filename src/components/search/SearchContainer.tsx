@@ -1,35 +1,13 @@
-
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SearchForm } from "@/components/SearchForm";
 import { SearchResultsSection } from "@/components/search/SearchResultsSection";
 import { NoResultsMessage } from "@/components/search/NoResultsMessage";
 import { ProductDetailsSection } from "@/components/product/ProductDetailsSection";
 import { useSearch } from "@/contexts/search";
-import { isSearchEngineLink } from "@/services/urlService";
 
 export const SearchContainer: React.FC = () => {
-  const { searchQuery, setSearchQuery, handleSearch, isLoading, searchResults } = useSearch();
-
-  // Добавляем отладочную информацию при изменении результатов поиска
-  useEffect(() => {
-    if (searchResults && searchResults.length > 0) {
-      // Проверяем ссылки на поисковые системы
-      const searchLinksCount = searchResults.filter(product => 
-        product.link && isSearchEngineLink(product.link)
-      ).length;
-      
-      console.log(`Получены результаты поиска: всего ${searchResults.length}, из них ${searchLinksCount} с поисковыми ссылками`);
-      
-      // Показываем детали для первых двух результатов
-      searchResults.slice(0, 2).forEach((product, idx) => {
-        console.log(`Товар ${idx + 1}: ${product.title}`);
-        console.log(`  Источник: ${product.source}`);
-        console.log(`  Ссылка: ${product.link || 'отсутствует'}`);
-        console.log(`  Это поисковая ссылка: ${product.link ? isSearchEngineLink(product.link) : 'нет ссылки'}`);
-      });
-    }
-  }, [searchResults]);
+  const { searchQuery, setSearchQuery, handleSearch, isLoading } = useSearch();
 
   return (
     <Card className="max-w-4xl mx-auto shadow-md">

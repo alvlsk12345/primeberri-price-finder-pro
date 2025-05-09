@@ -4,13 +4,11 @@ import { Product, ProductFilters } from "@/services/types";
 import { searchProducts } from "@/services/productService";
 import { toast } from "sonner";
 import { EUROPEAN_COUNTRIES } from "@/components/filter/CountryFilter";
-import { SortOption } from "@/components/sorting/SortingMenu";
 
 export const useSearchHandlers = (
   searchQuery: string,
   lastSearchQuery: string,
   filters: ProductFilters,
-  sortOption: SortOption,
   cachedResults: {[page: number]: Product[]},
   currentPage: number,
   setSelectedProduct: (product: Product | null) => void,
@@ -23,9 +21,7 @@ export const useSearchHandlers = (
   setHasSearched: (hasSearched: boolean) => void,
   setIsLoading: (isLoading: boolean) => void,
   setApiErrorMode: (errorMode: boolean) => void,
-  setPageChangeCount: React.Dispatch<React.SetStateAction<number>>,
-  setFilters: React.Dispatch<React.SetStateAction<ProductFilters>>,
-  setSortOption: React.Dispatch<React.SetStateAction<SortOption>>
+  setPageChangeCount: React.Dispatch<React.SetStateAction<number>>
 ) => {
   // Product selection handler - memoized
   const handleProductSelect = useCallback((product: Product) => {
@@ -51,12 +47,7 @@ export const useSearchHandlers = (
       const isSameQuery = queryToUse === lastSearchQuery;
       if (!forceNewSearch && isSameQuery && cachedResults[page]) {
         console.log(`Using cached results for page ${page}`);
-        let results = cachedResults[page];
-        
-        // Apply sorting to cached results if needed
-        results = applySorting(results, sortOption);
-        
-        setSearchResults(results);
+        setSearchResults(cachedResults[page]);
         setCurrentPage(page);
         setIsLoading(false);
         return;
@@ -97,17 +88,13 @@ export const useSearchHandlers = (
       
       // Save found products to state and cache
       if (results.products.length > 0) {
-        // Apply sorting before setting results
-        const sortedProducts = applySorting(results.products, sortOption);
-        
-        setSearchResults(sortedProducts);
+        setSearchResults(results.products);
         setCachedResults(prev => ({...prev, [page]: results.products}));
         setTotalPages(results.totalPages);
       } else {
         // Check if we have results in cache for current search query
         if (cachedResults[1] && cachedResults[1].length > 0 && isSameQuery) {
-          const sortedCachedProducts = applySorting(cachedResults[1], sortOption);
-          setSearchResults(sortedCachedProducts);
+          setSearchResults(cachedResults[1]);
           setCurrentPage(1);
           toast.info('Error loading page, showing first page results');
         } else {
@@ -128,51 +115,19 @@ export const useSearchHandlers = (
       // If error occurs, check if we have cached results
       if (cachedResults[currentPage] && cachedResults[currentPage].length > 0) {
         // If error occurred when changing pages, use current cached results
-        const sortedCachedProducts = applySorting(cachedResults[currentPage], sortOption);
-        setSearchResults(sortedCachedProducts);
+        setSearchResults(cachedResults[currentPage]);
       } else if (cachedResults[1] && cachedResults[1].length > 0) {
         // If no results for current page, return to first page
-        const sortedFirstPageProducts = applySorting(cachedResults[1], sortOption);
-        setSearchResults(sortedFirstPageProducts);
+        setSearchResults(cachedResults[1]);
         setCurrentPage(1);
         toast.info('Returning to first page due to error');
       }
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, lastSearchQuery, filters, sortOption, cachedResults, currentPage, setSearchResults, setCurrentPage, 
+  }, [searchQuery, lastSearchQuery, filters, cachedResults, currentPage, setSearchResults, setCurrentPage, 
       setTotalPages, setCachedResults, setOriginalQuery, setLastSearchQuery, setHasSearched, 
       setIsLoading, setApiErrorMode]);
-  
-  // Function to apply sorting to products
-  const applySorting = (products: Product[], sort: SortOption): Product[] => {
-    if (!products || products.length === 0) return products;
-    
-    const productsToSort = [...products];
-    
-    switch (sort) {
-      case 'price-asc':
-        return productsToSort.sort((a, b) => {
-          const priceA = (a as any)._numericPrice || 0;
-          const priceB = (b as any)._numericPrice || 0;
-          return priceA - priceB;
-        });
-      case 'price-desc':
-        return productsToSort.sort((a, b) => {
-          const priceA = (a as any)._numericPrice || 0;
-          const priceB = (b as any)._numericPrice || 0;
-          return priceB - priceA;
-        });
-      case 'popularity-desc':
-        return productsToSort.sort((a, b) => {
-          const ratingA = a.rating || 0;
-          const ratingB = b.rating || 0;
-          return ratingB - ratingA;
-        });
-      default:
-        return productsToSort;
-    }
-  };
   
   // Page change handler - memoized
   const handlePageChange = useCallback((page: number) => {
@@ -189,30 +144,14 @@ export const useSearchHandlers = (
   
   // Filter change handler - memoized
   const handleFilterChange = useCallback((newFilters: ProductFilters) => {
-    console.log("Applying filters:", newFilters);
-    // Update filters first, then trigger search
-    setFilters(newFilters);
     setCurrentPage(1); // Reset to first page when filters change
     handleSearch(1, true);
-  }, [handleSearch, setCurrentPage, setFilters]);
-  
-  // Sort change handler - memoized
-  const handleSortChange = useCallback((option: SortOption) => {
-    console.log("Applying sort option:", option);
-    setSortOption(option);
-    
-    // FIX: Get current results using the callback pattern rather than referencing undefined variable
-    setSearchResults(currentResults => {
-      // Apply sorting to the current results
-      return applySorting([...currentResults], option);
-    });
-  }, [setSortOption, setSearchResults]);
+  }, [handleSearch, setCurrentPage]);
 
   return {
     handleSearch,
     handleProductSelect,
     handlePageChange,
-    handleFilterChange,
-    handleSortChange
+    handleFilterChange
   };
 };

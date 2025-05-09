@@ -7,6 +7,7 @@ import { ProductCardTitle } from './card/ProductCardTitle';
 import { ProductCardRating } from './card/ProductCardRating';
 import { ProductCardPrice } from './card/ProductCardPrice';
 import { ProductCardDescription } from './card/ProductCardDescription';
+import { ProductCardCalculator } from './card/ProductCardCalculator';
 import { ProductCardActions } from './card/ProductCardActions';
 
 interface ProductCardProps {
@@ -58,7 +59,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
           <div className="w-full text-center">
             <ProductCardTitle 
               title={product.title}
-              product={product}
               onStopPropagation={handleStopPropagation}
             />
             
@@ -70,6 +70,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
             <ProductCardPrice 
               price={product.price}
               availability={product.availability}
+            />
+            
+            <ProductCardCalculator 
+              product={product}
+              onStopPropagation={handleStopPropagation}
             />
           </div>
           
