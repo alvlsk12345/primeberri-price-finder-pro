@@ -31,9 +31,31 @@ export const createProductSlug = (name: string): string => {
     .replace(/^-|-$/g, ''); // Удаляем тире в начале и конце
 };
 
-// Функция для получения идентификатора продукта из ссылки
+// Функция для получения идентификатора продукта из ссылки или генерации кода товара
 export const extractProductId = (link: string, fallbackId: string): string => {
-  // Пытаемся найти ID в соответствии с разными форматами ссылок
+  // Конкретные шаблоны для разных магазинов
+  // Adidas: /fussballliebe-training-ball/IN9366.html
+  const adidasPattern = /\/([^\/]+)\/([A-Z0-9]{6})\.html/;
+  const adidasMatch = link.match(adidasPattern);
+  if (adidasMatch && adidasMatch[2]) {
+    return adidasMatch[2]; // Возвращаем код продукта, например IN9366
+  }
+  
+  // Nike: /t/air-force-1-07-shoes-WrLlWX/CW2288-111
+  const nikePattern = /\/t\/[^\/]+\/([A-Z0-9]+-[0-9]+)/;
+  const nikeMatch = link.match(nikePattern);
+  if (nikeMatch && nikeMatch[1]) {
+    return nikeMatch[1];
+  }
+  
+  // Amazon: /dp/B07PXGQC1Q/
+  const amazonPattern = /\/dp\/([A-Z0-9]{10})/;
+  const amazonMatch = link.match(amazonPattern);
+  if (amazonMatch && amazonMatch[1]) {
+    return amazonMatch[1];
+  }
+  
+  // Общие шаблоны для других магазинов
   const patterns = [
     /\/([A-Za-z0-9]{10})\/?(\?|$)/, // Amazon ASIN
     /-([A-Za-z0-9]{7,12})\.html/, // Nike/Zalando
@@ -73,14 +95,17 @@ export const getProductLink = (product: Product): string => {
   const productSlug = createProductSlug(product.title);
   
   // Формируем URL с правильными параметрами в зависимости от магазина
-  if (domain === 'amazon.com') {
+  if (domain.includes('amazon')) {
     return `https://${domain}/dp/${productId}`;
-  } else if (domain === 'ebay.com') {
+  } else if (domain.includes('ebay')) {
     return `https://${domain}/itm/${productId}`;
-  } else if (domain === 'nike.com') {
+  } else if (domain.includes('nike')) {
     // Для Nike используем специальный формат
     return `https://${domain}/t/${productSlug}/${productId}.html`;
-  } else if (domain === 'zalando.eu') {
+  } else if (domain.includes('adidas')) {
+    // Для Adidas используем формат как в примере
+    return `https://${domain}/${productSlug}/${productId}.html`;
+  } else if (domain.includes('zalando')) {
     // Для Zalando
     return `https://${domain}/item/${productSlug}-${productId}.html`;
   } else {

@@ -48,7 +48,7 @@ export const ProductCardPrice: React.FC<ProductCardPriceProps> = ({
         {euroPrice}
       </div>
       <div className="text-sm text-gray-700 font-medium">
-        Цена с доставкой в Россию: {russianDeliveryPrice}
+        Цена с доставкой Вам в Россию: {russianDeliveryPrice}
       </div>
       {availability && (
         <div className="text-xs text-gray-500 mt-1">

@@ -41,27 +41,6 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
   return (
     <div className="flex w-full mt-3 gap-2 flex-col">
       <div className="flex gap-2 w-full">
-        {!isSelected ? (
-          <Button 
-            variant="outline" 
-            className="flex-1"
-            onClick={(e) => {
-              onStopPropagation(e);
-              onSelect(product);
-            }}
-          >
-            Выбрать
-          </Button>
-        ) : (
-          <Button 
-            variant="default"
-            className="flex-1 opacity-0 pointer-events-none"
-          >
-            {/* Скрытая кнопка для сохранения расположения элементов */}
-            Выбрано
-          </Button>
-        )}
-        
         <ProductDetailsDialog product={product} />
       </div>
       
@@ -72,16 +51,16 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
           className="flex-1 h-8"
           onClick={handleCopyLink}
         >
-          <Copy size={16} className="mr-1" /> Скопировать
+          <Copy size={16} className="mr-1" /> Скопировать ссылку
         </Button>
         
         <Button 
           variant="default" 
           size="sm" 
-          className="flex-1 h-8 text-xs px-1"
+          className="flex-1 h-8 text-xs px-2"
           onClick={handleGoToPrimeberri}
         >
-          <ExternalLink size={16} className="mr-1" /> Primeberri
+          <ExternalLink size={16} className="mr-1" /> Заказать на Primeberri
         </Button>
       </div>
     </div>
