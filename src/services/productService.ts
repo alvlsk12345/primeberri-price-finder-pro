@@ -8,9 +8,9 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
   try {
     console.log('Начинаем поиск товаров по запросу:', params.query, 'страница:', params.page);
     
-    // Установка таймаута для предотвращения зависания
+    // Установка таймаута для предотвращения зависания (увеличено до 20 секунд)
     const timeoutPromise = new Promise<{products: [], totalPages: number, isDemo: true, apiInfo: Record<string, string>}>((_, reject) => {
-      setTimeout(() => reject(new Error('Timeout')), 5000);
+      setTimeout(() => reject(new Error('Timeout')), 20000);
     });
     
     // Получаем данные от Zylalabs API с учетом пагинации и добавляем таймаут

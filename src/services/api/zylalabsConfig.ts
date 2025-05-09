@@ -1,3 +1,4 @@
+
 import { SearchParams } from "../types";
 import { handleApiError, handleFetchError } from "./errorHandlerService";
 import { generateMockSearchResults } from "./mock/mockSearchGenerator";
@@ -5,8 +6,8 @@ import { generateMockSearchResults } from "./mock/mockSearchGenerator";
 // Базовый URL API
 const BASE_URL = "https://zylalabs.com/api/2033/real+time+product+search+api/1809/search+products";
 
-// Увеличенный таймаут запросов в миллисекундах (с 15 до 30 секунд)
-const REQUEST_TIMEOUT = 30000; // 30 секунд
+// Увеличенный таймаут запросов в миллисекундах (с 30 до 45 секунд)
+const REQUEST_TIMEOUT = 45000; // 45 секунд
 
 // API ключ для Zylalabs
 export const ZYLALABS_API_KEY = '8112|xU0WDZhKkWVo7rczutXwzGKzEwBtNPhHbsAYbtrM';
@@ -35,7 +36,8 @@ export const buildZylalabsUrl = (params: SearchParams): string => {
   const query = encodeURIComponent(params.query);
   
   // Формирование базового URL с параметрами
-  let url = `${BASE_URL}?query=${query}&source=merchant`;
+  // Используем 'q' вместо 'query' в соответствии с API
+  let url = `${BASE_URL}?q=${query}&language=en`;
   
   // Добавляем номер страницы, если указан
   if (params.page && params.page > 1) {

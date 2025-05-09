@@ -82,7 +82,7 @@ export function useSearchExecutor({
         query: searchText,
         originalQuery: queryToUse, // Сохраняем оригинальный запрос
         page: page,
-        language: 'en', // Always use English for best results
+        language: 'en', // Теперь язык передается в API
         countries: searchCountries,
         filters: filters,
         requireGermanResults: true, // Add flag to ensure German results
