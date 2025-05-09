@@ -100,11 +100,14 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
       // Кодируем параметры запроса
       const encodedQuery = encodeURIComponent(params.query);
       const page = params.page || 1;
-      // Устанавливаем страну Россия и русский язык для получения результатов на русском
-      const country = 'ru';
-      const language = 'ru';
       
-      // Добавляем параметр source=merchant, чтобы получать карточки из конечных магазинов
+      // Устанавливаем страны Европы (Великобритания, Германия, Франция) и английский язык
+      // 'gb' - Великобритания, 'de' - Германия, 'fr' - Франция
+      // В Zylalabs API нельзя указать несколько стран, поэтому выбираем приоритетные европейские страны
+      const country = params.country || 'gb'; // По умолчанию Великобритания
+      const language = params.language || 'en'; // Английский язык
+      
+      // Используем параметр source=merchant для получения карточек из конечных магазинов
       const apiUrl = `https://zylalabs.com/api/2033/real+time+product+search+api/1809/search+products?q=${encodedQuery}&country=${country}&language=${language}&page=${page}&source=merchant`;
       
       console.log('URL запроса:', apiUrl);

@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useCallback, useContext, useEffect } from 'react';
 import { Product, ProductFilters } from "@/services/types";
 import { searchProducts } from "@/services/productService";
@@ -19,6 +18,8 @@ type SearchContextType = {
   originalQuery: string;
   lastSearchQuery: string;
   hasSearched: boolean;
+  selectedCountry: string;
+  setSelectedCountry: (country: string) => void;
   handleSearch: (page?: number, forceNewSearch?: boolean) => Promise<void>;
   handleProductSelect: (product: Product) => void;
   handlePageChange: (page: number) => void;
@@ -42,6 +43,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [lastSearchQuery, setLastSearchQuery] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [pageChangeCount, setPageChangeCount] = useState(0);
+  const [selectedCountry, setSelectedCountry] = useState('gb'); // Default to GB (United Kingdom)
 
   // Memoized search function
   const handleSearch = useCallback(async (page: number = 1, forceNewSearch: boolean = false) => {
@@ -84,6 +86,8 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const results = await searchProducts({
         query: queryToUse,
         page: page,
+        country: selectedCountry,
+        language: 'en', // Always use English for best results
         filters: filters
       });
       
@@ -124,7 +128,7 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, lastSearchQuery, filters, cachedResults, currentPage]);
+  }, [searchQuery, lastSearchQuery, filters, cachedResults, currentPage, selectedCountry]);
 
   // Product selection handler
   const handleProductSelect = (product: Product) => {
@@ -170,6 +174,8 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     originalQuery,
     lastSearchQuery,
     hasSearched,
+    selectedCountry,
+    setSelectedCountry,
     handleSearch,
     handleProductSelect,
     handlePageChange,

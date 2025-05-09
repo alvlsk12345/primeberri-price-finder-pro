@@ -26,8 +26,8 @@ export type StoreMap = {
 export type SearchParams = {
   query: string;
   page: number;
-  country?: string;
-  language?: string;
+  country?: string;   // Код страны (gb, de, fr, и т.д.)
+  language?: string;  // Язык результатов поиска (en, de, fr, и т.д.)
   filters?: ProductFilters;
 };
 
