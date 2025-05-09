@@ -5,6 +5,11 @@ import { Product } from '../types';
  * Извлекает числовое значение цены из строкового представления
  */
 export const extractNumericPrice = (priceString: string): number | undefined => {
+  // Защита от undefined или null
+  if (!priceString) {
+    return undefined;
+  }
+  
   // Ищем все числовые значения в строке (включая десятичные)
   const matches = priceString.match(/(\d+[.,]?\d*)/g);
   
@@ -39,7 +44,8 @@ export const formatSingleProduct = async (
     const currency = product.currency || 'USD';
     
     // Извлекаем числовое значение цены для фильтрации
-    const _numericPrice = extractNumericPrice(price);
+    const numericPrice = extractNumericPrice(price);
+    const _numericPrice = numericPrice !== undefined ? numericPrice : 0;
     
     // URL изображения
     let image = '';

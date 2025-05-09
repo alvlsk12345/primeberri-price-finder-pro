@@ -4,94 +4,82 @@ import {
   REQUEST_TIMEOUT, 
   getApiBaseUrl 
 } from "../zylalabsConfig";
-import { withRateLimiting, rateLimiter } from "../rateLimiterService";
+import { handleApiError } from "../errorHandlerService";
 import { toast } from "@/components/ui/sonner";
 
 /**
- * Makes a fetch request to the Zylalabs API with rate limiting and proper error handling
+ * Makes a fetch request to the Zylalabs API with proper error handling
  */
-export const fetchFromZylalabs = async (url: string): Promise<any> => {
-  return withRateLimiting(async () => {
-    // Set up request timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+export const fetchFromZylalabs = async (
+  url: string, 
+  proxyIndex: number = 0
+): Promise<any> => {
+  // Set up request timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+  
+  try {
+    // Set up request headers
+    const headers: HeadersInit = {
+      'Authorization': `Bearer ${ZYLALABS_API_KEY}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Cache-Control': 'no-cache'
+    };
     
-    try {
-      // Log current API usage to console
-      const usageStats = rateLimiter.getUsageStats();
-      console.log('API Usage Stats:', {
-        'Minute': `${usageStats.minuteUsage}/${usageStats.minuteLimit}`,
-        'Month': `${usageStats.monthlyUsage}/${usageStats.monthlyLimit}`,
-        'Remaining': usageStats.remainingMonthly
-      });
+    // Add any additional headers needed for proxy
+    if (proxyIndex > 0) {
+      headers['X-Requested-With'] = 'XMLHttpRequest';
+    }
+    
+    console.log('Отправляемые заголовки:', Object.keys(headers).join(', '));
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: headers,
+      signal: controller.signal,
+      mode: 'cors',
+      credentials: 'omit'
+    });
+    
+    // Clear timeout once request is complete
+    clearTimeout(timeoutId);
+    
+    // Log response status
+    console.log(`API response status: ${response.status}, ok: ${response.ok}`);
+    
+    // Handle error responses
+    if (!response.ok) {
+      // Try to get the full error text for diagnostics
+      const responseText = await response.text();
+      console.error("API Error Response Text:", responseText, "Status:", response.status);
       
-      // Set up request headers - exactly matching Postman configuration
-      const headers: HeadersInit = {
-        'Authorization': `Bearer ${ZYLALABS_API_KEY}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      };
-      
-      console.log('Отправляем запрос к Zylalabs API:');
-      console.log('URL запроса:', url);
-      console.log('Заголовок авторизации: Bearer', ZYLALABS_API_KEY ? ZYLALABS_API_KEY.substring(0, 5) + '...' : 'отсутствует');
-      
-      const response = await fetch(url, {
-        method: 'GET', // Using GET as specified in Postman collection
-        headers: headers,
-        signal: controller.signal,
-        mode: 'cors',
-        credentials: 'omit'
-      });
-      
-      // Clear timeout once request is complete
-      clearTimeout(timeoutId);
-      
-      // Log response status
-      console.log(`API response status: ${response.status}, ok: ${response.ok}`);
-      
-      // Handle error responses
-      if (!response.ok) {
-        // Try to get the full error text for diagnostics
-        const responseText = await response.text();
-        console.error("API Error Response:", responseText);
+      try {
+        // Attempt to parse response as JSON for more detailed error info
+        const errorData = JSON.parse(responseText);
+        console.error("API Error Data:", errorData);
         
-        try {
-          // Attempt to parse response as JSON for more detailed error info
-          const errorData = JSON.parse(responseText);
-          console.error("API Error Data:", errorData);
-          
-          // Если это ошибка от Zylalabs API с полем message и success=false
-          if (errorData.success === false && errorData.message) {
-            console.error('API error message:', errorData.message);
-            throw new Error(`API error: ${errorData.message}`);
-          }
-        } catch (e) {
-          // If parsing as JSON fails, use text as is
-          console.error('Не удалось распарсить ошибку как JSON:', e);
+        // Check for usage limit exceeded
+        if (errorData.message && (
+          errorData.message.includes('exceeded the allowed limit') || 
+          errorData.message.includes('limit exceeded')
+        )) {
+          console.error('API usage limit exceeded');
+          toast.error('Превышен лимит запросов к API. Пожалуйста, обратитесь в поддержку.');
+          throw new Error('API usage limit exceeded');
         }
-        
-        throw new Error(`API error: ${response.status}`);
+      } catch (e) {
+        // If parsing as JSON fails, use text as is
       }
       
-      // Parse the successful response
-      const jsonResponse = await response.json();
-      console.log('API response successfully parsed to JSON:', 
-        jsonResponse.success ? 'success=true' : 'success=false', 
-        jsonResponse.response ? 'response present' : 'no response');
-      
-      // Вывод первых 300 символов ответа для отладки
-      console.log('API response format:', JSON.stringify(jsonResponse).substring(0, 300) + '...');
-      
-      return jsonResponse;
-    } catch (e) {
-      console.error('Ошибка при выполнении запроса к API:', e);
-      clearTimeout(timeoutId);
-      throw e;
-    } finally {
-      clearTimeout(timeoutId);
+      throw new Error(`API error: ${response.status}`);
     }
-  });
+    
+    // Parse the successful response
+    return await response.json();
+  } finally {
+    clearTimeout(timeoutId);
+  }
 };
 
 /**
@@ -100,11 +88,4 @@ export const fetchFromZylalabs = async (url: string): Promise<any> => {
 export const getZylalabsApiUrl = (urlPath: string, proxyIndex: number = 0): string => {
   const baseUrl = getApiBaseUrl(proxyIndex);
   return `${baseUrl}${urlPath}`;
-};
-
-/**
- * Get current API usage statistics
- */
-export const getApiUsageStats = () => {
-  return rateLimiter.getUsageStats();
 };

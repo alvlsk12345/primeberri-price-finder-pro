@@ -3,6 +3,8 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Product, ProductFilters } from "@/services/types";
 import { SearchContext } from './SearchContext';
 import { useSearchHandlers } from './useSearchHandlers';
+import { SortOption } from "@/components/sorting/SortingMenu";
+import { applySorting } from './utils/sortingUtils';
 
 // Provider component
 export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -20,16 +22,20 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [hasSearched, setHasSearched] = useState(false);
   const [pageChangeCount, setPageChangeCount] = useState(0);
   const [apiErrorMode, setApiErrorMode] = useState(false);
+  const [sortOption, setSortOption] = useState<SortOption>('default');
 
+  // Get search handlers
   const { 
     handleSearch,
     handleProductSelect,
     handlePageChange,
-    handleFilterChange
+    handleFilterChange,
+    handleSortChange: baseHandleSortChange
   } = useSearchHandlers(
     searchQuery,
     lastSearchQuery,
     filters,
+    sortOption,
     cachedResults,
     currentPage,
     setSelectedProduct,
@@ -42,8 +48,20 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setHasSearched,
     setIsLoading,
     setApiErrorMode,
-    setPageChangeCount
+    setPageChangeCount,
+    setFilters,
+    setSortOption
   );
+  
+  // Create a wrapper for handleSortChange that has access to the current searchResults
+  const handleSortChange = useCallback((option: SortOption) => {
+    console.log("Applying sort option:", option);
+    setSortOption(option);
+    
+    // Apply sorting to the current results
+    const sortedResults = applySorting([...searchResults], option);
+    setSearchResults(sortedResults);
+  }, [setSortOption, setSearchResults, searchResults]);
 
   // Effect for debugging page changes
   useEffect(() => {
@@ -66,10 +84,13 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     lastSearchQuery,
     hasSearched,
     apiErrorMode,
+    sortOption,
+    setSortOption,
     handleSearch,
     handleProductSelect,
     handlePageChange,
     handleFilterChange,
+    handleSortChange,
   }), [
     searchQuery, 
     isLoading, 
@@ -81,11 +102,13 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     originalQuery, 
     lastSearchQuery, 
     hasSearched, 
-    apiErrorMode, 
+    apiErrorMode,
+    sortOption,
     handleSearch, 
     handleProductSelect, 
     handlePageChange, 
-    handleFilterChange
+    handleFilterChange,
+    handleSortChange
   ]);
 
   return <SearchContext.Provider value={value}>{children}</SearchContext.Provider>;

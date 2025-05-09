@@ -14,11 +14,10 @@ export const FilterTrigger: React.FC<FilterTriggerProps> = ({
 }) => {
   return (
     <PopoverTrigger asChild>
-      <Button variant="outline" className="flex items-center gap-2">
+      <Button variant="outline" className="flex items-center justify-center w-10 p-0 h-10">
         <Filter size={16} />
-        <span>Фильтры</span>
         {activeFiltersCount > 0 && (
-          <Badge variant="secondary" className="ml-1">{activeFiltersCount}</Badge>
+          <Badge variant="secondary" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">{activeFiltersCount}</Badge>
         )}
       </Button>
     </PopoverTrigger>

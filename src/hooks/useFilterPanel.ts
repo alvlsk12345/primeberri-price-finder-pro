@@ -20,6 +20,13 @@ export const useFilterPanel = (
   // Количество активных фильтров
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
   
+  // ВАЖНО: Все хуки useEffect должны быть в одном и том же порядке при каждом рендере
+  
+  // Обновляем локальные фильтры при изменении входящих фильтров
+  useEffect(() => {
+    setLocalFilters(filters);
+  }, [filters]);
+  
   // Вычисляем уникальные источники и бренды из результатов
   useEffect(() => {
     if (!results || results.length === 0) return;
@@ -53,22 +60,19 @@ export const useFilterPanel = (
     setAvailableSources(sources);
     setAvailableBrands(brands);
     setPriceRange([minPrice, maxPrice]);
-    
-    // Сбрасываем локальные фильтры к текущим основным фильтрам
-    setLocalFilters(filters);
-  }, [results, filters]);
+  }, [results]);
   
   // Подсчитываем количество активных фильтров
   useEffect(() => {
     let count = 0;
-    if (filters.minPrice) count++;
-    if (filters.maxPrice) count++;
-    if (filters.brands && filters.brands.length > 0) count++;
-    if (filters.sources && filters.sources.length > 0) count++;
-    if (filters.countries && filters.countries.length > 0) count++;
-    if (filters.rating) count++;
+    if (localFilters.minPrice) count++;
+    if (localFilters.maxPrice) count++;
+    if (localFilters.brands && localFilters.brands.length > 0) count++;
+    if (localFilters.sources && localFilters.sources.length > 0) count++;
+    if (localFilters.countries && localFilters.countries.length > 0) count++;
+    if (localFilters.rating) count++;
     setActiveFiltersCount(count);
-  }, [filters]);
+  }, [localFilters]);
   
   // Обработчик изменения слайдера цен
   const handlePriceChange = (values: number[]) => {
@@ -146,6 +150,7 @@ export const useFilterPanel = (
   
   // Применение фильтров
   const applyFilters = () => {
+    console.log("Applying filters from FilterPanel:", localFilters);
     onFilterChange(localFilters);
   };
   

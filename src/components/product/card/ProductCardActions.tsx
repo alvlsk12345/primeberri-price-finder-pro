@@ -1,11 +1,10 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Product } from "@/services/types";
-import { ProductDetailsDialog } from '../ProductDetailsDialog';
 import { toast } from "@/components/ui/sonner";
 import { Copy, ExternalLink } from "lucide-react";
-import { getProductLink } from "@/services/urlService";
+import { getProductLink, isSearchEngineLink } from "@/services/urlService";
 
 interface ProductCardActionsProps {
   product: Product;
@@ -20,6 +19,19 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
   onSelect,
   onStopPropagation
 }) => {
+  // Проверяем ссылку на товар при монтировании компонента
+  useEffect(() => {
+    const originalLink = product.link || '';
+    const processedLink = getProductLink(product);
+    
+    // Проверяем, является ли оригинальная ссылка поисковой
+    if (originalLink && isSearchEngineLink(originalLink)) {
+      console.log(`Поисковая ссылка заменена для: ${product.title}`);
+      console.log(`  - Оригинал: ${originalLink.substring(0, 100)}...`);
+      console.log(`  - Замена на: ${processedLink}`);
+    }
+  }, [product]);
+
   const handleCopyLink = (e: React.MouseEvent) => {
     e.preventDefault();
     onStopPropagation(e);
@@ -27,6 +39,19 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
     const productLink = getProductLink(product);
     navigator.clipboard.writeText(productLink);
     toast.success('Ссылка на товар скопирована!');
+    
+    console.log('Скопирована ссылка:', productLink);
+  };
+  
+  const handleVisitProduct = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onStopPropagation(e);
+    
+    const productLink = getProductLink(product);
+    window.open(productLink, '_blank', 'noopener,noreferrer');
+    toast.success('Переход на страницу товара');
+    
+    console.log('Переход по ссылке:', productLink);
   };
   
   const handleGoToPrimeberri = (e: React.MouseEvent) => {
@@ -41,10 +66,6 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
   return (
     <div className="flex w-full mt-3 gap-2 flex-col">
       <div className="flex gap-2 w-full">
-        <ProductDetailsDialog product={product} />
-      </div>
-      
-      <div className="flex gap-2 w-full">
         <Button 
           variant="outline" 
           size="sm" 
@@ -55,14 +76,23 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
         </Button>
         
         <Button 
-          variant="default" 
+          variant="outline" 
           size="sm" 
-          className="flex-1 h-8 text-xs px-2"
-          onClick={handleGoToPrimeberri}
+          className="flex-1 h-8"
+          onClick={handleVisitProduct}
         >
-          <ExternalLink size={16} className="mr-1" /> Заказать на Primeberri
+          <ExternalLink size={16} className="mr-1" /> Открыть
         </Button>
       </div>
+      
+      <Button 
+        variant="default" 
+        size="sm" 
+        className="flex-1 h-8 text-xs px-2 mt-2"
+        onClick={handleGoToPrimeberri}
+      >
+        <ExternalLink size={16} className="mr-1" /> Заказать на Primeberri
+      </Button>
     </div>
   );
 };

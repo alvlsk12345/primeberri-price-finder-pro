@@ -20,9 +20,10 @@ import { ProductDetailsSpecifications } from "./details/ProductDetailsSpecificat
 
 interface ProductDetailsDialogProps {
   product: Product;
+  buttonText?: string;
 }
 
-export const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({ product }) => {
+export const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({ product, buttonText }) => {
   // Состояние для открытия диалога
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
@@ -51,14 +52,15 @@ export const ProductDetailsDialog: React.FC<ProductDetailsDialogProps> = ({ prod
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button 
-          variant="secondary" 
-          size="icon" 
+          variant={buttonText ? "secondary" : "secondary"} 
+          size={buttonText ? "sm" : "icon"} 
+          className={buttonText ? "text-xs h-8 w-full" : ""}
           onClick={(e) => {
             e.stopPropagation();
             setIsOpen(true);
           }}
         >
-          <Info size={16} />
+          {buttonText ? buttonText : <Info size={16} />}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
