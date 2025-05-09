@@ -56,6 +56,13 @@ export const checkApiKey = (): boolean => {
     console.error('API ключ Zylalabs не настроен');
     return false;
   }
+  
+  // Проверка на минимальную длину и формат
+  if (ZYLALABS_API_KEY.length < 10 || !ZYLALABS_API_KEY.includes('|')) {
+    console.error('API ключ Zylalabs имеет неверный формат. Ожидается формат "id|key"');
+    return false;
+  }
+  
   return true;
 };
 

@@ -1,5 +1,5 @@
 
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { SearchParams } from "../types";
 import { 
   ZYLALABS_API_KEY, 
@@ -31,6 +31,10 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
   const language = params.language || 'en';
   const page = params.page || 1;
   
+  // Выводим детальную информацию о ключе API для диагностики (только первые 5 символов для безопасности)
+  const keyPreview = ZYLALABS_API_KEY ? `${ZYLALABS_API_KEY.substring(0, 5)}...` : 'отсутствует';
+  console.log(`Используем API ключ: ${keyPreview}`);
+  
   while (attempts < MAX_RETRY_ATTEMPTS) {
     try {
       console.log(`Отправляем запрос к Zylalabs API... (попытка ${attempts + 1}/${MAX_RETRY_ATTEMPTS})`, params);
@@ -57,6 +61,8 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
         headers['X-Requested-With'] = 'XMLHttpRequest';
       }
 
+      console.log('Отправляемые заголовки:', Object.keys(headers).join(', '));
+      
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: headers,
@@ -148,6 +154,14 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
         return { ...getMockSearchResults(params.query), fromMock: true };
       }
     } catch (error: any) {
+      // Дополнительная диагностика ошибки
+      console.error("Fetch error details:", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        toString: error.toString()
+      });
+      
       // Обрабатываем ошибку прерывания запроса при истечении таймаута
       if (error.name === 'AbortError') {
         console.warn('Запрос был отменен из-за истечения времени ожидания, попытка повтора');
