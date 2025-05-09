@@ -1,9 +1,8 @@
-
 import React, { useEffect } from 'react';
 import { Product } from "@/services/types";
 import { NoSearchResults } from './search/NoSearchResults';
 import { ProductListContainer } from './search/ProductListContainer';
-import { getProductLink } from "@/services/urlService";
+import { getProductLink } from "@/services/url";
 
 type SearchResultsProps = {
   results: Product[];

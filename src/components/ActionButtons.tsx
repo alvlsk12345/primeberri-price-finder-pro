@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Link } from 'lucide-react';
 import { toast } from "@/components/ui/sonner";
-import { getProductLink } from "@/services/urlService";
+import { getProductLink } from "@/services/url";
 import { Product } from "@/services/types";
 
 type ActionButtonsProps = {
