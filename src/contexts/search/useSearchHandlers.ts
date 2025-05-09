@@ -201,9 +201,11 @@ export const useSearchHandlers = (
     console.log("Applying sort option:", option);
     setSortOption(option);
     
-    // If we already have results, just sort them without making a new API call
-    setSearchResults(prevResults => applySorting([...prevResults], option));
-  }, [setSortOption, setSearchResults]);
+    // Fix the type error: First get the current results, then apply sorting, then update state
+    const currentResults = searchResults;
+    const sortedResults = applySorting([...currentResults], option);
+    setSearchResults(sortedResults);
+  }, [setSortOption, setSearchResults, searchResults]);
 
   return {
     handleSearch,
