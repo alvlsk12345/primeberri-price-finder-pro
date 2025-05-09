@@ -4,49 +4,20 @@ export const ZYLALABS_API_KEY = "8103|qZi97eieReCKmFs6mwcg9Mf1H2JjJfGgdesU59tv";
 
 // Request configuration
 export const MAX_RETRY_ATTEMPTS = 3;
-export const RETRY_DELAY = 2000; // Increased delay between retries to 2 seconds
-export const REQUEST_TIMEOUT = 60000; // Increased timeout to 60 seconds
-
-// Alternative CORS proxies to try if direct access fails
-const CORS_PROXIES = [
-  "", // Direct connection (no proxy)
-  "https://corsproxy.io/?", // New reliable CORS proxy
-  "https://api.allorigins.win/raw?url=", // Alternative CORS proxy
-  "https://cors-anywhere.herokuapp.com/" // Original proxy that requires demo access
-];
-
-// Create a function to build API URL with appropriate proxy
-export const getApiBaseUrl = (proxyIndex: number = 0): string => {
-  const proxy = CORS_PROXIES[proxyIndex % CORS_PROXIES.length];
-  return `${proxy}https://api.zylalabs.com`;
-};
+export const RETRY_DELAY = 1000;
+export const REQUEST_TIMEOUT = 15000;
 
 // API URL builder for single country search
-export const buildSearchUrl = (
-  query: string, 
-  country: string, 
-  language: string, 
-  page: number, 
-  proxyIndex: number = 0
-): string => {
+export const buildSearchUrl = (query: string, country: string, language: string, page: number): string => {
   const encodedQuery = encodeURIComponent(query);
-  const baseUrl = getApiBaseUrl(proxyIndex);
-  
-  // Ensure we're using the correct API endpoint
-  return `${baseUrl}/api/2033/real+time+product+search+api/1809/search+products?q=${encodedQuery}&country=${country}&language=${language}&page=${page}&source=merchant`;
+  return `https://zylalabs.com/api/2033/real+time+product+search+api/1809/search+products?q=${encodedQuery}&country=${country}&language=${language}&page=${page}&source=merchant`;
 };
 
 // API URL builder for multi-country search
-export const buildMultiCountrySearchUrl = (
-  query: string, 
-  countries: string[], 
-  language: string, 
-  page: number, 
-  proxyIndex: number = 0
-): string => {
+export const buildMultiCountrySearchUrl = (query: string, countries: string[], language: string, page: number): string => {
   // По умолчанию используем первую страну из списка или 'gb', если список пустой
   const country = countries && countries.length > 0 ? countries[0] : 'gb';
-  return buildSearchUrl(query, country, language, page, proxyIndex);
+  return buildSearchUrl(query, country, language, page);
 };
 
 // Helper function to check API key presence

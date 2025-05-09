@@ -20,7 +20,6 @@ type SearchContextType = {
   originalQuery: string;
   lastSearchQuery: string;
   hasSearched: boolean;
-  apiErrorMode: boolean; // Добавляем свойство apiErrorMode в тип
   handleSearch: (page?: number, forceNewSearch?: boolean) => Promise<void>;
   handleProductSelect: (product: Product) => void;
   handlePageChange: (page: number) => void;
@@ -44,7 +43,6 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [lastSearchQuery, setLastSearchQuery] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [pageChangeCount, setPageChangeCount] = useState(0);
-  const [apiErrorMode, setApiErrorMode] = useState(false); // Добавляем состояние для отслеживания ошибок API
 
   // Memoized search function
   const handleSearch = useCallback(async (page: number = 1, forceNewSearch: boolean = false) => {
@@ -58,7 +56,6 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const queryToUse = searchQuery || lastSearchQuery;
     
     setIsLoading(true);
-    setApiErrorMode(false); // Сбрасываем состояние ошибки API перед новым запросом
     
     try {
       // If it's the same page for the same query and we have cached results
@@ -98,12 +95,6 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         filters: filters
       });
       
-      // Проверяем, были ли использованы мок-данные из-за ошибки API
-      if (results.fromMock) {
-        setApiErrorMode(true);
-        console.log('Использованы мок-данные из-за ошибки API');
-      }
-      
       // Save found products to state and cache
       if (results.products.length > 0) {
         setSearchResults(results.products);
@@ -127,9 +118,6 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (error) {
       console.error('Ошибка поиска:', error);
       toast.error('Произошла ошибка при поиске товаров');
-      
-      // Устанавливаем режим ошибки API
-      setApiErrorMode(true);
       
       // If error occurs, check if we have cached results
       if (cachedResults[currentPage] && cachedResults[currentPage].length > 0) {
@@ -190,7 +178,6 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     originalQuery,
     lastSearchQuery,
     hasSearched,
-    apiErrorMode, // Добавляем apiErrorMode в контекст
     handleSearch,
     handleProductSelect,
     handlePageChange,

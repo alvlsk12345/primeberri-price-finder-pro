@@ -3,7 +3,6 @@ import React from 'react';
 import { SearchResults } from "@/components/SearchResults";
 import { FilterPanel } from "@/components/FilterPanel";
 import { useSearch } from "@/contexts/SearchContext";
-import { SearchResultsAlert } from "./SearchResultsAlert";
 
 export const SearchResultsSection: React.FC = () => {
   const { 
@@ -15,8 +14,7 @@ export const SearchResultsSection: React.FC = () => {
     handlePageChange,
     filters,
     handleFilterChange,
-    originalQuery,
-    apiErrorMode
+    originalQuery
   } = useSearch();
 
   if (searchResults.length === 0) {
@@ -25,8 +23,6 @@ export const SearchResultsSection: React.FC = () => {
 
   return (
     <div className="mt-6">
-      {apiErrorMode && <SearchResultsAlert currentPage={currentPage} apiErrorMode={true} />}
-      
       <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
         <h2 className="text-xl font-semibold">
           Результаты поиска{originalQuery ? ` "${originalQuery}"` : ''}:
