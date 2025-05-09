@@ -23,17 +23,37 @@ export const parseApiResponse = (data: any): { products: any[], total: number } 
     console.log('API response type:', typeof data);
     console.log('API response keys:', data ? Object.keys(data) : 'no data');
     
-    if (data && data.data) {
-      console.log('API response data keys:', Object.keys(data.data));
-      if (data.data.products && data.data.products.length > 0) {
-        console.log('First product sample:', JSON.stringify(data.data.products[0], null, 2));
+    // Detailed logging of the response structure
+    const topLevelKeys = Object.keys(data);
+    console.log('Top level keys in response:', topLevelKeys.join(', '));
+    
+    // Log nested data keys
+    topLevelKeys.forEach(key => {
+      if (data[key] && typeof data[key] === 'object') {
+        console.log(`Keys in ${key}:`, Object.keys(data[key]).join(', '));
+      }
+    });
+    
+    // Check if we have data.data.products structure
+    if (data.data && data.data.products) {
+      console.log('Found products array in data.data.products with length:', 
+        data.data.products.length);
+      
+      if (data.data.products.length > 0) {
+        console.log('First product sample:', 
+          JSON.stringify(data.data.products[0]).substring(0, 300) + '...');
       }
     }
-    
-    // Log full response (limited to avoid console overflow)
-    console.log('Full API response (truncated):', 
-      JSON.stringify(data).substring(0, 1000) + 
-      (JSON.stringify(data).length > 1000 ? '...' : ''));
+    // Check if we have direct products array
+    else if (data.products) {
+      console.log('Found products array directly in response with length:', 
+        data.products.length);
+      
+      if (data.products.length > 0) {
+        console.log('First product sample:', 
+          JSON.stringify(data.products[0]).substring(0, 300) + '...');
+      }
+    }
   } catch (e) {
     console.error('Error inspecting API response:', e);
   }
@@ -64,54 +84,58 @@ export const parseApiResponse = (data: any): { products: any[], total: number } 
     total = data.total || products.length;
   } else if (data && typeof data === 'object' && Object.keys(data).length > 0) {
     // Try to find any array that might contain products
-    console.log('Пробуем найти массив товаров в ответе...');
+    console.log('Пытаемся найти массив товаров в ответе...');
     
-    for (const key in data) {
-      if (Array.isArray(data[key]) && data[key].length > 0) {
-        console.log(`Найден массив в поле "${key}", проверяем содержимое...`);
-        
-        // Check if this array contains objects that look like products
-        if (data[key][0] && (data[key][0].title || data[key][0].name || data[key][0].product_title)) {
-          console.log(`Найден возможный массив товаров в поле "${key}"`);
-          products = data[key];
-          total = products.length;
-          break;
+    // Recursive function to find products array in nested object
+    const findProductsArray = (obj: any, path = ''): any[] | null => {
+      if (!obj || typeof obj !== 'object') return null;
+      
+      // Check if this object is an array of products
+      if (Array.isArray(obj) && obj.length > 0 && 
+          (obj[0].title || obj[0].product_title || obj[0].name)) {
+        console.log(`Found potential products array at ${path} with ${obj.length} items`);
+        return obj;
+      }
+      
+      // Recursively search in nested objects
+      for (const key in obj) {
+        if (obj[key] && typeof obj[key] === 'object') {
+          const found = findProductsArray(obj[key], `${path}.${key}`);
+          if (found) return found;
         }
       }
-    }
+      
+      return null;
+    };
     
-    // If still no products found, try to extract from complicated nested structures
-    if (products.length === 0) {
-      console.log('Не найдены товары в первом уровне объекта, ищем глубже...');
-      // Check for product data inside nested objects
-      Object.keys(data).forEach(key => {
-        if (typeof data[key] === 'object' && data[key] !== null) {
-          if (data[key].products && Array.isArray(data[key].products)) {
-            console.log(`Найден массив товаров в поле ${key}.products`);
-            products = data[key].products;
-            total = data[key].total || products.length;
-          }
-        }
-      });
-    }
-    
-    if (products.length === 0) {
-      console.error('Не удалось найти массив товаров в ответе API');
-      // Instead of throwing an error, return an empty array
+    // Try to find products in the response
+    const foundProducts = findProductsArray(data, 'root');
+    if (foundProducts) {
+      console.log(`Found products array with ${foundProducts.length} items`);
+      products = foundProducts;
+      total = foundProducts.length;
+    } else {
+      console.error('No products array found in response');
       return { products: [], total: 0 };
     }
   } else {
     // Log the actual received structure for debugging
-    console.error('Неожиданный формат ответа от API:', typeof data, data ? Object.keys(data) : 'null');
+    console.error('Unexpected API response format:', typeof data, data ? Object.keys(data) : 'null');
     return { products: [], total: 0 };
   }
   
-  // Log product structure for the first item
+  // Log product structure and field names
   if (products.length > 0) {
-    console.log('Структура первого товара:', Object.keys(products[0]).join(', '));
-    console.log(`Всего найдено ${products.length} товаров`);
+    console.log(`Successfully found ${products.length} products`);
+    console.log('Product fields:', Object.keys(products[0]).join(', '));
+    
+    // Check if products have required fields
+    const hasRequiredFields = products.some(p => p.title || p.product_title || p.name);
+    if (!hasRequiredFields) {
+      console.warn('Products may not have required fields. First item:', products[0]);
+    }
   } else {
-    console.log('API вернул пустой массив товаров');
+    console.warn('API returned empty products array');
   }
   
   return { products, total };

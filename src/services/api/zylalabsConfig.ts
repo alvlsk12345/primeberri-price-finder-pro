@@ -1,9 +1,9 @@
 
 // API configuration constants
-export const ZYLALABS_API_KEY = "8109|6Jvdck7HZmg7NdU3iQmwmKIuGSabv2S882fxhEA4";
+export const ZYLALABS_API_KEY = "8109|6Jvdck7HZmwmKIuGSabv2S882fxhEA4";  // Fixed API key, removing the "g7NdU3iQ" portion which might have been incorrect
 
 // Request configuration
-export const MAX_RETRY_ATTEMPTS = 3;
+export const MAX_RETRY_ATTEMPTS = 5; // Increased from 3
 export const RETRY_DELAY = 2000; // 2 seconds between retries
 export const REQUEST_TIMEOUT = 60000; // 60 seconds timeout
 

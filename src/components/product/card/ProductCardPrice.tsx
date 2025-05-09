@@ -14,7 +14,9 @@ export const ProductCardPrice: React.FC<ProductCardPriceProps> = ({
   const [russianDeliveryPrice, setRussianDeliveryPrice] = useState<string>("₽0.00");
 
   useEffect(() => {
-    // Check if price is defined before processing
+    console.log('ProductCardPrice received price:', price, typeof price);
+    
+    // Check if price is defined and valid
     if (!price || price === 'Цена не указана' || price === 'undefined') {
       console.log('Product price is undefined or not specified:', price);
       setEuroPrice("€0.00");
@@ -23,26 +25,37 @@ export const ProductCardPrice: React.FC<ProductCardPriceProps> = ({
     }
     
     // Извлекаем числовое значение из строки цены, обрабатываем различные форматы
-    const priceMatch = typeof price === 'string' ? price.match(/[\d.,]+/) : null;
     let numericPrice = 0;
     
-    if (priceMatch && priceMatch[0]) {
-      // Replace commas with dots for proper parsing
-      numericPrice = parseFloat(priceMatch[0].replace(',', '.'));
-      console.log(`Extracted price: ${numericPrice} from string: ${price}`);
+    if (typeof price === 'string') {
+      // Try to extract price with various formats
+      const priceMatch = price.match(/[\d.,]+/);
+      
+      if (priceMatch && priceMatch[0]) {
+        // Replace commas with dots for proper parsing
+        numericPrice = parseFloat(priceMatch[0].replace(',', '.'));
+        console.log(`Extracted price: ${numericPrice} from string: ${price}`);
+      } else {
+        console.log(`Could not extract numeric price from: ${price}, using 0`);
+      }
     } else if (typeof price === 'number') {
       numericPrice = price;
       console.log(`Using numeric price directly: ${numericPrice}`);
     } else {
-      console.log(`Could not extract numeric price from: ${price}, using 0`);
+      console.log(`Invalid price format: ${typeof price}, using 0`);
     }
     
     // Определяем валюту из строки цены (€, $, £ и т.д.)
     let currency = "€"; // Default to Euro
     if (typeof price === 'string') {
-      const currencyMatch = price.match(/[€$£₽]/);
-      if (currencyMatch) {
-        currency = currencyMatch[0];
+      if (price.includes('€')) {
+        currency = "€";
+      } else if (price.includes('$')) {
+        currency = "$";
+      } else if (price.includes('£')) {
+        currency = "£";
+      } else if (price.includes('₽')) {
+        currency = "₽";
       } else if (price.includes('EUR')) {
         currency = "€";
       } else if (price.includes('USD')) {
@@ -54,6 +67,14 @@ export const ProductCardPrice: React.FC<ProductCardPriceProps> = ({
       }
     }
     console.log(`Detected currency: ${currency}`);
+    
+    // Ensure we have a valid numeric price
+    if (isNaN(numericPrice) || numericPrice === 0) {
+      console.warn('Invalid numeric price, setting defaults');
+      setEuroPrice("€0.00");
+      setRussianDeliveryPrice("₽0.00");
+      return;
+    }
     
     // Конвертация в евро (для демонстрации - в реальности здесь будет API запрос)
     let priceInEuro = numericPrice;
