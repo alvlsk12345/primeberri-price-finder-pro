@@ -24,7 +24,7 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
       timeoutPromise
     ]).catch(error => {
       console.warn('Поиск был прерван из-за таймаута или ошибки:', error);
-      return { products: [], total: 0, isDemo: true };
+      return { products: [], total: 0, isDemo: true, apiInfo: {} };
     });
     
     console.log('Ответ от API получен:', response);
@@ -42,7 +42,7 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
     const isDemo = !!response.isDemo;
     
     // Получаем информацию об API, если она доступна
-    const apiInfo = response.apiInfo;
+    const apiInfo = response.apiInfo || {};
     
     // Обрабатываем данные о товарах
     const products = await processZylalabsProductsData(response.products, params.filters);
