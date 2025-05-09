@@ -10,12 +10,37 @@ const storeMap: StoreMap = {
   'JD Sports': 'jdsports.com',
   'Nike Store': 'nike.com',
   'Nike.com': 'nike.com',
+  'Nike': 'nike.com',
   'Foot Locker': 'footlocker.eu',
   'Adidas': 'adidas.com',
   'H&M': 'hm.com',
   'Zara': 'zara.com',
   'Sportisimo': 'sportisimo.eu',
   'Интернет-магазин': 'shop.example.com'
+};
+
+// Список доменов поисковых систем, которые нужно исключить
+const searchEngines = [
+  'google.com',
+  'google.co.uk',
+  'google.ru',
+  'google.',
+  'yandex.ru',
+  'bing.com',
+  'shopping.google',
+];
+
+// Функция для проверки, является ли ссылка поисковой
+const isSearchEngineLink = (link: string): boolean => {
+  if (!link) return true;
+  
+  // Проверяем на общие паттерны поисковых ссылок
+  if (link.includes('/search?')) return true;
+  if (link.includes('query=')) return true;
+  if (link.includes('q=')) return true;
+  
+  // Проверяем на конкретные домены поисковиков
+  return searchEngines.some(engine => link.includes(engine));
 };
 
 // Функция для получения доменного имени магазина
@@ -33,6 +58,11 @@ export const createProductSlug = (name: string): string => {
 
 // Функция для получения идентификатора продукта из ссылки или генерации кода товара
 export const extractProductId = (link: string, fallbackId: string): string => {
+  // Проверяем, является ли ссылка поисковой
+  if (isSearchEngineLink(link)) {
+    return fallbackId; // Используем fallbackId для поисковых ссылок
+  }
+  
   // Конкретные шаблоны для разных магазинов
   // Adidas: /fussballliebe-training-ball/IN9366.html
   const adidasPattern = /\/([^\/]+)\/([A-Z0-9]{6})\.html/;
@@ -75,13 +105,11 @@ export const extractProductId = (link: string, fallbackId: string): string => {
 
 // Получение реальной ссылки на страницу товара
 export const getProductLink = (product: Product): string => {
-  // Если у продукта есть прямая ссылка на магазин, используем её напрямую
-  // Исключаем ссылки на поисковые системы и неопределенные ссылки
+  // Если у продукта есть прямая ссылка на магазин, которая не является поисковой, используем её напрямую
   if (product.link && 
-     (product.link.startsWith('http') && 
-      !product.link.includes('undefined') && 
-      !product.link.includes('google.com/search') &&
-      !product.link.includes('google.com/shopping'))) {
+     product.link.startsWith('http') && 
+     !product.link.includes('undefined') && 
+     !isSearchEngineLink(product.link)) {
     return product.link;
   }
   
