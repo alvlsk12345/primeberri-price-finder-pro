@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { SearchResults } from "@/components/SearchResults";
 import { FilterPanel } from "@/components/FilterPanel";
 import { useSearch } from "@/contexts/search";
 import { SearchResultsAlert } from "./SearchResultsAlert";
+import { isSearchEngineLink } from "@/services/urlService";
 
 export const SearchResultsSection: React.FC = () => {
   const { 
@@ -18,6 +19,28 @@ export const SearchResultsSection: React.FC = () => {
     originalQuery,
     apiErrorMode
   } = useSearch();
+
+  // Добавляем проверку ссылок при монтировании компонента
+  useEffect(() => {
+    if (searchResults && searchResults.length > 0) {
+      // Подсчитываем количество поисковых ссылок
+      let searchLinksCount = 0;
+      
+      searchResults.forEach(product => {
+        // Проверка на поисковые ссылки
+        if (product.link && isSearchEngineLink(product.link)) {
+          console.warn(`Обнаружена поисковая ссылка:`, product.link);
+          searchLinksCount++;
+        }
+      });
+      
+      if (searchLinksCount > 0) {
+        console.warn(`Внимание: ${searchLinksCount} из ${searchResults.length} ссылок ведут на поисковые системы`);
+      } else {
+        console.log('Все ссылки на товары корректные');
+      }
+    }
+  }, [searchResults]);
 
   if (searchResults.length === 0) {
     return null;

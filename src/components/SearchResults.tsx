@@ -1,7 +1,9 @@
-import React from 'react';
+
+import React, { useEffect } from 'react';
 import { Product } from "@/services/types";
 import { NoSearchResults } from './search/NoSearchResults';
 import { ProductListContainer } from './search/ProductListContainer';
+import { getProductLink } from "@/services/urlService";
 
 type SearchResultsProps = {
   results: Product[];
@@ -26,6 +28,19 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     totalPages,
     hasSelectedProduct: !!selectedProduct
   });
+
+  // Проверяем и логируем ссылки на товары при изменении результатов
+  useEffect(() => {
+    if (results && results.length > 0) {
+      console.log('Проверка ссылок на товары:');
+      results.slice(0, 3).forEach((product, index) => {
+        const generatedLink = getProductLink(product);
+        console.log(`Товар ${index + 1}: ${product.title}`);
+        console.log(`  - API ссылка: ${product.link || 'отсутствует'}`);
+        console.log(`  - Сгенерированная ссылка: ${generatedLink}`);
+      });
+    }
+  }, [results]);
 
   // Check if results are available
   if (!results || results.length === 0) {

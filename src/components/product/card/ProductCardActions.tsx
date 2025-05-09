@@ -1,11 +1,11 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Product } from "@/services/types";
 import { ProductDetailsDialog } from '../ProductDetailsDialog';
 import { toast } from "@/components/ui/sonner";
 import { Copy, ExternalLink } from "lucide-react";
-import { getProductLink } from "@/services/urlService";
+import { getProductLink, isSearchEngineLink } from "@/services/urlService";
 
 interface ProductCardActionsProps {
   product: Product;
@@ -20,6 +20,19 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
   onSelect,
   onStopPropagation
 }) => {
+  // Проверяем ссылку на товар при монтировании компонента
+  useEffect(() => {
+    const originalLink = product.link || '';
+    const processedLink = getProductLink(product);
+    
+    // Проверяем, является ли оригинальная ссылка поисковой
+    if (originalLink && isSearchEngineLink(originalLink)) {
+      console.log(`Поисковая ссылка заменена для: ${product.title}`);
+      console.log(`  - Оригинал: ${originalLink.substring(0, 100)}...`);
+      console.log(`  - Замена на: ${processedLink}`);
+    }
+  }, [product]);
+
   const handleCopyLink = (e: React.MouseEvent) => {
     e.preventDefault();
     onStopPropagation(e);
@@ -27,6 +40,8 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
     const productLink = getProductLink(product);
     navigator.clipboard.writeText(productLink);
     toast.success('Ссылка на товар скопирована!');
+    
+    console.log('Скопирована ссылка:', productLink);
   };
   
   const handleGoToPrimeberri = (e: React.MouseEvent) => {

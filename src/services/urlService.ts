@@ -15,6 +15,7 @@ const storeMap: StoreMap = {
   'Adidas': 'adidas.com',
   'H&M': 'hm.com',
   'Zara': 'zara.com',
+  'Zara UK': 'zara.com',
   'Sportisimo': 'sportisimo.eu',
   'Интернет-магазин': 'shop.example.com'
 };
@@ -28,19 +29,30 @@ const searchEngines = [
   'yandex.ru',
   'bing.com',
   'shopping.google',
+  'search?',
+  'ibp=oshop',
+  'q=',
+  'query='
 ];
 
-// Функция для проверки, является ли ссылка поисковой
-const isSearchEngineLink = (link: string): boolean => {
+// Более строгая функция для проверки, является ли ссылка поисковой
+export const isSearchEngineLink = (link: string): boolean => {
+  // Если ссылка отсутствует, считаем её поисковой для безопасности
   if (!link) return true;
   
+  // Преобразуем в нижний регистр для более надежного сравнения
+  const lowerCaseLink = link.toLowerCase();
+  
   // Проверяем на общие паттерны поисковых ссылок
-  if (link.includes('/search?')) return true;
-  if (link.includes('query=')) return true;
-  if (link.includes('q=')) return true;
+  if (lowerCaseLink.includes('/search?')) return true;
+  if (lowerCaseLink.includes('query=')) return true;
+  if (lowerCaseLink.includes('q=')) return true;
+  if (lowerCaseLink.includes('ibp=oshop')) return true;
+  if (lowerCaseLink.includes('prds=')) return true;
+  if (lowerCaseLink.includes('catalogid:')) return true;
   
   // Проверяем на конкретные домены поисковиков
-  return searchEngines.some(engine => link.includes(engine));
+  return searchEngines.some(engine => lowerCaseLink.includes(engine));
 };
 
 // Функция для получения доменного имени магазина
@@ -85,6 +97,13 @@ export const extractProductId = (link: string, fallbackId: string): string => {
     return amazonMatch[1];
   }
   
+  // Zara: /item/9598/536/251
+  const zaraPattern = /\/([0-9]+)\/([0-9]+)\/([0-9]+)/;
+  const zaraMatch = link.match(zaraPattern);
+  if (zaraMatch && zaraMatch[1]) {
+    return `${zaraMatch[1]}${zaraMatch[2]}${zaraMatch[3]}`;
+  }
+  
   // Общие шаблоны для других магазинов
   const patterns = [
     /\/([A-Za-z0-9]{10})\/?(\?|$)/, // Amazon ASIN
@@ -110,8 +129,11 @@ export const getProductLink = (product: Product): string => {
      product.link.startsWith('http') && 
      !product.link.includes('undefined') && 
      !isSearchEngineLink(product.link)) {
+    console.log('Использую существующую ссылку:', product.link);
     return product.link;
   }
+  
+  console.log('Cоздаю новую ссылку для', product.title);
   
   // Определяем домен магазина или используем запасной вариант
   const domain = getStoreDomain(product.source);

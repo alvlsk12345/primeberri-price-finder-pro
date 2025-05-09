@@ -6,6 +6,7 @@ import { getMockSearchResults } from "./mockDataService";
 import { parseApiResponse } from "./responseParserService";
 import { withRetry } from "./retryService";
 import { fetchFromZylalabs, getZylalabsApiUrl } from "./clients/zylalabsApiClient";
+import { isSearchEngineLink } from "../urlService";
 
 /**
  * Searches for products using Zylalabs API with pagination, retry support,
@@ -53,6 +54,28 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
       try {
         const parsedResult = parseApiResponse(data);
         console.log(`Успешно получено ${parsedResult.products?.length || 0} товаров`);
+        
+        // Проверяем качество полученных ссылок
+        if (parsedResult.products && parsedResult.products.length > 0) {
+          let searchLinkCounter = 0;
+          let directLinkCounter = 0;
+          
+          parsedResult.products.forEach((product: any) => {
+            if (product.link) {
+              if (isSearchEngineLink(product.link)) {
+                searchLinkCounter++;
+              } else {
+                directLinkCounter++;
+              }
+            }
+          });
+          
+          console.log(`Статистика ссылок: ${directLinkCounter} прямых, ${searchLinkCounter} поисковых`);
+          if (searchLinkCounter > directLinkCounter) {
+            console.warn('Предупреждение: большинство полученных ссылок ведут на поисковые системы');
+          }
+        }
+        
         return { ...parsedResult, fromMock: false };
       } catch (error) {
         console.error('Ошибка при парсинге ответа:', error);
