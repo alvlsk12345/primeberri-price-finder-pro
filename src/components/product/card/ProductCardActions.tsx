@@ -45,7 +45,7 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
       <ProductDetailsDialog product={product} />
       <Button 
         onClick={handlePrimeberriOrder}
-        variant="outline"
+        variant="brand-outline"
         className="flex items-center gap-2 w-full justify-center"
       >
         <img 

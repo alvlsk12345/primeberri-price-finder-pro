@@ -72,10 +72,11 @@ export const SearchForm: React.FC<SearchFormProps> = ({
           onClick={executeSearch} 
           disabled={isLoading || !searchQuery.trim()}
           className="min-w-[200px]"
+          variant="brand"
         >
           {isLoading ? (
             <span className="flex items-center gap-2">
-              <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+              <div className="animate-spin w-4 h-4 border-2 border-brand-foreground border-t-transparent rounded-full" />
               Поиск...
             </span>
           ) : (

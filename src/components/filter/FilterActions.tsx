@@ -16,7 +16,7 @@ export const FilterActions: React.FC<FilterActionsProps> = ({
       <Button variant="outline" size="sm" onClick={resetFilters}>
         Сбросить
       </Button>
-      <Button size="sm" onClick={applyFilters}>
+      <Button variant="brand" size="sm" onClick={applyFilters}>
         Применить
       </Button>
     </div>

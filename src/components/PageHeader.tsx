@@ -6,7 +6,7 @@ import { Settings, Home } from "lucide-react";
 
 export const PageHeader: React.FC = () => {
   // Используем Link вместо тега <a> для предотвращения перезагрузки страницы
-  return <header className="bg-primary text-primary-foreground shadow-sm">
+  return <header className="bg-brand text-brand-foreground shadow-sm">
       <div className="container mx-auto py-4 px-4 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 text-2xl font-bold hover:opacity-90 transition-opacity">
           <a href="https://primeberri.com/" target="_blank" rel="noopener noreferrer">
@@ -27,7 +27,7 @@ export const PageHeader: React.FC = () => {
             </Link>
           </Button>
           
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="brand-outline" size="sm" asChild>
             <Link to="/settings" className="flex items-center gap-2">
               <Settings size={18} />
               <span>Настройки</span>

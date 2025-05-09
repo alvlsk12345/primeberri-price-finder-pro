@@ -35,6 +35,7 @@ export const ProductDetailsInfo: React.FC<ProductDetailsInfoProps> = ({ product 
       <Button
         onClick={() => window.open(product.link, '_blank')}
         className="w-full mt-2"
+        variant="brand"
       >
         Перейти в магазин
       </Button>
