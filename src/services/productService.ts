@@ -5,7 +5,7 @@ import { toast } from "@/components/ui/sonner";
 import { processZylalabsProductsData } from './formatters/productDataFormatter';
 
 // Функция для поиска товаров с поддержкой пагинации и фильтрации
-export const searchProducts = async (params: SearchParams): Promise<{ products: Product[], totalPages: number }> => {
+export const searchProducts = async (params: SearchParams): Promise<{ products: Product[], totalPages: number, fromMock?: boolean }> => {
   try {
     console.log('Начинаем поиск товаров по запросу:', params.query, 'страница:', params.page);
     
@@ -21,7 +21,7 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
     if (!response || !response.products || response.products.length === 0) {
       toast.dismiss(searchToastId);
       toast.info('По вашему запросу ничего не найдено');
-      return { products: [], totalPages: 0 };
+      return { products: [], totalPages: 0, fromMock: response.fromMock };
     }
     
     // Обрабатываем данные о товарах
@@ -37,16 +37,25 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
     
     // Информируем пользователя о результатах
     if (products.length > 0) {
-      toast.success(`Найдено ${products.length} товаров${totalPages > 1 ? `, стр. ${params.page}/${totalPages}` : ''}`);
+      // Если используются мок-данные, сообщаем об этом
+      if (response.fromMock) {
+        toast.success(`Найдено ${products.length} демонстрационных товаров (режим без API)`);
+      } else {
+        toast.success(`Найдено ${products.length} товаров${totalPages > 1 ? `, стр. ${params.page}/${totalPages}` : ''}`);
+      }
     } else {
       toast.info('По вашему запросу ничего не найдено');
     }
     
-    return { products, totalPages };
+    return { 
+      products, 
+      totalPages,
+      fromMock: response.fromMock // Передаем информацию о том, были ли использованы мок-данные
+    };
   } catch (error) {
     console.error('Ошибка при поиске товаров:', error);
     toast.error('Произошла ошибка при поиске товаров');
-    return { products: [], totalPages: 0 };
+    return { products: [], totalPages: 0, fromMock: true };
   }
 };
 
