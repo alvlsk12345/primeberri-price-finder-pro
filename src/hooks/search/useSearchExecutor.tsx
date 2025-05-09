@@ -40,6 +40,7 @@ export function useSearchExecutor({
     filters: ProductFilters,
     getSearchCountries: () => string[]
   ) => {
+    console.log(`executeSearch called with page: ${page}, query: ${queryToUse}`);
     setIsLoading(true);
     setIsUsingDemoData(false);
     
@@ -77,6 +78,7 @@ export function useSearchExecutor({
       
       // Execute the search
       const results = await searchProducts(searchParams);
+      console.log(`Search completed for page ${page}, got ${results.products.length} results`);
       
       // Check if we're using demo data and update state
       if (results.isDemo) {

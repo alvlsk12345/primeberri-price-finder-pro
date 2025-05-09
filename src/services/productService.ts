@@ -27,7 +27,7 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
       return { products: [], totalPages: 0, isDemo: true, apiInfo: {} };
     });
     
-    console.log('Ответ от API получен:', response);
+    console.log('Ответ от API получен для страницы', params.page, ':', response);
     
     // Закрываем уведомление о поиске
     toast.dismiss(searchToastId);
@@ -100,7 +100,7 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
     }
     
     // Расчет общего количества страниц (приблизительное значение)
-    const itemsPerPage = 9; // Изменено с 12 на 9 элементов на странице
+    const itemsPerPage = 9; // 9 элементов на странице
     const totalPages = response.totalPages || Math.max(1, Math.ceil(products.length / itemsPerPage));
     
     // Информируем пользователя о результатах

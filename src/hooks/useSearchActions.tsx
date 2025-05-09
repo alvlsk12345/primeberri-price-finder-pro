@@ -93,6 +93,8 @@ export function useSearchActions(props: SearchStateProps) {
 
   // Main search function
   const handleSearch = async (page: number = 1, forceNewSearch: boolean = false) => {
+    console.log(`handleSearch called with page: ${page}, forceNewSearch: ${forceNewSearch}`);
+    
     // Check if there's a query for search
     if (!searchQuery && !lastSearchQuery) {
       toast.error('Пожалуйста, введите запрос для поиска товара');
@@ -114,9 +116,10 @@ export function useSearchActions(props: SearchStateProps) {
     // Save original query (for display to user)
     setOriginalQuery(queryToUse);
     
-    // If this is a new search query, save it
+    // If this is a new search query, reset cache
     const isSameQuery = queryToUse === lastSearchQuery;
     if (!isSameQuery || forceNewSearch) {
+      console.log(`Новый запрос или принудительный поиск. Очищаем кэш.`);
       setLastSearchQuery(queryToUse);
       // Reset results cache for new query
       setCachedResults({});
@@ -124,6 +127,7 @@ export function useSearchActions(props: SearchStateProps) {
     
     try {
       // Execute search
+      console.log(`Выполняем поиск для запроса "${queryToUse}", страница: ${page}`);
       const result = await executeSearch(
         queryToUse,
         page,
@@ -135,6 +139,7 @@ export function useSearchActions(props: SearchStateProps) {
       // If search was unsuccessful, try to use cached results
       if (!result.success) {
         // Check if we have results in cache for current search query
+        console.log(`Поиск не удался. Проверяем кэш.`);
         if (cachedResults[1] && cachedResults[1].length > 0 && isSameQuery) {
           setSearchResults(cachedResults[1]);
           setCurrentPage(1);
@@ -142,6 +147,7 @@ export function useSearchActions(props: SearchStateProps) {
         }
       }
     } catch (error) {
+      console.error(`Ошибка при выполнении поиска:`, error);
       handleSearchFailure(currentPage);
     }
   };
@@ -157,9 +163,7 @@ export function useSearchActions(props: SearchStateProps) {
       console.log(`Changing page from ${currentPage} to ${page}`);
       // Increment the counter
       setPageChangeCount(pageChangeCount + 1);
-      // Set current page first
-      setCurrentPage(page);
-      // Then trigger a search with new page
+      // Trigger a search with new page
       handleSearch(page);
     }
   };
