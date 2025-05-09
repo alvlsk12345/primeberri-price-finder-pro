@@ -5,6 +5,7 @@ import { FilterSection } from "@/components/search/FilterSection";
 import { useSearch } from "@/contexts/SearchContext";
 import { ApiUsageInfo } from "@/components/search/ApiUsageInfo";
 import { SortButtons } from "../filter/SortButtons";
+import { SortOption } from "@/services/types";
 
 export const SearchResultsSection: React.FC = () => {
   const { 
@@ -26,7 +27,7 @@ export const SearchResultsSection: React.FC = () => {
   }
 
   // Обновленный обработчик сортировки - сразу применяет изменения
-  const handleSortChange = (sortBy: string) => {
+  const handleSortChange = (sortBy: SortOption) => {
     // Обновляем текущие фильтры с новым методом сортировки и сразу применяем
     handleFilterChange({ ...filters, sortBy });
   };
