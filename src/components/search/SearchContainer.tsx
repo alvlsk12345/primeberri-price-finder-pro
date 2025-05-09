@@ -9,7 +9,7 @@ export const SearchContainer: React.FC = () => {
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">Ищите товары в магазинах Европы,
 выбирайте и переходите на Primeberri для заказа</CardTitle>
-        <CardDescription>При нажатии на кнопку "Заказать на Primeberri" Ваша ссылка уже скопирована</CardDescription>
+        <CardDescription>При нажатии на кнопку "Заказать на Primeberri" Ваша ссылка уже скопирована для создания заказа</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-6">
