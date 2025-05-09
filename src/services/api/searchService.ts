@@ -5,7 +5,7 @@ import { checkApiKey, buildMultiCountrySearchUrl } from "./zylalabsConfig";
 import { getMockSearchResults } from "./mockDataService";
 import { parseApiResponse } from "./responseParserService";
 import { withRetry } from "./retryService";
-import { fetchFromZylalabs, getZylalabsApiUrl } from "./clients/zylalabsApiClient";
+import { fetchFromZylalabs } from "./clients/zylalabsApiClient";
 
 /**
  * Searches for products using Zylalabs API with pagination, retry support,
@@ -20,14 +20,14 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
   }
   
   // Extract search parameters
-  const countries = params.countries || ['gb'];
+  const countries = params.countries || ['us']; // Default to 'us' as in Postman
   const language = params.language || 'en';
-  const page = params.page || 1;
+  const page = params.page || null; // Use null to match Postman optional parameter
   
   // Log API key information (partial, for security)
   const keyPreview = ZYLALABS_API_KEY ? `${ZYLALABS_API_KEY.substring(0, 5)}...` : 'отсутствует';
   console.log(`Используем API ключ: ${keyPreview}`);
-  console.log(`Поиск товаров с параметрами: страна=${countries[0]}, язык=${language}, страница=${page}`);
+  console.log(`Поиск товаров с параметрами: страна=${countries[0]}, язык=${language}, страница=${page || 'не указана'}`);
   
   try {
     // Execute search with retry capability
@@ -35,7 +35,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
       console.log(`Отправляем запрос к Zylalabs API... (попытка ${attempt + 1}/${MAX_RETRY_ATTEMPTS})`, params);
       console.log(`Используем прокси ${proxyIndex}`);
       
-      // Build the API URL with proper proxy
+      // Build the API URL with proper proxy - updated to match Postman structure
       const apiUrl = buildMultiCountrySearchUrl(params.query, countries, language, page, proxyIndex);
       console.log('URL запроса:', apiUrl);
       

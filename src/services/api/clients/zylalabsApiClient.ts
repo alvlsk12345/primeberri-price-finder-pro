@@ -19,7 +19,7 @@ export const fetchFromZylalabs = async (
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
   
   try {
-    // Set up request headers
+    // Set up request headers - exactly matching Postman configuration
     const headers: HeadersInit = {
       'Authorization': `Bearer ${ZYLALABS_API_KEY}`,
       'Content-Type': 'application/json',
@@ -38,7 +38,7 @@ export const fetchFromZylalabs = async (
     console.log('Используемый прокси индекс:', proxyIndex);
     
     const response = await fetch(url, {
-      method: 'GET',
+      method: 'GET', // Using GET as specified in Postman collection
       headers: headers,
       signal: controller.signal,
       mode: 'cors',
@@ -62,21 +62,26 @@ export const fetchFromZylalabs = async (
         const errorData = JSON.parse(responseText);
         console.error("API Error Data:", errorData);
         
-        // Check for usage limit exceeded
-        if (errorData.message && (
-          errorData.message.includes('exceeded the allowed limit') || 
-          errorData.message.includes('limit exceeded')
-        )) {
-          console.error('API usage limit exceeded');
-          toast.error('Превышен лимит запросов к API. Пожалуйста, обратитесь в поддержку.');
-          throw new Error('API usage limit exceeded');
-        }
-        
-        // Проверка на проблемы с API сервером
-        if (response.status === 503) {
-          console.error('API сервер временно недоступен (status 503)');
-          toast.error('API сервер временно недоступен. Используются демо-данные.');
-          throw new Error('API server unavailable (503)');
+        // Check for specific error messages from Zylalabs API
+        if (errorData.message) {
+          console.error('API error message:', errorData.message);
+          
+          // Check for usage limit exceeded
+          if (
+            errorData.message.includes('exceeded the allowed limit') || 
+            errorData.message.includes('limit exceeded')
+          ) {
+            console.error('API usage limit exceeded');
+            toast.error('Превышен лимит запросов к API. Пожалуйста, обратитесь в поддержку.');
+            throw new Error('API usage limit exceeded');
+          }
+          
+          // Check for API server issues
+          if (response.status === 503) {
+            console.error('API сервер временно недоступен (status 503)');
+            toast.error('API сервер временно недоступен. Используются демо-данные.');
+            throw new Error('API server unavailable (503)');
+          }
         }
       } catch (e) {
         // If parsing as JSON fails, use text as is
@@ -87,7 +92,9 @@ export const fetchFromZylalabs = async (
     }
     
     // Parse the successful response
-    return await response.json();
+    const jsonResponse = await response.json();
+    console.log('API response successfully parsed to JSON');
+    return jsonResponse;
   } catch (e) {
     console.error('Ошибка при выполнении запроса к API:', e);
     clearTimeout(timeoutId);

@@ -19,7 +19,7 @@ const CORS_PROXIES = [
 // Create a function to build API URL with appropriate proxy
 export const getApiBaseUrl = (proxyIndex: number = 0): string => {
   const proxy = CORS_PROXIES[proxyIndex % CORS_PROXIES.length];
-  return `${proxy}https://zylalabs.com`; // Updated to use zylalabs.com instead of api.zylalabs.com
+  return `${proxy}https://zylalabs.com`; // Updated to match Postman collection URL
 };
 
 // API URL builder for single country search
@@ -27,13 +27,13 @@ export const buildSearchUrl = (
   query: string, 
   country: string, 
   language: string, 
-  page: number, 
+  page: number | null = null, 
   proxyIndex: number = 0
 ): string => {
   const encodedQuery = encodeURIComponent(query);
   const baseUrl = getApiBaseUrl(proxyIndex);
   
-  // Updated path to match Postman collection
+  // Updated path to exactly match the Postman collection
   return `${baseUrl}/api/2033/real+time+product+search+api/1809/search+products?q=${encodedQuery}&country=${country}&language=${language}${page ? `&page=${page}` : ''}`;
 };
 
@@ -42,11 +42,11 @@ export const buildMultiCountrySearchUrl = (
   query: string, 
   countries: string[], 
   language: string, 
-  page: number, 
+  page: number | null = null, 
   proxyIndex: number = 0
 ): string => {
-  // По умолчанию используем первую страну из списка или 'gb', если список пустой
-  const country = countries && countries.length > 0 ? countries[0] : 'gb';
+  // Use the first country from the list or 'us' if list is empty (updated to match Postman default)
+  const country = countries && countries.length > 0 ? countries[0] : 'us';
   return buildSearchUrl(query, country, language, page, proxyIndex);
 };
 
@@ -57,7 +57,7 @@ export const checkApiKey = (): boolean => {
     return false;
   }
   
-  // Проверка на минимальную длину и формат
+  // Check for minimum length and format
   if (ZYLALABS_API_KEY.length < 10 || !ZYLALABS_API_KEY.includes('|')) {
     console.error('API ключ Zylalabs имеет неверный формат. Ожидается формат "id|key"');
     return false;
