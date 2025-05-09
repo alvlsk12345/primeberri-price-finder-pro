@@ -9,6 +9,8 @@ export const handleApiError = async (response: Response): Promise<never> => {
   
   try {
     const errorText = await response.text();
+    console.log("Raw error response:", errorText, "Status:", response.status);
+    
     let errorResponse;
     try {
       errorResponse = JSON.parse(errorText);
@@ -45,11 +47,15 @@ export const handleApiError = async (response: Response): Promise<never> => {
  * Handles general fetch errors and provides user feedback
  */
 export const handleFetchError = (error: any): void => {
+  console.error("Full error object:", error);
+  
   if (error.name === 'AbortError') {
     console.warn('Запрос был отменен из-за истечения времени ожидания');
     toast.error('Превышено время ожидания ответа от сервера');
   } else if (error.name === 'TypeError' && error.message.includes('NetworkError')) {
     toast.error('Проблема с сетью. Проверьте подключение к интернету');
+  } else if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+    toast.error('Не удалось подключиться к API. Проверьте сетевое подключение или доступность сервера.');
   } else {
     console.error('Ошибка API детали:', error);
     toast.error(`Ошибка при получении данных: ${error.message || 'Неизвестная ошибка'}`);

@@ -5,12 +5,12 @@ export const ZYLALABS_API_KEY = "8103|qZi97eieReCKmFs6mwcg9Mf1H2JjJfGgdesU59tv";
 // Request configuration
 export const MAX_RETRY_ATTEMPTS = 3;
 export const RETRY_DELAY = 1000;
-export const REQUEST_TIMEOUT = 15000;
+export const REQUEST_TIMEOUT = 30000; // Увеличиваем таймаут до 30 секунд
 
 // API URL builder for single country search
 export const buildSearchUrl = (query: string, country: string, language: string, page: number): string => {
   const encodedQuery = encodeURIComponent(query);
-  // Updated API endpoint with correct formatting and parameters
+  // Ensure we're using the correct API endpoint
   return `https://api.zylalabs.com/api/2033/real+time+product+search+api/1809/search+products?q=${encodedQuery}&country=${country}&language=${language}&page=${page}&source=merchant`;
 };
 

@@ -37,17 +37,43 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${ZYLALABS_API_KEY}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
         },
-        signal: controller.signal
+        signal: controller.signal,
+        mode: 'cors',
+        credentials: 'omit'
       });
 
       clearTimeout(timeoutId);
 
+      // Логируем статус ответа
+      console.log(`API response status: ${response.status}, ok: ${response.ok}`);
+      
       // Обрабатываем ошибки API
       if (!response.ok) {
+        // Сохраняем полный текст ошибки для диагностики
         const responseText = await response.text();
-        console.log("API Response:", responseText);
+        console.error("API Error Response Text:", responseText, "Status:", response.status);
+        
+        try {
+          // Пытаемся распарсить ответ как JSON для более подробной информации
+          const errorData = JSON.parse(responseText);
+          console.error("API Error Data:", errorData);
+          
+          // Проверяем наличие сообщения о превышении лимита
+          if (errorData.message && (
+              errorData.message.includes('exceeded the allowed limit') || 
+              errorData.message.includes('limit exceeded')
+            )) {
+            console.error('API usage limit exceeded');
+            toast.error('Превышен лимит запросов к API. Пожалуйста, обратитесь в поддержку.');
+            return getMockSearchResults(params.query);
+          }
+        } catch (e) {
+          // Если не удалось распарсить как JSON, используем текст как есть
+        }
         
         if (response.status === 503) {
           // Повторяем запрос при временной недоступности сервиса
@@ -56,15 +82,32 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<a
           attempts++;
           await sleep(RETRY_DELAY);
           continue;
+        } else if (response.status === 401) {
+          // Ошибка авторизации - неверный API-ключ
+          console.error('Ошибка авторизации API. Проверьте ключ API.');
+          toast.error('Ошибка авторизации API. Проверьте ключ API.');
+          return getMockSearchResults(params.query);
+        } else if (response.status === 429) {
+          // Превышен лимит запросов
+          console.error('Превышен лимит запросов к API');
+          toast.error('Превышен лимит запросов API. Используем демонстрационные данные.');
+          return getMockSearchResults(params.query);
         } else {
-          // Обработка других ошибок
-          throw new Error(`API error: ${response.status} ${responseText}`);
+          // Другие ошибки API
+          toast.error(`Ошибка API: ${response.status}`);
+          return getMockSearchResults(params.query);
         }
       }
 
       // Парсим JSON ответ
-      const data = await response.json();
-      console.log("API Response data:", data);
+      let data;
+      try {
+        data = await response.json();
+        console.log("API Response data:", data);
+      } catch (e) {
+        console.error('Ошибка при парсинге ответа API:', e);
+        throw new Error('Не удалось обработать ответ API');
+      }
       
       // Проверяем структуру данных и нормализуем ответ
       try {
