@@ -66,7 +66,8 @@ export function useSearchExecutor({
         searchText = translatedQuery;
       }
       
-      // Set current page before executing request
+      // Всегда устанавливаем текущую страницу перед выполнением запроса
+      console.log(`Устанавливаем текущую страницу: ${page}`);
       setCurrentPage(page);
       
       // Get search countries - ensure we have German results
@@ -102,29 +103,58 @@ export function useSearchExecutor({
         setApiInfo(results.apiInfo);
       }
       
-      // Apply sorting to results if needed
+      // Apply sorting and filtering to results if needed
       let sortedProducts = [...results.products];
       
-      if (filters.sortBy) {
+      // Применяем фильтры к продуктам
+      if (filters) {
+        // Фильтр по цене - исправлено для корректной работы с числовыми значениями
+        if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
+          sortedProducts = sortedProducts.filter(product => {
+            const productPrice = typeof product._numericPrice === 'number' 
+              ? product._numericPrice 
+              : parseFloat(product.price.replace(/[^0-9.-]+/g, ''));
+            
+            if (filters.minPrice !== undefined && productPrice < filters.minPrice) {
+              return false;
+            }
+            if (filters.maxPrice !== undefined && productPrice > filters.maxPrice) {
+              return false;
+            }
+            return true;
+          });
+        }
+        
+        // Фильтр по рейтингу - исправлено для корректной работы
+        if (filters.rating !== undefined && filters.rating > 0) {
+          sortedProducts = sortedProducts.filter(product => {
+            const rating = typeof product.rating === 'number' ? product.rating : 0;
+            return rating >= filters.rating;
+          });
+        }
+      }
+      
+      // Применяем сортировку
+      if (filters && filters.sortBy) {
         switch(filters.sortBy) {
           case 'price_asc':
             sortedProducts = sortedProducts.sort((a, b) => {
-              const priceA = a._numericPrice !== undefined ? a._numericPrice : parseFloat(a.price) || 0;
-              const priceB = b._numericPrice !== undefined ? b._numericPrice : parseFloat(b.price) || 0;
+              const priceA = typeof a._numericPrice === 'number' ? a._numericPrice : parseFloat(a.price.replace(/[^0-9.-]+/g, '')) || 0;
+              const priceB = typeof b._numericPrice === 'number' ? b._numericPrice : parseFloat(b.price.replace(/[^0-9.-]+/g, '')) || 0;
               return priceA - priceB;
             });
             break;
           case 'price_desc':
             sortedProducts = sortedProducts.sort((a, b) => {
-              const priceA = a._numericPrice !== undefined ? a._numericPrice : parseFloat(a.price) || 0;
-              const priceB = b._numericPrice !== undefined ? b._numericPrice : parseFloat(b.price) || 0;
+              const priceA = typeof a._numericPrice === 'number' ? a._numericPrice : parseFloat(a.price.replace(/[^0-9.-]+/g, '')) || 0;
+              const priceB = typeof b._numericPrice === 'number' ? b._numericPrice : parseFloat(b.price.replace(/[^0-9.-]+/g, '')) || 0;
               return priceB - priceA;
             });
             break;
           case 'rating_desc':
             sortedProducts = sortedProducts.sort((a, b) => {
-              const ratingA = a.rating !== undefined ? a.rating : 0;
-              const ratingB = b.rating !== undefined ? b.rating : 0;
+              const ratingA = typeof a.rating === 'number' ? a.rating : 0;
+              const ratingB = typeof b.rating === 'number' ? b.rating : 0;
               return ratingB - ratingA;
             });
             break;
@@ -133,7 +163,9 @@ export function useSearchExecutor({
       
       // Save found products to state and cache
       if (sortedProducts.length > 0) {
+        console.log(`После применения фильтров и сортировки осталось ${sortedProducts.length} товаров`);
         setSearchResults(sortedProducts);
+        
         // Create a new object instead of using a function
         const newCache = { ...cachedResults };
         newCache[page] = sortedProducts;

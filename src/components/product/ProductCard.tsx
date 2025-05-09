@@ -48,6 +48,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
             <ProductCardRating 
               source={product.source}
               rating={product.rating}
+              country={product.country}
             />
             
             <ProductCardPrice 

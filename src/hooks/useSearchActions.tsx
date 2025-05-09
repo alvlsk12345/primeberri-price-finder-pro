@@ -1,3 +1,4 @@
+
 import { useRef } from 'react';
 import { Product, ProductFilters } from "@/services/types";
 import { useSearchExecutor } from './search/useSearchExecutor';
@@ -102,12 +103,14 @@ export function useSearchActions(props: SearchStateProps) {
     // Use current search query or last successful one
     const queryToUse = searchQuery || lastSearchQuery;
     
+    // Важно: всегда устанавливаем текущую страницу перед проверкой кеша
+    setCurrentPage(page);
+    
     // If it's the same page for the same query and we have cached results
     const cachedResultsForQuery = getCachedResults(queryToUse, lastSearchQuery, page);
     if (!forceNewSearch && cachedResultsForQuery) {
       console.log(`Используем кэшированные результаты для страницы ${page}`);
       setSearchResults(cachedResultsForQuery);
-      setCurrentPage(page);
       return;
     }
     
@@ -161,6 +164,7 @@ export function useSearchActions(props: SearchStateProps) {
       console.log(`Changing page from ${currentPage} to ${page}`);
       // Increment the counter
       setPageChangeCount(pageChangeCount + 1);
+      // Важное исправление: перед выполнением поиска устанавливаем текущую страницу
       // Trigger a search with new page
       handleSearch(page);
     }
