@@ -9,7 +9,7 @@ import { ApiUsageIndicator } from "@/components/search/ApiUsageIndicator";
 import { useSearch } from "@/contexts/search";
 
 export const SearchContainer: React.FC = () => {
-  const { searchQuery, setSearchQuery, handleSearch, isLoading } = useSearch();
+  const { searchQuery, setSearchQuery, handleSearch, isLoading, hasSearched } = useSearch();
 
   return (
     <Card className="max-w-4xl mx-auto shadow-md">
@@ -30,7 +30,8 @@ export const SearchContainer: React.FC = () => {
             isLoading={isLoading}
           />
           
-          <ApiUsageIndicator />
+          {/* Only show API usage indicator after search has been performed */}
+          {hasSearched && <ApiUsageIndicator />}
 
           <NoResultsMessage />
           <SearchResultsSection />
