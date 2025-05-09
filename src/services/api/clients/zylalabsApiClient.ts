@@ -4,7 +4,7 @@ import {
   REQUEST_TIMEOUT, 
   getApiBaseUrl 
 } from "../zylalabsConfig";
-import { handleApiError, handleFetchError } from "../errorHandlerService";
+import { handleApiError } from "../errorHandlerService";
 import { toast } from "@/components/ui/sonner";
 
 /**
@@ -59,12 +59,6 @@ export const fetchFromZylalabs = async (
         const errorData = JSON.parse(responseText);
         console.error("API Error Data:", errorData);
         
-        // Check for specific error types
-        if (response.status === 503) {
-          console.error('API Service Unavailable (503)');
-          throw new Error('API service unavailable (503)');
-        }
-        
         // Check for usage limit exceeded
         if (errorData.message && (
           errorData.message.includes('exceeded the allowed limit') || 
@@ -83,23 +77,8 @@ export const fetchFromZylalabs = async (
     
     // Parse the successful response
     return await response.json();
-  } catch (error) {
-    // Clear timeout on error
+  } finally {
     clearTimeout(timeoutId);
-    
-    // Handle fetch errors (like network issues, timeouts)
-    if (error.name === 'AbortError') {
-      console.error('API request timed out');
-      throw new Error('API request timed out');
-    }
-    
-    // Handle CORS errors
-    if (error.message && error.message.includes('Failed to fetch')) {
-      console.error('CORS error or network failure');
-    }
-    
-    // Rethrow to be handled by the caller
-    throw error;
   }
 };
 

@@ -22,15 +22,8 @@ export const SearchResultsSection: React.FC = () => {
     originalQuery,
     apiErrorMode,
     sortOption,
-    handleSortChange,
-    handleSearch
+    handleSortChange
   } = useSearch();
-
-  // Handle retry search in case of API error
-  const handleRetrySearch = () => {
-    toast.info("Повторная попытка поиска...");
-    handleSearch(currentPage, true);
-  };
 
   // Улучшенная проверка ссылок при монтировании компонента
   useEffect(() => {
@@ -82,13 +75,7 @@ export const SearchResultsSection: React.FC = () => {
 
   return (
     <div className="mt-6">
-      {apiErrorMode && (
-        <SearchResultsAlert 
-          apiErrorMode={true} 
-          currentPage={currentPage}
-          onRetry={handleRetrySearch} 
-        />
-      )}
+      {apiErrorMode && <SearchResultsAlert apiErrorMode={true} currentPage={currentPage} />}
       
       <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
         <h2 className="text-xl font-semibold">

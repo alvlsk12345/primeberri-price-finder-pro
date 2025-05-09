@@ -1,20 +1,14 @@
 
 import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, AlertTriangle, RefreshCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { AlertCircle, AlertTriangle } from "lucide-react";
 
 interface SearchResultsAlertProps {
   currentPage: number;
   apiErrorMode?: boolean;
-  onRetry?: () => void;
 }
 
-export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({ 
-  currentPage, 
-  apiErrorMode = false,
-  onRetry 
-}) => {
+export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({ currentPage, apiErrorMode = false }) => {
   if (apiErrorMode) {
     return (
       <Alert className="mb-4 border-red-300 bg-red-50">
@@ -25,7 +19,7 @@ export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({
           <p className="text-sm">Причины могут быть следующими:</p>
           <ul className="text-sm list-disc pl-5 mt-1">
             <li>Проблемы с соединением или CORS</li>
-            <li>Временная недоступность API Zylalabs (503 Service Unavailable)</li>
+            <li>Временная недоступность API Zylalabs</li>
             <li>Ограничения API ключа или его устаревание</li>
             <li>Временная недоступность прокси-серверов</li>
           </ul>
@@ -35,19 +29,6 @@ export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({
             <li>Проверить ваше интернет-соединение</li>
             <li>Проверить актуальность API-ключа в настройках</li>
           </ul>
-          {onRetry && (
-            <div className="mt-3">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={onRetry}
-                className="flex items-center gap-1 border-red-300 text-red-700 hover:bg-red-100 hover:text-red-800"
-              >
-                <RefreshCcw size={14} />
-                Повторить запрос
-              </Button>
-            </div>
-          )}
         </AlertDescription>
       </Alert>
     );

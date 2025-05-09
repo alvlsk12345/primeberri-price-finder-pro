@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { SearchProvider } from "@/contexts/search";
-import { SearchContainerWithErrorBoundary } from "@/components/search/SearchContainerWithErrorBoundary";
+import { SearchContainer } from "@/components/search/SearchContainer";
 import { BenefitsSection } from "@/components/BenefitsSection";
 import { PageFooter } from "@/components/PageFooter";
 import { PageHeader } from "@/components/PageHeader";
@@ -13,7 +13,7 @@ const Index = () => {
       
       <main className="container mx-auto py-10 px-4">
         <SearchProvider>
-          <SearchContainerWithErrorBoundary />
+          <SearchContainer />
         </SearchProvider>
 
         <BenefitsSection />
