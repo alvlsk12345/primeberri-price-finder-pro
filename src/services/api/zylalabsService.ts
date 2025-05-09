@@ -16,14 +16,24 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
   // Код ниже не используется в текущей версии, но оставлен для будущей реализации
   try {
     console.log(`Возвращаем демо-данные вместо реального API-запроса`);
-    return getMockSearchResults(params.query);
+    // В демонстрационном режиме нет информации от API, 
+    // но структура объекта должна соответствовать
+    const mockResults = await getMockSearchResults(params.query);
+    // Добавляем пустой объект apiInfo для совместимости
+    return {
+      ...mockResults,
+      apiInfo: {}
+    };
   } catch (error: any) {
     // Обрабатываем ошибки
     console.error('Ошибка при запросе к API:', error);
     toast.error('Не удалось подключиться к API. Используются демонстрационные данные.');
     
     // Всегда возвращаем демо-данные при ошибках
-    return getMockSearchResults(params.query);
+    const mockResults = await getMockSearchResults(params.query);
+    return {
+      ...mockResults,
+      apiInfo: {}
+    };
   }
 };
-

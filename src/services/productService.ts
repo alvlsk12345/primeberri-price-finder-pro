@@ -5,7 +5,7 @@ import { toast } from "@/components/ui/sonner";
 import { processZylalabsProductsData } from './formatters/productDataFormatter';
 
 // Функция для поиска товаров с поддержкой пагинации и фильтрации
-export const searchProducts = async (params: SearchParams): Promise<{ products: Product[], totalPages: number, isDemo?: boolean }> => {
+export const searchProducts = async (params: SearchParams): Promise<{ products: Product[], totalPages: number, isDemo?: boolean, apiInfo?: Record<string, string> }> => {
   try {
     console.log('Начинаем поиск товаров по запросу:', params.query, 'страница:', params.page);
     
@@ -27,6 +27,9 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
     // Проверяем, используются ли демо-данные
     const isDemo = !!response.isDemo;
     
+    // Получаем информацию об API, если она доступна
+    const apiInfo = response.apiInfo;
+    
     // Обрабатываем данные о товарах
     const products = await processZylalabsProductsData(response.products, params.filters);
     
@@ -45,8 +48,8 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
       toast.info('По вашему запросу ничего не найдено');
     }
     
-    // Возвращаем результаты с флагом демо-данных
-    return { products, totalPages, isDemo };
+    // Возвращаем результаты с флагом демо-данных и информацией об API
+    return { products, totalPages, isDemo, apiInfo };
   } catch (error) {
     console.error('Ошибка при поиске товаров:', error);
     toast.error('Произошла ошибка при поиске товаров');
