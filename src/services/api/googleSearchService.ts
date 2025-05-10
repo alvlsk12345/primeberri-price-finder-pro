@@ -1,5 +1,5 @@
 
-import { processProductImage } from "../image";
+import { processProductImage } from "../imageProcessor";
 
 // API ключ для Google Custom Search API
 const GOOGLE_API_KEY = 'AIzaSyATUUTV--YXzsWskw--7j2CUNlU70zT4QQ';
@@ -80,4 +80,3 @@ export const searchProductImageGoogle = async (brand: string, product: string, i
   // Ищем изображение по запросу
   return await searchImageGoogleCSE(query, index);
 };
-

@@ -2,12 +2,7 @@
 import { Product, ProductFilters } from './types';
 import { processZylalabsProductsData } from './formatters/productDataFormatter';
 import { extractNumericPrice, formatSingleProduct } from './formatters/singleProductFormatter';
-import { 
-  processProductImage, 
-  isZylalabsImage, 
-  isGoogleShoppingImage, 
-  isGoogleCseImage 
-} from './image';
+import { processProductImage, isZylalabsImage, isGoogleShoppingImage, isGoogleCseImage } from './imageProcessor';
 
 // Экспортируем функции и типы
 export { 
@@ -21,4 +16,3 @@ export {
 };
 
 export type { Product, ProductFilters };
-

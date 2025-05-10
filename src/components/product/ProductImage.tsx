@@ -1,11 +1,11 @@
+
 import React, { useState } from 'react';
 import { ImageOff } from "lucide-react";
-import { getPlaceholderImageUrl } from '@/services/image/imagePlaceholder';
+import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getPlaceholderImageUrl } from '@/services/imageService';
 import { ProductImageModal } from './ProductImageModal';
-import { useProductImageLoading } from './image/useProductImageLoading';
-import { detectImageSource } from './image/ImageSourceDetector';
-import { AvatarProductImage } from './image/AvatarProductImage';
-import { StandardProductImage } from './image/StandardProductImage';
+import { isGoogleCseImage, isGoogleShoppingImage, isZylalabsImage } from '@/services/imageProcessor';
 
 interface ProductImageProps {
   image: string | null;
@@ -14,25 +14,72 @@ interface ProductImageProps {
 }
 
 export const ProductImage: React.FC<ProductImageProps> = ({ image, title, productId }) => {
+  const [imageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Получаем URL заглушки для отображения при ошибке или отсутствии изображения
   const placeholderUrl = getPlaceholderImageUrl(title);
+
+  // Проверяем источник изображения для применения специальной обработки
+  const isGoogleImage = Boolean(image && (isGoogleShoppingImage(image) || isGoogleCseImage(image)));
+  const isZylalabs = Boolean(image && isZylalabsImage(image));
   
-  // Используем хук для обработки загрузки изображения
-  const imageState = useProductImageLoading(image, productId);
-  const { imageError } = imageState;
+  // Проверяем, является ли URL с CORS-прокси
+  const isProxiedUrl = Boolean(image && (
+    image.includes('corsproxy.io') || 
+    image.includes('cors-anywhere') || 
+    image.includes('proxy.cors')
+  ));
   
-  // Определяем тип источника изображения
-  const sourceInfo = detectImageSource(image);
-  const { useAvatar } = sourceInfo;
+  // Определяем, использовать ли Avatar вместо img
+  const useAvatar = isGoogleImage || isZylalabs || isProxiedUrl || image?.includes('encrypted-tbn');
+
+  // Детальное логирование для отладки
+  React.useEffect(() => {
+    console.log(`Инициализация ProductImage для товара ${productId}:`, {
+      image,
+      isGoogleImage,
+      isZylalabs,
+      isProxiedUrl,
+      useAvatar
+    });
+  }, [image, productId, isGoogleImage, isZylalabs, isProxiedUrl, useAvatar]);
+  
+  // Обработчик для ошибок загрузки изображений с улучшенной диагностикой
+  const handleImageError = () => {
+    console.error('Ошибка загрузки изображения для товара:', {
+      productId,
+      imageUrl: image,
+      isZylalabs,
+      isGoogleImage,
+      isProxiedUrl
+    });
+    
+    setImageLoading(false);
+    setImageError(true);
+  };
+
+  // Обработчик для успешной загрузки изображения
+  const handleImageLoad = () => {
+    console.log('Изображение успешно загружено:', {
+      productId,
+      imageUrl: image
+    });
+    setImageLoading(false);
+    setImageError(false);
+  };
   
   // Обработчик клика по изображению
-  const handleImageClick = () => {
+  const handleImageClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Предотвращаем всплытие события
+    
     // Открываем модальное окно, только если есть изображение и нет ошибки загрузки
     if (image && !imageError) {
       console.log('Открытие модального окна для изображения:', image);
       setIsModalOpen(true);
     } else {
-      console.log('Не удалось открыть модальное окно: нет изображения или ошибки загрузки');
+      console.log('Не удалось открыть модальное окно: нет изображения или ошибка загрузки');
     }
   };
 
@@ -48,25 +95,109 @@ export const ProductImage: React.FC<ProductImageProps> = ({ image, title, produc
     );
   }
 
-  // Выбираем компонент для отображения в зависимости от типа изображения
+  // Для изображений, требующих особой обработки, используем Avatar компонент
+  if (useAvatar) {
+    return (
+      <>
+        <div 
+          className="w-full h-[150px] mb-3 flex items-center justify-center relative cursor-pointer" 
+          onClick={handleImageClick}
+        >
+          {imageLoading && (
+            <Skeleton className="w-full h-full absolute inset-0" />
+          )}
+          
+          <Avatar className="w-full h-full rounded-none">
+            <AvatarImage 
+              src={image} 
+              alt={title}
+              className="object-contain"
+              onError={handleImageError}
+              onLoad={handleImageLoad}
+              crossOrigin="anonymous"
+            />
+            <AvatarFallback className="w-full h-full rounded-none bg-gray-100">
+              <div className="flex flex-col items-center justify-center">
+                <ImageOff size={32} className="text-gray-400" />
+                <p className="text-sm text-gray-500 mt-2">Изображение недоступно</p>
+              </div>
+            </AvatarFallback>
+          </Avatar>
+          
+          {imageError && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-80">
+              <div className="flex flex-col items-center justify-center">
+                <ImageOff size={24} className="text-gray-500" />
+                <p className="text-xs text-gray-600 mt-1">
+                  Ошибка загрузки {isZylalabs ? "(Zylalabs)" : isGoogleImage ? "(Google)" : "(API)"}
+                </p>
+              </div>
+            </div>
+          )}
+          
+          {!imageError && !imageLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 hover:bg-opacity-10 transition-all">
+              <div className="text-xs text-white bg-black bg-opacity-50 px-2 py-1 rounded opacity-0 hover:opacity-100 transition-opacity">
+                Увеличить
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <ProductImageModal 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          imageUrl={imageError ? placeholderUrl : image} 
+          productTitle={title} 
+        />
+      </>
+    );
+  }
+
+  // Для обычных изображений используем стандартный тег img
   return (
     <>
-      {useAvatar ? (
-        <AvatarProductImage 
-          image={image}
-          title={title}
-          imageState={imageState}
-          sourceInfo={sourceInfo}
-          onClick={handleImageClick}
+      <div 
+        className="w-full h-[150px] mb-3 flex items-center justify-center relative cursor-pointer" 
+        onClick={handleImageClick}
+      >
+        {imageLoading && (
+          <Skeleton className="w-full h-full absolute inset-0" />
+        )}
+        
+        <img 
+          src={image}
+          alt={title}
+          className="max-h-full max-w-full object-contain hover:opacity-90 transition-opacity"
+          onError={(e) => {
+            // При ошибке устанавливаем заглушку
+            console.error('Ошибка загрузки изображения, устанавливаем заглушку:', image);
+            e.currentTarget.onerror = null; // Предотвращение бесконечной рекурсии
+            e.currentTarget.src = placeholderUrl;
+            handleImageError();
+          }}
+          onLoad={handleImageLoad}
+          loading="lazy"
+          crossOrigin="anonymous"
         />
-      ) : (
-        <StandardProductImage
-          image={image}
-          title={title}
-          imageState={imageState}
-          onClick={handleImageClick}
-        />
-      )}
+        
+        {imageError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-80">
+            <div className="flex flex-col items-center justify-center">
+              <ImageOff size={24} className="text-gray-500" />
+              <p className="text-xs text-gray-600 mt-1">Ошибка загрузки</p>
+            </div>
+          </div>
+        )}
+        
+        {!imageError && !imageLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 hover:bg-opacity-10 transition-all">
+            <div className="text-xs text-white bg-black bg-opacity-50 px-2 py-1 rounded opacity-0 hover:opacity-100 transition-opacity">
+              Увеличить
+            </div>
+          </div>
+        )}
+      </div>
       
       <ProductImageModal 
         isOpen={isModalOpen} 
