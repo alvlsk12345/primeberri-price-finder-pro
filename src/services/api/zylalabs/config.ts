@@ -6,7 +6,7 @@ export const BASE_URL = "https://zylalabs.com/api/2033/real+time+product+search+
 export const REQUEST_TIMEOUT = 30000; // 30 секунд
 
 // API ключ для Zylalabs
-export const ZYLALABS_API_KEY = '8112|xU0WDZhKkWVo7rczutXwzGKzEwBtNPhHbsAYbtrM';
+export const ZYLALABS_API_KEY = '8124|JemZ3DKziYKrlw6KLiRTUzsm82AUlmjedviBpplx';
 
 // Функция для автоматического сохранения API-ключа при первом запуске
 const saveDefaultApiKey = () => {
