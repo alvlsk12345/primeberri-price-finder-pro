@@ -26,18 +26,19 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
   const displayedImage = imageUrl || getPlaceholderImageUrl(productTitle);
   
   // Проверяем источник изображения для специальной обработки
-  const isSpecialSource = imageUrl && (
+  const isSpecialSource = Boolean(imageUrl && (
     isZylalabsImage(imageUrl) || 
     isGoogleCseImage(imageUrl) || 
-    isGoogleShoppingImage(imageUrl)
-  );
+    isGoogleShoppingImage(imageUrl) || 
+    imageUrl.includes('encrypted-tbn')
+  ));
   
   // Проверяем, является ли URL уже проксированным
-  const isProxiedUrl = imageUrl && (
+  const isProxiedUrl = Boolean(imageUrl && (
     imageUrl.includes('corsproxy.io') || 
     imageUrl.includes('cors-anywhere') || 
     imageUrl.includes('proxy.cors')
-  );
+  ));
   
   // Решаем, использовать ли Avatar компонент для изображения
   const useAvatar = isSpecialSource || isProxiedUrl;

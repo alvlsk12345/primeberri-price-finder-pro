@@ -24,17 +24,20 @@ export const ProductDetailsImage: React.FC<ProductDetailsImageProps> = ({
   // Получаем URL заглушки для случая ошибки
   const placeholderUrl = title ? getPlaceholderImageUrl(title) : '';
   
-  // Проверяем источник изображения
-  const isGoogleImage = image && (isGoogleShoppingImage(image) || isGoogleCseImage(image));
-  const isZylalabs = image && isZylalabsImage(image);
-  const useAvatar = isGoogleImage || isZylalabs;
+  // Проверяем источник изображения для специальной обработки
+  const isGoogleImage = Boolean(image && (isGoogleShoppingImage(image) || isGoogleCseImage(image)));
+  const isZylalabs = Boolean(image && isZylalabsImage(image));
   
-  // Проверяем, является ли URL уже проксированным
-  const isProxiedUrl = image && (
+  // Проверяем, является ли URL уже проксированным или содержит encrypted-tbn
+  const isProxiedUrl = Boolean(image && (
     image.includes('corsproxy.io') || 
     image.includes('cors-anywhere') || 
-    image.includes('proxy.cors')
-  );
+    image.includes('proxy.cors') ||
+    image.includes('encrypted-tbn')
+  ));
+
+  // Определяем, использовать ли Avatar вместо img
+  const useAvatar = isGoogleImage || isZylalabs || isProxiedUrl;
 
   // Обработчик успешной загрузки изображения
   const handleImageLoad = () => {
@@ -45,7 +48,12 @@ export const ProductDetailsImage: React.FC<ProductDetailsImageProps> = ({
 
   // Обработчик ошибки загрузки изображения
   const handleImageError = () => {
-    console.error('Ошибка загрузки детального изображения товара:', image);
+    console.error('Ошибка загрузки детального изображения товара:', {
+      imageUrl: image,
+      isGoogleImage,
+      isZylalabs,
+      isProxiedUrl
+    });
     setImageLoading(false);
     setImageError(true);
   };
@@ -60,6 +68,17 @@ export const ProductDetailsImage: React.FC<ProductDetailsImageProps> = ({
       console.log('Не удалось открыть модальное окно для детального изображения: нет изображения или ошибка загрузки');
     }
   };
+
+  React.useEffect(() => {
+    console.log('Инициализация ProductDetailsImage:', {
+      image,
+      title,
+      isGoogleImage,
+      isZylalabs,
+      isProxiedUrl,
+      useAvatar
+    });
+  }, [image, title, isGoogleImage, isZylalabs, isProxiedUrl, useAvatar]);
   
   if (!image) {
     return (
@@ -70,7 +89,7 @@ export const ProductDetailsImage: React.FC<ProductDetailsImageProps> = ({
     );
   }
   
-  if (useAvatar || isProxiedUrl) {
+  if (useAvatar) {
     // Для изображений Google, Zylalabs или проксированных используем Avatar компонент
     return (
       <>

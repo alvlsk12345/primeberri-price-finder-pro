@@ -5,16 +5,22 @@ import { isValidImageUrl, getUniqueImageUrl, isGoogleShoppingImage as isGoogleIm
 export const isZylalabsImage = (url: string): boolean => {
   if (!url) return false;
   
+  // Проверяем URL на принадлежность к Zylalabs API
   return url.includes('zylalabs.com') || 
          url.includes('rapidapi.com') || 
          url.includes('rapidapi-prod-') ||
          url.includes('zyla-api') ||
          url.includes('api.zyla') || 
-         url.includes('zylaapi');
+         url.includes('zylaapi') ||
+         // Добавляем дополнительные домены, связанные с Zylalabs
+         url.includes('zylasearch') ||
+         url.includes('zylaimg') ||
+         url.includes('zyla-img');
 };
 
 // Функция для проверки, является ли URL от Google Shopping
 export const isGoogleShoppingImage = (url: string): boolean => {
+  // Используем базовую функцию из imageService и дополняем её
   return isGoogleImageFromService(url) || 
          url.includes('encrypted-tbn') || 
          url.includes('googleusercontent') || 
@@ -47,11 +53,13 @@ const cleanMarkdownUrl = (url: string): string => {
   return url;
 };
 
-// Проверка необходимости использования CORS-прокси
+// Проверка необходимости использования CORS-прокси на основе URL
 const shouldUseCorsProxy = (url: string): boolean => {
-  // Добавляем дополнительные проверки для определения доменов с CORS-проблемами
+  // Расширенная проверка для определения доменов с проблемами CORS
   return (
     isZylalabsImage(url) || 
+    // Проверяем Google Shopping URL на необходимость использования прокси
+    url.includes('encrypted-tbn') ||
     url.includes('zylaapi.') || 
     url.includes('api-zyla.') ||
     url.includes('zylasearch.') ||
@@ -62,7 +70,7 @@ const shouldUseCorsProxy = (url: string): boolean => {
 
 // Функция для применения CORS-прокси к URL
 const applyCorsProxy = (url: string): string => {
-  // Используем общедоступный CORS-прокси
+  // Используем публичный CORS-прокси
   const corsProxyUrl = 'https://corsproxy.io/?';
   
   // Не применяем прокси к URL, которые уже его используют
@@ -107,6 +115,26 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
     console.log(`Удалены кавычки: ${processedUrl}`);
   }
 
+  // Особая обработка для URL от Google (в том числе из Zylalabs API) 
+  if (isGoogleShoppingImage(processedUrl)) {
+    console.log(`Обнаружен URL Google Shopping: ${processedUrl}`);
+    
+    // Добавляем протокол, если его нет
+    if (!processedUrl.startsWith('http') && !processedUrl.startsWith('//')) {
+      processedUrl = `https://${processedUrl}`;
+    } else if (processedUrl.startsWith('//')) {
+      processedUrl = `https:${processedUrl}`;
+    }
+    
+    // К "encrypted-tbn" URL почти всегда нужен прокси
+    if (processedUrl.includes('encrypted-tbn')) {
+      console.log(`Применяем прокси к Google Shopping URL: ${processedUrl}`);
+      return applyCorsProxy(processedUrl);
+    }
+    
+    return processedUrl;
+  }
+
   // Особая обработка для изображений Zylalabs
   if (isZylalabsImage(processedUrl)) {
     console.log(`Обнаружен URL Zylalabs: ${processedUrl}`);
@@ -122,9 +150,9 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
     return applyCorsProxy(processedUrl);
   }
   
-  // Для URL от Google Shopping или Google CSE используем особую обработку
-  if (isGoogleShoppingImage(processedUrl) || isGoogleCseImage(processedUrl)) {
-    console.log(`Обнаружен URL Google: ${processedUrl}`);
+  // Для URL от Google CSE используем особую обработку
+  if (isGoogleCseImage(processedUrl)) {
+    console.log(`Обнаружен URL Google CSE: ${processedUrl}`);
     
     // Проверяем, начинается ли URL с http или https
     if (!processedUrl.startsWith('http') && !processedUrl.startsWith('//')) {
@@ -133,7 +161,7 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
       processedUrl = `https:${processedUrl}`;
     }
     
-    return processedUrl; // Возвращаем URL как есть без дополнительной обработки для Google
+    return processedUrl;
   }
   
   // Проверяем необходимость использования CORS-прокси для других доменов

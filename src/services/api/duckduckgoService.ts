@@ -18,8 +18,10 @@ export const searchProductImage = async (brand: string, product: string, index: 
     
     if (imageUrl) {
       console.log(`Найдено изображение: ${imageUrl}`);
-      // Обрабатываем URL изображения через наш обновленный processProductImage
-      return processProductImage(imageUrl, index);
+      // Обрабатываем URL изображения через обновленный processProductImage
+      const processedUrl = processProductImage(imageUrl, index);
+      console.log(`Обработанный URL изображения: ${processedUrl}`);
+      return processedUrl;
     }
     
     console.log(`Изображение не найдено для: ${brand} ${product}`);
