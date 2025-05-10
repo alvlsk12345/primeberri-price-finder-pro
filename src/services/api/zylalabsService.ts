@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 import { SearchParams } from "../types";
 import { makeZylalabsApiRequest } from "./zylalabs";
+import { generateMockSearchResults } from "./mock/mockSearchGenerator";
 
 // Функция для поиска товаров через Zylalabs API с поддержкой пагинации
 export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{products: any[], totalPages: number, isDemo: boolean, apiInfo: Record<string, string>}> => {
