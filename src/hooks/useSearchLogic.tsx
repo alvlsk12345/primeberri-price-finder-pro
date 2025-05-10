@@ -4,23 +4,23 @@ import { useSearchState } from './useSearchState';
 import { useSearchActions } from './useSearchActions';
 
 export function useSearchLogic() {
-  // Get all search state from our custom hook
+  // Получаем все состояния поиска из нашего кастомного хука
   const searchState = useSearchState();
   
-  // Get all search actions from our custom hook
+  // Получаем все действия поиска из нашего кастомного хука
   const searchActions = useSearchActions(searchState);
   
-  // Effect for debug logging on page changes
+  // Эффект для отладки изменений страницы
   useEffect(() => {
     console.log(`Page change effect triggered: current page is ${searchState.currentPage}, change count: ${searchState.pageChangeCount}`);
   }, [searchState.currentPage, searchState.pageChangeCount]);
 
-  // Cleanup effect
+  // Эффект для очистки
   useEffect(() => {
     return searchActions.cleanupSearch;
   }, []);
 
-  // Return all state and actions as a single object
+  // Возвращаем все состояния и действия как единый объект
   return {
     ...searchState,
     ...searchActions

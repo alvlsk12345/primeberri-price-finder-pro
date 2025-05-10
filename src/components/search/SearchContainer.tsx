@@ -7,7 +7,8 @@ import { NoResultsMessage } from "@/components/search/NoResultsMessage";
 import { ProductDetailsSection } from "@/components/product/ProductDetailsSection";
 
 export const SearchContainer: React.FC = () => {
-  return <Card className="max-w-4xl mx-auto shadow-md border-brand/20">
+  return (
+    <Card className="max-w-4xl mx-auto shadow-md border-brand/20">
       <CardHeader className="text-center bg-brand/10 rounded-t-md">
         <CardTitle className="text-2xl flex items-center justify-center gap-2">
           <a href="https://primeberri.com/" target="_blank" rel="noopener noreferrer">
@@ -25,5 +26,6 @@ export const SearchContainer: React.FC = () => {
           <ProductDetailsSection />
         </div>
       </CardContent>
-    </Card>;
+    </Card>
+  );
 };

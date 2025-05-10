@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect } from 'react';
 import { Product, ProductFilters } from "@/services/types";
 import { useSearchLogic } from "@/hooks/useSearchLogic";
 
-// Define the search context type
+// Определяем тип контекста поиска
 type SearchContextType = {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -26,23 +26,24 @@ type SearchContextType = {
   handleFilterChange: (newFilters: ProductFilters) => void;
 };
 
-// Create context with default values
+// Создаем контекст с значениями по умолчанию
 const SearchContext = createContext<SearchContextType | undefined>(undefined);
 
-// Provider component
+// Компонент провайдера
 export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Устраняем циклическую зависимость
   const searchLogic = useSearchLogic();
   
-  // Effect для отладки изменения страницы
+  // Эффект для отладки изменения страницы
   useEffect(() => {
     console.log(`Page change effect triggered: current page is ${searchLogic.currentPage}, change count: ${searchLogic.pageChangeCount}`);
   }, [searchLogic.currentPage, searchLogic.pageChangeCount]);
 
-  // Pass all the search logic to the provider
+  // Передаем всю логику поиска в провайдер
   return <SearchContext.Provider value={searchLogic}>{children}</SearchContext.Provider>;
 };
 
-// Custom hook for using the search context
+// Пользовательский хук для использования контекста поиска
 export const useSearch = () => {
   const context = useContext(SearchContext);
   if (context === undefined) {
