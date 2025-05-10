@@ -62,7 +62,8 @@ const mapAbacusProducts = async (products: AbacusProduct[]): Promise<Product[]> 
     };
     
     // Применяем форматирование
-    const formattedProduct = formatSingleProduct(mappedProduct);
+    // ИСПРАВЛЕНО: Добавлен await перед вызовом форматирования
+    const formattedProduct = await formatSingleProduct(mappedProduct);
     mappedProducts.push(formattedProduct);
   }
   
