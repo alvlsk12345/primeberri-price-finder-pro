@@ -66,3 +66,52 @@ export const addCorsHeaders = (options: RequestInit = {}): RequestInit => {
     mode: 'cors'
   };
 };
+
+/**
+ * Проверяет, должен ли URL использовать CORS прокси
+ * 
+ * @param url - URL для проверки
+ * @returns true, если URL должен использовать CORS прокси
+ */
+export const shouldUseCorsProxy = (url: string): boolean => {
+  // Проверяем, исходит ли URL из источника, который обычно требует CORS прокси
+  return !(
+    url.startsWith('data:') ||
+    url.includes('amazonaws.com') ||
+    url.includes('cloudfront.net') ||
+    url.includes('blob:') ||
+    url.includes('data:image')
+  );
+};
+
+/**
+ * Применяет CORS прокси к URL, если он еще не был применен
+ * 
+ * @param url - Исходный URL
+ * @returns URL с примененным CORS прокси
+ */
+export const applyCorsProxy = (url: string): string => {
+  // Если URL уже содержит прокси, возвращаем его как есть
+  if (isProxiedUrl(url)) {
+    return url;
+  }
+  
+  // Применяем CORS прокси к URL
+  return getCorsProxyUrl(url);
+};
+
+/**
+ * Проверяет, является ли URL уже проксированным
+ * 
+ * @param url - URL для проверки
+ * @returns true, если URL уже использует CORS прокси
+ */
+export const isProxiedUrl = (url: string): boolean => {
+  if (!url) return false;
+  
+  return (
+    url.includes('corsproxy.io') ||
+    url.includes('api.allorigins.win') ||
+    url.includes('cors-anywhere.herokuapp.com')
+  );
+};
