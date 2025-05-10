@@ -1,6 +1,5 @@
 
 import { toast } from "sonner";
-import { generateMockSearchResults } from "./mock/mockSearchGenerator";
 
 /**
  * Handles API response errors based on status codes
@@ -37,37 +36,27 @@ export const handleApiError = async (response: Response): Promise<any> => {
   // Особая обработка для разных статусных кодов
   if (response.status === 401) {
     toast.error("Ошибка авторизации API. Проверьте ключ API.", { duration: 5000 });
-    console.log("Используем демо-данные из-за ошибки авторизации API");
+    throw new Error("Ошибка авторизации API. Проверьте ключ API.");
   } else if (response.status === 429) {
     const resetTime = headers['x-zyla-api-calls-reset-time'] || 'неизвестное время';
     toast.error(`Превышен лимит запросов API. Лимит будет восстановлен через: ${resetTime}.`, { duration: 5000 });
-    console.log(`Используем демо-данные из-за превышения лимита API. Осталось запросов: ${remainingCalls || 0}`);
+    throw new Error(`Превышен лимит запросов API. Лимит будет восстановлен через: ${resetTime}.`);
   } else if (response.status === 400) {
     toast.error(`Некорректный запрос: ${errorMessage}`, { duration: 5000 });
-    console.log("Используем демо-данные из-за некорректного запроса API");
+    throw new Error(`Некорректный запрос: ${errorMessage}`);
   } else if (response.status === 503) {
-    toast.error(`Сервис Zylalabs временно недоступен. Используем демо-данные.`, { duration: 5000 });
-    console.log("Используем демо-данные из-за недоступности API (503)");
+    toast.error(`Сервис Zylalabs временно недоступен.`, { duration: 5000 });
+    throw new Error(`Сервис Zylalabs временно недоступен (503).`);
   } else if (response.status === 403) {
     toast.error("Доступ запрещен. Проверьте права API ключа.", { duration: 5000 });
-    console.log("Используем демо-данные из-за ограничения доступа (403)");
+    throw new Error("Доступ запрещен. Проверьте права API ключа (403).");
   } else if (response.status === 404) {
     toast.error("Требуемый ресурс не найден. Проверьте URL API.", { duration: 5000 });
-    console.log("Используем демо-данные из-за ошибки 404");
+    throw new Error("Требуемый ресурс не найден. Проверьте URL API (404).");
   } else {
     toast.error(`Ошибка API (${response.status}): ${errorMessage}`, { duration: 5000 });
-    console.log(`Используем демо-данные из-за ошибки API ${response.status}`);
+    throw new Error(`Ошибка API (${response.status}): ${errorMessage}`);
   }
-  
-  // Возвращаем демо-данные вместо выбрасывания исключения
-  return {
-    data: null,
-    products: [],
-    totalPages: 1,
-    isDemo: true,
-    remainingCalls: '0',
-    error: errorMessage
-  };
 };
 
 /**
@@ -84,21 +73,13 @@ export const handleFetchError = (error: any): void => {
   
   if (error.name === 'AbortError') {
     console.warn('Запрос был отменен из-за истечения времени ожидания');
-    toast.error('Превышено время ожидания ответа от сервера Zylalabs. Используем демо-данные.', { duration: 5000 });
+    toast.error('Превышено время ожидания ответа от сервера Zylalabs.', { duration: 5000 });
   } else if (error.name === 'TypeError' && error.message.includes('NetworkError')) {
-    toast.error('Проблема с сетью. Проверьте подключение к интернету. Используем демо-данные.', { duration: 5000 });
+    toast.error('Проблема с сетью. Проверьте подключение к интернету.', { duration: 5000 });
   } else if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-    toast.error('Ошибка CORS при обращении к API. Используем демо-данные.', { duration: 5000 });
+    toast.error('Ошибка CORS при обращении к API.', { duration: 5000 });
     console.log('Рекомендации по исправлению CORS: Используйте прокси-сервер или серверное API');
   } else {
-    toast.error('Ошибка при получении данных о товарах. Используем демо-данные.', { duration: 5000 });
+    toast.error('Ошибка при получении данных о товарах.', { duration: 5000 });
   }
 };
-
-/**
- * Генерирует демо данные в случае ошибок
- */
-export const getFallbackSearchResults = (query: string, page: number = 1) => {
-  return generateMockSearchResults(query, page);
-};
-

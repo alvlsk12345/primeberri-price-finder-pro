@@ -64,6 +64,7 @@ export function useSearchExecutor({
   ) => {
     console.log(`executeSearch called with page: ${page}, query: ${queryToUse}`);
     setIsLoading(true);
+    setIsUsingDemoData(false); // Изначально предполагаем, что используем API
     
     try {
       // Устанавливаем текущую страницу перед выполнением запроса
@@ -100,50 +101,60 @@ export function useSearchExecutor({
       // Включаем дополнительные логи для отладки
       console.log('Параметры поиска:', searchParams);
       
-      // Execute the search
-      const results = await executeApiCall(searchParams);
-      console.log(`Search completed for page ${page}, got ${results.products.length} results`);
-      
-      // Дополнительный лог для отладки данных API
-      if (results.products.length > 0) {
-        console.log('Пример первого продукта:', results.products[0]);
+      try {
+        // Execute the search
+        const results = await executeApiCall(searchParams);
+        console.log(`Search completed for page ${page}, got ${results.products?.length || 0} results`);
+        
+        // Дополнительный лог для отладки данных API
+        if (results.products && results.products.length > 0) {
+          console.log('Пример первого продукта:', results.products[0]);
+        }
+        
+        // Сбрасываем счетчик попыток при успешном запросе
+        retryAttemptsRef.current = 0;
+        
+        // Apply sorting and filtering to results if needed
+        let sortedProducts = applyFiltersAndSorting(results.products || [], filters);
+        
+        // Save found products to state and cache
+        if (sortedProducts.length > 0) {
+          console.log(`После применения фильтров и сортировки осталось ${sortedProducts.length} товаров`);
+          setSearchResults(sortedProducts);
+          lastSuccessfulResultsRef.current = sortedProducts; // Сохраняем успешные результаты
+          
+          // Create a new object instead of using a function
+          const newCache = { ...cachedResults };
+          newCache[page] = sortedProducts;
+          setCachedResults(newCache);
+          setTotalPages(results.totalPages || 1);
+          
+          console.log(`Найдено ${sortedProducts.length} товаров!`);
+          
+          return { success: true, products: sortedProducts };
+        } 
+        
+        // Если API не вернул результатов, сообщаем пользователю
+        setSearchResults([]);
+        console.log('По вашему запросу ничего не найдено.');
+        toast.error('По вашему запросу ничего не найдено. Попробуйте изменить запрос.', { duration: 4000 });
+        return { success: false, products: [] };
+      } catch (apiError: any) {
+        // Если произошла ошибка при вызове API
+        console.error('Ошибка при запросе к API:', apiError);
+        toast.error(`Ошибка API: ${apiError.message}`, { duration: 5000 });
+        
+        // Если у нас есть предыдущие результаты и код специально не требует их сброса,
+        // возвращаем их для лучшего пользовательского опыта
+        if (lastSuccessfulResultsRef.current.length > 0) {
+          toast.info('Показаны предыдущие результаты из-за ошибки API', { duration: 3000 });
+          setSearchResults(lastSuccessfulResultsRef.current);
+          return { success: false, products: lastSuccessfulResultsRef.current };
+        }
+        
+        setSearchResults([]);
+        return { success: false, products: [] };
       }
-      
-      // Сбрасываем счетчик попыток при успешном запросе
-      retryAttemptsRef.current = 0;
-      
-      // Apply sorting and filtering to results if needed
-      let sortedProducts = applyFiltersAndSorting(results.products, filters);
-      
-      // Save found products to state and cache
-      if (sortedProducts.length > 0) {
-        console.log(`После применения фильтров и сортировки осталось ${sortedProducts.length} товаров`);
-        setSearchResults(sortedProducts);
-        lastSuccessfulResultsRef.current = sortedProducts; // Сохраняем успешные результаты
-        
-        // Create a new object instead of using a function
-        const newCache = { ...cachedResults };
-        newCache[page] = sortedProducts;
-        setCachedResults(newCache);
-        setTotalPages(results.totalPages);
-        
-        console.log(`Найдено ${sortedProducts.length} товаров!`);
-        
-        return { success: true, products: sortedProducts };
-      } 
-      
-      if (lastSuccessfulResultsRef.current.length > 0) {
-        // Если текущий запрос не вернул результатов, но у нас есть предыдущие результаты
-        console.log('По запросу ничего не найдено, возвращаем предыдущие результаты');
-        toast.info('По вашему запросу ничего не найдено. Показываем предыдущие результаты.', { duration: 3000 });
-        setSearchResults(lastSuccessfulResultsRef.current);
-        return { success: true, products: lastSuccessfulResultsRef.current };
-      }
-      
-      setSearchResults([]);
-      console.log('По вашему запросу ничего не найдено.');
-      toast.error('По вашему запросу ничего не найдено. Попробуйте изменить запрос.', { duration: 4000 });
-      return { success: false, products: [] };
     } catch (error) {
       // Попытка повторить запрос при ошибке сети или таймауте
       if (retryAttemptsRef.current < MAX_RETRY_ATTEMPTS) {

@@ -21,7 +21,6 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   isLoading
 }) => {
   const [hasError, setHasError] = useState(false);
-  const isCyrillic = containsCyrillicCharacters(searchQuery);
   const isDemoMode = useDemoModeForced;
 
   // Обработчик нажатия клавиши Enter
@@ -40,18 +39,9 @@ export const SearchForm: React.FC<SearchFormProps> = ({
         return;
       }
       setHasError(false);
-
-      // ОТКЛЮЧЕНО: уведомление о переводе
-      // if (isCyrillic) {
-      //   toast.info('Запрос будет переведен на английский для лучших результатов поиска');
-      // }
       
       // Дополнительное уведомление для отладки
-      if (isDemoMode) {
-        toast.info('Используется демо-режим без обращения к API', { duration: 2000 });
-      } else {
-        toast.info('Выполняем поиск через Zylalabs API', { duration: 2000 });
-      }
+      toast.info('Выполняем поиск через Zylalabs API', { duration: 2000 });
       
       handleSearch();
     } catch (error) {
@@ -75,19 +65,11 @@ export const SearchForm: React.FC<SearchFormProps> = ({
             className={`w-full ${hasError ? 'border-red-500' : ''}`} 
           />
           
-          {useDemoModeForced ? (
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded flex items-center">
-                <Info size={12} className="mr-1" /> Демо-режим
-              </span>
-            </div>
-          ) : (
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded flex items-center">
-                <Info size={12} className="mr-1" /> API-режим
-              </span>
-            </div>
-          )}
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded flex items-center">
+              <Info size={12} className="mr-1" /> API-режим
+            </span>
+          </div>
         </div>
         <Button 
           onClick={executeSearch} 
@@ -115,17 +97,9 @@ export const SearchForm: React.FC<SearchFormProps> = ({
         </div>
       )}
 
-      {useDemoModeForced ? (
-        <div className="flex items-center text-amber-600 text-sm gap-1 bg-amber-50 p-2 rounded">
-          <Info size={14} />
-          <span>Демонстрационный режим активен. Результаты поиска генерируются автоматически.</span>
-        </div>
-      ) : (
-        <div className="flex items-center text-blue-600 text-sm gap-1 bg-blue-50 p-2 rounded">
-          <Info size={14} />
-          <span>API-режим активен. Результаты поиска получаются через Zylalabs API. Перевод запросов отключен.</span>
-        </div>
-      )}
+      <div className="flex items-center text-blue-600 text-sm gap-1 bg-blue-50 p-2 rounded">
+        <Info size={14} />
+        <span>API-режим активен. Результаты поиска получаются через Zylalabs API.</span>
+      </div>
     </div>;
 };
-

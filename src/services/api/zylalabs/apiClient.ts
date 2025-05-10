@@ -6,7 +6,7 @@ import { useDemoModeForced } from "../mock/mockServiceConfig";
 import { getApiKey, REQUEST_TIMEOUT } from "./config";
 import { getCachedResponse, setCacheResponse } from "./cacheService";
 import { buildZylalabsUrl } from "./urlBuilder";
-import { toast } from "sonner"; // Добавляем импорт toast из sonner
+import { toast } from "sonner"; 
 
 /**
  * Выполняет запрос к API Zylalabs
@@ -24,23 +24,14 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
   
   // Проверка наличия ключа API
   if (!apiKey) {
-    console.log('Отсутствует API ключ, используем демо-данные');
-    return generateMockSearchResults(params.query, params.page);
+    console.error('Отсутствует API ключ');
+    toast.error('Отсутствует API ключ для доступа к Zylalabs. Запрос невозможен.');
+    throw new Error('API ключ не задан');
   }
   
   // Формирование URL запроса
   const url = buildZylalabsUrl(params);
   console.log('Запрос к API с URL:', url);
-  
-  // Проверяем кеш перед запросом
-  const cachedResponse = getCachedResponse(url);
-  if (cachedResponse) {
-    console.log('Использован кешированный ответ для URL:', url);
-    return {
-      ...cachedResponse,
-      fromCache: true
-    };
-  }
   
   // Создание контроллера для отмены запроса по таймауту
   const controller = new AbortController();
@@ -53,6 +44,11 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
     console.log('- Метод:', 'GET');
     console.log('- API ключ:', `Bearer ${apiKey.substring(0, 5)}...`);
     
+    toast.loading('Выполняется запрос к Zylalabs API...', {
+      id: 'api-request',
+      duration: REQUEST_TIMEOUT
+    });
+    
     // Выполняем запрос с обновленными заголовками
     const response = await fetch(url, {
       method: 'GET',
@@ -63,13 +59,15 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
         'Origin': window.location.origin,
       },
       signal: controller.signal,
-      mode: 'cors', // Явно указываем режим CORS
-      credentials: 'omit', // Не отправляем куки
+      mode: 'cors',
+      credentials: 'omit',
     });
     
     // Очистка таймера
     clearTimeout(timeoutId);
     console.log('Получен ответ от сервера, статус:', response.status);
+    
+    toast.dismiss('api-request');
     
     // Вывод всех заголовков для отладки
     const headers: Record<string, string> = {};
@@ -84,7 +82,7 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
       console.error('Ошибка API:', response.status, response.statusText);
       const errorResponse = await response.text();
       console.error('Тело ответа с ошибкой:', errorResponse);
-      return handleApiError(response);
+      throw new Error(`API вернул ошибку ${response.status}: ${response.statusText}`);
     }
     
     // Разбор ответа
@@ -131,26 +129,30 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
     } catch (jsonError) {
       console.error('Ошибка при парсинге JSON:', jsonError);
       console.log('Невалидный JSON в ответе:', responseText.substring(0, 200) + '...');
-      toast.error('Ошибка в формате данных от API. Используем демо-данные.');
       throw new Error('Неверный формат JSON в ответе API');
     }
-  } catch (error) {
+  } catch (error: any) {
     // Очистка таймера
     clearTimeout(timeoutId);
+    toast.dismiss('api-request');
     
-    // Обработка ошибок сети и таймаутов
-    console.error('Ошибка при запросе к API:', error);
-    handleFetchError(error);
+    // Проверяем, был ли запрос отменен по таймауту
+    if (error.name === 'AbortError') {
+      console.error('Запрос был отменен из-за таймаута');
+      toast.error('Превышен таймаут ожидания ответа от Zylalabs API');
+      throw new Error('Превышено время ожидания API');
+    }
     
     // Проверка на ошибку CORS
     if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      console.error('Возможно, это ошибка CORS или сетевая проблема');
-      toast.error('Ошибка сетевого соединения. Возможно, проблема с CORS или блокировкой запросов.', { duration: 5000 });
+      console.error('Возникла ошибка CORS при запросе к API');
+      toast.error('Ошибка доступа к API (CORS). Попробуйте использовать прокси.');
+      throw new Error('Ошибка CORS при запросе к API');
     }
     
-    // Возврат демо-данных в случае ошибки
-    console.log('Ошибка при запросе к API, используем демо-данные');
-    return generateMockSearchResults(params.query, params.page);
+    // Обработка других ошибок сети
+    console.error('Ошибка при запросе к API:', error);
+    toast.error(`Ошибка при запросе к API: ${error.message}`);
+    throw error;
   }
 };
-

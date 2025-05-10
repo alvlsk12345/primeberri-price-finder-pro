@@ -2,8 +2,8 @@
 // Базовый URL API
 export const BASE_URL = "https://zylalabs.com/api/2033/real+time+product+search+api/1809/search+products";
 
-// Увеличенный таймаут запросов в миллисекундах (60 секунд)
-export const REQUEST_TIMEOUT = 60000; // 60 секунд
+// Уменьшаем таймаут запросов до 30 секунд
+export const REQUEST_TIMEOUT = 30000; // 30 секунд
 
 // API ключ для Zylalabs
 export const ZYLALABS_API_KEY = '8112|xU0WDZhKkWVo7rczutXwzGKzEwBtNPhHbsAYbtrM';
