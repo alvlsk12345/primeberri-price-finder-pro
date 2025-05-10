@@ -6,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AlertCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AIProvider, getCurrentAIProvider, setCurrentAIProvider } from '@/services/productFormatter';
-import { RadioGroup, RadioGroupItem } from "@/components/ui/form";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 

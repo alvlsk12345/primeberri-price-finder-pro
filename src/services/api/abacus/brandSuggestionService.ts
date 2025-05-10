@@ -59,7 +59,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
         console.log(`Поиск изображения для ${suggestion.brand} ${suggestion.product} через Google CSE`);
         imageUrl = await searchProductImageGoogle(
           `${suggestion.brand} ${suggestion.product}`, 
-          suggestions.length
+          String(i) // Исправление: передаем число как строку
         );
       }
       

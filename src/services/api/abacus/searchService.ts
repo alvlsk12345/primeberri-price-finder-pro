@@ -40,7 +40,7 @@ const mapAbacusProducts = async (products: AbacusProduct[]): Promise<Product[]> 
     let imageUrl = product.image_url || '';
     if (!imageUrl && product.title) {
       const searchQuery = `${product.brand || ''} ${product.title}`.trim();
-      imageUrl = await searchProductImageGoogle(searchQuery, i);
+      imageUrl = await searchProductImageGoogle(searchQuery, String(i)); // Исправление: передаем число как строку
     }
     
     const mappedProduct: Product = {
