@@ -1,16 +1,19 @@
+
 import React, { KeyboardEvent, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, AlertCircle, Info, Languages } from 'lucide-react';
+import { Search, AlertCircle, Info } from 'lucide-react';
 import { toast } from "@/components/ui/sonner";
-import { useDemoModeForced } from '@/services/api/mockDataService';
+import { useDemoModeForced } from '@/services/api/mock/mockServiceConfig';
 import { containsCyrillicCharacters } from '@/services/translationService';
+
 type SearchFormProps = {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   handleSearch: () => void;
   isLoading: boolean;
 };
+
 export const SearchForm: React.FC<SearchFormProps> = ({
   searchQuery,
   setSearchQuery,
@@ -37,10 +40,14 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       }
       setHasError(false);
 
-      // Показываем уведомление, если запрос на русском языке
-      if (isCyrillic) {
-        toast.info('Запрос будет переведен на английский для лучших результатов поиска');
-      }
+      // ОТКЛЮЧЕНО: уведомление о переводе
+      // if (isCyrillic) {
+      //   toast.info('Запрос будет переведен на английский для лучших результатов поиска');
+      // }
+      
+      // Дополнительное уведомление для отладки
+      toast.info('Выполняем поиск без перевода запроса', { duration: 2000 });
+      
       handleSearch();
     } catch (error) {
       console.error('Ошибка при попытке поиска:', error);
@@ -48,17 +55,20 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       toast.error('Произошла ошибка при поиске. Пожалуйста, попробуйте снова.');
     }
   };
+
   return <div className="space-y-3">
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-grow relative">
-          <Input placeholder="Введите название товара, например, кожаная сумка, кроссовки Nike..." value={searchQuery} onChange={e => {
-          setSearchQuery(e.target.value);
-          if (hasError) setHasError(false);
-        }} onKeyDown={handleKeyPress} className={`w-full ${hasError ? 'border-red-500' : ''}`} />
-          
-          {isCyrillic && <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              
-            </div>}
+          <Input 
+            placeholder="Введите название товара, например, кожаная сумка, кроссовки Nike..." 
+            value={searchQuery} 
+            onChange={e => {
+              setSearchQuery(e.target.value);
+              if (hasError) setHasError(false);
+            }} 
+            onKeyDown={handleKeyPress} 
+            className={`w-full ${hasError ? 'border-red-500' : ''}`} 
+          />
           
           {!isCyrillic && <>
               {useDemoModeForced ? <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -72,7 +82,12 @@ export const SearchForm: React.FC<SearchFormProps> = ({
                 </div>}
             </>}
         </div>
-        <Button onClick={executeSearch} disabled={isLoading || !searchQuery.trim()} className="min-w-[200px]" variant="brand">
+        <Button 
+          onClick={executeSearch} 
+          disabled={isLoading || !searchQuery.trim()} 
+          className="min-w-[200px]" 
+          variant="brand"
+        >
           {isLoading ? <span className="flex items-center gap-2">
               <div className="animate-spin w-4 h-4 border-2 border-brand-foreground border-t-transparent rounded-full" />
               Поиск...
@@ -92,7 +107,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
           <span>Демонстрационный режим активен. Результаты поиска генерируются автоматически.</span>
         </div> : <div className="flex items-center text-blue-600 text-sm gap-1 bg-blue-50 p-2 rounded">
           <Info size={14} />
-          <span>API-режим активен. Результаты поиска получаются через Zylalabs API.</span>
+          <span>API-режим активен. Результаты поиска получаются через Zylalabs API. Перевод запросов отключен.</span>
         </div>}
     </div>;
 };

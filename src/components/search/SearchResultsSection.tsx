@@ -6,7 +6,7 @@ import { useSearch } from "@/contexts/SearchContext";
 import { ApiUsageInfo } from "@/components/search/ApiUsageInfo";
 import { SortButtons } from "../filter/SortButtons";
 import { SortOption } from "@/services/types";
-import { Languages } from "lucide-react";
+import { Languages, Bug, Search } from "lucide-react";
 
 export const SearchResultsSection: React.FC = () => {
   const {
@@ -20,7 +20,8 @@ export const SearchResultsSection: React.FC = () => {
     isUsingDemoData,
     apiInfo,
     filters,
-    handleFilterChange
+    handleFilterChange,
+    lastSearchQuery
   } = useSearch();
   
   if (searchResults.length === 0) {
@@ -37,7 +38,7 @@ export const SearchResultsSection: React.FC = () => {
   };
 
   // Проверяем, был ли запрос переведен (если оригинальный запрос на русском)
-  const wasTranslated = originalQuery && originalQuery.match(/[\u0400-\u04FF]/) ? true : false;
+  const wasTranslated = originalQuery && originalQuery.match(/[\u0400-\u04FF]/) && lastSearchQuery && lastSearchQuery !== originalQuery;
   
   return (
     <div className="mt-6">
@@ -47,12 +48,24 @@ export const SearchResultsSection: React.FC = () => {
           <FilterSection />
         </div>
         
-        {wasTranslated && (
-          <div className="flex items-center text-sm text-blue-600 gap-1 bg-blue-50 p-2 rounded">
-            <Languages size={16} />
-            <span>Запрос переведен для поиска в зарубежных магазинах</span>
+        <div className="flex flex-col gap-2">
+          {wasTranslated ? (
+            <div className="flex items-center text-sm text-blue-600 gap-1 bg-blue-50 p-2 rounded">
+              <Languages size={16} />
+              <span>Запрос переведен для поиска в зарубежных магазинах</span>
+            </div>
+          ) : (
+            <div className="flex items-center text-sm text-green-600 gap-1 bg-green-50 p-2 rounded">
+              <Search size={16} />
+              <span>Поиск без перевода запроса</span>
+            </div>
+          )}
+          
+          <div className="flex items-center text-sm text-amber-700 gap-1 bg-amber-50 p-2 rounded">
+            <Bug size={16} />
+            <span>Режим отладки: параметры запроса - "{lastSearchQuery || originalQuery}" стр.{currentPage}</span>
           </div>
-        )}
+        </div>
       </div>
       
       {apiInfo && Object.keys(apiInfo).length > 0 && <ApiUsageInfo />}

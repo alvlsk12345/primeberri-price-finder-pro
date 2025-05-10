@@ -70,13 +70,13 @@ export function useSearchExecutor({
       console.log(`Устанавливаем текущую страницу: ${page}`);
       setCurrentPage(page);
       
-      // Переводим запрос на английский, если он на русском
-      const { translatedQuery, wasTranslated } = await translateQueryIfNeeded(queryToUse);
-      const searchText = translatedQuery;
+      // ОТКЛЮЧЕНО: Переводим запрос на английский, если он на русском
+      // const { translatedQuery, wasTranslated } = await translateQueryIfNeeded(queryToUse);
+      // const searchText = translatedQuery;
       
-      if (wasTranslated) {
-        console.log(`Запрос переведен: "${queryToUse}" -> "${searchText}"`);
-      }
+      // Используем оригинальный запрос без перевода
+      const searchText = queryToUse;
+      console.log(`Используется запрос без перевода: "${searchText}"`);
       
       // Get search countries - ensure we have German results
       const searchCountries = getSearchCountries();
