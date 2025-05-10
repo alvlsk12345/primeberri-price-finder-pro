@@ -6,7 +6,7 @@ import { searchProductImageGoogle } from "@/services/api/googleSearchService";
 import { callOpenAI } from "./apiClient";
 import { getApiKey } from "./config";
 
-// Функция для получения предложений брендов
+// Улучшенная функция для получения предложений брендов
 export const fetchBrandSuggestions = async (description: string): Promise<BrandSuggestion[]> => {
   try {
     // Проверка наличия API ключа
@@ -19,26 +19,35 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
 
     console.log('Отправляем запрос к OpenAI для получения брендов...');
     
-    // Улучшенный промпт с более строгими требованиями к формату ответа
-    const brandPrompt = `Предложи 3 популярных бренда товаров, соответствующих запросу пользователя.
-    
-    ВАЖНО: Для каждого бренда ОБЯЗАТЕЛЬНО укажи:
-    1. Название бренда (реальный существующий бренд)
-    2. Название конкретного товара этого бренда
-    3. Краткое описание товара в одно предложение
-    
-    Формат ответа СТРОГО следующий (без отклонений):
-    Бренд: [название бренда], Товар: [название товара], Описание: [краткое описание]
-    
-    Ответ должен содержать ровно 3 строки, по одной строке на каждый бренд.
-    
-    Запрос пользователя: "${description}"`;
+    // Улучшенный промпт с более строгими требованиями к формату ответа и примерами
+    const brandPrompt = `Предложи 3 популярных бренда товаров, соответствующих запросу пользователя "${description}".
 
-    // Получаем ответ от API с оптимизированными параметрами
+ОЧЕНЬ ВАЖНО: Ты должен точно следовать этому формату в своём ответе. Ответ должен содержать ровно 3 строки, каждая в следующем формате:
+Бренд: [название бренда], Товар: [название товара], Описание: [краткое описание]
+
+Правила:
+1. Название бренда должно быть реальным, существующим брендом
+2. Название товара должно быть конкретным и соответствовать запросу
+3. Описание должно быть в одно предложение
+4. НЕ нумеруй строки
+5. НЕ добавляй никаких пояснений, вступлений или заключений
+6. Строго следуй указанному формату!
+
+Примеры правильных ответов для запроса "кроссовки для бега":
+Бренд: Nike, Товар: Air Zoom Pegasus 38, Описание: Легкие беговые кроссовки с амортизацией и поддержкой стопы.
+Бренд: Adidas, Товар: Ultraboost 22, Описание: Комфортные кроссовки с технологией Boost для длительных пробежек.
+Бренд: ASICS, Товар: Gel-Kayano 29, Описание: Стабилизирующие кроссовки с гелевой амортизацией для защиты суставов.
+
+Ответь ТОЛЬКО строками в указанном формате для запроса: "${description}"`;
+
+    // Получаем ответ от API с оптимизированными параметрами для лучшего качества
     console.log('Отправляем промпт к OpenAI:', brandPrompt);
+    
+    // Используем температуру ближе к 0 для более точных ответов
     const content = await callOpenAI(brandPrompt, {
-      temperature: 0.7,
-      max_tokens: 350
+      temperature: 0.3,
+      max_tokens: 350,
+      model: "gpt-4o" // Явно указываем модель для лучших результатов
     });
 
     if (!content) {
@@ -48,16 +57,27 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     
     console.log('Получен ответ от OpenAI:', content);
 
-    // Улучшенный парсинг ответа
+    // Улучшенный парсинг ответа с дополнительными проверками
     const suggestions: BrandSuggestion[] = [];
     
-    // Разделяем ответ на строки и извлекаем данные
-    const lines = content.split('\n').filter((line: string) => line.trim() !== '');
+    // Разделяем ответ на строки и фильтруем пустые строки
+    const lines = content.split('\n')
+      .filter((line: string) => line.trim() !== '')
+      .filter((line: string) => line.includes('Бренд:') && line.includes('Товар:'));
+    
     console.log(`Распознано ${lines.length} строк в ответе:`, lines);
+    
+    // Если ответ не содержит строк в ожидаемом формате, логируем это
+    if (lines.length === 0) {
+      console.error('Ответ не содержит строк в требуемом формате');
+      console.error('Исходный ответ:', content);
+      throw new Error('Неверный формат ответа от API');
+    }
     
     for (const line of lines) {
       try {
-        // Более строгий парсинг с проверкой наличия всех полей
+        // Улучшенное регулярное выражение для более надежного извлечения данных
+        // Используем регулярные выражения с группами захвата для более точного извлечения
         const brandMatch = line.match(/Бренд:\s*([^,]+)/i);
         const productMatch = line.match(/Товар:\s*([^,]+)/i);
         const descriptionMatch = line.match(/Описание:\s*(.+)/i);
@@ -67,33 +87,43 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
           const product = productMatch[1].trim();
           const description = descriptionMatch[1].trim();
           
-          console.log(`Распознаны данные: Бренд="${brand}", Товар="${product}"`);
+          console.log(`Успешно распознаны данные: Бренд="${brand}", Товар="${product}", Описание="${description}"`);
           
-          // Поиск изображения через Google CSE напрямую
-          console.log(`Поиск изображения для ${brand} ${product} через Google CSE`);
-          let imageUrl;
-          try {
-            imageUrl = await searchProductImageGoogle(brand, product, suggestions.length);
-          } catch (imageError) {
-            console.error("Ошибка при поиске изображения:", imageError);
-            // В случае ошибки поиска изображения используем заполнитель
-            imageUrl = getPlaceholderImageUrl(brand);
+          // Ищем изображение только если у нас есть корректный бренд и название продукта
+          if (brand && product) {
+            console.log(`Поиск изображения для ${brand} ${product} через Google CSE`);
+            
+            try {
+              // Поиск изображения с ограничением времени
+              const imagePromise = searchProductImageGoogle(brand, product, suggestions.length);
+              
+              // Устанавливаем таймаут для поиска изображения
+              const timeoutPromise = new Promise<string | null>((_, reject) => 
+                setTimeout(() => reject(new Error('Timeout')), 8000)
+              );
+              
+              // Используем Race для ограничения времени выполнения
+              const imageUrl = await Promise.race([imagePromise, timeoutPromise]);
+              
+              if (imageUrl) {
+                console.log(`Найдено изображение: ${imageUrl}`);
+                suggestions.push({ brand, product, description, imageUrl });
+              } else {
+                console.warn(`Изображение не найдено для ${brand} ${product}, используем плейсхолдер`);
+                suggestions.push({ brand, product, description, imageUrl: getPlaceholderImageUrl(brand) });
+              }
+            } catch (imageError) {
+              console.error("Ошибка при поиске изображения:", imageError);
+              // В случае ошибки поиска изображения используем заполнитель
+              suggestions.push({ brand, product, description, imageUrl: getPlaceholderImageUrl(brand) });
+            }
           }
-          
-          suggestions.push({
-            brand,
-            product,
-            description,
-            imageUrl: imageUrl || getPlaceholderImageUrl(brand)
-          });
-          
-          console.log(`Добавлено предложение для бренда ${brand} с изображением ${imageUrl || "placeholder"}`);
         } else {
           console.warn('Не удалось распознать все необходимые поля в строке:', line);
           console.warn('Результаты регулярных выражений:', {
-            brandMatch: brandMatch?.[1] || 'не найдено',
-            productMatch: productMatch?.[1] || 'не найдено',
-            descriptionMatch: descriptionMatch?.[1] || 'не найдено'
+            brandMatch: brandMatch ? brandMatch[1] : 'не найдено',
+            productMatch: productMatch ? productMatch[1] : 'не найдено',
+            descriptionMatch: descriptionMatch ? descriptionMatch[1] : 'не найдено'
           });
         }
       } catch (error) {
@@ -101,18 +131,34 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
       }
     }
 
-    // Если не удалось получить предложения, создаем демо-данные
+    // Если не удалось получить хотя бы одно предложение, создаем демо-данные
     if (suggestions.length === 0) {
-      console.warn('Не удалось получить предложения от OpenAI, создаем демо-данные');
+      console.warn('Не удалось получить корректные предложения от OpenAI, создаем демо-данные');
+      toast.warning("Не удалось получить реальные данные о брендах. Показываем примеры.", { duration: 4000 });
       return createMockBrandSuggestions(description);
     }
 
-    // Возвращаем найденные предложения (до 3 результатов)
-    console.log(`Возвращаем ${suggestions.length} предложений брендов`);
-    return suggestions.slice(0, 3);
+    // Если получили меньше 3 предложений, дополняем их моками чтобы сохранить консистентность UI
+    if (suggestions.length < 3) {
+      console.warn(`Получено только ${suggestions.length} предложений. Дополняем моками до 3`);
+      const mocks = createMockBrandSuggestions(description);
+      for (let i = suggestions.length; i < 3; i++) {
+        suggestions.push(mocks[i % mocks.length]);
+      }
+    }
+
+    console.log(`Возвращаем ${suggestions.length} предложений брендов:`, suggestions);
+    return suggestions.slice(0, 3); // Ограничиваем 3 результатами
 
   } catch (error) {
     console.error('Ошибка при запросе к OpenAI для брендов:', error);
+    
+    // Показываем пользователю информацию о проблеме и что используем демо-данные
+    toast.error(`Ошибка при получении брендов: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, { 
+      duration: 4000,
+      description: "Используем демонстрационные данные"
+    });
+    
     // В случае любой ошибки возвращаем демо-данные
     return createMockBrandSuggestions(description);
   }

@@ -2,12 +2,14 @@
 import React, { KeyboardEvent, useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, AlertCircle } from 'lucide-react';
+import { Search, AlertCircle, RefreshCw } from 'lucide-react';
 import { toast } from "sonner";
 import { useDemoModeForced } from '@/services/api/mock/mockServiceConfig';
 import { containsCyrillicCharacters } from '@/services/translationService';
 import { AiBrandAssistant } from './brand-assistant/AiBrandAssistant';
 import { testMinimalGoogleApiRequest } from '@/services/api/googleSearchService';
+import { callOpenAI } from '@/services/api/openai';
+import { hasValidApiKey } from '@/services/api/openai';
 
 type SearchFormProps = {
   searchQuery: string;
@@ -23,6 +25,8 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   isLoading
 }) => {
   const [hasError, setHasError] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+  const [openAiStatus, setOpenAiStatus] = useState<'неизвестно' | 'работает' | 'ошибка'>('неизвестно');
   const isDemoMode = useDemoModeForced;
 
   // Диагностический тест API при первом рендере
@@ -33,7 +37,6 @@ export const SearchForm: React.FC<SearchFormProps> = ({
         const result = await testMinimalGoogleApiRequest();
         console.log('Результат диагностического теста Google API:', result);
         
-        // Показываем тост с результатом теста для большей заметности
         if (result.includes('успешен')) {
           toast.success('Диагностический тест Google API успешен!', { duration: 5000 });
         } else {
@@ -84,6 +87,47 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       console.error('Ошибка при попытке поиска:', error);
       setHasError(false); // Reset error state to prevent UI hanging
       toast.error('Произошла ошибка при поиске. Пожалуйста, попробуйте снова.');
+    }
+  };
+
+  // Тест OpenAI API для проверки работоспособности
+  const testOpenAiApi = async () => {
+    try {
+      setIsTesting(true);
+      
+      if (!hasValidApiKey()) {
+        toast.error("API ключ OpenAI не установлен или имеет неверный формат", {
+          duration: 5000,
+          description: "Добавьте ключ в настройках приложения"
+        });
+        setOpenAiStatus('ошибка');
+        return;
+      }
+      
+      toast.loading("Тестирование OpenAI API...");
+      
+      const response = await callOpenAI("Ответь одним словом: Работает?", {
+        temperature: 0.1,
+        max_tokens: 50
+      });
+      
+      if (response && typeof response === 'string') {
+        console.log("Ответ от OpenAI API:", response);
+        toast.success(`Тест OpenAI API успешен! Ответ: ${response}`, {
+          duration: 5000
+        });
+        setOpenAiStatus('работает');
+      } else {
+        throw new Error("Некорректный ответ от API");
+      }
+    } catch (error) {
+      console.error("Ошибка при тестировании OpenAI API:", error);
+      toast.error(`Ошибка OpenAI API: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, {
+        duration: 5000
+      });
+      setOpenAiStatus('ошибка');
+    } finally {
+      setIsTesting(false);
     }
   };
 
@@ -160,11 +204,11 @@ export const SearchForm: React.FC<SearchFormProps> = ({
         </div>
       )}
 
-      <div className="pt-3">
+      <div className="pt-3 flex flex-wrap gap-2">
         <Button
           onClick={async () => {
             const result = await testMinimalGoogleApiRequest();
-            toast.info(`Тестовый запрос Google API: ${result}`, { duration: 7000 });
+            toast.info(`Тест Google API: ${result}`, { duration: 7000 });
           }}
           size="sm"
           variant="outline"
@@ -172,6 +216,31 @@ export const SearchForm: React.FC<SearchFormProps> = ({
           type="button"
         >
           Тест Google API
+        </Button>
+        
+        <Button
+          onClick={testOpenAiApi}
+          size="sm"
+          variant={openAiStatus === 'работает' ? "outline" : "secondary"}
+          className={`text-xs flex items-center gap-1 ${
+            openAiStatus === 'работает' ? 'border-green-500 text-green-700' : 
+            openAiStatus === 'ошибка' ? 'bg-red-100 text-red-700 hover:bg-red-200' : ''
+          }`}
+          disabled={isTesting}
+          type="button"
+        >
+          {isTesting ? (
+            <>
+              <div className="animate-spin w-3 h-3 border border-current border-t-transparent rounded-full mr-1" />
+              Тестирование...
+            </>
+          ) : (
+            <>
+              <RefreshCw size={14} />
+              Тест OpenAI API {openAiStatus !== 'неизвестно' ? 
+                `(${openAiStatus === 'работает' ? '✓' : '✗'})` : ''}
+            </>
+          )}
         </Button>
       </div>
 
