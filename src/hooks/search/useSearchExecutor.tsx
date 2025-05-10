@@ -83,11 +83,11 @@ export function useSearchExecutor({
         query: searchText,
         originalQuery: queryToUse,
         page: page,
-        language: 'en', 
+        language: 'ru',  // Устанавливаем русский язык для получения описаний на русском
         countries: searchCountries,
         filters: filters,
         requireGermanResults: true,
-        minResultCount: 12,
+        minResultCount: 12, // Увеличиваем минимальное количество результатов
       };
       
       console.log('Параметры поиска:', searchParams);

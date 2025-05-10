@@ -49,8 +49,8 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     return { ...product, id: uniqueId };
   });
 
-  // Limit to 9 products per page
-  const paginatedProducts = productsWithUniqueKeys.slice(0, 9);
+  // Увеличиваем до 12 товаров на страницу (было 9)
+  const paginatedProducts = productsWithUniqueKeys.slice(0, 12);
 
   // Handle page change with validation and debouncing
   const handlePageChange = (page: number) => {

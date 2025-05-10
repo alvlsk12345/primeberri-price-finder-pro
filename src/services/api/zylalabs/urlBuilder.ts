@@ -30,9 +30,11 @@ export const buildZylalabsUrl = (params: SearchParams): string => {
     urlParams.append('country', 'de');
   }
   
-  // Добавляем язык (необязательно)
+  // Добавляем язык (теперь по умолчанию русский)
   if (params.language) {
     urlParams.append('language', params.language);
+  } else {
+    urlParams.append('language', 'ru'); // По умолчанию используем русский язык
   }
   
   // Создаем итоговый URL

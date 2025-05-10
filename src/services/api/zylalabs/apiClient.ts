@@ -136,12 +136,14 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
  * @param query Поисковый запрос
  * @param countryCode Код страны
  * @param page Номер страницы
+ * @param language Код языка (добавлен параметр)
  * @returns Результаты поиска или null в случае ошибки
  */
 export const makeZylalabsCountryRequest = async (
   query: string, 
   countryCode: string, 
-  page: number = 1
+  page: number = 1,
+  language: string = 'en' // По умолчанию используем английский язык
 ): Promise<any> => {
   const apiKey = getApiKey();
   
@@ -151,17 +153,18 @@ export const makeZylalabsCountryRequest = async (
     return null;
   }
   
-  // Формирование URL запроса точно как в HTML-примере
+  // Формирование URL запроса точно как в HTML-примере, но с добавлением языка
   const params = new URLSearchParams({
     q: query,
     country: countryCode,
     page: page.toString(),
+    language: language // Добавляем параметр языка
   });
   
   const apiBaseUrl = "https://zylalabs.com/api/2033/real+time+product+search+api/1809/search+products";
   const url = `${apiBaseUrl}?${params.toString()}`;
   
-  console.log(`Запрос товаров для страны ${countryCode}:`, url);
+  console.log(`Запрос товаров для страны ${countryCode} на языке ${language}:`, url);
   
   try {
     // Устанавливаем таймаут в 15 секунд для каждого запроса по стране

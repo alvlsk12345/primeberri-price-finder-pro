@@ -46,7 +46,7 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
           return { ...product, country: 'de' };
         } else {
           // Присваиваем случайную европейскую страну для демонстрации
-          const europeanCountries = ['gb', 'fr', 'es', 'it', 'nl'];
+          const europeanCountries = ['fr', 'es', 'it', 'nl', 'be', 'pl'];
           const randomCountry = europeanCountries[Math.floor(Math.random() * europeanCountries.length)];
           return { ...product, country: randomCountry };
         }
@@ -60,19 +60,19 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
       const germanProducts = products.filter(product => product.country === 'de');
       const otherEuropeanProducts = products.filter(product => product.country !== 'de');
 
-      // Обеспечиваем наличие как минимум 5 немецких результатов
-      const minGermanResults = Math.min(5, germanProducts.length);
+      // Обеспечиваем наличие как минимум 6 немецких результатов (увеличено с 5)
+      const minGermanResults = Math.min(6, germanProducts.length);
       let selectedGermanProducts = germanProducts.slice(0, minGermanResults);
 
-      // Обеспечиваем наличие как минимум 5 других европейских результатов
-      const minOtherResults = Math.min(5, otherEuropeanProducts.length);
+      // Обеспечиваем наличие оставшихся результатов из других стран ЕС
+      const minOtherResults = Math.min(params.minResultCount ? params.minResultCount - minGermanResults : 6, otherEuropeanProducts.length);
       let selectedOtherProducts = otherEuropeanProducts.slice(0, minOtherResults);
 
-      // Комбинируем результаты, обеспечивая общий минимум в 10 (или максимально доступное)
+      // Комбинируем результаты, обеспечивая общий минимум в 12 (или максимально доступное)
       let combinedProducts = [...selectedGermanProducts, ...selectedOtherProducts];
 
-      // Если нам не хватает до 10 результатов, добавляем оставшиеся товары
-      const neededResults = Math.max(0, (params.minResultCount || 10) - combinedProducts.length);
+      // Если нам не хватает до минимального количества результатов, добавляем оставшиеся товары
+      const neededResults = Math.max(0, (params.minResultCount || 12) - combinedProducts.length);
       if (neededResults > 0) {
         // Сначала добавляем больше немецких товаров, если они есть
         if (germanProducts.length > minGermanResults) {
@@ -81,9 +81,9 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
         }
 
         // Если еще нужны товары, добавляем другие европейские
-        if (combinedProducts.length < (params.minResultCount || 10) && otherEuropeanProducts.length > minOtherResults) {
+        if (combinedProducts.length < (params.minResultCount || 12) && otherEuropeanProducts.length > minOtherResults) {
           const additionalOther = otherEuropeanProducts.slice(minOtherResults, 
-            minOtherResults + ((params.minResultCount || 10) - combinedProducts.length));
+            minOtherResults + ((params.minResultCount || 12) - combinedProducts.length));
           combinedProducts = [...combinedProducts, ...additionalOther];
         }
       }
@@ -91,8 +91,13 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
       products = combinedProducts;
     }
     
+    // Максимальное количество - 36 товаров
+    if (products.length > 36) {
+      products = products.slice(0, 36);
+    }
+    
     // Расчет общего количества страниц (приблизительное значение)
-    const itemsPerPage = 9; // 9 элементов на странице
+    const itemsPerPage = 12; // 12 элементов на странице (изменено с 9)
     const totalPages = response.totalPages || Math.max(1, Math.ceil(products.length / itemsPerPage));
     
     // Возвращаем результаты с флагом демо-данных и информацией об API
