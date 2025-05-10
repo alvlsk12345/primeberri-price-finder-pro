@@ -31,7 +31,7 @@ export const searchEuProducts = async (query: string, page: number = 1): Promise
   products: Product[],
   totalPages: number,
   isDemo: boolean,
-  apiInfo?: Record<string, string>
+  apiInfo: Record<string, string>  // Убрали опциональность свойства
 }> => {
   console.log(`Начинаем поиск товаров в странах ЕС по запросу: "${query}", страница: ${page}`);
   
