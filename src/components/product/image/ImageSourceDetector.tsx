@@ -1,5 +1,5 @@
 
-import { isZylalabsImage, isGoogleCseImage, isGoogleShoppingImage, isProxiedUrl } from '@/services/image';
+import { isZylalabsImage, isGoogleCseImage, isGoogleShoppingImage, isUrlWithCorsProxy } from '@/services/image';
 
 export interface ImageSourceInfo {
   useAvatar: boolean;
@@ -22,8 +22,8 @@ export function detectImageSource(image: string | null): ImageSourceInfo {
   const isGoogleImage = isGoogleShoppingImage(image) || isGoogleCseImage(image);
   const isZylalabs = isZylalabsImage(image);
   
-  // Проверяем, является ли URL с CORS-прокси
-  const isProxiedUrlResult = isProxiedUrl(image);
+  // Проверяем, является ли URL с CORS-прокси (используем обновленную функцию)
+  const isProxiedUrlResult = isUrlWithCorsProxy(image);
   
   // Определяем, использовать ли Avatar вместо img
   const useAvatar = isGoogleImage || isZylalabs || isProxiedUrlResult || image.includes('encrypted-tbn');

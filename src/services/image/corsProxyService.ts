@@ -100,9 +100,10 @@ export const resetProxyIndex = (): void => {
 };
 
 /**
- * Проверка, является ли URL проксированным
+ * Проверка, является ли URL проксированным через CORS прокси
+ * Переименовано для предотвращения конфликта с аналогичной функцией в imageSourceDetector
  */
-export const isProxiedUrl = (url: string): boolean => {
+export const isUrlWithCorsProxy = (url: string): boolean => {
   if (!url) return false;
   
   return url.includes('corsproxy.io') || 
@@ -159,7 +160,7 @@ export const applyCorsProxy = (imageUrl: string): string => {
   if (!imageUrl) return '';
   
   // Если URL уже содержит известный прокси, не применяем прокси повторно
-  if (isProxiedUrl(imageUrl)) {
+  if (isUrlWithCorsProxy(imageUrl)) {
     console.log(`URL уже содержит прокси: ${imageUrl}`);
     return imageUrl;
   }
@@ -211,7 +212,7 @@ export const shouldUseCorsProxy = (url: string): boolean => {
   if (!url) return false;
   
   // Проверяем, содержит ли URL уже прокси
-  if (isProxiedUrl(url)) {
+  if (isUrlWithCorsProxy(url)) {
     return false;
   }
   

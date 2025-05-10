@@ -1,5 +1,5 @@
 
-import { isZylalabsImage, isGoogleCseImage, isGoogleShoppingImage, isProxiedUrl } from '@/services/image';
+import { isZylalabsImage, isGoogleCseImage, isGoogleShoppingImage, isUrlWithCorsProxy } from '@/services/image';
 
 export interface ImageModalSourceInfo {
   useAvatar: boolean;
@@ -22,8 +22,8 @@ export function useImageModalSource(imageUrl: string | null): ImageModalSourceIn
   const isGoogleImage = isGoogleShoppingImage(imageUrl) || isGoogleCseImage(imageUrl);
   const isZylalabs = isZylalabsImage(imageUrl);
   
-  // Проверяем, является ли URL уже проксированным
-  const isProxiedUrlResult = isProxiedUrl(imageUrl);
+  // Проверяем, является ли URL уже проксированным (используем обновленную функцию)
+  const isProxiedUrlResult = isUrlWithCorsProxy(imageUrl);
   
   // Решаем, использовать ли Avatar компонент для изображения
   const useAvatar = isGoogleImage || isZylalabs || isProxiedUrlResult || imageUrl.includes('encrypted-tbn');

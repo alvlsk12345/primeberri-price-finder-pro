@@ -12,7 +12,8 @@ import {
 import { 
   shouldUseCorsProxy, 
   applyCorsProxy,
-  getCurrentProxyInfo
+  getCurrentProxyInfo,
+  isUrlWithCorsProxy
 } from './corsProxyService';
 
 /**
