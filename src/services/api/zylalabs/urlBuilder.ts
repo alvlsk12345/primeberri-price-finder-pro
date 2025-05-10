@@ -3,7 +3,7 @@ import { SearchParams } from "../../types";
 import { BASE_URL } from "./config";
 
 /**
- * Формирование URL с параметрами для Zylalabs API
+ * Формирование URL с параметрами для Zylalabs API, аналогично HTML-примеру
  * @param params Параметры поиска
  * @returns Сформированный URL для API запроса
  */
@@ -11,8 +11,15 @@ export const buildZylalabsUrl = (params: SearchParams): string => {
   // Формирование базового URL с основными параметрами
   const query = encodeURIComponent(params.query);
   
-  // Используем 'q' вместо 'query' в соответствии с API
-  let url = `${BASE_URL}?q=${query}&language=en`;
+  // Используем 'q' вместо 'query' в соответствии с рабочим HTML-примером
+  let url = `${BASE_URL}?q=${query}`;
+  
+  // Добавляем язык (необязательно)
+  if (params.language) {
+    url += `&language=${params.language}`;
+  } else {
+    url += `&language=en`;
+  }
   
   // Добавляем номер страницы, если указан
   if (params.page && params.page > 1) {
@@ -39,12 +46,6 @@ export const buildZylalabsUrl = (params: SearchParams): string => {
     // Минимальный рейтинг
     if (params.filters.rating) {
       url += `&minRating=${params.filters.rating}`;
-    }
-    
-    // Бренды (если указаны)
-    if (params.filters.brands && params.filters.brands.length > 0) {
-      const brands = params.filters.brands.join(',');
-      url += `&brand=${encodeURIComponent(brands)}`;
     }
   }
   

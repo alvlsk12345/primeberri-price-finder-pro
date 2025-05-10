@@ -35,14 +35,14 @@ export function useSearchExecutor({
   // Сохраняем предыдущие результаты для восстановления при ошибке
   const lastSuccessfulResultsRef = useRef<Product[]>([]);
   
-  // Используем новые хуки
+  // Используем хуки
   const { executeApiCall, cleanupApiCall } = useSearchApiCall({
     setIsLoading,
     setIsUsingDemoData, 
     setApiInfo
   });
   
-  const { handleSearchError, showErrorMessage } = useSearchErrorHandler({
+  const { handleSearchError } = useSearchErrorHandler({
     lastSuccessfulResults: lastSuccessfulResultsRef,
     setSearchResults
   });
@@ -54,7 +54,7 @@ export function useSearchExecutor({
   const retryAttemptsRef = useRef<number>(0);
   const MAX_RETRY_ATTEMPTS = 2;
   
-  // Execute search with given parameters
+  // Основная функция выполнения поиска
   const executeSearch = async (
     queryToUse: string, 
     page: number, 
@@ -62,90 +62,71 @@ export function useSearchExecutor({
     filters: ProductFilters,
     getSearchCountries: () => string[]
   ) => {
-    console.log(`executeSearch called with page: ${page}, query: ${queryToUse}`);
+    console.log(`executeSearch: запрос "${queryToUse}", страница ${page}`);
     setIsLoading(true);
-    setIsUsingDemoData(false); // Изначально предполагаем, что используем API
     
     try {
-      // Устанавливаем текущую страницу перед выполнением запроса
-      console.log(`Устанавливаем текущую страницу: ${page}`);
+      // Устанавливаем текущую страницу
       setCurrentPage(page);
       
-      // ОТКЛЮЧЕНО: Переводим запрос на английский, если он на русском
-      // const { translatedQuery, wasTranslated } = await translateQueryIfNeeded(queryToUse);
-      // const searchText = translatedQuery;
-      
-      // Используем оригинальный запрос без перевода
+      // Используем оригинальный запрос без перевода для совместимости с примером
       const searchText = queryToUse;
-      console.log(`Используется запрос без перевода: "${searchText}"`);
       
-      // Get search countries - ensure we have German results
-      const searchCountries = getSearchCountries();
-      // Make sure Germany ('de') is included in search countries
+      // Получаем страны для поиска, гарантируем включение Германии
+      let searchCountries = getSearchCountries();
       if (!searchCountries.includes('de')) {
-        searchCountries.push('de');
+        searchCountries = ['de', ...searchCountries];
       }
       
-      // Create search params
+      // Создаём параметры поиска на основе примера
       const searchParams: SearchParams = {
         query: searchText,
-        originalQuery: queryToUse, // Сохраняем оригинальный запрос
+        originalQuery: queryToUse,
         page: page,
-        language: 'en', // Теперь язык передается в API
+        language: 'en', 
         countries: searchCountries,
         filters: filters,
-        requireGermanResults: true, // Add flag to ensure German results
-        minResultCount: 12, // Увеличено минимальное количество результатов
+        requireGermanResults: true,
+        minResultCount: 12,
       };
       
-      // Включаем дополнительные логи для отладки
       console.log('Параметры поиска:', searchParams);
       
       try {
-        // Execute the search
+        // Выполняем поиск через API
         const results = await executeApiCall(searchParams);
-        console.log(`Search completed for page ${page}, got ${results.products?.length || 0} results`);
-        
-        // Дополнительный лог для отладки данных API
-        if (results.products && results.products.length > 0) {
-          console.log('Пример первого продукта:', results.products[0]);
-        }
+        console.log(`Поиск завершен для страницы ${page}, получено ${results.products?.length || 0} результатов`);
         
         // Сбрасываем счетчик попыток при успешном запросе
         retryAttemptsRef.current = 0;
         
-        // Apply sorting and filtering to results if needed
+        // Применяем сортировку и фильтрацию к результатам
         let sortedProducts = applyFiltersAndSorting(results.products || [], filters);
         
-        // Save found products to state and cache
+        // Сохраняем найденные товары
         if (sortedProducts.length > 0) {
-          console.log(`После применения фильтров и сортировки осталось ${sortedProducts.length} товаров`);
           setSearchResults(sortedProducts);
-          lastSuccessfulResultsRef.current = sortedProducts; // Сохраняем успешные результаты
+          lastSuccessfulResultsRef.current = sortedProducts;
           
-          // Create a new object instead of using a function
+          // Обновляем кэш
           const newCache = { ...cachedResults };
           newCache[page] = sortedProducts;
           setCachedResults(newCache);
           setTotalPages(results.totalPages || 1);
           
-          console.log(`Найдено ${sortedProducts.length} товаров!`);
-          
           return { success: true, products: sortedProducts };
-        } 
-        
-        // Если API не вернул результатов, сообщаем пользователю
-        setSearchResults([]);
-        console.log('По вашему запросу ничего не найдено.');
-        toast.error('По вашему запросу ничего не найдено. Попробуйте изменить запрос.', { duration: 4000 });
-        return { success: false, products: [] };
+        } else {
+          // Если API не вернул результатов
+          setSearchResults([]);
+          toast.error('По вашему запросу ничего не найдено. Попробуйте изменить запрос.', { duration: 4000 });
+          return { success: false, products: [] };
+        }
       } catch (apiError: any) {
-        // Если произошла ошибка при вызове API
+        // Обработка ошибки API
         console.error('Ошибка при запросе к API:', apiError);
         toast.error(`Ошибка API: ${apiError.message}`, { duration: 5000 });
         
-        // Если у нас есть предыдущие результаты и код специально не требует их сброса,
-        // возвращаем их для лучшего пользовательского опыта
+        // Возвращаем предыдущие результаты если они есть
         if (lastSuccessfulResultsRef.current.length > 0) {
           toast.info('Показаны предыдущие результаты из-за ошибки API', { duration: 3000 });
           setSearchResults(lastSuccessfulResultsRef.current);
@@ -156,25 +137,24 @@ export function useSearchExecutor({
         return { success: false, products: [] };
       }
     } catch (error) {
-      // Попытка повторить запрос при ошибке сети или таймауте
+      // Повтор запроса при ошибке сети или таймауте
       if (retryAttemptsRef.current < MAX_RETRY_ATTEMPTS) {
         retryAttemptsRef.current++;
-        console.log(`Ошибка при поиске. Попытка повтора ${retryAttemptsRef.current} из ${MAX_RETRY_ATTEMPTS}`);
-        toast.info(`Повтор запроса (попытка ${retryAttemptsRef.current})...`, { duration: 2000 });
+        console.log(`Ошибка при поиске. Повторная попытка ${retryAttemptsRef.current} из ${MAX_RETRY_ATTEMPTS}`);
+        toast.info(`Повторный запрос (попытка ${retryAttemptsRef.current})...`, { duration: 2000 });
         
-        // Задержка перед повторной попыткой (3 секунды)
+        // Задержка перед повторной попыткой
         await new Promise(resolve => setTimeout(resolve, 3000));
         
         try {
           // Рекурсивный вызов для повторной попытки
           return await executeSearch(queryToUse, page, lastSearchQuery, filters, getSearchCountries);
         } catch (retryError) {
-          // Если и повторная попытка не удалась, обрабатываем как обычную ошибку
           console.error('Повторная попытка не удалась:', retryError);
           return handleSearchError(retryError);
         }
       } else {
-        // Исчерпаны все попытки повтора
+        // Исчерпаны все попытки
         retryAttemptsRef.current = 0;
         return handleSearchError(error);
       }
@@ -185,13 +165,8 @@ export function useSearchExecutor({
     }
   };
 
-  // Cleanup function
-  const cleanupSearch = () => {
-    cleanupApiCall();
-  };
-
   return {
     executeSearch,
-    cleanupSearch
+    cleanupSearch: cleanupApiCall
   };
 }

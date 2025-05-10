@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
-import { Product, ProductFilters, SearchParams } from "@/services/types";
-import { searchProducts } from "@/services/productService";
+import { SearchParams } from "@/services/types";
+import { searchProductsViaZylalabs } from "@/services/api/zylalabsService";
 import { toast } from "sonner";
 import { API_TIMEOUT } from "@/services/api/mock/mockServiceConfig";
 
@@ -16,12 +16,12 @@ export function useSearchApiCall({
   setIsUsingDemoData,
   setApiInfo,
 }: SearchApiCallProps) {
-  // Timeout reference to ensure we can cancel pending timeouts
+  // Таймаут для предотвращения слишком долгого запроса
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
   
   // Функция выполнения поискового запроса к API
   const executeApiCall = async (searchParams: SearchParams) => {
-    // Установка таймаута для предотвращения зависания поиска
+    // Устанавливаем дополнительный внешний таймаут для контроля выполнения запроса
     const timeout = setTimeout(() => {
       setIsLoading(false);
       console.log('Поиск занял слишком много времени');
@@ -34,7 +34,7 @@ export function useSearchApiCall({
       console.log('Выполняем запрос к API с параметрами:', searchParams);
       
       // Выполняем поисковый запрос
-      const results = await searchProducts(searchParams);
+      const results = await searchProductsViaZylalabs(searchParams);
       
       console.log('Получен ответ от API:', results);
       
@@ -42,12 +42,10 @@ export function useSearchApiCall({
       if (results.isDemo) {
         console.log('Используются демо-данные');
         setIsUsingDemoData(true);
-        // Reset API info when using demo data
         setApiInfo(undefined);
       } else if (results.apiInfo) {
         console.log('Используются данные API, информация:', results.apiInfo);
         setIsUsingDemoData(false);
-        // Update API info if available
         setApiInfo(results.apiInfo);
       }
       
@@ -62,7 +60,7 @@ export function useSearchApiCall({
     }
   };
   
-  // Очистка таймаутов при размонтировании компонента
+  // Очистка таймаутов
   const cleanupApiCall = () => {
     if (searchTimeout) {
       clearTimeout(searchTimeout);
