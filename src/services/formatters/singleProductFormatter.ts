@@ -1,6 +1,6 @@
 
 import { Product } from '../types';
-import { processProductImage } from '../image';
+import { processProductImage } from '../imageProcessor';
 
 /**
  * Извлекает числовое значение цены из строкового представления
@@ -44,25 +44,23 @@ export const formatSingleProduct = async (
     
     // URL изображения - улучшенная обработка изображений
     let image = '';
-    
-    // Логирование для отладки
-    console.log(`Форматирование товара с id ${id}, название: ${title}`);
-    
     if (product.product_photos && product.product_photos.length > 0) {
       // Используем первое изображение из списка и обрабатываем его через processProductImage
       console.log(`Обрабатываем URL из product_photos: ${product.product_photos[0]}`);
-      image = processProductImage(product.product_photos[0], 0);
+      image = product.product_photos[0];
     } else if (product.image) {
       // Используем указанное изображение
-      console.log(`Обрабатываем URL из поля image: ${product.image}`);
-      image = processProductImage(product.image, 0);
+      image = product.image;
     } else if (product.thumbnail) {
       // Используем миниатюру
-      console.log(`Обрабатываем URL из поля thumbnail: ${product.thumbnail}`);
-      image = processProductImage(product.thumbnail, 0);
+      image = product.thumbnail;
     }
     
-    console.log(`Результат обработки изображения для товара ${id}: ${image}`);
+    // Обрабатываем изображение через усовершенствованный imageProcessor для корректной работы с CORS
+    if (image) {
+      image = processProductImage(image, 0);
+      console.log(`Обработанный URL изображения: ${image}`);
+    }
     
     // URL страницы товара
     const link = product.product_page_url || product.offer?.offer_page_url || product.link || '';

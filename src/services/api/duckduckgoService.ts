@@ -1,5 +1,5 @@
 
-import { processProductImage } from "../image";
+import { processProductImage } from "../imageProcessor";
 import { searchProductImageGoogle } from "./googleSearchService";
 
 /**
@@ -18,10 +18,8 @@ export const searchProductImage = async (brand: string, product: string, index: 
     
     if (imageUrl) {
       console.log(`Найдено изображение: ${imageUrl}`);
-      // Обрабатываем URL изображения через обновленный processProductImage
-      const processedUrl = processProductImage(imageUrl, index);
-      console.log(`Обработанный URL изображения: ${processedUrl}`);
-      return processedUrl;
+      // Обрабатываем URL изображения через наш обновленный processProductImage
+      return processProductImage(imageUrl, index);
     }
     
     console.log(`Изображение не найдено для: ${brand} ${product}`);
