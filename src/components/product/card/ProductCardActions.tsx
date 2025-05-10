@@ -5,6 +5,7 @@ import { ProductDetailsDialog } from '../ProductDetailsDialog';
 import { getProductLink } from "@/services/urlService";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ProductCardActionsProps {
   product: Product;
@@ -43,18 +44,27 @@ export const ProductCardActions: React.FC<ProductCardActionsProps> = ({
   return (
     <div className="flex flex-col gap-2">
       <ProductDetailsDialog product={product} />
-      <Button 
-        onClick={handlePrimeberriOrder}
-        variant="brand-outline"
-        className="flex items-center gap-2 w-full justify-center"
-      >
-        <img 
-          src="/lovable-uploads/f3068d76-e0d6-47bb-9c0b-63b57087fd80.png" 
-          alt="Primeberri" 
-          className="h-5 w-5" 
-        />
-        Заказать на Primeberri
-      </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              onClick={handlePrimeberriOrder}
+              variant="brand-outline"
+              className="flex items-center gap-2 w-full justify-center"
+            >
+              <img 
+                src="/lovable-uploads/f3068d76-e0d6-47bb-9c0b-63b57087fd80.png" 
+                alt="Primeberri" 
+                className="h-5 w-5" 
+              />
+              Заказать на Primeberri
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Перейдите на сайт Primeberri со ссылкой на товар</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </div>
   );
 };

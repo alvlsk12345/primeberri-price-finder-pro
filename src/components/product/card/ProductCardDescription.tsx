@@ -22,13 +22,14 @@ export const ProductCardDescription: React.FC<ProductCardDescriptionProps> = ({
         <button
           onClick={onStopPropagation}
           className="flex items-center justify-center rounded-full w-5 h-5 bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
+          aria-label="Показать описание товара"
         >
           <Info size={12} />
         </button>
       </HoverCardTrigger>
-      <HoverCardContent className="w-72 p-3 text-sm">
+      <HoverCardContent className="w-72 p-3 text-sm z-50">
         <div className="font-semibold mb-1">Описание товара</div>
-        <p className="text-xs">{description}</p>
+        <p className="text-xs text-slate-700">{description}</p>
       </HoverCardContent>
     </HoverCard>
   );

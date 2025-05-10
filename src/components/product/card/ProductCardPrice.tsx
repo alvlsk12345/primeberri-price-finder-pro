@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { getExchangeRate } from "@/services/exchangeService";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Flag } from "lucide-react";
 
 interface ProductCardPriceProps {
   price: string;
@@ -73,15 +75,54 @@ export const ProductCardPrice: React.FC<ProductCardPriceProps> = ({
     return price;
   };
   
+  // Создаем содержимое подсказки в зависимости от стоимости товара
+  const getTooltipContent = () => {
+    if (parsedPrice > 200) {
+      return (
+        <div className="text-xs p-1">
+          <p className="font-semibold mb-1">Расчёт стоимости:</p>
+          <ul className="list-disc pl-4 space-y-1">
+            <li>Стоимость товара: {parsedPrice} €</li>
+            <li>Доставка: 9.5 €</li>
+            <li>Таможенный сбор: 5% от стоимости</li>
+            <li>Пошлина: 15% от суммы свыше 200 €</li>
+            <li>Курс: 105 ₽ за 1 €</li>
+          </ul>
+        </div>
+      );
+    } else {
+      return (
+        <div className="text-xs p-1">
+          <p className="font-semibold mb-1">Расчёт стоимости:</p>
+          <ul className="list-disc pl-4 space-y-1">
+            <li>Стоимость товара: {parsedPrice} €</li>
+            <li>Доставка: 9.5 €</li>
+            <li>Таможенный сбор: 5% от стоимости</li>
+            <li>Курс: 105 ₽ за 1 €</li>
+          </ul>
+        </div>
+      );
+    }
+  };
+  
   return (
     <div className="min-h-[4rem] flex flex-col justify-center">
       <div className="font-bold text-lg">
         {formattedPrice()}
       </div>
       {priceInRubles && (
-        <div className="text-xs text-blue-600 font-medium">
-          {priceInRubles} ₽ <span className="whitespace-nowrap">С доставкой в 🇷🇺</span>
-        </div>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="text-sm text-blue-600 font-medium flex items-center gap-1">
+                {priceInRubles} ₽ <span className="whitespace-nowrap flex items-center">С доставкой в <Flag className="ml-1" size={14} /></span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {getTooltipContent()}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       )}
       {availability && (
         <div className="text-xs text-gray-500 mt-1">

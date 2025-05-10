@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { X } from "lucide-react";
 import { getPlaceholderImageUrl } from '@/services/imageService';
 
 interface ProductImageModalProps {
@@ -45,13 +44,7 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="flex flex-row items-center justify-between">
-          <DialogTitle className="text-lg">Изображение товара</DialogTitle>
-          <button
-            onClick={onClose}
-            className="rounded-full p-1.5 hover:bg-gray-200 transition"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <DialogTitle className="text-lg">{productTitle || "Изображение товара"}</DialogTitle>
         </DialogHeader>
         
         <DialogDescription className="sr-only">

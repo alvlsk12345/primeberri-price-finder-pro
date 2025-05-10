@@ -11,8 +11,8 @@ type SearchExecutionProps = {
   setIsLoading: (loading: boolean) => void;
   searchResults: any[];
   setSearchResults: (results: any[]) => void;
-  allSearchResults: any[];       // Добавляем
-  setAllSearchResults: (results: any[]) => void;  // Добавляем
+  allSearchResults: any[];
+  setAllSearchResults: (results: any[]) => void;
   cachedResults: {[page: number]: any[]};
   setCachedResults: (results: {[page: number]: any[]}) => void;
   currentPage: number;
@@ -33,8 +33,8 @@ export function useSearchExecutionActions({
   setIsLoading,
   searchResults,
   setSearchResults,
-  allSearchResults,       // Добавляем
-  setAllSearchResults,    // Добавляем
+  allSearchResults,
+  setAllSearchResults,
   cachedResults,
   setCachedResults,
   currentPage,
@@ -52,7 +52,7 @@ export function useSearchExecutionActions({
     isLoading,
     setIsLoading,
     setSearchResults,
-    setAllSearchResults,  // Добавляем
+    setAllSearchResults,
     cachedResults,
     setCachedResults, 
     setCurrentPage,
@@ -68,9 +68,9 @@ export function useSearchExecutionActions({
     setCurrentPage
   });
 
-  // Основная функция поиска
+  // Основная функция поиска с улучшенной логикой работы с кешем и страницами
   const handleSearch = async (page: number = 1, forceNewSearch: boolean = false) => {
-    console.log(`handleSearch called with page: ${page}, forceNewSearch: ${forceNewSearch}`);
+    console.log(`handleSearch вызван: страница ${page}, forceNewSearch: ${forceNewSearch}`);
     
     // Проверяем, есть ли запрос для поиска
     if (!searchQuery && !lastSearchQuery) {
@@ -81,7 +81,8 @@ export function useSearchExecutionActions({
     // Используем текущий поисковый запрос или последний успешный
     const queryToUse = searchQuery || lastSearchQuery;
     
-    // Важно: всегда устанавливаем текущую страницу перед проверкой кеша
+    // Важно: ВСЕГДА устанавливаем текущую страницу перед проверкой кеша
+    // Это исправляет критическую ошибку с переключением страниц
     setCurrentPage(page);
     
     // Если это та же страница для того же запроса и у нас есть кешированные результаты
@@ -117,7 +118,6 @@ export function useSearchExecutionActions({
       
       // Если поиск был неудачным, пытаемся использовать кешированные результаты
       if (!result.success) {
-        // Проверяем, есть ли у нас результаты в кеше для текущего поискового запроса
         console.log(`Поиск не удался. Проверяем кэш.`);
         if (cachedResults[1] && cachedResults[1].length > 0 && isSameQuery) {
           setSearchResults(cachedResults[1]);

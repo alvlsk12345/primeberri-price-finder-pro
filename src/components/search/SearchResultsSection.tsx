@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { SearchResults } from "@/components/SearchResults";
 import { FilterSection } from "@/components/search/FilterSection";
@@ -6,7 +7,7 @@ import { ApiUsageInfo } from "@/components/search/ApiUsageInfo";
 import { SearchResultsAlert } from "@/components/search/SearchResultsAlert";
 import { SortButtons } from "../filter/SortButtons";
 import { SortOption } from "@/services/types";
-import { Languages, Bug, Search, Filter } from "lucide-react";
+import { Languages, Filter } from "lucide-react";
 export const SearchResultsSection: React.FC = () => {
   const {
     searchResults,
@@ -60,17 +61,12 @@ export const SearchResultsSection: React.FC = () => {
           {wasTranslated ? <div className="flex items-center text-sm text-blue-600 gap-1 bg-blue-50 p-2 rounded">
               <Languages size={16} />
               <span>Запрос переведен для поиска в зарубежных магазинах</span>
-            </div> : <div className="flex items-center text-sm text-green-600 gap-1 bg-green-50 p-2 rounded">
-              <Search size={16} />
-              <span>Поиск без перевода запроса</span>
-            </div>}
+            </div> : null}
           
           {hasActiveFilters && <div className="flex items-center text-sm text-purple-700 gap-1 bg-purple-50 p-2 rounded">
               <Filter size={16} />
               <span>Применена локальная фильтрация: показано {searchResults.length} из {allSearchResults.length}</span>
             </div>}
-          
-          
         </div>
       </div>
       
