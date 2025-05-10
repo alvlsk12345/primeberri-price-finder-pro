@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Settings, Home } from "lucide-react";
 
 export const PageHeader: React.FC = () => {
-  // Используем Link вместо тега <a> для предотвращения перезагрузки страницы
-  return <header className="bg-brand text-brand-foreground shadow-sm">
+  // ИСПРАВЛЕНИЕ: Устраняем проблему с вложенностью <a> внутри <a>
+  // Используем Link компоненты React Router, которые внутри использует правильную структуру DOM
+  return (
+    <header className="bg-brand text-brand-foreground shadow-sm">
       <div className="container mx-auto py-4 px-4 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 text-2xl font-bold hover:opacity-90 transition-opacity">
           <img 
@@ -33,5 +35,6 @@ export const PageHeader: React.FC = () => {
           </Button>
         </div>
       </div>
-    </header>;
+    </header>
+  );
 };

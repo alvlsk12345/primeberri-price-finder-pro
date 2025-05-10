@@ -15,7 +15,7 @@ type SearchExecutorProps = {
   cachedResults: {[page: number]: Product[]};
   setCachedResults: (results: {[page: number]: Product[]}) => void;
   setCurrentPage: (page: number) => void;
-  setTotalPages: (pages: number) => void;
+  setTotalPages: (pages: number) => void; // Будем использовать эту функцию правильно
   setHasSearched: (searched: boolean) => void;
   setIsUsingDemoData: (usingDemo: boolean) => void;
   setApiInfo: (info: Record<string, string> | undefined) => void;
@@ -25,11 +25,11 @@ export function useSearchExecutor({
   isLoading,
   setIsLoading,
   setSearchResults,
-  setAllSearchResults, // Добавляем новый параметр
+  setAllSearchResults,
   cachedResults,
   setCachedResults,
   setCurrentPage,
-  setTotalPages,
+  setTotalPages, // Теперь это реальная функция
   setHasSearched,
   setIsUsingDemoData,
   setApiInfo,
@@ -104,7 +104,18 @@ export function useSearchExecutor({
         
         // Сохраняем полные нефильтрованные результаты
         if (results.products && results.products.length > 0) {
+          console.log(`Сохраняем ${results.products.length} полных результатов поиска в allSearchResults`);
           setAllSearchResults(results.products);
+          
+          // ВАЖНО: Вычисляем и устанавливаем правильное количество страниц
+          // на основе полного набора результатов
+          const itemsPerPage = 12; // Соответствует значению в SearchResults.tsx
+          const calculatedTotalPages = Math.max(1, Math.ceil(results.products.length / itemsPerPage));
+          console.log(`Вычисляем общее количество страниц на основе ${results.products.length} результатов: ${calculatedTotalPages}`);
+          
+          // Устанавливаем общее количество страниц - используем максимальное из вычисленного и полученного от API
+          setTotalPages(Math.max(calculatedTotalPages, results.totalPages || 1));
+          console.log(`Установлено общее количество страниц: ${Math.max(calculatedTotalPages, results.totalPages || 1)}`);
         }
         
         // Применяем сортировку и фильтрацию к результатам
@@ -119,7 +130,6 @@ export function useSearchExecutor({
           const newCache = { ...cachedResults };
           newCache[page] = sortedProducts;
           setCachedResults(newCache);
-          setTotalPages(results.totalPages || 1);
           
           return { success: true, products: sortedProducts };
         } else {

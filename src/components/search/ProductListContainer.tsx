@@ -29,6 +29,15 @@ export const ProductListContainer: React.FC<ProductListContainerProps> = ({
   const handlePageChange = useCallback((page: number) => {
     console.log(`ProductListContainer: Запрос на смену страницы с ${currentPage} на ${page}`);
     
+    // ВАЖНОЕ ИСПРАВЛЕНИЕ: Проверяем наличие страниц более осторожно
+    if (totalPages <= 0) {
+      console.warn(`ProductListContainer: Некорректное общее количество страниц: ${totalPages}`);
+      toast.error(`Невозможно перейти на страницу ${page} - страницы не инициализированы`, {
+        duration: 3000
+      });
+      return;
+    }
+    
     // Важная проверка: убедиться, что у нас действительно есть больше одной страницы
     if (totalPages <= 1 && page !== 1) {
       console.warn(`ProductListContainer: Запрошена страница ${page}, но всего страниц: ${totalPages}`);
@@ -80,13 +89,17 @@ export const ProductListContainer: React.FC<ProductListContainerProps> = ({
         onSelect={onSelect}
       />
       
-      {/* Важное изменение: показываем пагинацию только если у нас больше 1 страницы */}
-      {totalPages > 1 && (
+      {/* УЛУЧШЕННАЯ ПРОВЕРКА: Показываем пагинацию только при наличии корректного количества страниц */}
+      {totalPages > 1 ? (
         <Pagination 
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={handlePageChange}
         />
+      ) : (
+        <div className="text-center text-sm text-gray-500 py-2">
+          {products.length > 0 && `Показано ${products.length} товаров на одной странице`}
+        </div>
       )}
     </div>
   );
