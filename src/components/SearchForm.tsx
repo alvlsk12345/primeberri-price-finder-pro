@@ -3,7 +3,7 @@ import React, { KeyboardEvent, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, AlertCircle, Info } from 'lucide-react';
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { useDemoModeForced } from '@/services/api/mock/mockServiceConfig';
 import { containsCyrillicCharacters } from '@/services/translationService';
 
@@ -22,6 +22,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
 }) => {
   const [hasError, setHasError] = useState(false);
   const isCyrillic = containsCyrillicCharacters(searchQuery);
+  const isDemoMode = useDemoModeForced;
 
   // Обработчик нажатия клавиши Enter
   const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -46,7 +47,11 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       // }
       
       // Дополнительное уведомление для отладки
-      toast.info('Выполняем поиск без перевода запроса', { duration: 2000 });
+      if (isDemoMode) {
+        toast.info('Используется демо-режим без обращения к API', { duration: 2000 });
+      } else {
+        toast.info('Выполняем поиск через Zylalabs API', { duration: 2000 });
+      }
       
       handleSearch();
     } catch (error) {
@@ -70,17 +75,19 @@ export const SearchForm: React.FC<SearchFormProps> = ({
             className={`w-full ${hasError ? 'border-red-500' : ''}`} 
           />
           
-          {!isCyrillic && <>
-              {useDemoModeForced ? <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded flex items-center">
-                    <Info size={12} className="mr-1" /> Демо-режим
-                  </span>
-                </div> : <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded flex items-center">
-                    <Info size={12} className="mr-1" /> API-режим
-                  </span>
-                </div>}
-            </>}
+          {useDemoModeForced ? (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded flex items-center">
+                <Info size={12} className="mr-1" /> Демо-режим
+              </span>
+            </div>
+          ) : (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded flex items-center">
+                <Info size={12} className="mr-1" /> API-режим
+              </span>
+            </div>
+          )}
         </div>
         <Button 
           onClick={executeSearch} 
@@ -88,26 +95,37 @@ export const SearchForm: React.FC<SearchFormProps> = ({
           className="min-w-[200px]" 
           variant="brand"
         >
-          {isLoading ? <span className="flex items-center gap-2">
+          {isLoading ? (
+            <span className="flex items-center gap-2">
               <div className="animate-spin w-4 h-4 border-2 border-brand-foreground border-t-transparent rounded-full" />
               Поиск...
-            </span> : <span className="flex items-center gap-2">
+            </span>
+          ) : (
+            <span className="flex items-center gap-2">
               <Search size={18} /> Поиск
-            </span>}
+            </span>
+          )}
         </Button>
       </div>
       
-      {hasError && <div className="flex items-center text-red-500 text-sm gap-1">
+      {hasError && (
+        <div className="flex items-center text-red-500 text-sm gap-1">
           <AlertCircle size={14} />
           <span>Произошла ошибка при поиске. Пожалуйста, попробуйте еще раз.</span>
-        </div>}
+        </div>
+      )}
 
-      {useDemoModeForced ? <div className="flex items-center text-amber-600 text-sm gap-1 bg-amber-50 p-2 rounded">
+      {useDemoModeForced ? (
+        <div className="flex items-center text-amber-600 text-sm gap-1 bg-amber-50 p-2 rounded">
           <Info size={14} />
           <span>Демонстрационный режим активен. Результаты поиска генерируются автоматически.</span>
-        </div> : <div className="flex items-center text-blue-600 text-sm gap-1 bg-blue-50 p-2 rounded">
+        </div>
+      ) : (
+        <div className="flex items-center text-blue-600 text-sm gap-1 bg-blue-50 p-2 rounded">
           <Info size={14} />
           <span>API-режим активен. Результаты поиска получаются через Zylalabs API. Перевод запросов отключен.</span>
-        </div>}
+        </div>
+      )}
     </div>;
 };
+

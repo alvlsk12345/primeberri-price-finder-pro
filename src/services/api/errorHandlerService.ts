@@ -48,6 +48,12 @@ export const handleApiError = async (response: Response): Promise<any> => {
   } else if (response.status === 503) {
     toast.error(`Сервис Zylalabs временно недоступен. Используем демо-данные.`, { duration: 5000 });
     console.log("Используем демо-данные из-за недоступности API (503)");
+  } else if (response.status === 403) {
+    toast.error("Доступ запрещен. Проверьте права API ключа.", { duration: 5000 });
+    console.log("Используем демо-данные из-за ограничения доступа (403)");
+  } else if (response.status === 404) {
+    toast.error("Требуемый ресурс не найден. Проверьте URL API.", { duration: 5000 });
+    console.log("Используем демо-данные из-за ошибки 404");
   } else {
     toast.error(`Ошибка API (${response.status}): ${errorMessage}`, { duration: 5000 });
     console.log(`Используем демо-данные из-за ошибки API ${response.status}`);
@@ -81,8 +87,9 @@ export const handleFetchError = (error: any): void => {
     toast.error('Превышено время ожидания ответа от сервера Zylalabs. Используем демо-данные.', { duration: 5000 });
   } else if (error.name === 'TypeError' && error.message.includes('NetworkError')) {
     toast.error('Проблема с сетью. Проверьте подключение к интернету. Используем демо-данные.', { duration: 5000 });
-  } else if (error.message && error.message.includes('CORS')) {
+  } else if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
     toast.error('Ошибка CORS при обращении к API. Используем демо-данные.', { duration: 5000 });
+    console.log('Рекомендации по исправлению CORS: Используйте прокси-сервер или серверное API');
   } else {
     toast.error('Ошибка при получении данных о товарах. Используем демо-данные.', { duration: 5000 });
   }
@@ -94,3 +101,4 @@ export const handleFetchError = (error: any): void => {
 export const getFallbackSearchResults = (query: string, page: number = 1) => {
   return generateMockSearchResults(query, page);
 };
+

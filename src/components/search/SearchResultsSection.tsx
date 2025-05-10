@@ -4,6 +4,7 @@ import { SearchResults } from "@/components/SearchResults";
 import { FilterSection } from "@/components/search/FilterSection";
 import { useSearch } from "@/contexts/SearchContext";
 import { ApiUsageInfo } from "@/components/search/ApiUsageInfo";
+import { SearchResultsAlert } from "@/components/search/SearchResultsAlert";
 import { SortButtons } from "../filter/SortButtons";
 import { SortOption } from "@/services/types";
 import { Languages, Bug, Search } from "lucide-react";
@@ -42,6 +43,9 @@ export const SearchResultsSection: React.FC = () => {
   
   return (
     <div className="mt-6">
+      {/* Добавляем алерт для демо-режима */}
+      <SearchResultsAlert currentPage={currentPage} />
+      
       <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
         <div className="flex flex-wrap gap-3 items-center">
           <SortButtons sortBy={filters.sortBy || "" as SortOption} onSortChange={handleSortChange} />

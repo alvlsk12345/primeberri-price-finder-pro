@@ -47,17 +47,24 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
   
   try {
-    // Выполнение запроса к API
-    console.log('Отправка запроса с API ключом:', `Bearer ${apiKey.substring(0, 5)}...`);
+    // Вывод подробной информации о запросе
+    console.log('Отправка запроса к Zylalabs API:');
+    console.log('- URL:', url);
+    console.log('- Метод:', 'GET');
+    console.log('- API ключ:', `Bearer ${apiKey.substring(0, 5)}...`);
     
-    console.log('Начинаем fetch запрос к:', url);
+    // Выполняем запрос с обновленными заголовками
     const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Origin': window.location.origin,
       },
-      signal: controller.signal
+      signal: controller.signal,
+      mode: 'cors', // Явно указываем режим CORS
+      credentials: 'omit', // Не отправляем куки
     });
     
     // Очистка таймера
@@ -77,7 +84,7 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
       console.error('Ошибка API:', response.status, response.statusText);
       const errorResponse = await response.text();
       console.error('Тело ответа с ошибкой:', errorResponse);
-      return handleApiError(response); // Исправлено: передаем только один аргумент response
+      return handleApiError(response);
     }
     
     // Разбор ответа
@@ -106,16 +113,25 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
         data: data,
         totalPages: data.total_pages || 1,
         isDemo: false,
-        remainingCalls: remainingCalls
+        remainingCalls: remainingCalls,
+        apiInfo: {
+          status: response.status,
+          remainingCalls: remainingCalls,
+          timestamp: new Date().toISOString()
+        }
       };
       
       // Кешируем успешный результат
       setCacheResponse(url, result);
       
+      // Показываем уведомление об успешном запросе
+      toast.success('Данные успешно загружены из API');
+      
       return result;
     } catch (jsonError) {
       console.error('Ошибка при парсинге JSON:', jsonError);
       console.log('Невалидный JSON в ответе:', responseText.substring(0, 200) + '...');
+      toast.error('Ошибка в формате данных от API. Используем демо-данные.');
       throw new Error('Неверный формат JSON в ответе API');
     }
   } catch (error) {
@@ -137,3 +153,4 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
     return generateMockSearchResults(params.query, params.page);
   }
 };
+
