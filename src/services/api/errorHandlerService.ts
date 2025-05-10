@@ -45,8 +45,10 @@ export const handleApiError = async (response: Response): Promise<any> => {
     toast.error(`Некорректный запрос: ${errorMessage}`, { duration: 5000 });
     throw new Error(`Некорректный запрос: ${errorMessage}`);
   } else if (response.status === 503) {
-    toast.error(`Сервис Zylalabs временно недоступен.`, { duration: 5000 });
-    throw new Error(`Сервис Zylalabs временно недоступен (503).`);
+    console.warn('Сервис Zylalabs временно недоступен (503).');
+    toast.error(`Сервис Zylalabs временно недоступен. Попробуем другие параметры.`, { duration: 3000 });
+    // Вместо ошибки возвращаем null для возможности более мягкой обработки
+    return null;
   } else if (response.status === 403) {
     toast.error("Доступ запрещен. Проверьте права API ключа.", { duration: 5000 });
     throw new Error("Доступ запрещен. Проверьте права API ключа (403).");
@@ -73,12 +75,11 @@ export const handleFetchError = (error: any): void => {
   
   if (error.name === 'AbortError') {
     console.warn('Запрос был отменен из-за истечения времени ожидания');
-    toast.error('Превышено время ожидания ответа от сервера Zylalabs.', { duration: 5000 });
+    toast.error('Превышено время ожидания ответа от сервера Zylalabs. Пробуем другие параметры.', { duration: 3000 });
   } else if (error.name === 'TypeError' && error.message.includes('NetworkError')) {
     toast.error('Проблема с сетью. Проверьте подключение к интернету.', { duration: 5000 });
   } else if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-    toast.error('Ошибка CORS при обращении к API.', { duration: 5000 });
-    console.log('Рекомендации по исправлению CORS: Используйте прокси-сервер или серверное API');
+    toast.error('Ошибка соединения при обращении к API. Пробуем другие параметры.', { duration: 3000 });
   } else {
     toast.error('Ошибка при получении данных о товарах.', { duration: 5000 });
   }

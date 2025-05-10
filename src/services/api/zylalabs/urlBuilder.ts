@@ -8,51 +8,33 @@ import { BASE_URL } from "./config";
  * @returns Сформированный URL для API запроса
  */
 export const buildZylalabsUrl = (params: SearchParams): string => {
-  // Формирование базового URL с основными параметрами
+  // Формирование параметров запроса аналогично HTML-примеру
   const query = encodeURIComponent(params.query);
   
-  // Используем 'q' вместо 'query' в соответствии с рабочим HTML-примером
-  let url = `${BASE_URL}?q=${query}`;
+  // Создаем URLSearchParams как в HTML-примере
+  const urlParams = new URLSearchParams({
+    q: params.query, // Используем 'q' вместо 'query'
+  });
+  
+  // Добавляем страницу
+  if (params.page && params.page > 1) {
+    urlParams.append('page', params.page.toString());
+  }
+  
+  // Добавляем страну (только одну, как в HTML-примере)
+  // В HTML-примере страны добавляются по одной в разных запросах
+  if (params.countries && params.countries.length > 0) {
+    urlParams.append('country', params.countries[0]);
+  } else {
+    // По умолчанию используем Германию
+    urlParams.append('country', 'de');
+  }
   
   // Добавляем язык (необязательно)
   if (params.language) {
-    url += `&language=${params.language}`;
-  } else {
-    url += `&language=en`;
+    urlParams.append('language', params.language);
   }
   
-  // Добавляем номер страницы, если указан
-  if (params.page && params.page > 1) {
-    url += `&page=${params.page}`;
-  }
-  
-  // Добавляем фильтры, если они указаны
-  if (params.filters) {
-    // Сортировка
-    if (params.filters.sortBy) {
-      url += `&sortBy=${params.filters.sortBy}`;
-    }
-    
-    // Минимальная цена
-    if (params.filters.minPrice) {
-      url += `&minPrice=${params.filters.minPrice}`;
-    }
-    
-    // Максимальная цена
-    if (params.filters.maxPrice) {
-      url += `&maxPrice=${params.filters.maxPrice}`;
-    }
-    
-    // Минимальный рейтинг
-    if (params.filters.rating) {
-      url += `&minRating=${params.filters.rating}`;
-    }
-  }
-  
-  // Добавляем страны поиска, если указаны
-  if (params.countries && params.countries.length > 0) {
-    url += `&country=${params.countries.join(',')}`;
-  }
-  
-  return url;
+  // Создаем итоговый URL
+  return `${BASE_URL}?${urlParams.toString()}`;
 };

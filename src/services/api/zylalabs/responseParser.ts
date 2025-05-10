@@ -11,23 +11,35 @@ import { mapProductsFromApi } from "./productMapper";
  * @returns Обработанные результаты поиска
  */
 export const parseApiResponse = (result: any, params: SearchParams) => {
+  // Обработка случая, когда result равен null (таймаут или ошибка запроса)
+  if (result === null) {
+    console.log('Получен null от API, возможно таймаут или сервис недоступен');
+    return {
+      products: [],
+      totalPages: 0,
+      isDemo: false,
+      apiInfo: {
+        error: 'API вернуло пустой ответ или произошла ошибка',
+        source: 'Error'
+      }
+    };
+  }
+  
   // Обработка ошибок в ответе
   if (result.error) {
     console.error('Ошибка при запросе к API:', result.error);
-    const demoData = generateMockSearchResults(params.query, params.page);
-    toast.error(`Ошибка API: ${result.error}`);
     return {
-      products: demoData.products,
-      totalPages: demoData.totalPages || 1,
-      isDemo: true,
+      products: [],
+      totalPages: 0,
+      isDemo: false,
       apiInfo: {
         error: result.error,
-        source: 'Demo Data'
+        source: 'Error'
       }
     };
   }
 
-  // Проверка формата из HTML-примера: result.data.status === "OK" и result.data.data.products
+  // Проверка структуры ответа, как в HTML-примере (result.status === "OK")
   if (result && result.data && result.data.status === "OK" && result.data.data && result.data.data.products) {
     console.log(`API вернул данные в формате HTML-примера (status: OK), найдено ${result.data.data.products.length} товаров`);
     
@@ -45,7 +57,25 @@ export const parseApiResponse = (result: any, params: SearchParams) => {
       }
     };
   }
-  // Проверка структуры с data.data (массив) - встречается в API
+  // Проверка структуры со status === "OK" (встречается в HTML-примере)
+  else if (result && result.status === "OK" && result.data && result.data.products) {
+    console.log(`API вернул данные в формате с status: OK, найдено ${result.data.products.length} товаров`);
+    
+    const products = mapProductsFromApi(result.data.products, params);
+    
+    return {
+      products: products,
+      totalPages: result.data.total_pages || 1,
+      isDemo: false,
+      apiInfo: {
+        totalResults: result.data.total_results ? `${result.data.total_results}` : '0',
+        searchTime: result.data.search_time ? `${result.data.search_time}s` : 'н/д',
+        source: 'Zylalabs API',
+        remainingCalls: result.remainingCalls || 'н/д'
+      }
+    };
+  }
+  // Другие структуры ответа
   else if (result && result.data && result.data.data && Array.isArray(result.data.data)) {
     console.log(`API вернул данные в структуре data.data (массив), найдено ${result.data.data.length} товаров`);
     
@@ -100,23 +130,24 @@ export const parseApiResponse = (result: any, params: SearchParams) => {
     };
   } else {
     // Логирование структуры ответа для отладки
-    console.warn('responseParser: Необработанная структура ответа API:', JSON.stringify(result).substring(0, 500) + '...');
-    console.warn('Типы полей результата:', 
-      Object.entries(result || {}).map(([key, value]) => 
-        `${key}: ${Array.isArray(value) ? 'Array' : typeof value}`
-      ));
+    console.warn('responseParser: Необработанная структура ответа API:', 
+      result ? JSON.stringify(result).substring(0, 500) + '...' : 'null');
     
-    // Возвращаем демо-данные при неожиданном формате ответа
-    const demoData = generateMockSearchResults(params.query, params.page);
+    if (result) {
+      console.warn('Типы полей результата:', 
+        Object.entries(result).map(([key, value]) => 
+          `${key}: ${Array.isArray(value) ? 'Array' : typeof value}`
+        ));
+    }
     
-    toast.error('Получена неожиданная структура ответа API. Используем демо-данные.');
+    // Возвращаем пустой результат
     return {
-      products: demoData.products,
-      totalPages: demoData.totalPages || 1,
-      isDemo: true,
+      products: [],
+      totalPages: 0,
+      isDemo: false,
       apiInfo: {
         error: 'Неожиданная структура ответа API',
-        source: 'Demo Data'
+        source: 'Error'
       }
     };
   }

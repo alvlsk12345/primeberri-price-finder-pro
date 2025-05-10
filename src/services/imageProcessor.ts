@@ -1,9 +1,10 @@
 
-import { isValidImageUrl, getUniqueImageUrl } from './imageService';
+import { isValidImageUrl, getUniqueImageUrl, isGoogleShoppingImage as isGoogleImageFromService } from './imageService';
 
 // Функция для проверки, является ли URL от Google Shopping
 export const isGoogleShoppingImage = (url: string): boolean => {
-  return url.includes('encrypted-tbn') || 
+  return isGoogleImageFromService(url) || 
+         url.includes('encrypted-tbn') || 
          url.includes('googleusercontent') || 
          url.includes('gstatic.com/shopping');
 };
