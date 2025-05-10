@@ -17,6 +17,13 @@ export const isPlaceholderImage = (imageUrl: string): boolean => {
  * @returns URL заглушки для изображения
  */
 export const getPlaceholderImageUrl = (title?: string): string => {
-  const text = encodeURIComponent(title || 'Нет изображения');
-  return `https://placehold.co/600x400/e2e8f0/cbd5e0?text=${text}`;
+  // Вместо использования внешнего сервиса возвращаем локальный SVG
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+    <svg width="600" height="400" xmlns="http://www.w3.org/2000/svg">
+      <rect width="600" height="400" fill="#e2e8f0" />
+      <text x="50%" y="50%" font-family="Arial" font-size="24" fill="#94a3b8" text-anchor="middle">
+        ${title ? title.substring(0, 30) : 'Нет изображения'}${title && title.length > 30 ? '...' : ''}
+      </text>
+    </svg>
+  `);
 };

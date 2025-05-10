@@ -1,4 +1,3 @@
-
 /**
  * Сервис для работы с CORS-прокси
  * 
@@ -6,12 +5,17 @@
  * при запросах к внешним API, таким как OpenAI API или получение изображений.
  */
 
-// Список доступных публичных CORS прокси-сервисов
+// Расширенный список доступных публичных CORS прокси-сервисов
 const CORS_PROXIES = [
   'https://corsproxy.io/?',
   'https://api.allorigins.win/raw?url=',
   'https://cors-anywhere.herokuapp.com/',
-  'https://thingproxy.freeboard.io/fetch/'
+  'https://thingproxy.freeboard.io/fetch/',
+  'https://api.codetabs.com/v1/proxy?quest=',
+  'https://crossorigin.me/',
+  'https://yacdn.org/proxy/',
+  'https://cors.eu.org/',
+  'https://cors-proxy.htmldriven.com/?url='
 ];
 
 // Индекс текущего используемого прокси
@@ -118,8 +122,10 @@ export const applyCorsProxy = (url: string): string => {
     return url;
   }
   
-  // Применяем CORS прокси к URL
-  return getCorsProxyUrl(url);
+  // Применяем CORS прокси к URL и логируем для отладки
+  const proxiedUrl = getCorsProxyUrl(url);
+  console.log(`CORS прокси применен: ${proxiedUrl}`);
+  return proxiedUrl;
 };
 
 /**

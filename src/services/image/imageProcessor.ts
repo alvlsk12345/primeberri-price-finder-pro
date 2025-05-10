@@ -70,11 +70,12 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
     return applyCorsProxy(processedUrl);
   }
   
-  // Для URL от Google CSE используем особую обработку
+  // Для URL от Google CSE всегда используем CORS-прокси
   if (isGoogleCseImage(processedUrl)) {
     console.log(`Обнаружен URL Google CSE: ${processedUrl}`);
     processedUrl = formatImageUrl(processedUrl);
-    return processedUrl;
+    console.log(`Применяем CORS-прокси к Google CSE изображению: ${processedUrl}`);
+    return applyCorsProxy(processedUrl);
   }
   
   // Проверяем необходимость использования CORS-прокси для других доменов
