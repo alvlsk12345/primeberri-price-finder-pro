@@ -23,13 +23,14 @@ export function usePaginationActions({
       console.log(`Изменение страницы с ${currentPage} на ${page}`);
       
       try {
-        // Важное исправление: используем атомарное обновление состояния
+        // Важно: сначала увеличиваем счетчик для отслеживания изменений
+        setPageChangeCount(prevCount => prevCount + 1);
+        
+        // Важное изменение: используем функциональную форму обновления для атомарности
         setCurrentPage(page);
         
-        // Увеличиваем счетчик
-        setPageChangeCount(pageChangeCount + 1);
-        
         // Запускаем поиск с новой страницей и ждем завершения
+        // Важно: передаем конкретное значение страницы, а не ссылку на переменную currentPage
         await handleSearch(page);
         
         console.log(`Успешно переключено на страницу ${page}`);

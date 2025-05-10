@@ -4,9 +4,6 @@ import {
   Pagination as ShadcnPagination,
   PaginationContent,
   PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
 
@@ -17,132 +14,180 @@ interface PaginationProps {
 }
 
 export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPageChange }) => {
-  // Don't show pagination if there's only one page
+  // Не показываем пагинацию, если страница только одна
   if (totalPages <= 1) {
     return null;
   }
 
-  // Improved page click handler with memoization to prevent unnecessary re-renders
-  const handlePageClick = useCallback((page: number) => (e: React.MouseEvent<HTMLAnchorElement>) => {
-    // Prevent default link behavior to avoid page reloads
+  // Улучшенный обработчик клика по странице с использованием useCallback для предотвращения повторных рендеров
+  const handlePageClick = useCallback((pageNumber: number) => (e: React.MouseEvent) => {
+    // Предотвращаем стандартное поведение браузера (переход по ссылке)
     e.preventDefault();
     e.stopPropagation();
     
-    // Only trigger for valid pages that aren't the current page
-    if (page !== currentPage && page >= 1 && page <= totalPages) {
-      console.log(`Pagination: Переход с ${currentPage} на страницу ${page}`);
-      onPageChange(page);
+    // Проверяем, что страница валидна и не является текущей
+    if (pageNumber !== currentPage && pageNumber >= 1 && pageNumber <= totalPages) {
+      console.log(`Pagination: Переход с ${currentPage} на страницу ${pageNumber}`);
+      onPageChange(pageNumber);
     } else {
-      console.log(`Pagination: Отклонен переход на страницу ${page} (текущая: ${currentPage}, всего: ${totalPages})`);
+      console.log(`Pagination: Отклонен переход на страницу ${pageNumber} (текущая: ${currentPage}, всего: ${totalPages})`);
     }
   }, [currentPage, totalPages, onPageChange]);
 
-  // Function to generate pagination items, using useMemo для оптимизации
+  // Создаем элементы пагинации с использованием useMemo для оптимизации
   const paginationItems = useMemo(() => {
     const items = [];
     const maxVisiblePages = 5;
     
-    // If there are fewer pages than the maximum visible, show all pages
+    // Генерация компонента кнопки страницы
+    const generatePageButton = (pageNumber: number) => {
+      const isDisabled = pageNumber > totalPages;
+      const isActive = currentPage === pageNumber;
+      return (
+        <PaginationItem key={pageNumber} data-testid={`pagination-item-${pageNumber}`}>
+          <button
+            onClick={handlePageClick(pageNumber)}
+            className={`flex h-9 w-9 items-center justify-center rounded-md text-sm font-medium transition-colors 
+              ${isActive 
+                ? 'border border-input bg-background shadow-sm' 
+                : 'hover:bg-accent hover:text-accent-foreground'} 
+              ${isDisabled ? 'pointer-events-none opacity-50' : ''}`}
+            disabled={isDisabled}
+            aria-current={isActive ? "page" : undefined}
+            type="button"
+          >
+            {pageNumber}
+          </button>
+        </PaginationItem>
+      );
+    };
+
+    // Навигационная кнопка (предыдущая/следующая)
+    const generateNavButton = (type: 'previous' | 'next') => {
+      const isNext = type === 'next';
+      const pageNumber = isNext ? currentPage + 1 : currentPage - 1;
+      const isDisabled = isNext ? currentPage >= totalPages : currentPage <= 1;
+      const label = isNext ? 'Следующая' : 'Предыдущая';
+      const icon = isNext ? '→' : '←';
+
+      return (
+        <PaginationItem>
+          <button
+            onClick={handlePageClick(pageNumber)}
+            className={`flex h-9 items-center gap-1 px-4 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground 
+              ${isDisabled ? 'pointer-events-none opacity-50' : ''}`}
+            disabled={isDisabled}
+            aria-label={`Перейти на ${label.toLowerCase()} страницу`}
+            type="button"
+            data-testid={`pagination-${type}`}
+          >
+            {!isNext && icon}
+            {label}
+            {isNext && icon}
+          </button>
+        </PaginationItem>
+      );
+    };
+
+    // Логика пагинации в зависимости от количества страниц
     if (totalPages <= maxVisiblePages) {
+      // Если страниц немного, показываем все
       for (let i = 1; i <= totalPages; i++) {
-        items.push(generatePageItem(i));
+        items.push(generatePageButton(i));
       }
     } else {
-      // Logic for showing pages when there are more than the maximum visible
+      // Сложная логика для большого количества страниц
       if (currentPage <= 3) {
-        // Near the beginning
+        // В начале списка
         for (let i = 1; i <= 4; i++) {
-          items.push(generatePageItem(i));
+          items.push(generatePageButton(i));
         }
         items.push(
           <PaginationItem key="ellipsis-end">
             <PaginationEllipsis />
           </PaginationItem>
         );
-        items.push(generatePageItem(totalPages));
+        items.push(generatePageButton(totalPages));
       } else if (currentPage >= totalPages - 2) {
-        // Near the end
-        items.push(generatePageItem(1));
+        // В конце списка
+        items.push(generatePageButton(1));
         items.push(
           <PaginationItem key="ellipsis-start">
             <PaginationEllipsis />
           </PaginationItem>
         );
         for (let i = totalPages - 3; i <= totalPages; i++) {
-          items.push(generatePageItem(i));
+          items.push(generatePageButton(i));
         }
       } else {
-        // Somewhere in the middle
-        items.push(generatePageItem(1));
+        // Где-то в середине
+        items.push(generatePageButton(1));
         items.push(
           <PaginationItem key="ellipsis-start">
             <PaginationEllipsis />
           </PaginationItem>
         );
         for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-          items.push(generatePageItem(i));
+          items.push(generatePageButton(i));
         }
         items.push(
           <PaginationItem key="ellipsis-end">
             <PaginationEllipsis />
           </PaginationItem>
         );
-        items.push(generatePageItem(totalPages));
+        items.push(generatePageButton(totalPages));
       }
     }
     
     return items;
-  
-    // Helper function to create a pagination page item
-    function generatePageItem(pageNumber: number) {
-      const isDisabled = pageNumber > totalPages;
-      const isActive = currentPage === pageNumber;
-      return (
-        <PaginationItem key={pageNumber} data-testid={`pagination-item-${pageNumber}`}>
-          <PaginationLink 
-            isActive={isActive}
-            onClick={handlePageClick(pageNumber)}
-            href="#"
-            aria-current={isActive ? "page" : undefined}
-            className={isDisabled ? "pointer-events-none opacity-50" : ""}
-          >
-            {pageNumber}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
   }, [currentPage, totalPages, handlePageClick]);
 
   return (
     <div className="flex justify-center mt-6" data-testid="pagination-component">
       <ShadcnPagination>
         <PaginationContent>
-          {/* Previous page button */}
-          <PaginationItem>
-            <PaginationPrevious 
-              href="#" 
-              onClick={handlePageClick(currentPage - 1)} 
-              aria-disabled={currentPage <= 1}
-              className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
-              data-testid="pagination-previous"
-            />
-          </PaginationItem>
+          {/* Кнопка "предыдущая страница" */}
+          {generateNavButton('previous')}
           
-          {/* Page numbers */}
+          {/* Элементы страниц */}
           {paginationItems}
           
-          {/* Next page button */}
-          <PaginationItem>
-            <PaginationNext 
-              href="#" 
-              onClick={handlePageClick(currentPage + 1)} 
-              aria-disabled={currentPage >= totalPages}
-              className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
-              data-testid="pagination-next"
-            />
-          </PaginationItem>
+          {/* Кнопка "следующая страница" */}
+          {generateNavButton('next')}
         </PaginationContent>
       </ShadcnPagination>
     </div>
   );
 };
+
+// Вспомогательная функция для генерации навигационной кнопки (вынесена из компонента для читабельности)
+function generateNavButton(
+  type: 'previous' | 'next', 
+  currentPage: number, 
+  totalPages: number, 
+  handlePageClick: (page: number) => (e: React.MouseEvent) => void
+) {
+  const isNext = type === 'next';
+  const pageNumber = isNext ? currentPage + 1 : currentPage - 1;
+  const isDisabled = isNext ? currentPage >= totalPages : currentPage <= 1;
+  const label = isNext ? 'Следующая' : 'Предыдущая';
+  const icon = isNext ? '→' : '←';
+
+  return (
+    <PaginationItem key={`nav-${type}`}>
+      <button
+        onClick={handlePageClick(pageNumber)}
+        className={`flex h-9 items-center gap-1 px-4 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground 
+          ${isDisabled ? 'pointer-events-none opacity-50' : ''}`}
+        disabled={isDisabled}
+        aria-label={`Перейти на ${label.toLowerCase()} страницу`}
+        type="button"
+        data-testid={`pagination-${type}`}
+      >
+        {!isNext && icon}
+        {label}
+        {isNext && icon}
+      </button>
+    </PaginationItem>
+  );
+}

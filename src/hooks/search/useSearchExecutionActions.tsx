@@ -70,7 +70,7 @@ export function useSearchExecutionActions({
 
   // Основная функция поиска с улучшенной логикой работы с кешем и страницами
   const handleSearch = async (page: number = 1, forceNewSearch: boolean = false) => {
-    console.log(`handleSearch вызван: страница ${page}, forceNewSearch: ${forceNewSearch}`);
+    console.log(`handleSearch вызван: страница ${page}, forceNewSearch: ${forceNewSearch}, текущая страница: ${currentPage}`);
     
     // Проверяем, есть ли запрос для поиска
     if (!searchQuery && !lastSearchQuery) {
@@ -81,9 +81,12 @@ export function useSearchExecutionActions({
     // Используем текущий поисковый запрос или последний успешный
     const queryToUse = searchQuery || lastSearchQuery;
     
-    // Важно: ВСЕГДА устанавливаем текущую страницу перед проверкой кеша
-    // Это исправляет критическую ошибку с переключением страниц
-    setCurrentPage(page);
+    // ВАЖНОЕ ИЗМЕНЕНИЕ: устанавливаем текущую страницу перед выполнением поиска
+    // Это предотвращает проблему с асинхронным обновлением состояния
+    if (page !== currentPage) {
+      console.log(`Устанавливаем новую текущую страницу: ${page}`);
+      setCurrentPage(page);
+    }
     
     // Если это та же страница для того же запроса и у нас есть кешированные результаты
     const cachedResultsForQuery = getCachedResults(queryToUse, lastSearchQuery, page);
@@ -119,15 +122,11 @@ export function useSearchExecutionActions({
       // Если поиск был неудачным, пытаемся использовать кешированные результаты
       if (!result.success) {
         console.log(`Поиск не удался. Проверяем кэш.`);
-        if (cachedResults[1] && cachedResults[1].length > 0 && isSameQuery) {
-          setSearchResults(cachedResults[1]);
-          setCurrentPage(1);
-          console.log('Ошибка при загрузке страницы, показаны результаты первой страницы');
-        }
+        handleSearchFailure(page);
       }
     } catch (error) {
       console.error(`Ошибка при выполнении поиска:`, error);
-      handleSearchFailure(currentPage);
+      handleSearchFailure(page);
     }
   };
   

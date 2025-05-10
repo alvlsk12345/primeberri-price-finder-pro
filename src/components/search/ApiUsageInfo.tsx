@@ -1,14 +1,16 @@
 
 import React from 'react';
 import { useSearch } from "@/contexts/SearchContext";
-import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Info } from "lucide-react";
 
 export const ApiUsageInfo: React.FC = () => {
   const {
     searchResults,
-    apiInfo
+    apiInfo,
+    currentPage,
+    totalPages
   } = useSearch();
   
   if (!apiInfo || !Object.keys(apiInfo).length) {
@@ -37,6 +39,11 @@ export const ApiUsageInfo: React.FC = () => {
             {dailyRemaining !== 'N/A' && (
               <Badge variant="outline" className="bg-white">
                 Из других стран: {dailyRemaining}
+              </Badge>
+            )}
+            {totalPages > 1 && (
+              <Badge variant="outline" className="bg-white">
+                Страница {currentPage} из {totalPages}
               </Badge>
             )}
           </div>

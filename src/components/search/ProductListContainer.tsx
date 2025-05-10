@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Product } from "@/services/types";
 import { ProductList } from '../product/ProductList';
 import { Pagination } from '../product/Pagination';
@@ -25,33 +25,36 @@ export const ProductListContainer: React.FC<ProductListContainerProps> = ({
   onPageChange,
   isDemo = false
 }) => {
-  // Enhanced page change handler with validation and feedback
-  const handlePageChange = (page: number) => {
-    console.log(`ProductListContainer: Changing page from ${currentPage} to ${page}`);
+  // Улучшенный обработчик смены страницы с useCallback для оптимизации
+  const handlePageChange = useCallback((page: number) => {
+    console.log(`ProductListContainer: Смена страницы с ${currentPage} на ${page}`);
+    
+    // Проверка валидности страницы
     if (page >= 1 && page <= totalPages && page !== currentPage) {
-      // Show loading toast when changing pages
+      // Показываем индикатор загрузки
+      const toastId = `page-change-${page}`;
       toast.info(`Загрузка страницы ${page}...`, {
-        id: `page-change-${page}`,
+        id: toastId,
         duration: 2000
       });
       
-      // Call the parent's onPageChange function
+      // Вызываем функцию смены страницы
       onPageChange(page);
     } else if (page === currentPage) {
-      // No need to reload the same page
-      console.log(`Already on page ${page}, no change needed`);
+      // Уже на этой странице, не нужно перезагружать
+      console.log(`Уже находимся на странице ${page}, никаких изменений не требуется`);
     } else {
-      // Invalid page requested
-      console.log(`Invalid page request: ${page} (total: ${totalPages})`);
+      // Некорректная страница запрошена
+      console.warn(`Неверный запрос страницы: ${page} (всего: ${totalPages})`);
       if (page > totalPages) {
-        toast.error(`Страница ${page} не существует`);
+        toast.error(`Страница ${page} не существует. Максимум: ${totalPages}`);
       }
     }
-  };
+  }, [currentPage, totalPages, onPageChange]);
 
   return (
     <div className="space-y-4">
-      {/* Show alert for all demo data or if we're not on page 1 */}
+      {/* Показываем уведомление для демо-данных или если мы не на первой странице */}
       {(isDemo || currentPage > 1) && products.length > 0 && (
         <SearchResultsAlert currentPage={currentPage} />
       )}
