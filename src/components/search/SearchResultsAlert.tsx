@@ -43,7 +43,10 @@ export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({ currentP
       </AlertTitle>
       <AlertDescription className="text-amber-700">
         {isDemoForced ? (
-          <p>Демо-режим активирован в настройках приложения. API Zylalabs не используется.</p>
+          <>
+            <p>Демо-режим активирован в настройках приложения. API Zylalabs не используется.</p>
+            <p className="mt-2 text-sm">Для отключения демо-режима измените параметр <code>useDemoModeForced</code> в файле <code>mockServiceConfig.ts</code>.</p>
+          </>
         ) : (
           <>
             <p>API Zylalabs временно недоступен. Это может быть связано с:</p>
@@ -51,6 +54,7 @@ export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({ currentP
               <li>Временной недоступностью сервиса Zylalabs</li>
               <li>Превышением лимита запросов</li>
               <li>Проблемами с API ключом</li>
+              <li>Неверной обработкой структуры ответа API</li>
             </ul>
             <p className="mt-2">Используемый API ключ: {maskedKey}</p>
             {apiInfo && apiInfo.remainingCalls && (

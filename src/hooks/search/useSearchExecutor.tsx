@@ -97,9 +97,17 @@ export function useSearchExecutor({
         minResultCount: 12, // Увеличено минимальное количество результатов
       };
       
+      // Включаем дополнительные логи для отладки
+      console.log('Параметры поиска:', searchParams);
+      
       // Execute the search
       const results = await executeApiCall(searchParams);
       console.log(`Search completed for page ${page}, got ${results.products.length} results`);
+      
+      // Дополнительный лог для отладки данных API
+      if (results.products.length > 0) {
+        console.log('Пример первого продукта:', results.products[0]);
+      }
       
       // Сбрасываем счетчик попыток при успешном запросе
       retryAttemptsRef.current = 0;

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Product, ProductFilters, SearchParams } from "@/services/types";
 import { searchProducts } from "@/services/productService";
 import { toast } from "sonner";
+import { API_TIMEOUT } from "@/services/api/mock/mockServiceConfig";
 
 type SearchApiCallProps = {
   setIsLoading: (loading: boolean) => void;
@@ -25,20 +26,26 @@ export function useSearchApiCall({
       setIsLoading(false);
       console.log('Поиск занял слишком много времени');
       toast.error('Поиск занял слишком много времени. Попробуйте еще раз или используйте другой запрос.', { duration: 5000 });
-    }, 35000); // 35 секунд таймаут
+    }, API_TIMEOUT + 5000); // API_TIMEOUT + 5 секунд запаса
     
     setSearchTimeout(timeout);
     
     try {
+      console.log('Выполняем запрос к API с параметрами:', searchParams);
+      
       // Выполняем поисковый запрос
       const results = await searchProducts(searchParams);
       
+      console.log('Получен ответ от API:', results);
+      
       // Проверяем, используются ли демо-данные
       if (results.isDemo) {
+        console.log('Используются демо-данные');
         setIsUsingDemoData(true);
         // Reset API info when using demo data
         setApiInfo(undefined);
       } else if (results.apiInfo) {
+        console.log('Используются данные API, информация:', results.apiInfo);
         setIsUsingDemoData(false);
         // Update API info if available
         setApiInfo(results.apiInfo);

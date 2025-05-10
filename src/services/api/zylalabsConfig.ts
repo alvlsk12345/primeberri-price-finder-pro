@@ -1,4 +1,3 @@
-
 import { SearchParams } from "../types";
 import { handleApiError, handleFetchError } from "./errorHandlerService";
 import { generateMockSearchResults } from "./mock/mockSearchGenerator";
@@ -180,17 +179,17 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
     const data = await response.json();
     console.log('API вернул данные:', data);
     
-    // Обработка ответа
+    // Обработка заголовков ответа для получения лимитов API
+    const remainingCalls = response.headers.get('X-Zyla-API-Calls-Monthly-Remaining') || 'н/д';
+    
+    // Получаем данные о товарах из ответа API
+    // Обработка ответа с учетом вложенной структуры
+    // Просто возвращаем ответ как есть, обработка структуры будет в zylalabsService.ts
     const result = {
-      products: data.products || [],
+      data: data,  // Прокидываем весь ответ API, включая вложенную структуру
       totalPages: data.total_pages || 1,
       isDemo: false,
-      apiInfo: {
-        totalResults: data.total_results ? `${data.total_results}` : '0',
-        searchTime: data.search_time ? `${data.search_time}s` : 'н/д',
-        source: 'Zylalabs API',
-        remainingCalls: response.headers.get('X-Zyla-API-Calls-Monthly-Remaining') || 'н/д'
-      }
+      remainingCalls: remainingCalls
     };
     
     // Кешируем успешный результат
