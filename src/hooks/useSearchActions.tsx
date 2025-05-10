@@ -14,6 +14,8 @@ type SearchStateProps = {
   setIsLoading: (loading: boolean) => void;
   searchResults: Product[];
   setSearchResults: (results: Product[]) => void;
+  allSearchResults: Product[]; // Добавляем все результаты
+  setAllSearchResults: (results: Product[]) => void; // Добавляем установку всех результатов
   cachedResults: {[page: number]: Product[]};
   setCachedResults: (results: {[page: number]: Product[]}) => void;
   selectedProduct: Product | null;
@@ -47,6 +49,8 @@ export function useSearchActions(props: SearchStateProps) {
     setIsLoading,
     searchResults,
     setSearchResults,
+    allSearchResults,        // Добавляем все результаты
+    setAllSearchResults,     // Добавляем установку всех результатов
     cachedResults,
     setCachedResults,
     selectedProduct,
@@ -81,6 +85,8 @@ export function useSearchActions(props: SearchStateProps) {
     setIsLoading,
     searchResults,
     setSearchResults,
+    allSearchResults,        // Добавляем
+    setAllSearchResults,     // Добавляем
     cachedResults,
     setCachedResults,
     currentPage,
@@ -108,8 +114,11 @@ export function useSearchActions(props: SearchStateProps) {
   
   // Для filterActions также нужна ссылка на handleSearch
   const { handleFilterChange } = useFilterActions({
+    allSearchResults,       // Используем все результаты
     setFilters,
-    handleSearch
+    handleSearch,
+    filters,
+    setSearchResults
   });
 
   return {

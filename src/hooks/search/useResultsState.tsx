@@ -4,6 +4,7 @@ import { Product } from "@/services/types";
 
 export function useResultsState() {
   const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [allSearchResults, setAllSearchResults] = useState<Product[]>([]); // Новое состояние для хранения всех нефильтрованных результатов
   const [cachedResults, setCachedResults] = useState<{[page: number]: Product[]}>({});
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isUsingDemoData, setIsUsingDemoData] = useState(false);
@@ -12,6 +13,8 @@ export function useResultsState() {
   return {
     searchResults,
     setSearchResults,
+    allSearchResults,
+    setAllSearchResults,
     cachedResults,
     setCachedResults,
     selectedProduct,

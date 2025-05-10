@@ -9,6 +9,7 @@ type SearchContextType = {
   setSearchQuery: (query: string) => void;
   isLoading: boolean;
   searchResults: Product[];
+  allSearchResults: Product[]; // Добавляем все результаты в контекст
   selectedProduct: Product | null;
   setSelectedProduct: (product: Product | null) => void;
   currentPage: number;

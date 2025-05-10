@@ -40,8 +40,13 @@ export const ProductImage: React.FC<ProductImageProps> = ({ image, title, produc
   // Обработчик клика по изображению
   const handleImageClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Предотвращаем всплытие события
+    
+    // Открываем модальное окно, только если есть изображение и нет ошибки загрузки
     if (image && !imageError) {
+      console.log('Открытие модального окна для изображения:', image);
       setIsModalOpen(true);
+    } else {
+      console.log('Не удалось открыть модальное окно: нет изображения или ошибка загрузки');
     }
   };
 
@@ -92,6 +97,7 @@ export const ProductImage: React.FC<ProductImageProps> = ({ image, title, produc
             className="max-h-full max-w-full object-contain hover:opacity-90 transition-opacity"
             onError={(e) => {
               // При ошибке устанавливаем заглушку
+              console.error('Ошибка загрузки изображения, устанавливаем заглушку:', image);
               e.currentTarget.onerror = null; // Предотвращение бесконечной рекурсии
               e.currentTarget.src = placeholderUrl;
               handleImageError();
@@ -121,10 +127,11 @@ export const ProductImage: React.FC<ProductImageProps> = ({ image, title, produc
         )}
       </div>
       
+      {/* Модальное окно для просмотра увеличенного изображения */}
       <ProductImageModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        imageUrl={image} 
+        imageUrl={imageError ? placeholderUrl : image} 
         productTitle={title} 
       />
     </>

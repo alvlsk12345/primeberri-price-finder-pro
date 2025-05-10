@@ -11,6 +11,8 @@ type SearchExecutionProps = {
   setIsLoading: (loading: boolean) => void;
   searchResults: any[];
   setSearchResults: (results: any[]) => void;
+  allSearchResults: any[];       // Добавляем
+  setAllSearchResults: (results: any[]) => void;  // Добавляем
   cachedResults: {[page: number]: any[]};
   setCachedResults: (results: {[page: number]: any[]}) => void;
   currentPage: number;
@@ -31,6 +33,8 @@ export function useSearchExecutionActions({
   setIsLoading,
   searchResults,
   setSearchResults,
+  allSearchResults,       // Добавляем
+  setAllSearchResults,    // Добавляем
   cachedResults,
   setCachedResults,
   currentPage,
@@ -48,6 +52,7 @@ export function useSearchExecutionActions({
     isLoading,
     setIsLoading,
     setSearchResults,
+    setAllSearchResults,  // Добавляем
     cachedResults,
     setCachedResults, 
     setCurrentPage,

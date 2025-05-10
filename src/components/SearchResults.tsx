@@ -49,13 +49,23 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     return { ...product, id: uniqueId };
   });
 
-  // Увеличиваем до 12 товаров на страницу (было 9)
-  const paginatedProducts = productsWithUniqueKeys.slice(0, 12);
+  // Пагинация - по 12 товаров на страницу
+  const itemsPerPage = 12;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  
+  // Получаем товары только для текущей страницы
+  const paginatedProducts = productsWithUniqueKeys.slice(startIndex, endIndex);
+  
+  // Рассчитываем общее количество страниц
+  const actualTotalPages = Math.max(1, Math.ceil(productsWithUniqueKeys.length / itemsPerPage));
+  
+  console.log(`Пагинация: страница ${currentPage}/${actualTotalPages}, показываем товары с ${startIndex+1} по ${Math.min(endIndex, productsWithUniqueKeys.length)}`);
 
   // Handle page change with validation and debouncing
   const handlePageChange = (page: number) => {
     console.log(`SearchResults: Page change requested from ${currentPage} to ${page}`);
-    if (page >= 1 && page <= totalPages && page !== currentPage) {
+    if (page >= 1 && page <= actualTotalPages && page !== currentPage) {
       // Вызываем родительский обработчик изменения страницы
       onPageChange(page);
     } else {
@@ -70,7 +80,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
         selectedProduct={selectedProduct}
         onSelect={onSelect}
         currentPage={currentPage}
-        totalPages={totalPages}
+        totalPages={actualTotalPages}
         onPageChange={handlePageChange}
         isDemo={isDemo}
       />

@@ -40,7 +40,7 @@ export const searchEuProducts = async (query: string, page: number = 1): Promise
   let otherEuProducts: Product[] = [];
   const displayedProductIds = new Set<string>();
   
-  // Шаг 1: Поиск товаров в Германии (теперь до 6 товаров для обеспечения минимума 12)
+  // Шаг 1: Поиск товаров в Германии (увеличиваем до 8 товаров для обеспечения минимум 5 на выходе)
   console.log('Поиск товаров в Германии...');
   const germanData = await makeZylalabsCountryRequest(query, 'de', page, 'ru');
   
@@ -54,9 +54,9 @@ export const searchEuProducts = async (query: string, page: number = 1): Promise
       language: 'ru'
     });
     
-    // Отбираем до 6 уникальных товаров из Германии (увеличено с 5)
+    // Отбираем до 8 уникальных товаров из Германии (увеличено с 6)
     for (const product of mappedGermanProducts) {
-      if (germanProducts.length >= 6) break;
+      if (germanProducts.length >= 8) break;
       if (product.id && !displayedProductIds.has(product.id)) {
         germanProducts.push({ ...product, country: 'de' });
         displayedProductIds.add(product.id);
@@ -66,12 +66,12 @@ export const searchEuProducts = async (query: string, page: number = 1): Promise
     console.log('Не удалось найти товары в Германии или произошла ошибка');
   }
   
-  // Шаг 2: Поиск товаров в других странах ЕС (до 30 товаров, чтобы в сумме было до 36)
+  // Шаг 2: Поиск товаров в других странах ЕС (теперь до 28 товаров, чтобы в сумме было до 36)
   // Перемешиваем массив стран для случайного порядка, как в HTML-примере
   const shuffledEuCountries = shuffleArray([...OTHER_EU_COUNTRIES]);
   
   for (const countryCode of shuffledEuCountries) {
-    if (otherEuProducts.length >= 30) break; // Останавливаемся, если нашли достаточно товаров
+    if (otherEuProducts.length >= 28) break; // Останавливаемся, если нашли достаточно товаров
     
     console.log(`Поиск товаров в ${countryCode.toUpperCase()}...`);
     const countryData = await makeZylalabsCountryRequest(query, countryCode, page, 'ru');
@@ -88,7 +88,7 @@ export const searchEuProducts = async (query: string, page: number = 1): Promise
       
       // Отбираем уникальные товары из этой страны
       for (const product of mappedCountryProducts) {
-        if (otherEuProducts.length >= 30) break; // Остановка, если достигли лимита
+        if (otherEuProducts.length >= 28) break; // Остановка, если достигли лимита
         if (product.id && !displayedProductIds.has(product.id)) {
           otherEuProducts.push({ ...product, country: countryCode });
           displayedProductIds.add(product.id);
@@ -99,33 +99,64 @@ export const searchEuProducts = async (query: string, page: number = 1): Promise
     }
   }
   
-  // Объединяем все найденные товары
+  // Объединяем все найденные товары, отдавая приоритет товарам из Германии
   const allDisplayProducts = [...germanProducts, ...otherEuProducts];
   console.log(`Всего найдено товаров: ${allDisplayProducts.length} (${germanProducts.length} из Германии, ${otherEuProducts.length} из других стран ЕС)`);
   
+  // Проверяем, есть ли у нас минимум 5 товаров из Германии
+  if (germanProducts.length < 5) {
+    console.log(`Внимание! Найдено менее 5 товаров из Германии (${germanProducts.length}), дублируем немецкие товары`);
+    
+    // Дублируем имеющиеся немецкие товары, если их меньше 5
+    while (germanProducts.length > 0 && germanProducts.length < 5) {
+      const indexToDuplicate = germanProducts.length % germanProducts.length;
+      const duplicatedProduct = {...germanProducts[indexToDuplicate]};
+      
+      // Модифицируем ID, чтобы React не жаловался на дубликаты ключей
+      duplicatedProduct.id = `${duplicatedProduct.id}-dup-de-${germanProducts.length}`;
+      germanProducts.push(duplicatedProduct);
+    }
+    
+    // Обновляем общий список с дополнительными товарами из Германии
+    allDisplayProducts.length = 0; // Очищаем массив
+    allDisplayProducts.push(...germanProducts, ...otherEuProducts); // Заново наполняем
+    console.log(`После дублирования товаров из Германии: ${germanProducts.length} из DE, всего ${allDisplayProducts.length}`);
+  }
+  
   // Возвращаем результаты поиска
   if (allDisplayProducts.length > 0) {
-    // Обеспечиваем минимум 12 товаров
+    // Обеспечиваем минимум 12 товаров и максимум 36
     if (allDisplayProducts.length < 12) {
       console.log(`Найдено менее 12 товаров (${allDisplayProducts.length}), дублируем некоторые товары для достижения минимума`);
       // Дублируем имеющиеся товары, чтобы достичь минимума в 12
-      while (allDisplayProducts.length < 12 && germanProducts.length > 0) {
-        const indexToDuplicate = allDisplayProducts.length % germanProducts.length;
-        const duplicatedProduct = {...germanProducts[indexToDuplicate]};
+      while (allDisplayProducts.length < 12) {
+        const indexToDuplicate = allDisplayProducts.length % allDisplayProducts.length;
+        const duplicatedProduct = {...allDisplayProducts[indexToDuplicate]};
         // Модифицируем ID, чтобы React не жаловался на дубликаты ключей
         duplicatedProduct.id = `${duplicatedProduct.id}-dup-${allDisplayProducts.length}`;
         allDisplayProducts.push(duplicatedProduct);
       }
+    } else if (allDisplayProducts.length > 36) {
+      // Ограничиваем до 36 товаров
+      allDisplayProducts.length = 36;
+      console.log(`Ограничиваем список товаров до 36`);
     }
+    
+    // Правильно рассчитываем количество страниц
+    const itemsPerPage = 12;
+    const calculatedPages = Math.ceil(allDisplayProducts.length / itemsPerPage);
+    
+    console.log(`Итого товаров: ${allDisplayProducts.length}, страниц: ${calculatedPages} (по ${itemsPerPage} на страницу)`);
     
     return {
       products: allDisplayProducts,
-      totalPages: Math.ceil(allDisplayProducts.length / 12), // 12 товаров на страницу
+      totalPages: calculatedPages,
       isDemo: false,
       apiInfo: {
         totalGerman: germanProducts.length.toString(),
         totalOtherEu: otherEuProducts.length.toString(),
         totalProducts: allDisplayProducts.length.toString(),
+        totalPages: calculatedPages.toString(),
         source: 'Zylalabs EU Search'
       }
     };

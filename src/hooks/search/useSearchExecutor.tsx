@@ -11,6 +11,7 @@ type SearchExecutorProps = {
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
   setSearchResults: (results: Product[]) => void;
+  setAllSearchResults: (results: Product[]) => void; // Добавляем установку всех результатов
   cachedResults: {[page: number]: Product[]};
   setCachedResults: (results: {[page: number]: Product[]}) => void;
   setCurrentPage: (page: number) => void;
@@ -24,6 +25,7 @@ export function useSearchExecutor({
   isLoading,
   setIsLoading,
   setSearchResults,
+  setAllSearchResults, // Добавляем новый параметр
   cachedResults,
   setCachedResults,
   setCurrentPage,
@@ -87,7 +89,7 @@ export function useSearchExecutor({
         countries: searchCountries,
         filters: filters,
         requireGermanResults: true,
-        minResultCount: 12, // Увеличиваем минимальное количество результатов
+        minResultCount: 36, // Увеличиваем до 36 для имитации полной загрузки
       };
       
       console.log('Параметры поиска:', searchParams);
@@ -99,6 +101,11 @@ export function useSearchExecutor({
         
         // Сбрасываем счетчик попыток при успешном запросе
         retryAttemptsRef.current = 0;
+        
+        // Сохраняем полные нефильтрованные результаты
+        if (results.products && results.products.length > 0) {
+          setAllSearchResults(results.products);
+        }
         
         // Применяем сортировку и фильтрацию к результатам
         let sortedProducts = applyFiltersAndSorting(results.products || [], filters);

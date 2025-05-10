@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { SearchResults } from "@/components/SearchResults";
 import { FilterSection } from "@/components/search/FilterSection";
 import { useSearch } from "@/contexts/SearchContext";
@@ -7,7 +7,7 @@ import { ApiUsageInfo } from "@/components/search/ApiUsageInfo";
 import { SearchResultsAlert } from "@/components/search/SearchResultsAlert";
 import { SortButtons } from "../filter/SortButtons";
 import { SortOption } from "@/services/types";
-import { Languages, Bug, Search } from "lucide-react";
+import { Languages, Bug, Search, Filter } from "lucide-react";
 
 export const SearchResultsSection: React.FC = () => {
   const {
@@ -22,8 +22,14 @@ export const SearchResultsSection: React.FC = () => {
     apiInfo,
     filters,
     handleFilterChange,
-    lastSearchQuery
+    lastSearchQuery,
+    allSearchResults
   } = useSearch();
+  
+  // Логируем информацию о количестве результатов для отладки
+  useEffect(() => {
+    console.log(`SearchResultsSection: Всего результатов: ${allSearchResults?.length || 0}, отфильтровано: ${searchResults?.length || 0}`);
+  }, [allSearchResults, searchResults]);
   
   if (searchResults.length === 0) {
     return null;
@@ -40,6 +46,12 @@ export const SearchResultsSection: React.FC = () => {
 
   // Проверяем, был ли запрос переведен (если оригинальный запрос на русском)
   const wasTranslated = originalQuery && originalQuery.match(/[\u0400-\u04FF]/) && lastSearchQuery && lastSearchQuery !== originalQuery;
+  
+  // Проверяем, применяются ли фильтры
+  const hasActiveFilters = filters && Object.keys(filters).filter(k => 
+    k !== 'sortBy' && filters[k] && 
+    (Array.isArray(filters[k]) ? filters[k].length > 0 : true)
+  ).length > 0;
   
   return (
     <div className="mt-6">
@@ -65,9 +77,16 @@ export const SearchResultsSection: React.FC = () => {
             </div>
           )}
           
+          {hasActiveFilters && (
+            <div className="flex items-center text-sm text-purple-700 gap-1 bg-purple-50 p-2 rounded">
+              <Filter size={16} />
+              <span>Применена локальная фильтрация: показано {searchResults.length} из {allSearchResults.length}</span>
+            </div>
+          )}
+          
           <div className="flex items-center text-sm text-amber-700 gap-1 bg-amber-50 p-2 rounded">
             <Bug size={16} />
-            <span>Режим отладки: параметры запроса - "{lastSearchQuery || originalQuery}" стр.{currentPage}</span>
+            <span>Режим отладки: параметры запроса - "{lastSearchQuery || originalQuery}" стр.{currentPage}, всего стр. {totalPages}</span>
           </div>
         </div>
       </div>
