@@ -1,7 +1,8 @@
-
 import { toast } from "@/components/ui/sonner";
 import { BrandSuggestion } from "@/services/types";
 import { processProductImage } from "@/services/imageProcessor";
+import { searchProductImage } from "@/services/api/duckduckgoService";
+import { getPlaceholderImageUrl } from "@/services/imageService";
 
 // Функция для получения API ключа из localStorage
 export const getApiKey = (): string => {
@@ -128,7 +129,7 @@ export const fetchFromOpenAI = async (query: string): Promise<any> => {
   }
 };
 
-// Новая функция для получения предложений брендов
+// Модифицированная функция для получения предложений брендов с улучшенной обработкой изображений
 export const fetchBrandSuggestions = async (description: string): Promise<BrandSuggestion[]> => {
   try {
     // Получаем API ключ из localStorage
@@ -208,15 +209,23 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
         const imageMatch = line.match(/Изображение:\s*(.+)/i);
         
         if (brandMatch && productMatch && descriptionMatch) {
-          const imageUrl = imageMatch ? imageMatch[1].trim() : undefined;
+          const brand = brandMatch[1].trim();
+          const product = productMatch[1].trim();
+          const description = descriptionMatch[1].trim();
+          const openaiImageUrl = imageMatch ? imageMatch[1].trim() : undefined;
           
-          // Обработка изображения с помощью processProductImage, если URL существует
-          const processedImageUrl = imageUrl ? processProductImage(imageUrl, suggestions.length) : undefined;
+          // Обработка изображения или поиск через DuckDuckGo при необходимости
+          const processedImageUrl = await processImageWithFallback(
+            openaiImageUrl, 
+            brand,
+            product, 
+            suggestions.length
+          );
           
           suggestions.push({
-            brand: brandMatch[1].trim(),
-            product: productMatch[1].trim(),
-            description: descriptionMatch[1].trim(),
+            brand,
+            product,
+            description,
             imageUrl: processedImageUrl
           });
         }
@@ -233,3 +242,49 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     throw error;
   }
 };
+
+/**
+ * Функция для обработки изображения с запасными вариантами
+ * @param imageUrl URL изображения от OpenAI
+ * @param brand Название бренда
+ * @param product Название продукта
+ * @param index Индекс для уникального обращения к API
+ * @returns URL обработанного изображения
+ */
+async function processImageWithFallback(
+  imageUrl: string | undefined, 
+  brand: string,
+  product: string,
+  index: number
+): Promise<string> {
+  try {
+    // Пробуем использовать URL от OpenAI, если он предоставлен
+    if (imageUrl) {
+      // Обработка изображения с помощью processProductImage
+      const processedUrl = processProductImage(imageUrl, index);
+      
+      // Если обработка прошла успешно и URL не пустой
+      if (processedUrl) {
+        console.log(`Используем изображение из OpenAI для ${brand} ${product}`);
+        return processedUrl;
+      }
+    }
+    
+    // Если URL от OpenAI недоступен или пуст, пробуем найти через DuckDuckGo
+    console.log(`Поиск изображения через DuckDuckGo для ${brand} ${product}`);
+    const ddgImageUrl = await searchProductImage(brand, product, index);
+    
+    if (ddgImageUrl) {
+      console.log(`Найдено изображение через DuckDuckGo для ${brand}`);
+      return ddgImageUrl;
+    }
+    
+    // Если оба метода не сработали, используем заглушку
+    console.log(`Используем заглушку для ${brand}`);
+    return getPlaceholderImageUrl(brand);
+  } catch (error) {
+    console.error('Ошибка при обработке изображения:', error);
+    // В случае ошибки возвращаем заглушку
+    return getPlaceholderImageUrl(brand);
+  }
+}

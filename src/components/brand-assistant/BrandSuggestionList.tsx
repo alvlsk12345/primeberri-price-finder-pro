@@ -21,6 +21,7 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
             key={index} 
             suggestion={suggestion} 
             onSelect={() => onSelect(suggestion.product)} 
+            index={index}
           />
         ))}
       </div>
