@@ -1,4 +1,3 @@
-
 /**
  * Сервис для работы с CORS-прокси
  * 
@@ -8,10 +7,12 @@
 
 // Список доступных публичных CORS прокси-сервисов
 const CORS_PROXIES = [
-  'https://corsproxy.io/?',
-  'https://api.allorigins.win/raw?url=',
-  'https://cors-anywhere.herokuapp.com/',
-  'https://thingproxy.freeboard.io/fetch/'
+  'https://api.codetabs.com/v1/proxy?quest=', // Более стабильный прокси
+  'https://cors.eu.org/',                     // Европейский CORS-прокси
+  'https://corsproxy.io/?',                   // Популярный прокси
+  'https://api.allorigins.win/raw?url=',      // Прокси с поддержкой нескольких форматов
+  'https://cors-anywhere.herokuapp.com/',     // Часто ограниченный прокси
+  'https://thingproxy.freeboard.io/fetch/'    // Ненадежный прокси, используем в последнюю очередь
 ];
 
 // Индекс текущего используемого прокси
@@ -33,7 +34,7 @@ export const getCorsProxyUrl = (originalUrl: string): string => {
   }
   
   // Формируем URL с прокси в зависимости от типа прокси
-  if (proxy.includes('?url=')) {
+  if (proxy.includes('?url=') || proxy.includes('?quest=')) {
     return `${proxy}${encodeURIComponent(originalUrl)}`;
   }
   
@@ -97,7 +98,10 @@ export const shouldUseCorsProxy = (url: string): boolean => {
     url.includes('amazonaws.com') ||
     url.includes('cloudfront.net') ||
     url.includes('blob:') ||
-    url.includes('data:image')
+    url.includes('data:image') ||
+    // Локальные доменные исключения
+    url.includes('localhost') ||
+    url.includes('127.0.0.1')
   );
 };
 

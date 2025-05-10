@@ -5,7 +5,9 @@ import { BrandSuggestion } from "@/services/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ImageOff } from "lucide-react";
 import { searchProductImageGoogle } from "@/services/api/googleSearchService";
-import { getPlaceholderImageUrl } from "@/services/imageService";
+import { getPlaceholderImageUrl } from "@/services/image/imagePlaceholder";
+import { PlaceholderImage } from "@/components/product/image/PlaceholderImage";
+import { isProxiedUrl } from "@/services/image/corsProxyService";
 
 interface BrandSuggestionItemProps {
   suggestion: BrandSuggestion;
@@ -21,6 +23,7 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
   const [imageUrl, setImageUrl] = useState<string | undefined>(suggestion.imageUrl);
   const [isImageLoading, setIsImageLoading] = useState<boolean>(false);
   const [imageError, setImageError] = useState<boolean>(false);
+  const [retryCount, setRetryCount] = useState<number>(0); // Счетчик попыток повторной загрузки
 
   // Обработчик ошибки загрузки изображения
   const handleImageError = async () => {
@@ -28,20 +31,39 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
     setImageError(true);
     console.log(`Ошибка загрузки изображения для ${suggestion.brand} ${suggestion.product}`);
 
-    // Если уже загружаем изображение или нет бренда/продукта, то выходим
-    if (isImageLoading || !suggestion.brand || !suggestion.product) return;
+    // Если уже загружаем изображение, достигли макс. числа попыток, или нет бренда/продукта, то выходим
+    if (isImageLoading || retryCount >= 2 || !suggestion.brand || !suggestion.product) {
+      console.log(`Прекращаем попытки загрузки для ${suggestion.brand}. Попыток: ${retryCount}`);
+      // Используем локальную заглушку
+      setImageUrl(getPlaceholderImageUrl(suggestion.brand));
+      return;
+    }
+    
+    // Увеличиваем счетчик попыток
+    setRetryCount(retryCount + 1);
 
     // Устанавливаем флаг загрузки
     setIsImageLoading(true);
     
     try {
-      // Пробуем использовать Google CSE API с другим индексом
-      console.log(`Поиск запасного изображения через Google CSE для ${suggestion.brand}`);
-      let newImageUrl = await searchProductImageGoogle(suggestion.brand, suggestion.product, index + 5);
+      // Проверяем, был ли уже применен прокси
+      const needsProxy = !isProxiedUrl(imageUrl || '');
+      let newImageUrl = '';
+      
+      if (needsProxy && imageUrl) {
+        console.log(`Пробуем применить прокси к текущему URL для ${suggestion.brand}`);
+        // Импортируем функцию applyCorsProxy динамически для избежания циклических зависимостей
+        const { applyCorsProxy } = await import("@/services/image/corsProxyService");
+        newImageUrl = applyCorsProxy(imageUrl);
+      } else {
+        // Пробуем найти новое изображение через Google CSE API с другим индексом
+        console.log(`Поиск запасного изображения через Google CSE для ${suggestion.brand}`);
+        newImageUrl = await searchProductImageGoogle(suggestion.brand, suggestion.product, index + retryCount + 5);
+      }
       
       if (newImageUrl) {
         // Если нашли изображение, устанавливаем его
-        console.log(`Найдена замена изображения для ${suggestion.brand}`);
+        console.log(`Найдена замена изображения для ${suggestion.brand}: ${newImageUrl}`);
         setImageUrl(newImageUrl);
         setImageError(false);
       } else {
@@ -76,13 +98,13 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
                 {isImageLoading ? (
                   <div className="animate-spin h-4 w-4 border-2 border-slate-400 border-t-transparent rounded-full" />
                 ) : (
-                  <ImageOff size={16} className="text-slate-400" />
+                  <PlaceholderImage size="sm" text={suggestion.brand} />
                 )}
               </AvatarFallback>
             </Avatar>
           ) : (
             <div className="h-14 w-14 bg-slate-100 rounded flex items-center justify-center">
-              <ImageOff size={20} className="text-gray-400" />
+              <PlaceholderImage size="sm" text={suggestion.brand} />
             </div>
           )}
           <div className="flex-1">

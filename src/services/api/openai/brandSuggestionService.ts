@@ -1,10 +1,10 @@
-
 import { toast } from "sonner";
 import { BrandSuggestion } from "@/services/types";
-import { getPlaceholderImageUrl } from "@/services/imageService";
+import { getPlaceholderImageUrl } from "@/services/image/imagePlaceholder";
 import { searchProductImageGoogle } from "@/services/api/googleSearchService";
 import { callOpenAI } from "./apiClient";
 import { getApiKey } from "./config";
+import { processProductImage } from "@/services/image";
 
 // Функция для получения предложений брендов
 export const fetchBrandSuggestions = async (description: string): Promise<BrandSuggestion[]> => {
@@ -51,22 +51,27 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
           const product = productMatch[1].trim();
           const description = descriptionMatch[1].trim();
           
-          // Поиск изображения через Google CSE
-          console.log(`Поиск изображения для ${brand} ${product} через Google CSE`);
-          let imageUrl;
-          try {
-            imageUrl = await searchProductImageGoogle(brand, product, suggestions.length);
-          } catch (imageError) {
-            console.error("Ошибка при поиске изображения:", imageError);
-            // В случае ошибки поиска изображения используем заполнитель
-            imageUrl = getPlaceholderImageUrl(brand);
-          }
+          // Создаем сначала заглушку, чтобы интерфейс отрисовался быстрее
+          const placeholderUrl = getPlaceholderImageUrl(brand);
           
+          // Добавляем предложение с заглушкой
+          const suggestionIndex = suggestions.length;
           suggestions.push({
             brand,
             product,
             description,
-            imageUrl: imageUrl || getPlaceholderImageUrl(brand)
+            imageUrl: placeholderUrl
+          });
+          
+          // Асинхронно ищем изображение, не блокируя основной поток
+          searchProductImageGoogle(brand, product, suggestionIndex).then(imageUrl => {
+            // Если нашли изображение, обновляем предлож��ние
+            if (imageUrl && suggestionIndex < suggestions.length) {
+              suggestions[suggestionIndex].imageUrl = processProductImage(imageUrl, suggestionIndex);
+            }
+          }).catch(err => {
+            console.error("Ошибка при асинхронном поиске изображения:", err);
+            // Заглушка уже установлена, ничего не делаем
           });
         }
       } catch (error) {
@@ -93,24 +98,25 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
 function createMockBrandSuggestions(description: string): BrandSuggestion[] {
   const capitalizedDescription = description.charAt(0).toUpperCase() + description.slice(1);
   
+  // Используем локальные SVG вместо внешнего placehold.co
   return [
     {
       brand: "BrandPrime",
       product: `${capitalizedDescription} Pro`,
       description: `Высококачественный ${description} с превосходными характеристиками и стильным дизайном.`,
-      imageUrl: `https://placehold.co/600x400?text=BrandPrime+${encodeURIComponent(description)}`
+      imageUrl: getPlaceholderImageUrl("BrandPrime")
     },
     {
       brand: "EcoStyle",
       product: `Eco${capitalizedDescription}`,
       description: `Экологичный ${description} из переработанных материалов с отличными функциями.`,
-      imageUrl: `https://placehold.co/600x400?text=EcoStyle+${encodeURIComponent(description)}`
+      imageUrl: getPlaceholderImageUrl("EcoStyle")
     },
     {
       brand: "TechSolutions",
       product: `Smart${capitalizedDescription}`,
       description: `Инновационный ${description} с интеллектуальными функциями и современным дизайном.`,
-      imageUrl: `https://placehold.co/600x400?text=TechSolutions+${encodeURIComponent(description)}`
+      imageUrl: getPlaceholderImageUrl("TechSolutions")
     }
   ];
 }
