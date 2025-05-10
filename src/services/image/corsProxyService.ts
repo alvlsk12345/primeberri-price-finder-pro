@@ -231,7 +231,6 @@ export const shouldUseCorsProxy = (url: string): boolean => {
     'gstatic.com',
     'yandex.ru',
     'yandex.net',
-    'duckduckgo.com',
     'yimg.com',  // Yahoo Images
     'ggpht.com'  // Google Photos
   ];

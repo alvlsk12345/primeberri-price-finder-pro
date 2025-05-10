@@ -1,3 +1,4 @@
+
 import React, { KeyboardEvent, useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,7 +50,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
     
     // Выводим инструкции для отладки в браузере
     console.log('------- ИНСТРУКЦИИ ПО ОТЛАДКЕ GOOGLE API -------');
-    console.log('1. О��кройте инструменты разработчика (F12 или Ctrl+Shift+I)');
+    console.log('1. Откройте инструменты разработчика (F12 или Ctrl+Shift+I)');
     console.log('2. Перейдите на вкладку "Сеть" (Network)');
     console.log('3. Найдите запросы к googleapis.com');
     console.log('4. Проверьте статус запроса (должен быть 200)');

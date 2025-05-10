@@ -19,29 +19,45 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
 
     console.log('Отправляем запрос к OpenAI для получения брендов...');
     
-    // Оптимизированный промпт для более быстрого получения результатов
-    const brandPrompt = `Предложи 3 бренда товаров, соответствующих запросу пользователя. Для каждого бренда укажи: название бренда, название конкретной модели товара, краткое описание товара в одно предложение. Формат ответа строго: 'Бренд: [название бренда], Товар: [название товара], Описание: [краткое описание]'. Ответ должен содержать ровно 3 строки, по одной на каждый бренд.
+    // Улучшенный промпт с более строгими требованиями к формату ответа
+    const brandPrompt = `Предложи 3 популярных бренда товаров, соответствующих запросу пользователя.
+    
+    ВАЖНО: Для каждого бренда ОБЯЗАТЕЛЬНО укажи:
+    1. Название бренда (реальный существующий бренд)
+    2. Название конкретного товара этого бренда
+    3. Краткое описание товара в одно предложение
+    
+    Формат ответа СТРОГО следующий (без отклонений):
+    Бренд: [название бренда], Товар: [название товара], Описание: [краткое описание]
+    
+    Ответ должен содержать ровно 3 строки, по одной строке на каждый бренд.
+    
+    Запрос пользователя: "${description}"`;
 
-Запрос пользователя: "${description}"`;
-
-    // Получаем ответ от API с уменьшенным количеством токенов
+    // Получаем ответ от API с оптимизированными параметрами
+    console.log('Отправляем промпт к OpenAI:', brandPrompt);
     const content = await callOpenAI(brandPrompt, {
-      temperature: 0.5,
-      max_tokens: 300 // Сокращаем количество токенов для ускорения
+      temperature: 0.7,
+      max_tokens: 350
     });
 
     if (!content) {
+      console.error('Получен пустой ответ от OpenAI API');
       throw new Error('Пустой ответ от API');
     }
+    
+    console.log('Получен ответ от OpenAI:', content);
 
-    // Парсинг ответа в формате "Бренд: X, Товар: Y, Описание: Z"
+    // Улучшенный парсинг ответа
     const suggestions: BrandSuggestion[] = [];
     
     // Разделяем ответ на строки и извлекаем данные
     const lines = content.split('\n').filter((line: string) => line.trim() !== '');
+    console.log(`Распознано ${lines.length} строк в ответе:`, lines);
     
     for (const line of lines) {
       try {
+        // Более строгий парсинг с проверкой наличия всех полей
         const brandMatch = line.match(/Бренд:\s*([^,]+)/i);
         const productMatch = line.match(/Товар:\s*([^,]+)/i);
         const descriptionMatch = line.match(/Описание:\s*(.+)/i);
@@ -51,7 +67,9 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
           const product = productMatch[1].trim();
           const description = descriptionMatch[1].trim();
           
-          // Поиск изображения через Google CSE
+          console.log(`Распознаны данные: Бренд="${brand}", Товар="${product}"`);
+          
+          // Поиск изображения через Google CSE напрямую
           console.log(`Поиск изображения для ${brand} ${product} через Google CSE`);
           let imageUrl;
           try {
@@ -68,6 +86,15 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
             description,
             imageUrl: imageUrl || getPlaceholderImageUrl(brand)
           });
+          
+          console.log(`Добавлено предложение для бренда ${brand} с изображением ${imageUrl || "placeholder"}`);
+        } else {
+          console.warn('Не удалось распознать все необходимые поля в строке:', line);
+          console.warn('Результаты регулярных выражений:', {
+            brandMatch: brandMatch?.[1] || 'не найдено',
+            productMatch: productMatch?.[1] || 'не найдено',
+            descriptionMatch: descriptionMatch?.[1] || 'не найдено'
+          });
         }
       } catch (error) {
         console.error('Ошибка при парсинге строки:', line, error);
@@ -76,10 +103,12 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
 
     // Если не удалось получить предложения, создаем демо-данные
     if (suggestions.length === 0) {
+      console.warn('Не удалось получить предложения от OpenAI, создаем демо-данные');
       return createMockBrandSuggestions(description);
     }
 
     // Возвращаем найденные предложения (до 3 результатов)
+    console.log(`Возвращаем ${suggestions.length} предложений брендов`);
     return suggestions.slice(0, 3);
 
   } catch (error) {
