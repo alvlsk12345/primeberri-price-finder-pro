@@ -1,3 +1,4 @@
+
 import { isValidImageUrl, getUniqueImageUrl } from '../imageService';
 import { 
   isZylalabsImage, 
@@ -69,13 +70,11 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
     return applyCorsProxy(processedUrl);
   }
   
-  // Для URL от Google CSE применяем CORS-прокси
+  // Для URL от Google CSE используем особую обработку
   if (isGoogleCseImage(processedUrl)) {
     console.log(`Обнаружен URL Google CSE: ${processedUrl}`);
     processedUrl = formatImageUrl(processedUrl);
-    // Важное исправление: ко всем URL Google CSE теперь применяем CORS-прокси
-    console.log(`Применяем прокси к Google CSE URL: ${processedUrl}`);
-    return applyCorsProxy(processedUrl);
+    return processedUrl;
   }
   
   // Проверяем необходимость использования CORS-прокси для других доменов
