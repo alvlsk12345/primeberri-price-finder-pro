@@ -31,8 +31,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
     >
       <CardContent className="p-4 flex flex-col h-full">
         <div className="flex flex-col items-center w-full h-full">
-          {/* Удалим блок с черной плашкой, который перекрывал фото */}
-          
           <ProductImage 
             image={product.image} 
             title={product.title} 

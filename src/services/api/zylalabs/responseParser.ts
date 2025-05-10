@@ -27,9 +27,9 @@ export const parseApiResponse = (result: any, params: SearchParams) => {
     };
   }
 
-  // Форматирование по структуре из рабочего HTML-примера
+  // Проверка формата из HTML-примера: result.data.status === "OK" и result.data.data.products
   if (result && result.data && result.data.status === "OK" && result.data.data && result.data.data.products) {
-    console.log(`API вернул данные со структурой data.status.OK и data.data.products, найдено ${result.data.data.products.length} товаров`);
+    console.log(`API вернул данные в формате HTML-примера (status: OK), найдено ${result.data.data.products.length} товаров`);
     
     const products = mapProductsFromApi(result.data.data.products, params);
     
@@ -99,14 +99,14 @@ export const parseApiResponse = (result: any, params: SearchParams) => {
       }
     };
   } else {
-    // Логирование структуры ответа
+    // Логирование структуры ответа для отладки
     console.warn('responseParser: Необработанная структура ответа API:', JSON.stringify(result).substring(0, 500) + '...');
     console.warn('Типы полей результата:', 
       Object.entries(result || {}).map(([key, value]) => 
         `${key}: ${Array.isArray(value) ? 'Array' : typeof value}`
       ));
     
-    // Попытка найти продукты в любой структуре - реализация аналогичная HTML-примеру
+    // Возвращаем демо-данные при неожиданном формате ответа
     const demoData = generateMockSearchResults(params.query, params.page);
     
     toast.error('Получена неожиданная структура ответа API. Используем демо-данные.');

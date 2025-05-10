@@ -7,7 +7,7 @@ import { Product } from "../../types";
  * @param params Параметры поиска для контекста
  * @returns Обработанные продукты с дополнительными полями
  */
-export const mapProductsFromApi = (products: any[], params: any): any[] => {
+export const mapProductsFromApi = (products: any[], params: any): Product[] => {
   return products.map(product => {
     // Определяем источник товара (магазин)
     let source = "merchant"; 
@@ -36,18 +36,53 @@ export const mapProductsFromApi = (products: any[], params: any): any[] => {
       source = product.source_name;
     }
     
+    // Определяем страну
     let country = params.countries && params.countries.length > 0 
       ? params.countries[0].toUpperCase() 
       : 'DE';
       
-    if (product.source_country) {
+    if (product.sourceCountry) {
+      country = product.sourceCountry.toUpperCase();
+    } else if (product.source_country) {
       country = product.source_country.toUpperCase();
     }
     
+    // Преобразование в формат Product
     return {
-      ...product,
+      id: product.product_id || `product-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      title: product.product_title || 'Без названия',
+      subtitle: product.product_attributes?.Brand || '',
+      price: (product.offer && product.offer.price) || product.price || 'Цена не указана',
+      currency: product.currency || 'EUR',
+      image: (product.product_photos && product.product_photos.length > 0) 
+        ? product.product_photos[0] 
+        : product.image || '',
+      link: (product.offer && product.offer.offer_page_url) || product.product_page_url || product.link || '',
+      rating: parseFloat(product.product_rating) || 0,
       source: source,
-      country: country
+      description: product.product_description || '',
+      availability: product.availability || (product.offer?.on_sale ? 'В наличии' : 'Нет данных'),
+      brand: product.product_attributes?.Brand || '',
+      specifications: product.product_attributes || {},
+      _numericPrice: extractNumericPrice((product.offer && product.offer.price) || product.price || '0'),
+      country: country.toLowerCase()
     };
   });
 };
+
+/**
+ * Извлекает числовое значение цены из строкового представления
+ */
+function extractNumericPrice(priceString: string): number | undefined {
+  // Ищем все числовые значения в строке (включая десятичные)
+  const matches = priceString.match(/(\d+[.,]?\d*)/g);
+  
+  if (!matches || matches.length === 0) {
+    return undefined;
+  }
+  
+  // Берем первое найденное числовое значение и конвертируем его в число
+  // Заменяем запятую на точку для корректной конвертации
+  const numericValue = parseFloat(matches[0].replace(',', '.'));
+  return isNaN(numericValue) ? undefined : numericValue;
+}
