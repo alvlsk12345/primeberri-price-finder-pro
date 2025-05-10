@@ -1,3 +1,4 @@
+
 // Определение типов для сервисов
 export type Product = {
   id: string;
@@ -52,4 +53,5 @@ export interface BrandSuggestion {
   brand: string;
   product: string;
   description: string;
+  imageUrl?: string; // Добавлено новое поле для URL изображения
 }

@@ -1,6 +1,7 @@
 
 import { toast } from "@/components/ui/sonner";
 import { BrandSuggestion } from "@/services/types";
+import { processProductImage } from "@/services/imageProcessor";
 
 // Функция для получения API ключа из localStorage
 export const getApiKey = (): string => {
@@ -141,8 +142,8 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
 
     console.log('Отправляем запрос к OpenAI для получения брендов...');
     
-    // Специализированный промпт для получения брендов
-    const brandPrompt = `Помощник для поиска брендов и товаров: Когда пользователь вводит описание товара или запроса, система должна предложить 5 вариантов брендов и соответствующих товаров, которые могут соответствовать запросу. Для каждого бренда вывести его название, название товара и краткое описание товара на русском языке. Ответ должен содержать список из 5 брендов с их товарами, названиями товаров и короткими описаниями на русском языке. Формат: 'Бренд: [название бренда], Товар: [название товара], Описание: [краткое описание товара].
+    // Специализированный промпт для получения брендов с изображениями
+    const brandPrompt = `Помощник для поиска брендов и товаров: Когда пользователь вводит описание товара или запроса, система должна предложить 5 вариантов брендов и соответствующих товаров, которые могут соответствовать запросу. Для каждого бренда вывести его название, название товара, краткое описание товара и URL изображения товара на русском языке. Ответ должен содержать список из 5 брендов с их товарами, названиями товаров, короткими описаниями и ссылками на изображения. Формат: 'Бренд: [название бренда], Товар: [название товара], Описание: [краткое описание товара], Изображение: [URL изображения товара]'.
 
 Запрос пользователя: "${description}"`;
 
@@ -156,7 +157,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
       body: JSON.stringify({
         model: "gpt-4o",
         temperature: 0.5,
-        max_tokens: 400,
+        max_tokens: 600, // Увеличим лимит токенов для включения URL изображений
         messages: [
           {
             role: "user",
@@ -193,7 +194,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
       throw new Error('Пустой ответ от API');
     }
 
-    // Парсинг ответа в формате "Бренд: X, Товар: Y, Описание: Z"
+    // Парсинг ответа в формате "Бренд: X, Товар: Y, Описание: Z, Изображение: URL"
     const suggestions: BrandSuggestion[] = [];
     
     // Разделяем ответ на строки и извлекаем данные
@@ -203,13 +204,20 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
       try {
         const brandMatch = line.match(/Бренд:\s*([^,]+)/i);
         const productMatch = line.match(/Товар:\s*([^,]+)/i);
-        const descriptionMatch = line.match(/Описание:\s*(.+)/i);
+        const descriptionMatch = line.match(/Описание:\s*([^,]+)/i);
+        const imageMatch = line.match(/Изображение:\s*(.+)/i);
         
         if (brandMatch && productMatch && descriptionMatch) {
+          const imageUrl = imageMatch ? imageMatch[1].trim() : undefined;
+          
+          // Обработка изображения с помощью processProductImage, если URL существует
+          const processedImageUrl = imageUrl ? processProductImage(imageUrl, suggestions.length) : undefined;
+          
           suggestions.push({
             brand: brandMatch[1].trim(),
             product: productMatch[1].trim(),
-            description: descriptionMatch[1].trim()
+            description: descriptionMatch[1].trim(),
+            imageUrl: processedImageUrl
           });
         }
       } catch (error) {
