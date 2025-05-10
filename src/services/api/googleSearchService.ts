@@ -134,6 +134,25 @@ export const testMinimalGoogleApiRequest = async (): Promise<string> => {
 
 /**
  * Функция для поиска изображения через Google Custom Search API
+ * Добавлена в экспорт для использования другими компонентами
+ */
+export const searchProductImageGoogle = async (
+  brand: string, 
+  product?: string, 
+  index: number = 0
+): Promise<string> => {
+  try {
+    // Создаем поисковый запрос на основе бренда и продукта
+    const query = product ? `${brand} ${product}` : brand;
+    return await searchImageGoogleCSE(query, index);
+  } catch (error) {
+    console.error(`Ошибка при поиске изображения для ${brand} ${product}:`, error);
+    return '';
+  }
+};
+
+/**
+ * Функция для поиска изображения через Google Custom Search API
  * @param query Запрос для поиска изображения (например, "бренд продукт")
  * @param index Индекс для генерации уникального изображения
  * @param retryCount Счетчик повторных попыток
@@ -158,7 +177,8 @@ export const searchImageGoogleCSE = async (query: string, index: number = 0, ret
     const encodedQuery = encodeURIComponent(query);
     console.log(`Запрос после кодирования: "${encodedQuery}"`);
     
-    const apiUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_SEARCH_ENGINE_ID}&q=${encodedQuery}&searchType=image&num=5`;
+    // Увеличиваем количество результатов и добавляем параметр безопасного поиска
+    const apiUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_SEARCH_ENGINE_ID}&q=${encodedQuery}&searchType=image&num=10&safe=active`;
     
     console.log(`ПОЛНЫЙ URL ЗАПРОСА: ${apiUrl}`);
     
@@ -246,77 +266,36 @@ export const searchImageGoogleCSE = async (query: string, index: number = 0, ret
       });
       
       if (imageUrl) {
-        // Обрабатываем URL изображения и применяем CORS прокси
+        // Применяем нашу функцию обработки изображения к URL от Google CSE
         const processedUrl = processProductImage(imageUrl, index);
+        console.log('ОБРАБОТАННЫЙ URL ИЗОБРАЖЕНИЯ ОТ GOOGLE CSE:', processedUrl);
         
-        // Проверяем, правильно ли применился CORS прокси
-        const isCorsApplied = processedUrl.includes('corsproxy.io') || 
-                              processedUrl.includes('allorigins.win') || 
-                              processedUrl.includes('cors-anywhere');
-        
-        console.log(`Обработанный URL изображения: ${processedUrl} (CORS прокси ${isCorsApplied ? 'применен' : 'не применен'})`);
-        
-        // Сохраняем результат в кэше
-        imageCache[cacheKey] = processedUrl;
+        // Кэшируем результат для повторного использования
+        if (processedUrl) {
+          imageCache[cacheKey] = processedUrl;
+        }
         
         return processedUrl;
       }
     } else {
-      console.log(`Google CSE API вернул данные без изображений: ${JSON.stringify(data).substring(0, 200)}...`);
+      console.log('API вернул успешный ответ, но не найдено подходящих изображений');
     }
     
-    console.log(`Google CSE не вернул изображений для запроса: ${query}`);
     return '';
   } catch (error) {
-    console.error('ОШИБКА ПРИ ПОИСКЕ ИЗОБРАЖЕНИЯ ЧЕРЕЗ GOOGLE CSE:', error);
+    console.error('ОШИБКА ПРИ ПОИСКЕ ИЗОБРАЖЕНИЯ:', error);
     
-    // Детальное логирование ошибки для диагностики
-    console.error('ТИП ОШИБКИ:', error.name);
-    console.error('СООБЩЕНИЕ ОШИБКИ:', error.message);
-    console.error('СТЕК ВЫЗОВОВ:', error.stack);
-    
-    // Повторная попытка при временной ошибке
-    if (error instanceof TypeError && error.message.includes('Failed to fetch') && retryCount < 3) {
-      console.log(`Сетевая ошибка, повторная попытка запроса через ${(retryCount + 1) * 2} секунды...`);
-      await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 2000));
-      return searchImageGoogleCSE(query, index, retryCount + 1);
+    // Проверяем, является ли ошибка связанной с таймаутом
+    if (error.name === 'AbortError') {
+      console.log('Запрос был прерван по таймауту');
+      
+      // Если не первая попытка, пробуем еще раз
+      if (retryCount < 2) {
+        console.log(`Повторная попытка после таймаута (${retryCount + 1}/2)`);
+        return searchImageGoogleCSE(query, index, retryCount + 1);
+      }
     }
     
     return '';
   }
 };
-
-/**
- * Функция для поиска изображения по бренду и продукту
- * @param brand Название бренда
- * @param product Название продукта
- * @param index Индекс для уникальности изображения
- * @returns URL изображения или пустую строку в случае ошибки
- */
-export const searchProductImageGoogle = async (brand: string, product: string, index: number = 0): Promise<string> => {
-  // Формируем запрос из бренда и продукта
-  const query = `${brand} ${product}`;
-  
-  console.log(`----- ЗАПРОС ИЗОБРАЖЕНИЯ ТОВАРА -----`);
-  console.log(`Бренд: "${brand}", Продукт: "${product}"`);
-  console.log(`Итоговый запрос: "${query}"`);
-  
-  // Проверяем API ключ при первом запросе
-  if (index === 0) {
-    console.log('Запускаем проверку API ключа Google CSE...');
-    const isValid = await validateGoogleApiKey();
-    if (!isValid) {
-      console.warn('Google API ключ неверен или превышен лимит запросов');
-    } else {
-      console.log('Google API ключ успешно проверен');
-    }
-    
-    // Выполняем минимальный тестовый запрос
-    const testResult = await testMinimalGoogleApiRequest();
-    console.log('Результат тестового запроса:', testResult);
-  }
-  
-  // Ищем изображение по запросу
-  return await searchImageGoogleCSE(query, index);
-};
-

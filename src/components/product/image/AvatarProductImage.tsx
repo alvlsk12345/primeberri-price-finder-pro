@@ -1,10 +1,12 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ImageOff } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ImageLoadingState } from './useProductImageLoading';
 import { ImageSourceInfo } from './ImageSourceDetector';
+import { getPlaceholderImageUrl } from '@/services/image/imagePlaceholder';
+import { switchToNextProxy } from '@/services/image/corsProxyService';
 
 interface AvatarProductImageProps {
   image: string;
@@ -22,7 +24,40 @@ export const AvatarProductImage: React.FC<AvatarProductImageProps> = ({
   onClick
 }) => {
   const { imageLoading, imageError, handleImageLoad, handleImageError } = imageState;
-  const { isZylalabs, isGoogleImage } = sourceInfo;
+  const { isZylalabs, isGoogleImage, isProxiedUrl } = sourceInfo;
+  const [retryCount, setRetryCount] = useState(0);
+  const [fallbackImage, setFallbackImage] = useState<string | null>(null);
+  
+  const MAX_RETRIES = 3;
+  
+  // Пытаемся автоматически восстановиться после ошибки загрузки 
+  useEffect(() => {
+    if (imageError && retryCount < MAX_RETRIES) {
+      // Задержка перед повторной попыткой
+      const timer = setTimeout(() => {
+        console.log(`Повторная попытка загрузки изображения ${retryCount + 1}/${MAX_RETRIES}: ${image}`);
+        
+        // Переключаемся на другой прокси если URL уже проксирован
+        if (isProxiedUrl) {
+          console.log(`URL уже проксирован, переключаемся на следующий прокси`);
+          switchToNextProxy();
+        }
+        
+        setRetryCount(prev => prev + 1);
+        // Форсируем ререндер изображения
+        setFallbackImage(`${image}?retry=${Date.now()}`);
+      }, 1000 * (retryCount + 1)); // Увеличиваем время ожидания с каждой попыткой
+      
+      return () => clearTimeout(timer);
+    } else if (imageError && retryCount >= MAX_RETRIES) {
+      // Если исчерпаны все попытки, используем заглушку
+      console.log(`Все ${MAX_RETRIES} попытки загрузки изображения исчерпаны, используем заглушку`);
+      setFallbackImage(getPlaceholderImageUrl(title));
+    }
+  }, [imageError, retryCount, image, title, isProxiedUrl]);
+  
+  // Используем источник изображения с учетом повторных попыток
+  const imageSrc = fallbackImage || image;
 
   return (
     <div 
@@ -35,11 +70,30 @@ export const AvatarProductImage: React.FC<AvatarProductImageProps> = ({
       
       <Avatar className="w-full h-full rounded-none">
         <AvatarImage 
-          src={image} 
+          src={imageSrc} 
           alt={title}
           className="object-contain"
-          onError={handleImageError}
-          onLoad={handleImageLoad}
+          onError={(e) => {
+            console.error(`Ошибка загрузки изображения (${retryCount}/${MAX_RETRIES}):`, {
+              src: e.currentTarget.src,
+              originalSrc: image,
+              isRetry: retryCount > 0,
+              isProxiedUrl,
+              isGoogleImage,
+              isZylalabs
+            });
+            handleImageError();
+          }}
+          onLoad={(e) => {
+            console.log(`Успешно загружено изображение:`, {
+              src: e.currentTarget.src,
+              isRetry: retryCount > 0,
+              isProxiedUrl,
+              isGoogleImage,
+              isZylalabs
+            });
+            handleImageLoad();
+          }}
           crossOrigin="anonymous"
         />
         <AvatarFallback className="w-full h-full rounded-none bg-gray-100">
@@ -57,6 +111,9 @@ export const AvatarProductImage: React.FC<AvatarProductImageProps> = ({
             <p className="text-xs text-gray-600 mt-1">
               Ошибка загрузки {isZylalabs ? "(Zylalabs)" : isGoogleImage ? "(Google)" : "(API)"}
             </p>
+            {retryCount > 0 && retryCount < MAX_RETRIES && (
+              <p className="text-xs text-gray-600">Попытка {retryCount}/{MAX_RETRIES}...</p>
+            )}
           </div>
         </div>
       )}

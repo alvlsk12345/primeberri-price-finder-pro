@@ -1,11 +1,12 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { BrandSuggestion } from "@/services/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ImageOff } from "lucide-react";
 import { searchProductImageGoogle } from "@/services/api/googleSearchService";
 import { getPlaceholderImageUrl } from "@/services/image/imagePlaceholder";
+import { switchToNextProxy } from "@/services/image/corsProxyService";
 
 interface BrandSuggestionItemProps {
   suggestion: BrandSuggestion;
@@ -37,6 +38,11 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
       if (retryCount >= MAX_RETRIES) {
         console.log(`Исчерпаны все ${MAX_RETRIES} попытки. Устанавливаем заглушку.`);
         setImageUrl(getPlaceholderImageUrl(suggestion.brand));
+        
+        // Если текущий URL использует прокси, пробуем переключиться на другой
+        if (imageUrl && (imageUrl.includes('corsproxy') || imageUrl.includes('allorigins'))) {
+          switchToNextProxy();
+        }
       }
       return;
     }
@@ -46,6 +52,9 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
     setRetryCount(prev => prev + 1);
     
     try {
+      // Добавляем небольшую задержку перед повторным запросом
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       // Рассчитываем индекс для поиска другого изображения (увеличиваем с каждой попыткой)
       const newIndex = index + 5 + retryCount;
       
@@ -76,6 +85,13 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
       setIsImageLoading(false);
     }
   };
+  
+  // Эффект для логирования процесса загрузки изображения
+  useEffect(() => {
+    if (imageUrl) {
+      console.log(`Загрузка изображения для ${suggestion.brand} ${suggestion.product}: ${imageUrl.substring(0, 100)}`);
+    }
+  }, [imageUrl, suggestion.brand, suggestion.product]);
 
   return (
     <div className="p-2 bg-white rounded border hover:bg-slate-50 transition-colors">

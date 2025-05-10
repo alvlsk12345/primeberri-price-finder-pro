@@ -159,12 +159,7 @@ export const applyCorsProxy = (imageUrl: string): string => {
   if (!imageUrl) return '';
   
   // Если URL уже содержит известный прокси, не применяем прокси повторно
-  if (
-    imageUrl.includes('corsproxy.io') || 
-    imageUrl.includes('allorigins.win') || 
-    imageUrl.includes('cors-anywhere') ||
-    imageUrl.includes('thingproxy')
-  ) {
+  if (isProxiedUrl(imageUrl)) {
     console.log(`URL уже содержит прокси: ${imageUrl}`);
     return imageUrl;
   }
@@ -216,12 +211,7 @@ export const shouldUseCorsProxy = (url: string): boolean => {
   if (!url) return false;
   
   // Проверяем, содержит ли URL уже прокси
-  if (
-    url.includes('corsproxy.io') || 
-    url.includes('allorigins.win') || 
-    url.includes('cors-anywhere') ||
-    url.includes('thingproxy')
-  ) {
+  if (isProxiedUrl(url)) {
     return false;
   }
   
@@ -241,10 +231,10 @@ export const shouldUseCorsProxy = (url: string): boolean => {
     'yandex.ru',
     'yandex.net',
     'duckduckgo.com',
-    'yimg.com'  // Yahoo Images
+    'yimg.com',  // Yahoo Images
+    'ggpht.com'  // Google Photos
   ];
   
   // Проверяем, содержит ли URL какой-либо из проблемных доменов
   return domainsNeedingProxy.some(domain => url.includes(domain));
 };
-

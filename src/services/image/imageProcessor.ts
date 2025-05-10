@@ -58,14 +58,18 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
     
     // К "encrypted-tbn" URL почти всегда нужен прокси
     if (processedUrl.includes('encrypted-tbn')) {
-      console.log(`Применяем прокси к Google Shopping URL`);
+      console.log(`Применяем прокси к Google Shopping URL (encrypted-tbn)`);
       const proxiedUrl = applyCorsProxy(processedUrl);
       console.log(`Результат с прокси: "${proxiedUrl}"`);
       console.log(`Текущий прокси: ${JSON.stringify(getCurrentProxyInfo())}`);
       return proxiedUrl;
     }
     
-    return processedUrl;
+    // Добавление прокси к остальным Google Shopping URL
+    console.log(`Применяем прокси к обычному Google Shopping URL`);
+    const proxiedUrl = applyCorsProxy(processedUrl);
+    console.log(`Результат с прокси: "${proxiedUrl}"`);
+    return proxiedUrl;
   }
 
   // Особая обработка для изображений Zylalabs
@@ -92,6 +96,17 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
     const proxiedUrl = applyCorsProxy(processedUrl);
     console.log(`Результат с прокси: "${proxiedUrl}"`);
     console.log(`Текущий прокси: ${JSON.stringify(getCurrentProxyInfo())}`);
+    return proxiedUrl;
+  }
+  
+  // Проверка на специальные форматы URL Google
+  if (processedUrl.includes('googleusercontent') || processedUrl.includes('gstatic.com') || 
+      processedUrl.includes('ggpht.com')) {
+    console.log(`Обнаружен URL Google (прочий): "${processedUrl}"`);
+    processedUrl = formatImageUrl(processedUrl);
+    console.log(`Применяем прокси к URL Google`);
+    const proxiedUrl = applyCorsProxy(processedUrl);
+    console.log(`Результат с прокси: "${proxiedUrl}"`);
     return proxiedUrl;
   }
   
@@ -130,7 +145,18 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
  */
 export const getBaseSizeImageUrl = (url: string): string => {
   if (!url) return '';
-  return url.replace(/=w\d+-h\d+/, '=w300-h300');
+  
+  // Для Google изображений с параметрами размера (w, h)
+  if (url.includes('=w') && url.includes('-h')) {
+    return url.replace(/=w\d+-h\d+/, '=w300-h300');
+  }
+  
+  // Для изображений с параметром s (размер)
+  if (url.includes('=s')) {
+    return url.replace(/=s\d+/, '=s300');
+  }
+  
+  return url;
 };
 
 /**
@@ -138,7 +164,18 @@ export const getBaseSizeImageUrl = (url: string): string => {
  */
 export const getLargeSizeImageUrl = (url: string): string => {
   if (!url) return '';
-  return url.replace(/=w\d+-h\d+/, '=w800-h800');
+  
+  // Для Google изображений с параметрами размера (w, h)
+  if (url.includes('=w') && url.includes('-h')) {
+    return url.replace(/=w\d+-h\d+/, '=w800-h800');
+  }
+  
+  // Для изображений с параметром s (размер)
+  if (url.includes('=s')) {
+    return url.replace(/=s\d+/, '=s800');
+  }
+  
+  return url;
 };
 
 /**

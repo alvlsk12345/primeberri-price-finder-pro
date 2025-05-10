@@ -63,9 +63,8 @@ export const handleApiError = async (response: Response): Promise<any> => {
     
     if (response.status === 403) {
       console.error(`Google API 403: ${errorMessage}`, errorDetails);
-      toast.error("Превышен лимит запросов Google API или неверный ключ.", { duration: 5000 });
       
-      // Если есть подробности об ошибке, выводим их
+      // Специфическая обработка для ошибок Google API
       if (errorDetails && errorDetails.error && errorDetails.error.errors) {
         console.error('ДЕТАЛИ ОШИБКИ GOOGLE API:', errorDetails.error.errors);
         const googleError = errorDetails.error.errors[0];
@@ -81,17 +80,39 @@ export const handleApiError = async (response: Response): Promise<any> => {
           } else {
             toast.error(`Ошибка Google API: ${googleError.reason}`, { duration: 7000 });
           }
+          
+          // Добавляем подробный лог с информацией о запросе
+          console.error('КОНТЕКСТ ЗАПРОСА GOOGLE API:', {
+            url: response.url,
+            status: response.status,
+            reason: googleError.reason,
+            message: googleError.message,
+            domain: googleError.domain
+          });
         }
+      } else {
+        toast.error("Превышен лимит запросов Google API или неверный ключ.", { duration: 5000 });
       }
       return null;
     } else if (response.status === 400) {
       toast.error(`Google API: ${errorMessage}`, { duration: 5000 });
+      return null;
+    } else if (response.status === 429) {
+      toast.error(`Превышен лимит запросов Google API. Повторите попытку позже.`, { duration: 5000 });
+      // Возвращаем null, чтобы вызывающий код мог попробовать другие варианты
       return null;
     }
   }
   
   // Проверяем количество оставшихся запросов в заголовках (для Zylalabs)
   const remainingCalls = headers['x-zyla-api-calls-monthly-remaining'];
+  if (remainingCalls !== undefined) {
+    console.log(`Осталось запросов к Zylalabs API: ${remainingCalls}`);
+    // Предупреждаем пользователя, когда остается мало запросов
+    if (parseInt(remainingCalls) < 10) {
+      toast.warning(`Осталось всего ${remainingCalls} запросов к API. Скоро лимит будет исчерпан.`, { duration: 5000 });
+    }
+  }
   
   // Особая обработка для разных статусных кодов
   if (response.status === 401) {
