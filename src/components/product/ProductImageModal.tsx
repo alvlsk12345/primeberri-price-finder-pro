@@ -54,7 +54,6 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
           </button>
         </DialogHeader>
         
-        {/* Добавляем DialogDescription, чтобы устранить предупреждение */}
         <DialogDescription className="sr-only">
           Изображение товара: {productTitle}
         </DialogDescription>
@@ -65,8 +64,6 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
             alt={productTitle || "Изображение товара"}
             className="max-w-full max-h-[70vh] object-contain"
             loading="lazy"
-            referrerPolicy="no-referrer"
-            crossOrigin="anonymous"
             onLoad={handleImageLoad}
             onError={handleImageError}
           />

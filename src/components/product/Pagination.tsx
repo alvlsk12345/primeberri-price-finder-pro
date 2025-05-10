@@ -1,5 +1,5 @@
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   Pagination as ShadcnPagination,
   PaginationContent,
@@ -37,8 +37,8 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
     }
   }, [currentPage, totalPages, onPageChange]);
 
-  // Function to generate pagination items
-  const generatePaginationItems = () => {
+  // Function to generate pagination items, using useMemo для оптимизации
+  const paginationItems = useMemo(() => {
     const items = [];
     const maxVisiblePages = 5;
     
@@ -92,25 +92,26 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
     }
     
     return items;
-  };
-
-  // Helper function to create a pagination page item
-  const generatePageItem = (pageNumber: number) => {
-    const isDisabled = pageNumber > totalPages;
-    return (
-      <PaginationItem key={pageNumber} data-testid={`pagination-item-${pageNumber}`}>
-        <PaginationLink 
-          isActive={currentPage === pageNumber}
-          onClick={handlePageClick(pageNumber)}
-          href="#"
-          aria-current={currentPage === pageNumber ? "page" : undefined}
-          className={isDisabled ? "pointer-events-none opacity-50" : ""}
-        >
-          {pageNumber}
-        </PaginationLink>
-      </PaginationItem>
-    );
-  };
+  
+    // Helper function to create a pagination page item
+    function generatePageItem(pageNumber: number) {
+      const isDisabled = pageNumber > totalPages;
+      const isActive = currentPage === pageNumber;
+      return (
+        <PaginationItem key={pageNumber} data-testid={`pagination-item-${pageNumber}`}>
+          <PaginationLink 
+            isActive={isActive}
+            onClick={handlePageClick(pageNumber)}
+            href="#"
+            aria-current={isActive ? "page" : undefined}
+            className={isDisabled ? "pointer-events-none opacity-50" : ""}
+          >
+            {pageNumber}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+  }, [currentPage, totalPages, handlePageClick]);
 
   return (
     <div className="flex justify-center mt-6" data-testid="pagination-component">
@@ -128,7 +129,7 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
           </PaginationItem>
           
           {/* Page numbers */}
-          {generatePaginationItems()}
+          {paginationItems}
           
           {/* Next page button */}
           <PaginationItem>

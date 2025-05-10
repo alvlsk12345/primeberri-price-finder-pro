@@ -49,8 +49,8 @@ export function useSearchActions(props: SearchStateProps) {
     setIsLoading,
     searchResults,
     setSearchResults,
-    allSearchResults,        // Добавляем все результаты
-    setAllSearchResults,     // Добавляем установку всех результатов
+    allSearchResults,
+    setAllSearchResults,
     cachedResults,
     setCachedResults,
     selectedProduct,
@@ -103,18 +103,18 @@ export function useSearchActions(props: SearchStateProps) {
     setSelectedProduct
   });
   
-  // Для paginationActions нам нужна ссылка на handleSearch, поэтому создаем его после
+  // Обновлено: передаем setCurrentPage в хук пагинации
   const { handlePageChange } = usePaginationActions({
     currentPage,
     totalPages,
     pageChangeCount,
     setPageChangeCount,
+    setCurrentPage, // Добавлен этот параметр для прямого обновления страницы
     handleSearch
   });
   
-  // Для filterActions также нужна ссылка на handleSearch
   const { handleFilterChange } = useFilterActions({
-    allResults: allSearchResults, // Используем allSearchResults вместо неизвестного свойства
+    allResults: allSearchResults,
     setFilters,
     handleSearch,
     filters,

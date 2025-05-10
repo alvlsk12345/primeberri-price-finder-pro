@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Product } from "@/services/types";
 import { NoSearchResults } from './search/NoSearchResults';
 import { ProductListContainer } from './search/ProductListContainer';
@@ -23,13 +23,16 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   onPageChange,
   isDemo = false
 }) => {
-  console.log('SearchResults render:', {
+  // Используем useMemo для предотвращения лишних перерендеров
+  const resultsInfo = useMemo(() => ({
     resultsCount: results?.length || 0,
     currentPage,
     totalPages,
     hasSelectedProduct: !!selectedProduct,
     isDemo
-  });
+  }), [results?.length, currentPage, totalPages, selectedProduct, isDemo]);
+  
+  console.log('SearchResults render:', resultsInfo);
 
   // Check if results are available
   if (!results || results.length === 0) {
@@ -37,7 +40,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   }
 
   // Ensure all products have unique IDs to prevent React key issues
-  const productsWithUniqueKeys = results.map((product, index) => {
+  const productsWithUniqueKeys = useMemo(() => results.map((product, index) => {
     // If the product already has a unique ID, use it
     if (product.id) {
       return product;
@@ -47,7 +50,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     // Using combination of title, price, index and timestamp to ensure uniqueness
     const uniqueId = `${product.title}-${product.price}-${index}-${Date.now()}`;
     return { ...product, id: uniqueId };
-  });
+  }), [results]);
 
   // Пагинация - по 12 товаров на страницу
   const itemsPerPage = 12;
@@ -55,18 +58,25 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   const endIndex = startIndex + itemsPerPage;
   
   // Получаем товары только для текущей страницы
-  const paginatedProducts = productsWithUniqueKeys.slice(startIndex, endIndex);
+  const paginatedProducts = useMemo(() => 
+    productsWithUniqueKeys.slice(startIndex, endIndex),
+    [productsWithUniqueKeys, startIndex, endIndex]
+  );
   
   // Рассчитываем общее количество страниц
-  const actualTotalPages = Math.max(1, Math.ceil(productsWithUniqueKeys.length / itemsPerPage));
+  const actualTotalPages = useMemo(() => 
+    Math.max(1, Math.ceil(productsWithUniqueKeys.length / itemsPerPage)),
+    [productsWithUniqueKeys.length]
+  );
   
   console.log(`Пагинация: страница ${currentPage}/${actualTotalPages}, показываем товары с ${startIndex+1} по ${Math.min(endIndex, productsWithUniqueKeys.length)}`);
 
-  // Handle page change with validation and debouncing
+  // Handle page change with validation
   const handlePageChange = (page: number) => {
     console.log(`SearchResults: Page change requested from ${currentPage} to ${page}`);
+    
     if (page >= 1 && page <= actualTotalPages && page !== currentPage) {
-      // Вызываем родительский обработчик изменения страницы
+      // Убираем setTimeout для немедленного обновления страницы
       onPageChange(page);
     } else {
       console.log(`SearchResults: Invalid page change request: ${page}`);
