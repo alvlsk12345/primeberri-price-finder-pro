@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { SearchParams } from "@/services/types";
-import { searchProducts } from "@/services/productFormatter";
+import { searchProductsViaZylalabs } from "@/services/api/zylalabsService";
 import { toast } from "sonner";
 import { API_TIMEOUT } from "@/services/api/mock/mockServiceConfig";
 
@@ -33,8 +33,8 @@ export function useSearchApiCall({
     try {
       console.log('Выполняем запрос к API с параметрами:', searchParams);
       
-      // Выполняем поисковый запрос через фасад AI сервиса
-      const results = await searchProducts(searchParams);
+      // Выполняем поисковый запрос
+      const results = await searchProductsViaZylalabs(searchParams);
       
       console.log('Получен ответ от API:', results);
       

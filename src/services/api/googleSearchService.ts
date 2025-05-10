@@ -1,5 +1,6 @@
 
 import { processProductImage } from "../imageProcessor";
+import { fetchWithProxy } from "./proxyService";
 
 // API ключ для Google Custom Search API
 const GOOGLE_API_KEY = 'AIzaSyATUUTV--YXzsWskw--7j2CUNlU70zT4QQ';
@@ -30,8 +31,8 @@ export const searchImageGoogleCSE = async (query: string, index: number = 0): Pr
     const encodedQuery = encodeURIComponent(query);
     const apiUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_SEARCH_ENGINE_ID}&q=${encodedQuery}&searchType=image&num=5`;
     
-    // Выполняем запрос к API
-    const response = await fetch(apiUrl);
+    // Выполняем запрос к API через прокси
+    const response = await fetchWithProxy(apiUrl);
     
     if (!response.ok) {
       console.error(`Ошибка запроса Google CSE API: ${response.status}`);

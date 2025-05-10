@@ -6,41 +6,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Key, RefreshCw } from 'lucide-react';
 import { getApiKey as getZylalabsApiKey, setApiKey as setZylalabsApiKey, resetApiKey as resetZylalabsApiKey, ZYLALABS_API_KEY } from '@/services/api/zylalabs/config';
-import { getApiKey as getOpenAiApiKey, setApiKey as setOpenAiApiKey } from '@/services/api/openai/config';
-import { getApiKey as getAbacusApiKey, setApiKey as setAbacusApiKey } from '@/services/api/abacus/config';
 
 type ApiKeyProps = {
-  keyType: 'openai' | 'zylalabs' | 'abacus';
+  keyType: 'openai' | 'zylalabs';
 };
 
 export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
   const [apiKey, setApiKey] = useState<string>('');
   const [isVisible, setIsVisible] = useState<boolean>(false);
   
-  const localStorageKey = keyType === 'openai' ? 'openai_api_key' : 
-                          keyType === 'abacus' ? 'abacus_api_key' : 'zylalabs_api_key';
+  const localStorageKey = keyType === 'openai' ? 'openai_api_key' : 'zylalabs_api_key';
   const defaultKey = keyType === 'zylalabs' ? ZYLALABS_API_KEY : '';
-  const keyTitle = keyType === 'openai' ? 'OpenAI API' : 
-                   keyType === 'abacus' ? 'Abacus API' : 'Zylalabs API';
-  const keyPlaceholder = keyType === 'openai' ? 'sk-...' : 
-                         keyType === 'abacus' ? 'api-key-...' : '1234|...';
-  const keyWebsite = keyType === 'openai' ? 'https://platform.openai.com/api-keys' : 
-                     keyType === 'abacus' ? 'https://api.abacus.ai' : 
-                     'https://zylalabs.com/api/2033/real+time+product+search+api';
+  const keyTitle = keyType === 'openai' ? 'OpenAI API' : 'Zylalabs API';
+  const keyPlaceholder = keyType === 'openai' ? 'sk-...' : '1234|...';
+  const keyWebsite = keyType === 'openai' ? 'https://platform.openai.com/api-keys' : 'https://zylalabs.com/api/2033/real+time+product+search+api';
 
   useEffect(() => {
     // Проверяем наличие сохраненного ключа при инициализации
     if (keyType === 'zylalabs') {
       const key = getZylalabsApiKey();
       setApiKey(key);
-    } else if (keyType === 'openai') {
-      const key = getOpenAiApiKey();
-      setApiKey(key);
-    } else if (keyType === 'abacus') {
-      const key = getAbacusApiKey();
-      setApiKey(key);
+    } else {
+      const savedKey = localStorage.getItem(localStorageKey) || '';
+      setApiKey(savedKey);
     }
-  }, [keyType]);
+  }, [keyType, localStorageKey]);
 
   const handleSaveKey = () => {
     if (!apiKey.trim()) {
@@ -55,12 +45,9 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
       } else {
         toast.error('Неверный формат API ключа Zylalabs');
       }
-    } else if (keyType === 'openai') {
-      setOpenAiApiKey(apiKey.trim());
+    } else {
+      localStorage.setItem(localStorageKey, apiKey.trim());
       toast.success('API ключ OpenAI успешно сохранен');
-    } else if (keyType === 'abacus') {
-      setAbacusApiKey(apiKey.trim());
-      toast.success('API ключ Abacus успешно сохранен');
     }
   };
 
@@ -122,9 +109,7 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
           </div>
           <p className="text-xs text-gray-500">
             Ключ будет сохранен только в вашем браузере и не передается никаким третьим лицам.
-            Получить ключ можно на сайте <a href={keyWebsite} target="_blank" rel="noreferrer" className="underline">
-              {keyType === 'openai' ? 'OpenAI' : keyType === 'abacus' ? 'Abacus' : 'Zylalabs'}
-            </a>.
+            Получить ключ можно на сайте <a href={keyWebsite} target="_blank" rel="noreferrer" className="underline">{keyType === 'openai' ? 'OpenAI' : 'Zylalabs'}</a>.
           </p>
         </div>
       </CardContent>

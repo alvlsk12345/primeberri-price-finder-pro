@@ -130,8 +130,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
         </div>
       )}
 
-      {/* Корректируем передачу props в AiBrandAssistant с использованием as any до обновления интерфейса компонента */}
-      <AiBrandAssistant onSelectProduct={handleSelectProduct} {...({} as any)} />
+      <AiBrandAssistant onSelectProduct={handleSelectProduct} />
     </div>
   );
 };
