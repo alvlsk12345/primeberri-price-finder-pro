@@ -13,11 +13,20 @@ export const handleApiError = async (response: Response): Promise<any> => {
     const errorResponse = await response.json();
     errorMessage = errorResponse.message || errorResponse.error?.message || `Ошибка API: ${response.status}`;
     errorDetails = errorResponse;
+    
+    // Более подробное логирование данных ответа для диагностики
+    console.error('Ошибка API с данными:', {
+      status: response.status,
+      url: response.url,
+      errorData: errorResponse
+    });
   } catch (e) {
     try {
       errorMessage = await response.text() || `Ошибка API: ${response.status}`;
+      console.error('Текстовые данные ошибки API:', errorMessage);
     } catch (e2) {
       errorMessage = `Ошибка API: ${response.status}`;
+      console.error('Не удалось получить данные ошибки API');
     }
   }
   
@@ -28,7 +37,8 @@ export const handleApiError = async (response: Response): Promise<any> => {
     status: response.status,
     message: errorMessage,
     details: errorDetails,
-    headers: headers
+    headers: headers,
+    url: response.url
   });
   
   // Обработка ошибок прокси
@@ -41,7 +51,25 @@ export const handleApiError = async (response: Response): Promise<any> => {
   // Обработка ошибок Google API
   if (response.url.includes('googleapis.com')) {
     if (response.status === 403) {
+      console.error(`Google API 403: ${errorMessage}`, errorDetails);
       toast.error("Превышен лимит запросов Google API или неверный ключ.", { duration: 5000 });
+      
+      // Если есть подробности об ошибке, выводим их
+      if (errorDetails && errorDetails.error && errorDetails.error.errors) {
+        console.error('Детали ошибки Google API:', errorDetails.error.errors);
+        const googleError = errorDetails.error.errors[0];
+        if (googleError && googleError.reason) {
+          console.error(`Причина ошибки Google API: ${googleError.reason}`);
+          
+          if (googleError.reason === 'dailyLimitExceeded') {
+            toast.error("Превышен дневной лимит запросов Google API. Попробуйте завтра или смените API-ключ.", { duration: 7000 });
+          } else if (googleError.reason === 'quotaExceeded') {
+            toast.error("Превышена квота запросов Google API. Смените API-ключ или подождите обновления квоты.", { duration: 7000 });
+          } else if (googleError.reason === 'keyInvalid') {
+            toast.error("Недействительный API-ключ Google. Проверьте правильность ключа.", { duration: 7000 });
+          }
+        }
+      }
       return null;
     } else if (response.status === 400) {
       toast.error(`Google API: ${errorMessage}`, { duration: 5000 });

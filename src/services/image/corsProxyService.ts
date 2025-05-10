@@ -11,7 +11,9 @@ const CORS_PROXIES = [
   'https://corsproxy.io/?',
   'https://api.allorigins.win/raw?url=',
   'https://cors-anywhere.herokuapp.com/',
-  'https://thingproxy.freeboard.io/fetch/'
+  'https://thingproxy.freeboard.io/fetch/',
+  'https://api.codetabs.com/v1/proxy?quest=', // Добавляем больше проверенных прокси
+  'https://crossorigin.me/'
 ];
 
 // Индекс текущего используемого прокси
@@ -33,7 +35,7 @@ export const getCorsProxyUrl = (originalUrl: string): string => {
   }
   
   // Формируем URL с прокси в зависимости от типа прокси
-  if (proxy.includes('?url=')) {
+  if (proxy.includes('?url=') || proxy.includes('?quest=')) {
     return `${proxy}${encodeURIComponent(originalUrl)}`;
   }
   

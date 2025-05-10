@@ -74,7 +74,10 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
   if (isGoogleCseImage(processedUrl)) {
     console.log(`Обнаружен URL Google CSE: ${processedUrl}`);
     processedUrl = formatImageUrl(processedUrl);
-    return processedUrl;
+    
+    // Применяем CORS-прокси для изображений Google CSE для решения проблем с CORS
+    console.log(`Применяем прокси к Google CSE URL: ${processedUrl}`);
+    return applyCorsProxy(processedUrl);
   }
   
   // Проверяем необходимость использования CORS-прокси для других доменов

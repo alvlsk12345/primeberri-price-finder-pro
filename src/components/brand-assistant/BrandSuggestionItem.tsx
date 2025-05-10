@@ -5,7 +5,7 @@ import { BrandSuggestion } from "@/services/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ImageOff } from "lucide-react";
 import { searchProductImageGoogle } from "@/services/api/googleSearchService";
-import { getPlaceholderImageUrl } from "@/services/imageService";
+import { getPlaceholderImageUrl } from "@/services/image/imagePlaceholder";
 
 interface BrandSuggestionItemProps {
   suggestion: BrandSuggestion;
@@ -21,38 +21,56 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
   const [imageUrl, setImageUrl] = useState<string | undefined>(suggestion.imageUrl);
   const [isImageLoading, setIsImageLoading] = useState<boolean>(false);
   const [imageError, setImageError] = useState<boolean>(false);
+  const [retryCount, setRetryCount] = useState<number>(0);
+  const MAX_RETRIES = 3;
 
-  // Обработчик ошибки загрузки изображения
+  // Обработчик ошибки загрузки изображения с улучшенным механизмом повтора
   const handleImageError = async () => {
     // Отмечаем, что произошла ошибка
     setImageError(true);
     console.log(`Ошибка загрузки изображения для ${suggestion.brand} ${suggestion.product}`);
 
-    // Если уже загружаем изображение или нет бренда/продукта, то выходим
-    if (isImageLoading || !suggestion.brand || !suggestion.product) return;
+    // Если уже загружаем изображение, превысили лимит попыток или нет бренда/продукта, то выходим
+    if (isImageLoading || retryCount >= MAX_RETRIES || !suggestion.brand || !suggestion.product) {
+      console.log(`Не пытаемся повторить запрос: загрузка=${isImageLoading}, попытки=${retryCount}/${MAX_RETRIES}`);
+      // Если все попытки исчерпаны, устанавливаем заглушку
+      if (retryCount >= MAX_RETRIES) {
+        console.log(`Исчерпаны все ${MAX_RETRIES} попытки. Устанавливаем заглушку.`);
+        setImageUrl(getPlaceholderImageUrl(suggestion.brand));
+      }
+      return;
+    }
 
-    // Устанавливаем флаг загрузки
+    // Устанавливаем флаг загрузки и увеличиваем счетчик попыток
     setIsImageLoading(true);
+    setRetryCount(prev => prev + 1);
     
     try {
+      // Рассчитываем индекс для поиска другого изображения (увеличиваем с каждой попыткой)
+      const newIndex = index + 5 + retryCount;
+      
       // Пробуем использовать Google CSE API с другим индексом
-      console.log(`Поиск запасного изображения через Google CSE для ${suggestion.brand}`);
-      let newImageUrl = await searchProductImageGoogle(suggestion.brand, suggestion.product, index + 5);
+      console.log(`Поиск запасного изображения через Google CSE для ${suggestion.brand} (попытка ${retryCount + 1}/${MAX_RETRIES}, индекс=${newIndex})`);
+      let newImageUrl = await searchProductImageGoogle(suggestion.brand, suggestion.product, newIndex);
       
       if (newImageUrl) {
         // Если нашли изображение, устанавливаем его
-        console.log(`Найдена замена изображения для ${suggestion.brand}`);
+        console.log(`Найдена замена изображения для ${suggestion.brand} (попытка ${retryCount + 1})`);
         setImageUrl(newImageUrl);
         setImageError(false);
       } else {
-        // Если не нашли, используем заглушку
-        console.log(`Используем заглушку для ${suggestion.brand}`);
-        setImageUrl(getPlaceholderImageUrl(suggestion.brand));
+        console.log(`Не удалось найти замену изображения (попытка ${retryCount + 1})`);
+        // Если все попытки исчерпаны, устанавливаем заглушку
+        if (retryCount >= MAX_RETRIES - 1) {
+          setImageUrl(getPlaceholderImageUrl(suggestion.brand));
+        }
       }
     } catch (error) {
       console.error('Не удалось найти замену изображения:', error);
-      // В случае ошибки используем заглушку
-      setImageUrl(getPlaceholderImageUrl(suggestion.brand));
+      // Если все попытки исчерпаны, устанавливаем заглушку
+      if (retryCount >= MAX_RETRIES - 1) {
+        setImageUrl(getPlaceholderImageUrl(suggestion.brand));
+      }
     } finally {
       // Сбрасываем флаг загрузки
       setIsImageLoading(false);
