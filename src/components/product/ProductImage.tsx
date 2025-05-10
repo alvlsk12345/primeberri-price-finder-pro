@@ -27,15 +27,13 @@ export const ProductImage: React.FC<ProductImageProps> = ({ image, title, produc
   const { useAvatar } = sourceInfo;
   
   // Обработчик клика по изображению
-  const handleImageClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Предотвращаем всплытие события
-    
+  const handleImageClick = () => {
     // Открываем модальное окно, только если есть изображение и нет ошибки загрузки
     if (image && !imageError) {
       console.log('Открытие модального окна для изображения:', image);
       setIsModalOpen(true);
     } else {
-      console.log('Не удалось открыть модальное окно: нет изображения или ошибка загрузки');
+      console.log('Не удалось открыть модальное окно: нет изображения или ошибки загрузки');
     }
   };
 
