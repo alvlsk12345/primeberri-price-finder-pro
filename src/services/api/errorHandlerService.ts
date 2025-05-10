@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 import { switchToNextProxy } from "@/services/image/corsProxyService";
 
@@ -12,11 +13,11 @@ export const handleApiError = async (response: Response): Promise<any> => {
   console.log(`Статус ответа: ${response.status} ${response.statusText}`);
   console.log(`URL запроса: ${response.url}`);
   
+  // Получаем все заголовки для диагностики
+  const headers = Object.fromEntries([...response.headers.entries()]);
+  console.log('ЗАГОЛОВКИ ОТВЕТА С ОШИБКОЙ:', headers);
+  
   try {
-    // Получаем все заголовки для диагностики
-    const headers = Object.fromEntries([...response.headers.entries()]);
-    console.log('ЗАГОЛОВКИ ОТВЕТА С ОШИБКОЙ:', headers);
-    
     // Пытаемся получить ответ как JSON для более подробного анализа
     const errorResponse = await response.json();
     errorMessage = errorResponse.message || errorResponse.error?.message || `Ошибка API: ${response.status}`;
@@ -92,7 +93,7 @@ export const handleApiError = async (response: Response): Promise<any> => {
   // Проверяем количество оставшихся запросов в заголовках (для Zylalabs)
   const remainingCalls = headers['x-zyla-api-calls-monthly-remaining'];
   
-  // Особая обработка для ��азных статусных кодов
+  // Особая обработка для разных статусных кодов
   if (response.status === 401) {
     toast.error("Ошибка авторизации API. Проверьте ключ API.", { duration: 5000 });
     throw new Error("Ошибка авторизации API. Проверьте ключ API.");
