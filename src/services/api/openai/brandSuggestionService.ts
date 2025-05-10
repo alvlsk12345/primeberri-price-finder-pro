@@ -21,7 +21,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     console.log('Отправляем запрос к OpenAI для получения брендов...');
     
     // Специализированный промпт для получения брендов с изображениями
-    const brandPrompt = `Помощник для поиска брендов и товаров: Когда пользователь вводит описание товара или запроса, система должна предложить 5 вариантов брендов и соответствующих товаров, которые могут соответствовать запросу. Для каждого бренда вывести его название, название товара, краткое описание товара и URL изображения товара на русском языке. Ответ должен содержать список из 5 брендов с их товарами, названиями товаров, короткими описаниями и ссылками на изображения. Формат: 'Бренд: [название бренда], Товар: [название товара], Описание: [краткое описание товара], Изображение: [URL изображения товара]'.
+    const brandPrompt = `Помощник для поиска брендов и товаров: Когда пользователь вводит описание товара или запроса, система должна предложить 5 вариантов брендов и соответствующих товаров, которые могут соответствовать запросу. Для каждого бренда вывести его название, название товара, краткое описание товара. НЕ ВОЗВРАЩАЙТЕ ИЗОБРАЖЕНИЯ И ССЫЛКИ! Ответ должен содержать список из 5 брендов с их товарами, названиями товаров и короткими описаниями. Формат: 'Бренд: [название бренда], Товар: [название товара], Описание: [краткое описание товара]'.
 
 Запрос пользователя: "${description}"`;
 
@@ -35,7 +35,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
       throw new Error('Пустой ответ от API');
     }
 
-    // Парсинг ответа в формате "Бренд: X, Товар: Y, Описание: Z, Изображение: URL"
+    // Парсинг ответа в формате "Бренд: X, Товар: Y, Описание: Z"
     const suggestions: BrandSuggestion[] = [];
     
     // Разделяем ответ на строки и извлекаем данные
@@ -45,28 +45,22 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
       try {
         const brandMatch = line.match(/Бренд:\s*([^,]+)/i);
         const productMatch = line.match(/Товар:\s*([^,]+)/i);
-        const descriptionMatch = line.match(/Описание:\s*([^,]+)/i);
-        const imageMatch = line.match(/Изображение:\s*(.+)/i);
+        const descriptionMatch = line.match(/Описание:\s*(.+)/i);
         
         if (brandMatch && productMatch && descriptionMatch) {
           const brand = brandMatch[1].trim();
           const product = productMatch[1].trim();
           const description = descriptionMatch[1].trim();
-          const openaiImageUrl = imageMatch ? imageMatch[1].trim() : undefined;
           
-          // Обработка изображения или поиск через DuckDuckGo при необходимости
-          const processedImageUrl = await processImageWithFallback(
-            openaiImageUrl, 
-            brand,
-            product, 
-            suggestions.length
-          );
+          // Сразу ищем изображение через DuckDuckGo
+          console.log(`Поиск изображения для ${brand} ${product} через DuckDuckGo`);
+          const imageUrl = await searchProductImage(brand, product, suggestions.length);
           
           suggestions.push({
             brand,
             product,
             description,
-            imageUrl: processedImageUrl
+            imageUrl: imageUrl || getPlaceholderImageUrl(brand)
           });
         }
       } catch (error) {
@@ -82,49 +76,3 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     throw error;
   }
 };
-
-/**
- * Функция для обработки изображения с запасными вариантами
- * @param imageUrl URL изображения от OpenAI
- * @param brand Название бренда
- * @param product Название продукта
- * @param index Индекс для уникального обращения к API
- * @returns URL обработанного изображения
- */
-async function processImageWithFallback(
-  imageUrl: string | undefined, 
-  brand: string,
-  product: string,
-  index: number
-): Promise<string> {
-  try {
-    // Пробуем использовать URL от OpenAI, если он предоставлен
-    if (imageUrl) {
-      // Обработка изображения с помощью processProductImage
-      const processedUrl = processProductImage(imageUrl, index);
-      
-      // Если обработка прошла успешно и URL не пустой
-      if (processedUrl) {
-        console.log(`Используем изображение из OpenAI для ${brand} ${product}`);
-        return processedUrl;
-      }
-    }
-    
-    // Если URL от OpenAI недоступен или пуст, пробуем найти через DuckDuckGo
-    console.log(`Поиск изображения через DuckDuckGo для ${brand} ${product}`);
-    const ddgImageUrl = await searchProductImage(brand, product, index);
-    
-    if (ddgImageUrl) {
-      console.log(`Найдено изображение через DuckDuckGo для ${brand}`);
-      return ddgImageUrl;
-    }
-    
-    // Если оба метода не сработали, используем заглушку
-    console.log(`Используем заглушку для ${brand}`);
-    return getPlaceholderImageUrl(brand);
-  } catch (error) {
-    console.error('Ошибка при обработке изображения:', error);
-    // В случае ошибки возвращаем заглушку
-    return getPlaceholderImageUrl(brand);
-  }
-}

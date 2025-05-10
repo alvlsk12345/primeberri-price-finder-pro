@@ -40,10 +40,8 @@ export const searchImageDuckDuckGo = async (query: string, index: number = 0): P
     
     // Проверяем, есть ли результаты в ответе
     if (data && data.results && data.results.length > 0) {
-      // Получаем URL изображения из результатов
-      // Используем index для выбора разных изображений, но с защитой от выхода за границы массива
-      const resultIndex = index % data.results.length;
-      const imageUrl = data.results[resultIndex]?.image;
+      // Всегда берем первое (наиболее релевантное) изображение вместо случайного
+      const imageUrl = data.results[0]?.image;
       
       if (imageUrl) {
         // Обрабатываем URL изображения через нашу существующую функцию

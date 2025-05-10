@@ -35,8 +35,9 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
     setIsImageLoading(true);
     
     try {
-      // Пытаемся найти изображение через DuckDuckGo
-      const ddgImage = await searchProductImage(suggestion.brand, suggestion.product, index);
+      // Пытаемся повторно найти изображение через DuckDuckGo с другим индексом
+      // Чтобы получить другое изображение из результатов
+      const ddgImage = await searchProductImage(suggestion.brand, suggestion.product, index + 10);
       
       if (ddgImage) {
         // Если нашли изображение, устанавливаем его
@@ -69,6 +70,8 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
                 alt={suggestion.product}
                 className="object-cover" 
                 onError={handleImageError}
+                referrerPolicy="no-referrer"
+                crossOrigin="anonymous"
               />
               <AvatarFallback className="bg-slate-100">
                 {isImageLoading ? (

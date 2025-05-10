@@ -9,6 +9,25 @@ export const isGoogleShoppingImage = (url: string): boolean => {
          url.includes('gstatic.com/shopping');
 };
 
+// Функция для очистки Markdown-ссылок в URL
+const cleanMarkdownUrl = (url: string): string => {
+  // Если URL в формате Markdown ![alt](url)
+  const markdownMatch = url.match(/!\[.*?\]\((.*?)\)/);
+  if (markdownMatch && markdownMatch[1]) {
+    console.log(`Обнаружена Markdown-ссылка, извлекаем URL: ${markdownMatch[1]}`);
+    return markdownMatch[1];
+  }
+  
+  // Если простая Markdown-ссылка [text](url)
+  const linkMatch = url.match(/\[.*?\]\((.*?)\)/);
+  if (linkMatch && linkMatch[1]) {
+    console.log(`Обнаружена текстовая Markdown-ссылка, извлекаем URL: ${linkMatch[1]}`);
+    return linkMatch[1];
+  }
+  
+  return url;
+};
+
 // Функция для обработки изображения товара
 export const processProductImage = (imageUrl: string | undefined, index: number): string => {
   // Убедимся, что imageUrl - строка
@@ -21,6 +40,9 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
   }
   
   console.log(`Обрабатываем изображение: ${processedUrl}`);
+  
+  // Очищаем URL от Markdown-разметки, если она есть
+  processedUrl = cleanMarkdownUrl(processedUrl);
   
   // Форматируем URL изображения
   processedUrl = processedUrl.trim();
