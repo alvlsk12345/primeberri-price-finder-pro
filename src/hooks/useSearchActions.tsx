@@ -114,7 +114,7 @@ export function useSearchActions(props: SearchStateProps) {
   
   // Для filterActions также нужна ссылка на handleSearch
   const { handleFilterChange } = useFilterActions({
-    allSearchResults,       // Используем все результаты
+    allResults: allSearchResults, // Используем allSearchResults вместо неизвестного свойства
     setFilters,
     handleSearch,
     filters,

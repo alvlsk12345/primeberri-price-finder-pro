@@ -1,6 +1,6 @@
 
 import { useRef, useCallback } from 'react';
-import { ProductFilters } from "@/services/types";
+import { ProductFilters, Product } from "@/services/types"; // Добавляем импорт типа Product
 import { useLocalFiltering } from "@/hooks/useLocalFiltering";
 
 type FilterActionProps = {
@@ -32,10 +32,7 @@ export function useFilterActions({
       console.log('Изменение стран требует нового поиска');
       return true;
     }
-    if (newFilters.language !== currentFilters.language) {
-      console.log('Изменение языка требует нового поиска');
-      return true;
-    }
+    // Удаляем проверку language, так как его нет в типе ProductFilters
     return false;
   };
   
