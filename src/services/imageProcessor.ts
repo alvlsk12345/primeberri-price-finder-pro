@@ -1,17 +1,22 @@
 
-// Этот файл служит связующим звеном для обратной совместимости
-// и переадресует все импорты на новые модули
+// Реэкспорт всех функций из модуля imageProcessor для обратной совместимости
+export { 
+    processProductImage,
+    getBaseSizeImageUrl,
+    getLargeSizeImageUrl,
+    getZylalabsSizeImageUrl
+} from './image/imageProcessor';
 
-import {
-  processProductImage as processImageFromModule,
-  isZylalabsImage as isZylalabsImageFromModule,
-  isGoogleShoppingImage as isGoogleShoppingImageFromModule,
-  isGoogleCseImage as isGoogleCseImageFromModule
-} from './image';
+// Экспортируем applyCorsProxy для его использования
+export { applyCorsProxy } from './image/corsProxyService';
 
-// Реэкспорт функций для обратной совместимости
-export const isZylalabsImage = isZylalabsImageFromModule;
-export const isGoogleShoppingImage = isGoogleShoppingImageFromModule;
-export const isGoogleCseImage = isGoogleCseImageFromModule;
-export const processProductImage = processImageFromModule;
+// Реэкспорт других часто используемых функций для удобства
+export { 
+    isZylalabsImage,
+    isGoogleShoppingImage,
+    isGoogleCseImage
+} from './image/imageSourceDetector';
 
+export {
+    isValidImageUrl
+} from './image/imageValidator';

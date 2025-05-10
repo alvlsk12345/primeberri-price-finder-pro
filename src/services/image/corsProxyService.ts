@@ -10,7 +10,8 @@
 const CORS_PROXIES = [
   'https://corsproxy.io/?',
   'https://api.allorigins.win/raw?url=',
-  'https://cors-anywhere.herokuapp.com/'
+  'https://cors-anywhere.herokuapp.com/',
+  'https://thingproxy.freeboard.io/fetch/'
 ];
 
 // Индекс текущего используемого прокси
@@ -23,13 +24,11 @@ let currentProxyIndex = 0;
  * @returns URL с добавленным CORS прокси
  */
 export const getCorsProxyUrl = (originalUrl: string): string => {
-  // Используем первый прокси из списка
+  // Используем текущий прокси из списка
   const proxy = CORS_PROXIES[currentProxyIndex];
   
   // Если URL уже содержит прокси, просто возвращаем его
-  if (originalUrl.startsWith('https://corsproxy.io') || 
-      originalUrl.startsWith('https://api.allorigins.win') || 
-      originalUrl.startsWith('https://cors-anywhere.herokuapp.com')) {
+  if (isProxiedUrl(originalUrl)) {
     return originalUrl;
   }
   
@@ -44,10 +43,27 @@ export const getCorsProxyUrl = (originalUrl: string): string => {
 /**
  * Переключает на следующий доступный прокси в списке
  * Может использоваться при ошибке текущего прокси
+ * 
+ * @returns {string} - Название нового текущего прокси
  */
-export const switchToNextProxy = (): void => {
+export const switchToNextProxy = (): string => {
   currentProxyIndex = (currentProxyIndex + 1) % CORS_PROXIES.length;
   console.log(`Переключение на следующий CORS прокси: ${CORS_PROXIES[currentProxyIndex]}`);
+  return CORS_PROXIES[currentProxyIndex];
+};
+
+/**
+ * Получает имя текущего используемого прокси
+ */
+export const getCurrentProxyName = (): string => {
+  const proxyUrl = CORS_PROXIES[currentProxyIndex];
+  // Извлекаем имя домена из URL
+  try {
+    const domain = new URL(proxyUrl.replace('?', '')).hostname;
+    return domain;
+  } catch (e) {
+    return proxyUrl;
+  }
 };
 
 /**
@@ -76,6 +92,7 @@ export const addCorsHeaders = (options: RequestInit = {}): RequestInit => {
 export const shouldUseCorsProxy = (url: string): boolean => {
   // Проверяем, исходит ли URL из источника, который обычно требует CORS прокси
   return !(
+    !url ||
     url.startsWith('data:') ||
     url.includes('amazonaws.com') ||
     url.includes('cloudfront.net') ||
@@ -91,6 +108,11 @@ export const shouldUseCorsProxy = (url: string): boolean => {
  * @returns URL с примененным CORS прокси
  */
 export const applyCorsProxy = (url: string): string => {
+  // Проверяем, нужно ли использовать прокси
+  if (!url || !shouldUseCorsProxy(url)) {
+    return url;
+  }
+  
   // Если URL уже содержит прокси, возвращаем его как есть
   if (isProxiedUrl(url)) {
     return url;
@@ -109,9 +131,24 @@ export const applyCorsProxy = (url: string): string => {
 export const isProxiedUrl = (url: string): boolean => {
   if (!url) return false;
   
-  return (
-    url.includes('corsproxy.io') ||
-    url.includes('api.allorigins.win') ||
-    url.includes('cors-anywhere.herokuapp.com')
-  );
+  return CORS_PROXIES.some(proxy => {
+    const proxyDomain = proxy.replace(/^https?:\/\//, '').split('?')[0].split('/')[0];
+    return url.includes(proxyDomain);
+  });
+};
+
+/**
+ * Возвращает максимальное количество попыток 
+ * (равно количеству доступных прокси)
+ */
+export const getMaxProxyAttempts = (): number => {
+  return CORS_PROXIES.length;
+};
+
+/**
+ * Сбрасывает индекс текущего прокси на первый в списке
+ */
+export const resetProxyIndex = (): void => {
+  currentProxyIndex = 0;
+  console.log(`Сброс прокси на первый в списке: ${CORS_PROXIES[currentProxyIndex]}`);
 };
