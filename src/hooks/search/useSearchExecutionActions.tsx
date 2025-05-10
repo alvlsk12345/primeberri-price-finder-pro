@@ -81,20 +81,20 @@ export function useSearchExecutionActions({
     // Используем текущий поисковый запрос или последний успешный
     const queryToUse = searchQuery || lastSearchQuery;
     
-    // ВАЖНОЕ ИЗМЕНЕНИЕ: устанавливаем текущую страницу перед выполнением поиска
-    // Это предотвращает проблему с асинхронным обновлением состояния
+    // Устанавливаем текущую страницу перед выполнением поиска
+    // Но только если она отличается от текущей, чтобы избежать лишних ререндеров
     if (page !== currentPage) {
       console.log(`Устанавливаем новую текущую страницу: ${page}`);
       setCurrentPage(page);
     }
     
-    // Расширенная проверка кеша
-    console.log(`Проверка кеша для запроса "${queryToUse}", страница ${page}`);
-    console.log(`Доступные страницы в кеше:`, Object.keys(cachedResults));
+    // Расширенная проверка кеша с более детальной диагностикой
+    console.log(`Проверка кеша для запроса "${queryToUse}", страница ${page}, forceNewSearch: ${forceNewSearch}`);
     
-    // Если это та же страница для того же запроса и у нас есть кешированные результаты
-    const cachedResultsForQuery = getCachedResults(queryToUse, lastSearchQuery, page);
-    if (!forceNewSearch && cachedResultsForQuery) {
+    // Если не принудительный поиск, проверяем кеш
+    const cachedResultsForQuery = !forceNewSearch ? getCachedResults(queryToUse, lastSearchQuery, page) : null;
+    
+    if (cachedResultsForQuery) {
       console.log(`Используем кэшированные результаты для страницы ${page}, количество: ${cachedResultsForQuery.length}`);
       setSearchResults(cachedResultsForQuery);
       return;
@@ -113,7 +113,10 @@ export function useSearchExecutionActions({
     }
     
     try {
-      // Выполняем поиск
+      // Подготавливаем UI к поиску
+      setIsLoading(true);
+      
+      // Выполняем поиск с четким указанием страницы
       console.log(`Выполняем поиск для запроса "${queryToUse}", страница: ${page}`);
       const result = await executeSearch(
         queryToUse,
@@ -123,8 +126,8 @@ export function useSearchExecutionActions({
         getSearchCountries
       );
       
-      // После успешного поиска, проверяем, что страница действительно изменилась
-      console.log(`Поиск завершен. Проверяем текущую страницу: ${currentPage}, запрошенная: ${page}`);
+      // После успешного поиска, проверяем состояние
+      console.log(`Поиск завершен. Текущая страница: ${currentPage}, запрошенная: ${page}, успех: ${result.success}`);
       
       // Если поиск был неудачным, пытаемся использовать кешированные результаты
       if (!result.success) {
@@ -134,6 +137,8 @@ export function useSearchExecutionActions({
     } catch (error) {
       console.error(`Ошибка при выполнении поиска:`, error);
       handleSearchFailure(page);
+    } finally {
+      setIsLoading(false);
     }
   };
   

@@ -25,9 +25,18 @@ export const ProductListContainer: React.FC<ProductListContainerProps> = ({
   onPageChange,
   isDemo = false
 }) => {
-  // Улучшенный обработчик смены страницы с дополнительными проверками и логированием
+  // Улучшенный обработчик смены страницы с дополнительными проверками
   const handlePageChange = useCallback((page: number) => {
     console.log(`ProductListContainer: Запрос на смену страницы с ${currentPage} на ${page}`);
+    
+    // Важная проверка: убедиться, что у нас действительно есть больше одной страницы
+    if (totalPages <= 1 && page !== 1) {
+      console.warn(`ProductListContainer: Запрошена страница ${page}, но всего страниц: ${totalPages}`);
+      toast.error(`Страница ${page} недоступна. В данный момент доступна только страница 1.`, {
+        duration: 3000
+      });
+      return;
+    }
     
     // Валидация страницы для предотвращения некорректных переходов
     if (page <= 0 || page > totalPages) {
@@ -77,6 +86,7 @@ export const ProductListContainer: React.FC<ProductListContainerProps> = ({
         onSelect={onSelect}
       />
       
+      {/* Важное изменение: показываем пагинацию только если у нас больше 1 страницы */}
       {totalPages > 1 && (
         <Pagination 
           currentPage={currentPage}

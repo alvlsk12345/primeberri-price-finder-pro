@@ -25,9 +25,10 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
     e.preventDefault();
     e.stopPropagation();
     
+    console.log(`Pagination: Переход с ${currentPage} на страницу ${pageNumber}`);
+    
     // Проверяем, что страница валидна и не является текущей
     if (pageNumber !== currentPage && pageNumber >= 1 && pageNumber <= totalPages) {
-      console.log(`Pagination: Переход с ${currentPage} на страницу ${pageNumber}`);
       onPageChange(pageNumber);
     } else {
       console.log(`Pagination: Отклонен переход на страницу ${pageNumber} (текущая: ${currentPage}, всего: ${totalPages})`);

@@ -16,19 +16,21 @@ export function useSearchCache({
   
   // Улучшенная проверка наличия кешированных результатов для конкретного запроса и страницы
   const getCachedResults = (query: string, lastSearchQuery: string, page: number) => {
-    // Проверяем точное совпадение запроса и наличие кеша для страницы
+    // Проверяем точное совпадение запроса
     const isSameQuery = query === lastSearchQuery;
     
-    // Дополнительные логи для отладки проблем с кешем
-    console.log(`Проверка кеша: запрос "${query}", последний запрос "${lastSearchQuery}", совпадение: ${isSameQuery}`);
-    console.log(`Проверка кеша для страницы ${page}, доступно страниц: ${Object.keys(cachedResults).join(', ')}`);
+    // Выводим более детальную информацию для отладки
+    console.log(`Проверка кеша для запроса "${query}":`);
+    console.log(`- Последний запрос: "${lastSearchQuery}"`);
+    console.log(`- Запрошена страница: ${page}`);
+    console.log(`- Доступные страницы: ${Object.keys(cachedResults).join(', ') || 'нет'}`);
     
     // Проверяем наличие и валидность кеша для указанной страницы
     if (isSameQuery && cachedResults[page] && cachedResults[page].length > 0) {
       console.log(`Кеш найден для страницы ${page}, запрос: "${query}", элементов: ${cachedResults[page].length}`);
       return cachedResults[page];
     } else if (isSameQuery) {
-      console.log(`Кеш для страницы ${page} отсутствует или пуст. Доступные страницы: ${Object.keys(cachedResults).join(', ')}`);
+      console.log(`Кеш для страницы ${page} отсутствует или пуст.`);
     } else {
       console.log(`Запрос "${query}" отличается от предыдущего "${lastSearchQuery}", кеш не используется`);
     }
@@ -48,7 +50,7 @@ export function useSearchCache({
       return true;
     } 
     // Если нет кеша для текущей страницы, но есть для первой - возвращаемся к первой
-    else if (cachedResults[1] && cachedResults[1].length > 0) {
+    else if (currentPage !== 1 && cachedResults[1] && cachedResults[1].length > 0) {
       console.log('При ошибке возвращаемся к первой странице (есть кеш), элементов:', cachedResults[1].length);
       setSearchResults(cachedResults[1]);
       setCurrentPage(1);
