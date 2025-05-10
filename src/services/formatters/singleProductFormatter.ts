@@ -1,5 +1,6 @@
 
 import { Product } from '../types';
+import { processProductImage } from '../imageProcessor';
 
 /**
  * Извлекает числовое значение цены из строкового представления
@@ -53,6 +54,12 @@ export const formatSingleProduct = async (
     } else if (product.thumbnail) {
       // Используем миниатюру
       image = product.thumbnail;
+    }
+    
+    // Обрабатываем изображение через imageProcessor для корректной работы с CORS
+    if (image) {
+      image = processProductImage(image, 0);
+      console.log(`Обработанный URL изображения: ${image}`);
     }
     
     // URL страницы товара

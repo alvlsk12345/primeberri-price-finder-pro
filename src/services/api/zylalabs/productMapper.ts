@@ -1,5 +1,6 @@
 
 import { Product } from "../../types";
+import { processProductImage } from "../../imageProcessor";
 
 /**
  * Преобразует продукты API в стандартный формат с дополнительной информацией
@@ -8,7 +9,7 @@ import { Product } from "../../types";
  * @returns Обработанные продукты с дополнительными полями
  */
 export const mapProductsFromApi = (products: any[], params: any): Product[] => {
-  return products.map(product => {
+  return products.map((product, index) => {
     // Определяем источник товара (магазин)
     let source = "merchant"; 
     
@@ -47,6 +48,16 @@ export const mapProductsFromApi = (products: any[], params: any): Product[] => {
       country = product.source_country.toUpperCase();
     }
     
+    // Обработка URL изображения
+    let imageUrl = '';
+    if (product.product_photos && product.product_photos.length > 0) {
+      imageUrl = processProductImage(product.product_photos[0], index);
+    } else if (product.image) {
+      imageUrl = processProductImage(product.image, index);
+    } else {
+      imageUrl = '';
+    }
+    
     // Преобразование в формат Product
     return {
       id: product.product_id || `product-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
@@ -54,9 +65,7 @@ export const mapProductsFromApi = (products: any[], params: any): Product[] => {
       subtitle: product.product_attributes?.Brand || '',
       price: (product.offer && product.offer.price) || product.price || 'Цена не указана',
       currency: product.currency || 'EUR',
-      image: (product.product_photos && product.product_photos.length > 0) 
-        ? product.product_photos[0] 
-        : product.image || '',
+      image: imageUrl,
       link: (product.offer && product.offer.offer_page_url) || product.product_page_url || product.link || '',
       rating: parseFloat(product.product_rating) || 0,
       source: source,

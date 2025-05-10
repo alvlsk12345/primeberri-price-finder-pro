@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getPlaceholderImageUrl } from '@/services/imageService';
 import { ProductImageModal } from './ProductImageModal';
-import { isGoogleCseImage, isGoogleShoppingImage } from '@/services/imageProcessor';
+import { isGoogleCseImage, isGoogleShoppingImage, isZylalabsImage } from '@/services/imageProcessor';
 
 interface ProductImageProps {
   image: string | null;
@@ -18,8 +18,9 @@ export const ProductImage: React.FC<ProductImageProps> = ({ image, title, produc
   const [imageError, setImageError] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Проверяем, является ли изображение от Google (Shopping или CSE)
+  // Проверяем, является ли изображение от Google или Zylalabs
   const isGoogleImage = image && (isGoogleShoppingImage(image) || isGoogleCseImage(image));
+  const isZylalabs = image && isZylalabsImage(image);
 
   // Получаем URL заглушки для отображения при ошибке или отсутствии изображения
   const placeholderUrl = getPlaceholderImageUrl(title);
@@ -73,8 +74,8 @@ export const ProductImage: React.FC<ProductImageProps> = ({ image, title, produc
           <Skeleton className="w-full h-full absolute inset-0" />
         )}
         
-        {isGoogleImage ? (
-          // Для изображений Google используем Avatar компонент, который лучше справляется с такими изображениями
+        {isGoogleImage || isZylalabs ? (
+          // Для изображений Google и Zylalabs используем Avatar компонент
           <Avatar className="w-full h-full rounded-none">
             <AvatarImage 
               src={image} 

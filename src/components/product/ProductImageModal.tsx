@@ -2,6 +2,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { getPlaceholderImageUrl } from '@/services/imageService';
+import { isZylalabsImage, isGoogleCseImage, isGoogleShoppingImage } from '@/services/imageProcessor';
 
 interface ProductImageModalProps {
   isOpen: boolean;
@@ -19,16 +20,24 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
   // Если нет изображения, используем заглушку
   const displayedImage = imageUrl || getPlaceholderImageUrl(productTitle);
   
+  // Проверяем источник изображения для специальной обработки
+  const isSpecialSource = imageUrl && (
+    isZylalabsImage(imageUrl) || 
+    isGoogleCseImage(imageUrl) || 
+    isGoogleShoppingImage(imageUrl)
+  );
+  
   // Добавляем логи для отслеживания открытия модального окна и URL изображения
   React.useEffect(() => {
     if (isOpen) {
       console.log('Открытие модального окна с изображением:', {
         imageUrl,
         displayedImage,
-        productTitle
+        productTitle,
+        isSpecialSource
       });
     }
-  }, [isOpen, imageUrl, displayedImage, productTitle]);
+  }, [isOpen, imageUrl, displayedImage, productTitle, isSpecialSource]);
 
   // Обработчик успешной загрузки изображения
   const handleImageLoad = () => {

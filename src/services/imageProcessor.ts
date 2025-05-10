@@ -1,6 +1,13 @@
 
 import { isValidImageUrl, getUniqueImageUrl, isGoogleShoppingImage as isGoogleImageFromService } from './imageService';
 
+// Функция для проверки, является ли URL от Zylalabs API
+export const isZylalabsImage = (url: string): boolean => {
+  return url.includes('zylalabs.com') || 
+         url.includes('rapidapi.com') || 
+         url.includes('rapidapi-prod-');
+};
+
 // Функция для проверки, является ли URL от Google Shopping
 export const isGoogleShoppingImage = (url: string): boolean => {
   return isGoogleImageFromService(url) || 
@@ -64,6 +71,20 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
   if (processedUrl.startsWith('"') && processedUrl.endsWith('"')) {
     processedUrl = processedUrl.substring(1, processedUrl.length - 1);
     console.log(`Удалены кавычки: ${processedUrl}`);
+  }
+
+  // Особая обработка для изображений Zylalabs
+  if (isZylalabsImage(processedUrl)) {
+    console.log(`Обнаружен URL Zylalabs: ${processedUrl}`);
+    
+    // Проверяем, начинается ли URL с http или https
+    if (!processedUrl.startsWith('http') && !processedUrl.startsWith('//')) {
+      processedUrl = `https://${processedUrl}`;
+    } else if (processedUrl.startsWith('//')) {
+      processedUrl = `https:${processedUrl}`;
+    }
+    
+    return processedUrl; // Возвращаем URL без дополнительной обработки для Zylalabs
   }
   
   // Для URL от Google Shopping или Google CSE используем особую обработку

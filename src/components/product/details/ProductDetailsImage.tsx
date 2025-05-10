@@ -2,9 +2,8 @@
 import React, { useState } from 'react';
 import { ImageOff } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { isGoogleShoppingImage } from "@/services/imageProcessor";
-import { isGoogleCseImage } from "@/services/imageProcessor";
-import { getPlaceholderImageUrl } from "@/services/imageService";
+import { isGoogleShoppingImage, isGoogleCseImage, isZylalabsImage } from "@/services/imageProcessor";
+import { getPlaceholderImageUrl } from '@/services/imageService';
 import { ProductImageModal } from '../ProductImageModal';
 
 interface ProductDetailsImageProps {
@@ -23,8 +22,10 @@ export const ProductDetailsImage: React.FC<ProductDetailsImageProps> = ({
   // Получаем URL заглушки для случая ошибки
   const placeholderUrl = title ? getPlaceholderImageUrl(title) : '';
   
-  // Проверяем, является ли изображение от Google (Shopping или CSE)
+  // Проверяем, является ли изображение от Google или Zylalabs
   const isGoogleImage = image && (isGoogleShoppingImage(image) || isGoogleCseImage(image));
+  const isZylalabs = image && isZylalabsImage(image);
+  const useAvatar = isGoogleImage || isZylalabs;
 
   // Обработчик успешной загрузки изображения
   const handleImageLoad = () => {
@@ -58,8 +59,8 @@ export const ProductDetailsImage: React.FC<ProductDetailsImageProps> = ({
     );
   }
   
-  if (isGoogleImage) {
-    // Для изображений Google используем Avatar компонент
+  if (useAvatar) {
+    // Для изображений Google или Zylalabs используем Avatar компонент
     return (
       <>
         <Avatar 
