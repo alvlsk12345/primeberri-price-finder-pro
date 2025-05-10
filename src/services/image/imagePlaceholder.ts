@@ -8,7 +8,8 @@ export const isPlaceholderImage = (imageUrl: string): boolean => {
   return !imageUrl || 
     imageUrl.includes('placeholder') || 
     imageUrl.includes('no-image') || 
-    imageUrl.includes('noimage');
+    imageUrl.includes('noimage') ||
+    imageUrl.includes('placehold.co');
 };
 
 /**

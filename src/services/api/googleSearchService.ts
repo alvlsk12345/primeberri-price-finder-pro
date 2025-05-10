@@ -1,3 +1,4 @@
+
 import { processProductImage } from "../image";
 
 // API ключ для Google Custom Search API
@@ -29,15 +30,20 @@ export const searchImageGoogleCSE = async (query: string, index: number = 0): Pr
     const encodedQuery = encodeURIComponent(query);
     const apiUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_SEARCH_ENGINE_ID}&q=${encodedQuery}&searchType=image&num=5`;
     
+    console.log(`Запрос к API: ${apiUrl}`);
+    
     // Выполняем запрос к API
     const response = await fetch(apiUrl);
     
     if (!response.ok) {
       console.error(`Ошибка запроса Google CSE API: ${response.status}`);
+      const errorData = await response.text();
+      console.error(`Детали ошибки: ${errorData}`);
       return '';
     }
     
     const data = await response.json();
+    console.log(`Получены данные от Google CSE API: ${JSON.stringify(data).substring(0, 200)}...`);
     
     // Проверяем, есть ли результаты в ответе
     if (data && data.items && data.items.length > 0) {
@@ -55,6 +61,8 @@ export const searchImageGoogleCSE = async (query: string, index: number = 0): Pr
         console.log(`Найдено изображение через Google CSE: ${processedUrl}`);
         return processedUrl;
       }
+    } else {
+      console.log(`Google CSE API вернул данные без изображений: ${JSON.stringify(data).substring(0, 200)}...`);
     }
     
     console.log(`Google CSE не вернул изображений для запроса: ${query}`);
