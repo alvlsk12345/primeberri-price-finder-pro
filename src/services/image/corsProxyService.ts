@@ -50,6 +50,68 @@ export const getCurrentProxyInfo = () => {
 };
 
 /**
+ * Получить название текущего прокси
+ */
+export const getCurrentProxyName = (): string => {
+  return corsProxies[currentProxyIndex].name;
+};
+
+/**
+ * Получить URL текущего прокси
+ */
+export const getCorsProxyUrl = (originalUrl: string): string => {
+  const proxy = corsProxies[currentProxyIndex];
+  
+  // Если прокси отключен, переключаемся на следующий
+  if (!proxy.isEnabled) {
+    switchToNextProxy();
+    return getCorsProxyUrl(originalUrl);
+  }
+  
+  // Возвращаем URL с примененным прокси
+  return applyCorsProxy(originalUrl);
+};
+
+/**
+ * Получить максимальное количество попыток использования прокси
+ */
+export const getMaxProxyAttempts = (): number => {
+  // Возвращаем количество включенных прокси + 1 для дополнительной попытки
+  return corsProxies.filter(p => p.isEnabled).length + 1;
+};
+
+/**
+ * Сбросить индекс прокси на начальное значение (первый включенный прокси)
+ */
+export const resetProxyIndex = (): void => {
+  currentProxyIndex = 0;
+  
+  // Если первый прокси отключен, найдем первый включенный
+  if (!corsProxies[currentProxyIndex].isEnabled) {
+    for (let i = 0; i < corsProxies.length; i++) {
+      if (corsProxies[i].isEnabled) {
+        currentProxyIndex = i;
+        break;
+      }
+    }
+  }
+  
+  console.log(`Прокси сервис сброшен на: ${corsProxies[currentProxyIndex].name}`);
+};
+
+/**
+ * Проверка, является ли URL проксированным
+ */
+export const isProxiedUrl = (url: string): boolean => {
+  if (!url) return false;
+  
+  return url.includes('corsproxy.io') || 
+         url.includes('allorigins.win') || 
+         url.includes('cors-anywhere') ||
+         url.includes('thingproxy');
+};
+
+/**
  * Переключиться на следующий доступный прокси
  */
 export const switchToNextProxy = (): void => {
@@ -185,3 +247,4 @@ export const shouldUseCorsProxy = (url: string): boolean => {
   // Проверяем, содержит ли URL какой-либо из проблемных доменов
   return domainsNeedingProxy.some(domain => url.includes(domain));
 };
+
