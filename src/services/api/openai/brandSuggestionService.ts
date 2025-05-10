@@ -47,7 +47,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     const content = await callOpenAI(brandPrompt, {
       temperature: 0.3,
       max_tokens: 350,
-      model: "gpt-4o" // Явно указываем модель для лучших результатов
+      model: "gpt-4o-search-preview-2025-03-11" // Изменено с gpt-4o на модель, оптимизированную для поисковых запросов
     });
 
     if (!content) {

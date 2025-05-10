@@ -1,8 +1,7 @@
-
 import React, { KeyboardEvent, useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, AlertCircle, RefreshCw } from 'lucide-react';
+import { Search, AlertCircle, RefreshCw, Info } from 'lucide-react';
 import { toast } from "sonner";
 import { useDemoModeForced } from '@/services/api/mock/mockServiceConfig';
 import { containsCyrillicCharacters } from '@/services/translationService';
@@ -28,6 +27,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   const [isTesting, setIsTesting] = useState(false);
   const [openAiStatus, setOpenAiStatus] = useState<'неизвестно' | 'работает' | 'ошибка'>('неизвестно');
   const isDemoMode = useDemoModeForced;
+  const MODEL_NAME = "gpt-4o-search-preview-2025-03-11"; // Добавляем константу для отображения названия модели
 
   // Диагностический тест API при первом рендере
   useEffect(() => {
@@ -108,13 +108,15 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       
       const response = await callOpenAI("Ответь одним словом: Работает?", {
         temperature: 0.1,
-        max_tokens: 50
+        max_tokens: 50,
+        model: MODEL_NAME // Используем константу вместо жестко закодированного значения
       });
       
       if (response && typeof response === 'string') {
         console.log("Ответ от OpenAI API:", response);
         toast.success(`Тест OpenAI API успешен! Ответ: ${response}`, {
-          duration: 5000
+          duration: 5000,
+          description: `Используется модель: ${MODEL_NAME}`
         });
         setOpenAiStatus('работает');
       } else {
@@ -241,6 +243,18 @@ export const SearchForm: React.FC<SearchFormProps> = ({
                 `(${openAiStatus === 'работает' ? '✓' : '✗'})` : ''}
             </>
           )}
+        </Button>
+        
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-xs flex items-center gap-1 text-muted-foreground"
+          onClick={() => toast.info(`Используется модель: ${MODEL_NAME}`, { 
+            description: "Модель оптимизирована для поисковых запросов" 
+          })}
+        >
+          <Info size={14} />
+          Инфо о модели
         </Button>
       </div>
 

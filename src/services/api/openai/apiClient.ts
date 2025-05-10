@@ -41,7 +41,7 @@ export const callOpenAI = async (prompt: string, options: {
     console.log(`Отправляем запрос к OpenAI через прокси ${getCurrentProxyName()} (попытка ${retryAttempt + 1}/${MAX_RETRY_ATTEMPTS})...`);
     
     const defaultOptions = {
-      model: "gpt-4o",
+      model: "gpt-4o-search-preview-2025-03-11", // Изменено с gpt-4o на новую модель, оптимизированную для поиска
       temperature: 0.2,
       max_tokens: 500,
       responseFormat: "text" as "json_object" | "text"
