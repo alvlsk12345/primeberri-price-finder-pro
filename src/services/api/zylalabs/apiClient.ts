@@ -46,6 +46,8 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
   
   try {
     // Выполнение запроса к API
+    console.log('Отправка запроса с API ключом:', `Bearer ${apiKey.substring(0, 5)}...`);
+    
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -66,16 +68,22 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
     
     // Разбор ответа
     const data = await response.json();
-    console.log('API вернул данные:', data);
+    console.log('Структура ответа API:', Object.keys(data));
+    
+    if (data.status === "OK" && data.data) {
+      console.log('API вернул корректный ответ с полем data. Количество продуктов:', 
+        Array.isArray(data.data) ? data.data.length : 'неизвестно');
+    } else {
+      console.log('Нестандартная структура ответа API:', data);
+    }
     
     // Обработка заголовков ответа для получения лимитов API
     const remainingCalls = response.headers.get('X-Zyla-API-Calls-Monthly-Remaining') || 'н/д';
+    console.log('Оставшиеся вызовы API:', remainingCalls);
     
-    // Получаем данные о товарах из ответа API
-    // Обработка ответа с учетом вложенной структуры
-    // Просто возвращаем ответ как есть, обработка структуры будет в zylalabsService.ts
+    // Сохраняем всю структуру ответа
     const result = {
-      data: data,  // Прокидываем весь ответ API, включая вложенную структуру
+      data: data,
       totalPages: data.total_pages || 1,
       isDemo: false,
       remainingCalls: remainingCalls

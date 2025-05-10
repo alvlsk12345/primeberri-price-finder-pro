@@ -1,10 +1,11 @@
 
 import { toast } from "sonner";
+import { generateMockSearchResults } from "./mock/mockSearchGenerator";
 
 /**
  * Handles API response errors based on status codes
  */
-export const handleApiError = async (response: Response): Promise<never> => {
+export const handleApiError = async (response: Response): Promise<any> => {
   let errorMessage = '';
   let errorDetails = null;
   
@@ -32,31 +33,35 @@ export const handleApiError = async (response: Response): Promise<never> => {
   
   // Проверяем количество оставшихся запросов в заголовках
   const remainingCalls = headers['x-zyla-api-calls-monthly-remaining'];
-  const limitExceeded = headers['x-zyla-api-calls-monthly-limit'];
   
   // Особая обработка для разных статусных кодов
   if (response.status === 401) {
-    toast.error("Ошибка авторизации API. Проверьте ключ API.");
+    toast.error("Ошибка авторизации API. Проверьте ключ API.", { duration: 5000 });
     console.log("Используем демо-данные из-за ошибки авторизации API");
-    throw new Error("Ошибка авторизации API Zylalabs");
   } else if (response.status === 429) {
     const resetTime = headers['x-zyla-api-calls-reset-time'] || 'неизвестное время';
-    toast.error(`Превышен лимит запросов API. Лимит будет восстановлен через: ${resetTime}.`);
+    toast.error(`Превышен лимит запросов API. Лимит будет восстановлен через: ${resetTime}.`, { duration: 5000 });
     console.log(`Используем демо-данные из-за превышения лимита API. Осталось запросов: ${remainingCalls || 0}`);
-    throw new Error("Превышен лимит запросов API Zylalabs");
   } else if (response.status === 400) {
-    toast.error(`Некорректный запрос: ${errorMessage}`);
+    toast.error(`Некорректный запрос: ${errorMessage}`, { duration: 5000 });
     console.log("Используем демо-данные из-за некорректного запроса API");
-    throw new Error(`Некорректный запрос: ${errorMessage}`);
   } else if (response.status === 503) {
-    toast.error(`Сервис Zylalabs временно недоступен. Используем демо-данные.`);
+    toast.error(`Сервис Zylalabs временно недоступен. Используем демо-данные.`, { duration: 5000 });
     console.log("Используем демо-данные из-за недоступности API (503)");
-    throw new Error(`Сервис временно недоступен: ${errorMessage}`);
   } else {
-    toast.error(`Ошибка API (${response.status}): ${errorMessage}`);
+    toast.error(`Ошибка API (${response.status}): ${errorMessage}`, { duration: 5000 });
     console.log(`Используем демо-данные из-за ошибки API ${response.status}`);
-    throw new Error(`Ошибка API Zylalabs: ${errorMessage}`);
   }
+  
+  // Возвращаем демо-данные вместо выбрасывания исключения
+  return {
+    data: null,
+    products: [],
+    totalPages: 1,
+    isDemo: true,
+    remainingCalls: '0',
+    error: errorMessage
+  };
 };
 
 /**
@@ -75,10 +80,17 @@ export const handleFetchError = (error: any): void => {
     console.warn('Запрос был отменен из-за истечения времени ожидания');
     toast.error('Превышено время ожидания ответа от сервера Zylalabs. Используем демо-данные.', { duration: 5000 });
   } else if (error.name === 'TypeError' && error.message.includes('NetworkError')) {
-    toast.error('Проблема с сетью. Проверьте подключение к интернету. Используем демо-данные.');
+    toast.error('Проблема с сетью. Проверьте подключение к интернету. Используем демо-данные.', { duration: 5000 });
   } else if (error.message && error.message.includes('CORS')) {
     toast.error('Ошибка CORS при обращении к API. Используем демо-данные.', { duration: 5000 });
   } else {
     toast.error('Ошибка при получении данных о товарах. Используем демо-данные.', { duration: 5000 });
   }
+};
+
+/**
+ * Генерирует демо данные в случае ошибок
+ */
+export const getFallbackSearchResults = (query: string, page: number = 1) => {
+  return generateMockSearchResults(query, page);
 };
