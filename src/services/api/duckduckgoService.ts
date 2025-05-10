@@ -1,7 +1,6 @@
 
-import { processProductImage } from "../imageProcessor";
+import { processProductImage } from "../image";
 import { searchProductImageGoogle } from "./googleSearchService";
-import { fetchWithProxy } from "./proxyService";
 
 /**
  * Функция для поиска изображения по бренду и продукту
@@ -14,13 +13,15 @@ export const searchProductImage = async (brand: string, product: string, index: 
   try {
     console.log(`Поиск изображения для: ${brand} ${product}`);
     
-    // Используем Google CSE через прокси
+    // Используем Google CSE вместо DuckDuckGo
     const imageUrl = await searchProductImageGoogle(brand, product, index);
     
     if (imageUrl) {
       console.log(`Найдено изображение: ${imageUrl}`);
-      // Обрабатываем URL изображения через наш обновленный processProductImage
-      return processProductImage(imageUrl, index);
+      // Обрабатываем URL изображения через обновленный processProductImage
+      const processedUrl = processProductImage(imageUrl, index);
+      console.log(`Обработанный URL изображения: ${processedUrl}`);
+      return processedUrl;
     }
     
     console.log(`Изображение не найдено для: ${brand} ${product}`);
@@ -28,34 +29,5 @@ export const searchProductImage = async (brand: string, product: string, index: 
   } catch (error) {
     console.error('Ошибка при поиске изображения:', error);
     return '';
-  }
-};
-
-/**
- * Тестовый запрос через прокси для проверки его работы
- */
-export const testProxyConnection = async (): Promise<{ success: boolean, message: string }> => {
-  try {
-    console.log('Тестирование прокси-соединения...');
-    
-    const testResponse = await fetchWithProxy('https://api.ipify.org?format=json');
-    
-    if (testResponse.ok) {
-      const data = await testResponse.json();
-      return { 
-        success: true, 
-        message: `Прокси работает успешно. IP: ${data.ip}` 
-      };
-    }
-    
-    return { 
-      success: false, 
-      message: `Не удалось подключиться к прокси. Статус: ${testResponse.status}` 
-    };
-  } catch (error: any) {
-    return { 
-      success: false, 
-      message: `Ошибка при проверке прокси: ${error.message}` 
-    };
   }
 };
