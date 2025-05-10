@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { getPlaceholderImageUrl } from '@/services/imageService';
+import { getPlaceholderImageUrl } from '@/services/image/imagePlaceholder';
 import { useImageModalLoading } from './modal/useImageModalLoading';
 import { useImageModalSource } from './modal/useImageModalSource';
 import { ImageModalHeader } from './modal/ImageModalHeader';

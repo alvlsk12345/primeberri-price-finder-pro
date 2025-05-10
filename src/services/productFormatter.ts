@@ -21,3 +21,4 @@ export {
 };
 
 export type { Product, ProductFilters };
+

@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { getPlaceholderImageUrl } from '@/services/imageService';
+import { getPlaceholderImageUrl } from '@/services/image/imagePlaceholder';
 import { ProductImageModal } from '../ProductImageModal';
 import { useDetailedImageLoading } from './image/useDetailedImageLoading';
 import { detectDetailedImageSource } from './image/DetailedImageSourceDetector';

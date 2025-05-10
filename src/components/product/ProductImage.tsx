@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { ImageOff } from "lucide-react";
-import { getPlaceholderImageUrl } from '@/services/imageService';
+import { getPlaceholderImageUrl } from '@/services/image/imagePlaceholder';
 import { ProductImageModal } from './ProductImageModal';
 import { useProductImageLoading } from './image/useProductImageLoading';
 import { detectImageSource } from './image/ImageSourceDetector';

@@ -1,6 +1,4 @@
 
-import { isGoogleImageFromService } from '../imageService';
-
 /**
  * Проверяет, является ли URL изображения от Zylalabs API
  */
@@ -24,8 +22,11 @@ export const isZylalabsImage = (url: string): boolean => {
  * Проверяет, является ли URL изображения от Google Shopping
  */
 export const isGoogleShoppingImage = (url: string): boolean => {
-  // Используем базовую функцию из imageService и дополняем её
-  return isGoogleImageFromService(url) || 
+  if (!url) return false;
+  
+  return url.includes('googleusercontent.com') || 
+         url.includes('gstatic.com') ||
+         url.includes('google.com') ||
          url.includes('encrypted-tbn') || 
          url.includes('googleusercontent') || 
          url.includes('gstatic.com/shopping');
@@ -35,7 +36,10 @@ export const isGoogleShoppingImage = (url: string): boolean => {
  * Проверяет, является ли URL результатом Google CSE API
  */
 export const isGoogleCseImage = (url: string): boolean => {
-  return url.includes('googleusercontent.com') || 
-         url.includes('gstatic.com') || 
-         url.includes('ggpht.com');
+  return Boolean(url && (
+    url.includes('googleusercontent.com') || 
+    url.includes('gstatic.com') || 
+    url.includes('ggpht.com')
+  ));
 };
+

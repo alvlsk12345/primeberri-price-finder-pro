@@ -2,7 +2,7 @@
 // Этот файл служит связующим звеном для обратной совместимости
 // и переадресует все импорты на новые модули
 
-import { 
+import {
   processProductImage as processImageFromModule,
   isZylalabsImage as isZylalabsImageFromModule,
   isGoogleShoppingImage as isGoogleShoppingImageFromModule,
@@ -14,3 +14,4 @@ export const isZylalabsImage = isZylalabsImageFromModule;
 export const isGoogleShoppingImage = isGoogleShoppingImageFromModule;
 export const isGoogleCseImage = isGoogleCseImageFromModule;
 export const processProductImage = processImageFromModule;
+
