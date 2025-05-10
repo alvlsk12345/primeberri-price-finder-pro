@@ -1,6 +1,7 @@
 
 import { toast } from "sonner";
 import { getApiKey } from "./config";
+import { getCorsProxyUrl } from "@/services/image/corsProxyService";
 
 // Базовая функция для использования OpenAI API с обработкой ошибок
 export const callOpenAI = async (prompt: string, options: {
@@ -19,7 +20,7 @@ export const callOpenAI = async (prompt: string, options: {
       throw new Error("API ключ не установлен");
     }
 
-    console.log('Отправляем запрос к OpenAI...');
+    console.log('Отправляем запрос к OpenAI через прокси...');
     
     const defaultOptions = {
       model: "gpt-4o",
@@ -48,12 +49,17 @@ export const callOpenAI = async (prompt: string, options: {
       requestBody.response_format = { type: "json_object" };
     }
 
-    // Выполняем запрос к API OpenAI
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Используем CORS прокси для обхода ограничений
+    const originalApiUrl = 'https://api.openai.com/v1/chat/completions';
+    const proxyUrl = getCorsProxyUrl(originalApiUrl);
+
+    // Выполняем запрос к API OpenAI через CORS прокси
+    const response = await fetch(proxyUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'X-Original-Authorization': `Bearer ${apiKey}`, // Передаем API ключ в специальном заголовке для прокси
+        'X-Requested-With': 'XMLHttpRequest'
       },
       body: JSON.stringify(requestBody)
     });
