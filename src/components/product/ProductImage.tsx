@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getPlaceholderImageUrl } from '@/services/imageService';
 import { ProductImageModal } from './ProductImageModal';
+import { isGoogleCseImage, isGoogleShoppingImage } from '@/services/imageProcessor';
 
 interface ProductImageProps {
   image: string | null;
@@ -17,8 +18,8 @@ export const ProductImage: React.FC<ProductImageProps> = ({ image, title, produc
   const [imageError, setImageError] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Проверяем, является ли изображение от Google Shopping
-  const isGoogleImage = image && (image.includes('encrypted-tbn') || image.includes('googleusercontent.com'));
+  // Проверяем, является ли изображение от Google (Shopping или CSE)
+  const isGoogleImage = image && (isGoogleShoppingImage(image) || isGoogleCseImage(image));
 
   // Получаем URL заглушки для отображения при ошибке или отсутствии изображения
   const placeholderUrl = getPlaceholderImageUrl(title);
@@ -81,6 +82,7 @@ export const ProductImage: React.FC<ProductImageProps> = ({ image, title, produc
               className="object-contain"
               onError={handleImageError}
               onLoad={handleImageLoad}
+              crossOrigin="anonymous"
             />
             <AvatarFallback className="w-full h-full rounded-none bg-gray-100">
               <div className="flex flex-col items-center justify-center">
@@ -104,7 +106,6 @@ export const ProductImage: React.FC<ProductImageProps> = ({ image, title, produc
             }}
             onLoad={handleImageLoad}
             loading="lazy"
-            referrerPolicy="no-referrer"
             crossOrigin="anonymous"
           />
         )}

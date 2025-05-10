@@ -9,6 +9,13 @@ export const isGoogleShoppingImage = (url: string): boolean => {
          url.includes('gstatic.com/shopping');
 };
 
+// Функция для проверки, является ли URL результатом Google CSE API
+export const isGoogleCseImage = (url: string): boolean => {
+  return url.includes('googleusercontent.com') || 
+         url.includes('gstatic.com') || 
+         url.includes('ggpht.com');
+};
+
 // Функция для очистки Markdown-ссылок в URL
 const cleanMarkdownUrl = (url: string): string => {
   // Если URL в формате Markdown ![alt](url)
@@ -59,9 +66,9 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
     console.log(`Удалены кавычки: ${processedUrl}`);
   }
   
-  // Для URL от Google Shopping (encrypted-tbn) используем особую обработку
-  if (isGoogleShoppingImage(processedUrl)) {
-    console.log(`Обнаружен URL Google Shopping: ${processedUrl}`);
+  // Для URL от Google Shopping или Google CSE используем особую обработку
+  if (isGoogleShoppingImage(processedUrl) || isGoogleCseImage(processedUrl)) {
+    console.log(`Обнаружен URL Google: ${processedUrl}`);
     
     // Проверяем, начинается ли URL с http или https
     if (!processedUrl.startsWith('http') && !processedUrl.startsWith('//')) {
@@ -70,7 +77,7 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
       processedUrl = `https:${processedUrl}`;
     }
     
-    return processedUrl; // Возвращаем URL как есть без дополнительной обработки
+    return processedUrl; // Возвращаем URL как есть без дополнительной обработки для Google
   }
   
   // Добавляем протокол, если его нет

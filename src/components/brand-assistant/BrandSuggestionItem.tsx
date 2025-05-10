@@ -5,6 +5,7 @@ import { BrandSuggestion } from "@/services/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ImageOff } from "lucide-react";
 import { searchProductImage } from "@/services/api/duckduckgoService";
+import { searchProductImageGoogle } from "@/services/api/googleSearchService";
 import { getPlaceholderImageUrl } from "@/services/imageService";
 
 interface BrandSuggestionItemProps {
@@ -35,14 +36,20 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
     setIsImageLoading(true);
     
     try {
-      // Пытаемся повторно найти изображение через DuckDuckGo с другим индексом
-      // Чтобы получить другое изображение из результатов
-      const ddgImage = await searchProductImage(suggestion.brand, suggestion.product, index + 10);
+      // Сначала пробуем использовать Google CSE API с другим индексом
+      console.log(`Поиск запасного изображения через Google CSE для ${suggestion.brand}`);
+      let newImageUrl = await searchProductImageGoogle(suggestion.brand, suggestion.product, index + 5);
       
-      if (ddgImage) {
+      // Если не нашли через Google, пробуем через запасной метод
+      if (!newImageUrl) {
+        console.log(`Поиск запасного изображения через резервный метод для ${suggestion.brand}`);
+        newImageUrl = await searchProductImage(suggestion.brand, suggestion.product, index + 10);
+      }
+      
+      if (newImageUrl) {
         // Если нашли изображение, устанавливаем его
         console.log(`Найдена замена изображения для ${suggestion.brand}`);
-        setImageUrl(ddgImage);
+        setImageUrl(newImageUrl);
         setImageError(false);
       } else {
         // Если не нашли, используем заглушку
@@ -70,7 +77,6 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
                 alt={suggestion.product}
                 className="object-cover" 
                 onError={handleImageError}
-                referrerPolicy="no-referrer"
                 crossOrigin="anonymous"
               />
               <AvatarFallback className="bg-slate-100">

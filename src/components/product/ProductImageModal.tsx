@@ -59,6 +59,7 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
             loading="lazy"
             onLoad={handleImageLoad}
             onError={handleImageError}
+            crossOrigin="anonymous"
           />
         </div>
       </DialogContent>

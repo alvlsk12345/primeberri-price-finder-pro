@@ -2,7 +2,9 @@
 import React, { useState } from 'react';
 import { ImageOff } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { isGoogleShoppingImage, getPlaceholderImageUrl } from "@/services/imageService";
+import { isGoogleShoppingImage } from "@/services/imageProcessor";
+import { isGoogleCseImage } from "@/services/imageProcessor";
+import { getPlaceholderImageUrl } from "@/services/imageService";
 import { ProductImageModal } from '../ProductImageModal';
 
 interface ProductDetailsImageProps {
@@ -21,8 +23,8 @@ export const ProductDetailsImage: React.FC<ProductDetailsImageProps> = ({
   // Получаем URL заглушки для случая ошибки
   const placeholderUrl = title ? getPlaceholderImageUrl(title) : '';
   
-  // Проверяем, является ли изображение от Google Shopping
-  const isGoogleImage = image && isGoogleShoppingImage(image);
+  // Проверяем, является ли изображение от Google (Shopping или CSE)
+  const isGoogleImage = image && (isGoogleShoppingImage(image) || isGoogleCseImage(image));
 
   // Обработчик успешной загрузки изображения
   const handleImageLoad = () => {
@@ -57,7 +59,7 @@ export const ProductDetailsImage: React.FC<ProductDetailsImageProps> = ({
   }
   
   if (isGoogleImage) {
-    // Для изображений Google Shopping используем Avatar компонент
+    // Для изображений Google используем Avatar компонент
     return (
       <>
         <Avatar 
@@ -70,6 +72,7 @@ export const ProductDetailsImage: React.FC<ProductDetailsImageProps> = ({
             className="object-contain"
             onError={handleImageError}
             onLoad={handleImageLoad}
+            crossOrigin="anonymous"
           />
           <AvatarFallback className="w-full h-full rounded-none bg-gray-100">
             <div className="flex flex-col items-center justify-center">
@@ -122,7 +125,6 @@ export const ProductDetailsImage: React.FC<ProductDetailsImageProps> = ({
           }}
           onLoad={handleImageLoad}
           loading="lazy"
-          referrerPolicy="no-referrer"
           crossOrigin="anonymous"
         />
       </div>

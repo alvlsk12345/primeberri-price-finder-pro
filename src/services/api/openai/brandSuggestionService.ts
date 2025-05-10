@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { BrandSuggestion } from "@/services/types";
 import { processProductImage } from "@/services/imageProcessor";
 import { searchProductImage } from "@/services/api/duckduckgoService";
+import { searchProductImageGoogle } from "@/services/api/googleSearchService";
 import { getPlaceholderImageUrl } from "@/services/imageService";
 import { callOpenAI } from "./apiClient";
 import { getApiKey } from "./config";
@@ -52,9 +53,15 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
           const product = productMatch[1].trim();
           const description = descriptionMatch[1].trim();
           
-          // Сразу ищем изображение через DuckDuckGo
-          console.log(`Поиск изображения для ${brand} ${product} через DuckDuckGo`);
-          const imageUrl = await searchProductImage(brand, product, suggestions.length);
+          // Сначала пытаемся найти изображение через Google CSE API
+          console.log(`Поиск изображения для ${brand} ${product} через Google CSE`);
+          let imageUrl = await searchProductImageGoogle(brand, product, suggestions.length);
+          
+          // Если через Google не нашли, используем резервный метод (старый DuckDuckGo)
+          if (!imageUrl) {
+            console.log(`Google CSE не нашел изображение, пробуем через резервный метод для ${brand} ${product}`);
+            imageUrl = await searchProductImage(brand, product, suggestions.length);
+          }
           
           suggestions.push({
             brand,

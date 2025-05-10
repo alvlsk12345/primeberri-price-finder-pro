@@ -10,7 +10,7 @@ export const handleApiError = async (response: Response): Promise<any> => {
   
   try {
     const errorResponse = await response.json();
-    errorMessage = errorResponse.message || `Ошибка API: ${response.status}`;
+    errorMessage = errorResponse.message || errorResponse.error?.message || `Ошибка API: ${response.status}`;
     errorDetails = errorResponse;
   } catch (e) {
     try {
@@ -23,14 +23,25 @@ export const handleApiError = async (response: Response): Promise<any> => {
   // Получение всех заголовков для анализа
   const headers = Object.fromEntries([...response.headers.entries()]);
   
-  console.error('Ошибка от API Zylalabs:', {
+  console.error('Ошибка от API:', {
     status: response.status,
     message: errorMessage,
     details: errorDetails,
     headers: headers
   });
   
-  // Проверяем количество оставшихся запросов в заголовках
+  // Обработка ошибок Google API
+  if (response.url.includes('googleapis.com')) {
+    if (response.status === 403) {
+      toast.error("Превышен лимит запросов Google API или неверный ключ.", { duration: 5000 });
+      return null;
+    } else if (response.status === 400) {
+      toast.error(`Google API: ${errorMessage}`, { duration: 5000 });
+      return null;
+    }
+  }
+  
+  // Проверяем количество оставшихся запросов в заголовках (для Zylalabs)
   const remainingCalls = headers['x-zyla-api-calls-monthly-remaining'];
   
   // Особая обработка для разных статусных кодов
@@ -45,8 +56,8 @@ export const handleApiError = async (response: Response): Promise<any> => {
     toast.error(`Некорректный запрос: ${errorMessage}`, { duration: 5000 });
     throw new Error(`Некорректный запрос: ${errorMessage}`);
   } else if (response.status === 503) {
-    console.warn('Сервис Zylalabs временно недоступен (503).');
-    toast.error(`Сервис Zylalabs временно недоступен. Попробуем другие параметры.`, { duration: 3000 });
+    console.warn('Сервис временно недоступен (503).');
+    toast.error(`Сервис временно недоступен. Попробуем другие параметры.`, { duration: 3000 });
     // Вместо ошибки возвращаем null для возможности более мягкой обработки
     return null;
   } else if (response.status === 403) {
@@ -75,7 +86,7 @@ export const handleFetchError = (error: any): void => {
   
   if (error.name === 'AbortError') {
     console.warn('Запрос был отменен из-за истечения времени ожидания');
-    toast.error('Превышено время ожидания ответа от сервера Zylalabs. Пробуем другие параметры.', { duration: 3000 });
+    toast.error('Превышено время ожидания ответа от сервера. Пробуем другие параметры.', { duration: 3000 });
   } else if (error.name === 'TypeError' && error.message.includes('NetworkError')) {
     toast.error('Проблема с сетью. Проверьте подключение к интернету.', { duration: 5000 });
   } else if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {

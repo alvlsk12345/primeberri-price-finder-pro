@@ -1,5 +1,6 @@
 
 import { processProductImage } from "../imageProcessor";
+import { searchProductImageGoogle } from "./googleSearchService";
 
 // Кэш для хранения результатов поиска изображений
 const imageCache: Record<string, string> = {};
@@ -19,7 +20,21 @@ export const searchImageDuckDuckGo = async (query: string, index: number = 0): P
       return imageCache[cacheKey];
     }
 
-    console.log(`Поиск изображения через DuckDuckGo для: ${query}`);
+    // Сначала пробуем использовать Google CSE API (основной метод)
+    console.log(`Попытка поиска изображения через Google CSE для: ${query}`);
+    try {
+      const googleImage = await searchProductImageGoogle(query, "", index);
+      if (googleImage) {
+        console.log(`Найдено изображение через Google CSE: ${googleImage}`);
+        imageCache[cacheKey] = googleImage;
+        return googleImage;
+      }
+    } catch (googleError) {
+      console.error('Ошибка при поиске изображения через Google CSE, переключаемся на DuckDuckGo:', googleError);
+    }
+    
+    // Резервный метод - DuckDuckGo API
+    console.log(`Поиск изображения через DuckDuckGo для: ${query} (резервный)`);
     
     // Формируем URL для запроса к неофициальному DuckDuckGo API
     const encodedQuery = encodeURIComponent(query);
@@ -40,8 +55,9 @@ export const searchImageDuckDuckGo = async (query: string, index: number = 0): P
     
     // Проверяем, есть ли результаты в ответе
     if (data && data.results && data.results.length > 0) {
-      // Всегда берем первое (наиболее релевантное) изображение вместо случайного
-      const imageUrl = data.results[0]?.image;
+      // Всегда берем первое (наиболее релевантное) изображение или по индексу
+      const imageIndex = Math.min(index, data.results.length - 1);
+      const imageUrl = data.results[imageIndex]?.image || data.results[0]?.image;
       
       if (imageUrl) {
         // Обрабатываем URL изображения через нашу существующую функцию
@@ -55,10 +71,10 @@ export const searchImageDuckDuckGo = async (query: string, index: number = 0): P
       }
     }
     
-    console.log(`DuckDuckGo не вернул изображений для запроса: ${query}`);
+    console.log(`Нет доступных изображений для запроса: ${query}`);
     return '';
   } catch (error) {
-    console.error('Ошибка при поиске изображения через DuckDuckGo:', error);
+    console.error('Ошибка при поиске изображения:', error);
     return '';
   }
 };
