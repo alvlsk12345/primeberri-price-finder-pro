@@ -24,7 +24,8 @@ export function usePaginationActions({
       
       try {
         // Важно: сначала увеличиваем счетчик для отслеживания изменений
-        setPageChangeCount(prevCount => prevCount + 1);
+        // Здесь используем просто число, а не функцию обновления
+        setPageChangeCount(pageChangeCount + 1);
         
         // Важное изменение: используем функциональную форму обновления для атомарности
         setCurrentPage(page);

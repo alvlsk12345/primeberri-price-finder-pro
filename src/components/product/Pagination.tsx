@@ -62,33 +62,6 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
       );
     };
 
-    // Навигационная кнопка (предыдущая/следующая)
-    const generateNavButton = (type: 'previous' | 'next') => {
-      const isNext = type === 'next';
-      const pageNumber = isNext ? currentPage + 1 : currentPage - 1;
-      const isDisabled = isNext ? currentPage >= totalPages : currentPage <= 1;
-      const label = isNext ? 'Следующая' : 'Предыдущая';
-      const icon = isNext ? '→' : '←';
-
-      return (
-        <PaginationItem>
-          <button
-            onClick={handlePageClick(pageNumber)}
-            className={`flex h-9 items-center gap-1 px-4 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground 
-              ${isDisabled ? 'pointer-events-none opacity-50' : ''}`}
-            disabled={isDisabled}
-            aria-label={`Перейти на ${label.toLowerCase()} страницу`}
-            type="button"
-            data-testid={`pagination-${type}`}
-          >
-            {!isNext && icon}
-            {label}
-            {isNext && icon}
-          </button>
-        </PaginationItem>
-      );
-    };
-
     // Логика пагинации в зависимости от количества страниц
     if (totalPages <= maxVisiblePages) {
       // Если страниц немного, показываем все
@@ -147,13 +120,13 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
       <ShadcnPagination>
         <PaginationContent>
           {/* Кнопка "предыдущая страница" */}
-          {generateNavButton('previous')}
+          {generateNavButton('previous', currentPage, totalPages, handlePageClick)}
           
           {/* Элементы страниц */}
           {paginationItems}
           
           {/* Кнопка "следующая страница" */}
-          {generateNavButton('next')}
+          {generateNavButton('next', currentPage, totalPages, handlePageClick)}
         </PaginationContent>
       </ShadcnPagination>
     </div>
