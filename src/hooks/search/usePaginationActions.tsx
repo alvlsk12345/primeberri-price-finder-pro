@@ -17,7 +17,7 @@ export function usePaginationActions({
   handleSearch
 }: PaginationActionProps) {
   
-  // Обработчик изменения страницы с усиленной логикой обеспечения корректности перелистывания
+  // Модифицированный обработчик изменения страницы - работает только с локальными данными
   const handlePageChange = async (page: number) => {
     if (page === currentPage) {
       console.log(`Уже находимся на странице ${page}, переход не требуется`);
@@ -36,14 +36,11 @@ export function usePaginationActions({
       // Для предотвращения Race condition используем функциональное обновление
       setPageChangeCount(prev => prev + 1);
       
-      // Важное изменение: сразу устанавливаем новую страницу для UI отзывчивости
+      // КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Просто обновляем текущую страницу без запроса новых данных
+      // Это позволит использовать кешированные данные без нового API-запроса
       setCurrentPage(page);
       
-      // Запускаем поиск с новой страницей и ждем завершения
-      console.log(`Запуск поиска для страницы ${page}`);
-      await handleSearch(page);
-      
-      console.log(`Успешно переключено на страницу ${page}`);
+      console.log(`Успешно переключено на страницу ${page} (клиентская пагинация)`);
     } catch (error) {
       console.error(`Ошибка при переключении на страницу ${page}:`, error);
       

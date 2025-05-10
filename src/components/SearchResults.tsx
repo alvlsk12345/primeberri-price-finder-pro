@@ -58,18 +58,18 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     return { ...product, id: uniqueId };
   }), [results]);
 
-  // Пагинация - по 12 товаров на страницу
+  // Пагинация на клиенте - по 12 товаров на страницу
   const itemsPerPage = 12;
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   
-  // Получаем товары только для текущей страницы
+  // Получаем товары только для текущей страницы - КЛИЕНТСКАЯ ПАГИНАЦИЯ
   const paginatedProducts = useMemo(() => 
     productsWithUniqueKeys.slice(startIndex, endIndex),
     [productsWithUniqueKeys, startIndex, endIndex]
   );
   
-  // Рассчитываем общее количество страниц и добавляем дополнительную проверку
+  // Рассчитываем общее количество страниц на основе фактического количества товаров
   const actualTotalPages = useMemo(() => 
     Math.max(1, Math.ceil(productsWithUniqueKeys.length / itemsPerPage)),
     [productsWithUniqueKeys.length]
@@ -89,9 +89,9 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     }
   }, [actualTotalPages, totalPages]);
   
-  console.log(`Пагинация: страница ${currentPage}/${Math.max(actualTotalPages, totalPages)}, показываем товары с ${startIndex+1} по ${Math.min(endIndex, productsWithUniqueKeys.length)}`);
+  console.log(`Пагинация: страница ${currentPage}/${Math.max(actualTotalPages, totalPages)}, показываем товары с ${startIndex+1} по ${Math.min(endIndex, productsWithUniqueKeys.length)} из ${productsWithUniqueKeys.length}`);
 
-  // Handle page change с улучшенной валидацией
+  // Handle page change с клиентской пагинацией
   const handlePageChange = (page: number) => {
     console.log(`SearchResults: Page change requested from ${currentPage} to ${page}`);
     
@@ -100,7 +100,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     
     // Усиленная проверка валидности запрошенной страницы
     if (page >= 1 && page <= effectiveTotalPages && page !== currentPage) {
-      console.log(`SearchResults: Переход на страницу ${page} разрешен`);
+      console.log(`SearchResults: Переход на страницу ${page} разрешен (клиентская пагинация)`);
       onPageChange(page);
     } else {
       if (page === currentPage) {

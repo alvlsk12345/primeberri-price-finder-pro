@@ -68,7 +68,7 @@ export function useSearchExecutionActions({
     setCurrentPage
   });
 
-  // Основная функция поиска с улучшенной логикой работы с кешем и страницами
+  // Основная функция поиска с улучшенной логикой работы с клиентской пагинацией
   const handleSearch = async (page: number = 1, forceNewSearch: boolean = false) => {
     console.log(`handleSearch вызван: страница ${page}, forceNewSearch: ${forceNewSearch}, текущая страница: ${currentPage}`);
     
@@ -81,8 +81,21 @@ export function useSearchExecutionActions({
     // Используем текущий поисковый запрос или последний успешный
     const queryToUse = searchQuery || lastSearchQuery;
     
+    // ВАЖНОЕ ИЗМЕНЕНИЕ: если это не новый поиск, а только смена страницы
+    // и у нас уже есть все результаты - используем клиентскую пагинацию без запросов
+    const isSameQuery = queryToUse === lastSearchQuery;
+    const hasAllResults = allSearchResults && allSearchResults.length > 0;
+    
+    if (isSameQuery && hasAllResults && !forceNewSearch) {
+      console.log(`Смена страницы на ${page} без повторного запроса - используем клиентскую пагинацию`);
+      // Просто меняем страницу без новых запросов
+      setCurrentPage(page);
+      return;
+    }
+    
+    // Если это новый поиск или принудительный поиск, продолжаем обычный процесс
+    
     // Устанавливаем текущую страницу перед выполнением поиска
-    // Но только если она отличается от текущей, чтобы избежать лишних ререндеров
     if (page !== currentPage) {
       console.log(`Устанавливаем новую текущую страницу: ${page}`);
       setCurrentPage(page);
@@ -104,7 +117,6 @@ export function useSearchExecutionActions({
     setOriginalQuery(queryToUse);
     
     // Если это новый поисковый запрос, сбрасываем кеш
-    const isSameQuery = queryToUse === lastSearchQuery;
     if (!isSameQuery || forceNewSearch) {
       console.log(`Новый запрос или принудительный поиск. Очищаем кэш.`);
       setLastSearchQuery(queryToUse);

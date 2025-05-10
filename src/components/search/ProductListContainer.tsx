@@ -25,7 +25,7 @@ export const ProductListContainer: React.FC<ProductListContainerProps> = ({
   onPageChange,
   isDemo = false
 }) => {
-  // Улучшенный обработчик смены страницы с дополнительными проверками
+  // Улучшенный обработчик смены страницы для клиентской пагинации
   const handlePageChange = useCallback((page: number) => {
     console.log(`ProductListContainer: Запрос на смену страницы с ${currentPage} на ${page}`);
     
@@ -56,18 +56,12 @@ export const ProductListContainer: React.FC<ProductListContainerProps> = ({
       return;
     }
     
-    // Показываем индикатор загрузки
-    console.log(`ProductListContainer: Переход на страницу ${page}`);
-    const toastId = `page-change-${page}`;
-    toast.info(`Загрузка страницы ${page}...`, {
-      id: toastId,
-      duration: 2000
-    });
+    console.log(`ProductListContainer: Переход на страницу ${page} (клиентская пагинация)`);
     
-    // Вызываем функцию смены страницы
+    // Просто вызываем функцию смены страницы, без дополнительных запросов
     onPageChange(page);
     
-    // Дополнительная проверка через таймаут (для отладки асинхронных проблем)
+    // Дополнительная проверка через таймаут (для отладки)
     setTimeout(() => {
       console.log(`ProductListContainer: Через 500мс после запроса страницы ${page}, текущая страница: ${currentPage}`);
     }, 500);

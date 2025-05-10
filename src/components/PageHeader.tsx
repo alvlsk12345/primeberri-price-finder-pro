@@ -9,13 +9,11 @@ export const PageHeader: React.FC = () => {
   return <header className="bg-brand text-brand-foreground shadow-sm">
       <div className="container mx-auto py-4 px-4 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 text-2xl font-bold hover:opacity-90 transition-opacity">
-          <a href="https://primeberri.com/" target="_blank" rel="noopener noreferrer">
-            <img 
-              src="/lovable-uploads/d8c27061-2512-430e-8d4b-3f4e2f580be1.png" 
-              alt="Primeberri Logo" 
-              className="h-8 w-auto"
-            />
-          </a>
+          <img 
+            src="/lovable-uploads/d8c27061-2512-430e-8d4b-3f4e2f580be1.png" 
+            alt="Primeberri Logo" 
+            className="h-8 w-auto"
+          />
           <span>Поиск товаров для заказа на PrimeBerri</span>
         </Link>
         
