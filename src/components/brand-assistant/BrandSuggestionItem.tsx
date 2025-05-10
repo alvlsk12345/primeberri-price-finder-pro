@@ -1,12 +1,11 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { BrandSuggestion } from "@/services/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ImageOff } from "lucide-react";
 import { searchProductImageGoogle } from "@/services/api/googleSearchService";
-import { getPlaceholderImageUrl } from "@/services/image/imagePlaceholder";
-import { applyCorsProxy, getCurrentProxyName, switchToNextProxy } from "@/services/image";
+import { getPlaceholderImageUrl } from "@/services/imageService";
 
 interface BrandSuggestionItemProps {
   suggestion: BrandSuggestion;
@@ -22,22 +21,6 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
   const [imageUrl, setImageUrl] = useState<string | undefined>(suggestion.imageUrl);
   const [isImageLoading, setIsImageLoading] = useState<boolean>(false);
   const [imageError, setImageError] = useState<boolean>(false);
-  const [retryCount, setRetryCount] = useState<number>(0);
-
-  // Автоматически проверяем изображение при первой загрузке
-  useEffect(() => {
-    if (suggestion.imageUrl && !imageError) {
-      // Если у нас есть URL, но он не проходит через CORS-прокси, применяем его
-      if (suggestion.imageUrl.includes('googleusercontent') || 
-          suggestion.imageUrl.includes('gstatic.com')) {
-        console.log(`Применяем CORS-прокси к изображению бренда: ${suggestion.brand}`);
-        const proxiedUrl = applyCorsProxy(suggestion.imageUrl);
-        if (proxiedUrl !== suggestion.imageUrl) {
-          setImageUrl(proxiedUrl);
-        }
-      }
-    }
-  }, [suggestion]);
 
   // Обработчик ошибки загрузки изображения
   const handleImageError = async () => {
@@ -45,47 +28,20 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
     setImageError(true);
     console.log(`Ошибка загрузки изображения для ${suggestion.brand} ${suggestion.product}`);
 
-    // Увеличиваем счетчик попыток
-    const newRetryCount = retryCount + 1;
-    setRetryCount(newRetryCount);
-
-    // Если уже загружаем изображение или превысили лимит попыток, то выходим
-    if (isImageLoading || newRetryCount > 3) {
-      console.log(`Исчерпан лимит попыток (${newRetryCount}) для ${suggestion.brand}`);
-      // Используем локальный плейсхолдер
-      setImageUrl(getPlaceholderImageUrl(suggestion.brand));
-      return;
-    }
+    // Если уже загружаем изображение или нет бренда/продукта, то выходим
+    if (isImageLoading || !suggestion.brand || !suggestion.product) return;
 
     // Устанавливаем флаг загрузки
     setIsImageLoading(true);
     
     try {
-      // Если у нас уже есть URL и это не первая попытка, 
-      // пробуем сначала переключить прокси
-      if (imageUrl && newRetryCount > 1) {
-        console.log(`Переключаем CORS прокси для ${suggestion.brand}`);
-        const nextProxy = switchToNextProxy();
-        console.log(`Новый прокси: ${nextProxy}`);
-
-        // Если это URL с прокси, заменяем его на новый прокси
-        if (imageUrl.includes('cors')) {
-          const newUrl = applyCorsProxy(suggestion.imageUrl || '');
-          console.log(`Пробуем новый URL с прокси: ${newUrl}`);
-          setImageUrl(newUrl);
-          setImageError(false);
-          setIsImageLoading(false);
-          return;
-        }
-      }
-
       // Пробуем использовать Google CSE API с другим индексом
       console.log(`Поиск запасного изображения через Google CSE для ${suggestion.brand}`);
-      let newImageUrl = await searchProductImageGoogle(suggestion.brand, suggestion.product, index + 5 + newRetryCount);
+      let newImageUrl = await searchProductImageGoogle(suggestion.brand, suggestion.product, index + 5);
       
       if (newImageUrl) {
         // Если нашли изображение, устанавливаем его
-        console.log(`Найдена замена изображения для ${suggestion.brand}: ${newImageUrl}`);
+        console.log(`Найдена замена изображения для ${suggestion.brand}`);
         setImageUrl(newImageUrl);
         setImageError(false);
       } else {
