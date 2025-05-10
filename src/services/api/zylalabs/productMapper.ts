@@ -48,15 +48,24 @@ export const mapProductsFromApi = (products: any[], params: any): Product[] => {
       country = product.source_country.toUpperCase();
     }
     
-    // Обработка URL изображения
+    // Улучшенная обработка URL изображения
     let imageUrl = '';
+    
+    // Логирование для отладки
+    console.log(`Обработка изображения для товара ${product.product_title || 'Unknown'}, индекс: ${index}`);
+    
     if (product.product_photos && product.product_photos.length > 0) {
+      console.log(`Найдены product_photos, используем первое из ${product.product_photos.length} изображений`);
       imageUrl = processProductImage(product.product_photos[0], index);
     } else if (product.image) {
+      console.log(`Найдено поле image: ${product.image?.substring(0, 100)}`);
       imageUrl = processProductImage(product.image, index);
     } else {
+      console.log(`Не найдены изображения для товара ${product.product_title || 'Unknown'}`);
       imageUrl = '';
     }
+    
+    console.log(`Итоговый URL изображения: ${imageUrl?.substring(0, 100)}`);
     
     // Преобразование в формат Product
     return {

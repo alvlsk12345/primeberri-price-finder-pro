@@ -1,11 +1,16 @@
 
 import { isValidImageUrl, getUniqueImageUrl, isGoogleShoppingImage as isGoogleImageFromService } from './imageService';
 
-// Функция для проверки, является ли URL от Zylalabs API
+// Улучшенная функция для проверки, является ли URL от Zylalabs API
 export const isZylalabsImage = (url: string): boolean => {
+  if (!url) return false;
+  
   return url.includes('zylalabs.com') || 
          url.includes('rapidapi.com') || 
-         url.includes('rapidapi-prod-');
+         url.includes('rapidapi-prod-') ||
+         url.includes('zyla-api') ||
+         url.includes('api.zyla') || 
+         url.includes('zylaapi');
 };
 
 // Функция для проверки, является ли URL от Google Shopping
@@ -42,7 +47,36 @@ const cleanMarkdownUrl = (url: string): string => {
   return url;
 };
 
-// Функция для обработки изображения товара
+// Проверка необходимости использования CORS-прокси
+const shouldUseCorsProxy = (url: string): boolean => {
+  // Добавляем дополнительные проверки для определения доменов с CORS-проблемами
+  return (
+    isZylalabsImage(url) || 
+    url.includes('zylaapi.') || 
+    url.includes('api-zyla.') ||
+    url.includes('zylasearch.') ||
+    url.includes('.zylaimg.') ||
+    url.includes('zyla-img.')
+  );
+};
+
+// Функция для применения CORS-прокси к URL
+const applyCorsProxy = (url: string): string => {
+  // Используем общедоступный CORS-прокси
+  const corsProxyUrl = 'https://corsproxy.io/?';
+  
+  // Не применяем прокси к URL, которые уже его используют
+  if (url.startsWith('https://corsproxy.io/') || 
+      url.startsWith('https://cors-anywhere.') || 
+      url.startsWith('https://proxy.cors.')) {
+    return url;
+  }
+  
+  console.log(`Применяем CORS-прокси для URL: ${url}`);
+  return `${corsProxyUrl}${encodeURIComponent(url)}`;
+};
+
+// Улучшенная функция для обработки изображения товара
 export const processProductImage = (imageUrl: string | undefined, index: number): string => {
   // Убедимся, что imageUrl - строка
   let processedUrl = typeof imageUrl === 'string' ? imageUrl : '';
@@ -84,7 +118,8 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
       processedUrl = `https:${processedUrl}`;
     }
     
-    return processedUrl; // Возвращаем URL без дополнительной обработки для Zylalabs
+    // Применяем CORS-прокси для Zylalabs изображений
+    return applyCorsProxy(processedUrl);
   }
   
   // Для URL от Google Shopping или Google CSE используем особую обработку
@@ -99,6 +134,11 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
     }
     
     return processedUrl; // Возвращаем URL как есть без дополнительной обработки для Google
+  }
+  
+  // Проверяем необходимость использования CORS-прокси для других доменов
+  if (processedUrl && shouldUseCorsProxy(processedUrl)) {
+    processedUrl = applyCorsProxy(processedUrl);
   }
   
   // Добавляем протокол, если его нет
