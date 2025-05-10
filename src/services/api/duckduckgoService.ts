@@ -12,18 +12,22 @@ import { applyCorsProxy } from "../image/corsProxyService";
  */
 export const searchProductImage = async (brand: string, product: string, index: number = 0): Promise<string> => {
   try {
-    console.log(`Поиск изображения для: ${brand} ${product} (индекс: ${index})`);
+    console.log(`----- ПОИСК ИЗОБРАЖЕНИЯ В duckduckgoService -----`);
+    console.log(`Бренд: "${brand}", Продукт: "${product}", Индекс: ${index}`);
     
     // Используем Google CSE вместо DuckDuckGo
+    console.log('Перенаправление запроса к Google CSE...');
     const imageUrl = await searchProductImageGoogle(brand, product, index);
     
     if (imageUrl) {
-      console.log(`Найдено изображение: ${imageUrl}`);
+      console.log(`Успешно получен URL изображения: ${imageUrl}`);
       
       // Проверяем, содержит ли URL прокси
       const hasProxy = imageUrl.includes('corsproxy.io') || 
                        imageUrl.includes('allorigins.win') || 
                        imageUrl.includes('cors-anywhere');
+      
+      console.log(`URL содержит прокси: ${hasProxy}`);
       
       // Обрабатываем URL изображения через обновленный processProductImage
       // Если прокси уже применен, не применяем его снова
@@ -33,7 +37,9 @@ export const searchProductImage = async (brand: string, product: string, index: 
       // Дополнительно проверяем, нужно ли применить CORS прокси
       if (!hasProxy && processedUrl && processedUrl.includes('googleusercontent.com')) {
         console.log(`Дополнительное применение CORS прокси для Google изображения`);
-        return applyCorsProxy(processedUrl);
+        const proxiedUrl = applyCorsProxy(processedUrl);
+        console.log(`URL с применённым прокси: ${proxiedUrl}`);
+        return proxiedUrl;
       }
       
       return processedUrl;
@@ -42,7 +48,11 @@ export const searchProductImage = async (brand: string, product: string, index: 
     console.log(`Изображение не найдено для: ${brand} ${product}`);
     return '';
   } catch (error) {
-    console.error('Ошибка при поиске изображения:', error);
+    console.error('ОШИБКА ПРИ ПОИСКЕ ИЗОБРАЖЕНИЯ:', error);
+    // Более детальное логирование ошибки
+    console.error('ТИП ОШИБКИ:', error.name);
+    console.error('СООБЩЕНИЕ:', error.message);
+    console.error('СТЕК:', error.stack);
     return '';
   }
 };

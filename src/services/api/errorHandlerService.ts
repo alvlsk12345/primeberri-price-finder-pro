@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { switchToNextProxy } from "@/services/image/corsProxyService";
 
@@ -9,54 +8,65 @@ export const handleApiError = async (response: Response): Promise<any> => {
   let errorMessage = '';
   let errorDetails = null;
   
+  console.log(`----- ОБРАБОТКА ОШИБКИ API -----`);
+  console.log(`Статус ответа: ${response.status} ${response.statusText}`);
+  console.log(`URL запроса: ${response.url}`);
+  
   try {
+    // Получаем все заголовки для диагностики
+    const headers = Object.fromEntries([...response.headers.entries()]);
+    console.log('ЗАГОЛОВКИ ОТВЕТА С ОШИБКОЙ:', headers);
+    
+    // Пытаемся получить ответ как JSON для более подробного анализа
     const errorResponse = await response.json();
     errorMessage = errorResponse.message || errorResponse.error?.message || `Ошибка API: ${response.status}`;
     errorDetails = errorResponse;
     
-    // Более подробное логирование данных ответа для диагностики
-    console.error('Ошибка API с данными:', {
+    console.error('ДЕТАЛЬНАЯ ИНФОРМАЦИЯ О JSON-ОШИБКЕ:', {
       status: response.status,
       url: response.url,
-      errorData: errorResponse
+      errorData: JSON.stringify(errorResponse).substring(0, 500)
     });
+    
+    // Если это ошибка от Google API, более подробно логируем её структуру
+    if (response.url.includes('googleapis.com') && errorResponse.error) {
+      console.error('СТРУКТУРА ОШИБКИ GOOGLE API:', {
+        code: errorResponse.error.code,
+        message: errorResponse.error.message,
+        errors: errorResponse.error.errors,
+        status: errorResponse.error.status,
+        details: errorResponse.error.details
+      });
+    }
   } catch (e) {
+    console.log('Не удалось распарсить ответ как JSON, пробуем получить текст...');
     try {
       errorMessage = await response.text() || `Ошибка API: ${response.status}`;
-      console.error('Текстовые данные ошибки API:', errorMessage);
+      console.error('ТЕКСТ ОШИБКИ API:', errorMessage.substring(0, 500));
     } catch (e2) {
       errorMessage = `Ошибка API: ${response.status}`;
-      console.error('Не удалось получить данные ошибки API');
+      console.error('Не удалось получить данные ошибки API ни в JSON, ни в текстовом формате');
     }
   }
   
-  // Получение всех заголовков для анализа
-  const headers = Object.fromEntries([...response.headers.entries()]);
-  
-  console.error('Ошибка от API:', {
-    status: response.status,
-    message: errorMessage,
-    details: errorDetails,
-    headers: headers,
-    url: response.url
-  });
-  
   // Обработка ошибок прокси
   if (response.status === 403 || response.status === 429) {
-    console.warn('Ошибка CORS прокси, пробуем другой прокси...');
+    console.warn('Ошибка CORS прокси (403/429), пробуем другой прокси...');
     switchToNextProxy();
     return null; // Возвращаем null, чтобы вызывающий код мог повторить запрос
   }
   
   // Обработка ошибок Google API
   if (response.url.includes('googleapis.com')) {
+    console.error(`ОШИБКА GOOGLE API ${response.status}: ${errorMessage}`);
+    
     if (response.status === 403) {
       console.error(`Google API 403: ${errorMessage}`, errorDetails);
       toast.error("Превышен лимит запросов Google API или неверный ключ.", { duration: 5000 });
       
       // Если есть подробности об ошибке, выводим их
       if (errorDetails && errorDetails.error && errorDetails.error.errors) {
-        console.error('Детали ошибки Google API:', errorDetails.error.errors);
+        console.error('ДЕТАЛИ ОШИБКИ GOOGLE API:', errorDetails.error.errors);
         const googleError = errorDetails.error.errors[0];
         if (googleError && googleError.reason) {
           console.error(`Причина ошибки Google API: ${googleError.reason}`);
@@ -67,6 +77,8 @@ export const handleApiError = async (response: Response): Promise<any> => {
             toast.error("Превышена квота запросов Google API. Смените API-ключ или подождите обновления квоты.", { duration: 7000 });
           } else if (googleError.reason === 'keyInvalid') {
             toast.error("Недействительный API-ключ Google. Проверьте правильность ключа.", { duration: 7000 });
+          } else {
+            toast.error(`Ошибка Google API: ${googleError.reason}`, { duration: 7000 });
           }
         }
       }
@@ -80,7 +92,7 @@ export const handleApiError = async (response: Response): Promise<any> => {
   // Проверяем количество оставшихся запросов в заголовках (для Zylalabs)
   const remainingCalls = headers['x-zyla-api-calls-monthly-remaining'];
   
-  // Особая обработка для разных статусных кодов
+  // Особая обработка для ��азных статусных кодов
   if (response.status === 401) {
     toast.error("Ошибка авторизации API. Проверьте ключ API.", { duration: 5000 });
     throw new Error("Ошибка авторизации API. Проверьте ключ API.");

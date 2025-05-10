@@ -1,5 +1,4 @@
-
-import React, { KeyboardEvent, useState } from 'react';
+import React, { KeyboardEvent, useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, AlertCircle } from 'lucide-react';
@@ -7,6 +6,7 @@ import { toast } from "sonner";
 import { useDemoModeForced } from '@/services/api/mock/mockServiceConfig';
 import { containsCyrillicCharacters } from '@/services/translationService';
 import { AiBrandAssistant } from './brand-assistant/AiBrandAssistant';
+import { testMinimalGoogleApiRequest } from '@/services/api/googleSearchService';
 
 type SearchFormProps = {
   searchQuery: string;
@@ -23,6 +23,39 @@ export const SearchForm: React.FC<SearchFormProps> = ({
 }) => {
   const [hasError, setHasError] = useState(false);
   const isDemoMode = useDemoModeForced;
+
+  // Диагностический тест API при первом рендере
+  useEffect(() => {
+    const testGoogleApi = async () => {
+      console.log('Выполнение диагностического теста Google API...');
+      try {
+        const result = await testMinimalGoogleApiRequest();
+        console.log('Результат диагностического теста Google API:', result);
+        
+        // Показываем тост с результатом теста для большей заметности
+        if (result.includes('успешен')) {
+          toast.success('Диагностический тест Google API успешен!', { duration: 5000 });
+        } else {
+          toast.error(`Проблема с Google API: ${result}`, { duration: 7000 });
+        }
+      } catch (error) {
+        console.error('Ошибка при выполнении диагностического теста:', error);
+        toast.error('Ошибка при диагностике Google API. Проверьте консоль.', { duration: 5000 });
+      }
+    };
+    
+    // Запускаем тест при загрузке компонента
+    testGoogleApi();
+    
+    // Выводим инструкции для отладки в браузере
+    console.log('------- ИНСТРУКЦИИ ПО ОТЛАДКЕ GOOGLE API -------');
+    console.log('1. О��кройте инструменты разработчика (F12 или Ctrl+Shift+I)');
+    console.log('2. Перейдите на вкладку "Сеть" (Network)');
+    console.log('3. Найдите запросы к googleapis.com');
+    console.log('4. Проверьте статус запроса (должен быть 200)');
+    console.log('5. Проверьте ответ запроса на наличие данных');
+    console.log('--------------------------------------------');
+  }, []);
 
   // Обработчик нажатия клавиши Enter
   const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -99,10 +132,6 @@ export const SearchForm: React.FC<SearchFormProps> = ({
             onKeyDown={handleKeyPress} 
             className={`w-full ${hasError ? 'border-red-500' : ''}`} 
           />
-          
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-            
-          </div>
         </div>
         <Button 
           onClick={executeSearch} 
@@ -130,7 +159,24 @@ export const SearchForm: React.FC<SearchFormProps> = ({
         </div>
       )}
 
-      <AiBrandAssistant onSelectProduct={handleSelectProduct} />
+      <div className="pt-3">
+        <Button
+          onClick={async () => {
+            const result = await testMinimalGoogleApiRequest();
+            toast.info(`Тестовый запрос Google API: ${result}`, { duration: 7000 });
+          }}
+          size="sm"
+          variant="outline"
+          className="text-xs"
+          type="button"
+        >
+          Тест Google API
+        </Button>
+      </div>
+
+      <AiBrandAssistant onSelectProduct={(product, performSearch) => {
+        handleSelectProduct(product, performSearch);
+      }} />
     </div>
   );
 };

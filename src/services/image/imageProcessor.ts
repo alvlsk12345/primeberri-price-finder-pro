@@ -11,7 +11,8 @@ import {
 } from './imageUrlFormatter';
 import { 
   shouldUseCorsProxy, 
-  applyCorsProxy 
+  applyCorsProxy,
+  getCurrentProxyInfo
 } from './corsProxyService';
 
 /**
@@ -27,35 +28,41 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
     return '';
   }
   
-  console.log(`Обрабатываем изображение: ${processedUrl}`);
+  console.log(`----- ОБРАБОТКА ИЗОБРАЖЕНИЯ -----`);
+  console.log(`Исходный URL: "${processedUrl}"`);
   
   // Очищаем URL от Markdown-разметки, если она есть
   processedUrl = cleanMarkdownUrl(processedUrl);
   
   // Форматируем URL изображения
   processedUrl = processedUrl.trim();
+  console.log(`URL после удаления пробелов: "${processedUrl}"`);
   
   // Удаляем экранирование слешей, если они есть
   if (processedUrl.includes('\\/')) {
     processedUrl = processedUrl.replace(/\\\//g, '/');
-    console.log(`Удалены экранированные слеши: ${processedUrl}`);
+    console.log(`URL после удаления экранированных слешей: "${processedUrl}"`);
   }
   
   // Удаляем кавычки из URL, если они есть
   if (processedUrl.startsWith('"') && processedUrl.endsWith('"')) {
     processedUrl = processedUrl.substring(1, processedUrl.length - 1);
-    console.log(`Удалены кавычки: ${processedUrl}`);
+    console.log(`URL после удаления кавычек: "${processedUrl}"`);
   }
 
   // Особая обработка для URL от Google (в том числе из Zylalabs API) 
   if (isGoogleShoppingImage(processedUrl)) {
-    console.log(`Обнаружен URL Google Shopping: ${processedUrl}`);
+    console.log(`Обнаружен URL Google Shopping: "${processedUrl}"`);
     processedUrl = formatImageUrl(processedUrl);
+    console.log(`Форматированный URL Google Shopping: "${processedUrl}"`);
     
     // К "encrypted-tbn" URL почти всегда нужен прокси
     if (processedUrl.includes('encrypted-tbn')) {
-      console.log(`Применяем прокси к Google Shopping URL: ${processedUrl}`);
-      return applyCorsProxy(processedUrl);
+      console.log(`Применяем прокси к Google Shopping URL`);
+      const proxiedUrl = applyCorsProxy(processedUrl);
+      console.log(`Результат с прокси: "${proxiedUrl}"`);
+      console.log(`Текущий прокси: ${JSON.stringify(getCurrentProxyInfo())}`);
+      return proxiedUrl;
     }
     
     return processedUrl;
@@ -63,30 +70,41 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
 
   // Особая обработка для изображений Zylalabs
   if (isZylalabsImage(processedUrl)) {
-    console.log(`Обнаружен URL Zylalabs: ${processedUrl}`);
+    console.log(`Обнаружен URL Zylalabs: "${processedUrl}"`);
     processedUrl = formatImageUrl(processedUrl);
+    console.log(`Форматированный URL Zylalabs: "${processedUrl}"`);
     
     // Применяем CORS-прокси для Zylalabs изображений
-    return applyCorsProxy(processedUrl);
+    const proxiedUrl = applyCorsProxy(processedUrl);
+    console.log(`Результат с прокси: "${proxiedUrl}"`);
+    console.log(`Текущий прокси: ${JSON.stringify(getCurrentProxyInfo())}`);
+    return proxiedUrl;
   }
   
   // Для URL от Google CSE используем особую обработку
   if (isGoogleCseImage(processedUrl)) {
-    console.log(`Обнаружен URL Google CSE: ${processedUrl}`);
+    console.log(`Обнаружен URL Google CSE: "${processedUrl}"`);
     processedUrl = formatImageUrl(processedUrl);
+    console.log(`Форматированный URL Google CSE: "${processedUrl}"`);
     
     // Применяем CORS-прокси для изображений Google CSE для решения проблем с CORS
-    console.log(`Применяем прокси к Google CSE URL: ${processedUrl}`);
-    return applyCorsProxy(processedUrl);
+    console.log(`Применяем прокси к Google CSE URL`);
+    const proxiedUrl = applyCorsProxy(processedUrl);
+    console.log(`Результат с прокси: "${proxiedUrl}"`);
+    console.log(`Текущий прокси: ${JSON.stringify(getCurrentProxyInfo())}`);
+    return proxiedUrl;
   }
   
   // Проверяем необходимость использования CORS-прокси для других доменов
   if (processedUrl && shouldUseCorsProxy(processedUrl)) {
+    console.log(`Применяем прокси к стандартному URL: "${processedUrl}"`);
     processedUrl = applyCorsProxy(processedUrl);
+    console.log(`Результат с прокси: "${processedUrl}"`);
   }
   
   // Форматируем URL (добавляем протокол, обрабатываем относительные URL)
   processedUrl = formatImageUrl(processedUrl);
+  console.log(`URL после форматирования: "${processedUrl}"`);
   
   // Обрабатываем особые случаи URL
   if (processedUrl && processedUrl.includes('data:image')) {
@@ -96,13 +114,13 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
   
   // Проверяем, валидный ли URL изображения
   if (!isValidImageUrl(processedUrl)) {
-    console.log(`Невалидный URL изображения: ${processedUrl}`);
+    console.log(`Невалидный URL изображения: "${processedUrl}"`);
     return '';
   }
   
   // Добавляем уникальный параметр к URL для избежания кэширования
   const finalUrl = getUniqueImageUrl(processedUrl, index);
-  console.log(`Финальный URL изображения: ${finalUrl}`);
+  console.log(`Финальный URL изображения: "${finalUrl}"`);
   
   return finalUrl;
 };

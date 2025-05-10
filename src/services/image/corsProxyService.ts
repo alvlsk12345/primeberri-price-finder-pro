@@ -1,156 +1,187 @@
 
-/**
- * Сервис для работы с CORS-прокси
- * 
- * Этот модуль предоставляет функционал для обхода ограничений CORS
- * при запросах к внешним API, таким как OpenAI API или получение изображений.
- */
-
-// Список доступных публичных CORS прокси-сервисов
-const CORS_PROXIES = [
-  'https://corsproxy.io/?',
-  'https://api.allorigins.win/raw?url=',
-  'https://cors-anywhere.herokuapp.com/',
-  'https://thingproxy.freeboard.io/fetch/',
-  'https://api.codetabs.com/v1/proxy?quest=', // Добавляем больше проверенных прокси
-  'https://crossorigin.me/'
+// Список доступных CORS прокси сервисов
+const corsProxies = [
+  {
+    name: 'corsproxy.io',
+    url: 'https://corsproxy.io/?',
+    isEnabled: true,
+    lastError: null as Error | null,
+    errorCount: 0
+  },
+  {
+    name: 'allorigins.win',
+    url: 'https://api.allorigins.win/raw?url=',
+    isEnabled: true,
+    lastError: null as Error | null,
+    errorCount: 0
+  },
+  {
+    name: 'cors-anywhere (тестовый)',
+    url: 'https://cors-anywhere.herokuapp.com/',
+    isEnabled: false, // Отключен по умолчанию из-за ограничений
+    lastError: null as Error | null,
+    errorCount: 0
+  },
+  {
+    name: 'thingproxy (резервный)',
+    url: 'https://thingproxy.freeboard.io/fetch/',
+    isEnabled: true,
+    lastError: null as Error | null,
+    errorCount: 0
+  }
 ];
 
-// Индекс текущего используемого прокси
+// Индекс текущего прокси
 let currentProxyIndex = 0;
 
 /**
- * Получает URL с добавленным CORS прокси
- * 
- * @param originalUrl - Оригинальный URL для запроса
- * @returns URL с добавленным CORS прокси
+ * Получить информацию о текущем прокси
  */
-export const getCorsProxyUrl = (originalUrl: string): string => {
-  // Используем текущий прокси из списка
-  const proxy = CORS_PROXIES[currentProxyIndex];
-  
-  // Если URL уже содержит прокси, просто возвращаем его
-  if (isProxiedUrl(originalUrl)) {
-    return originalUrl;
-  }
-  
-  // Формируем URL с прокси в зависимости от типа прокси
-  if (proxy.includes('?url=') || proxy.includes('?quest=')) {
-    return `${proxy}${encodeURIComponent(originalUrl)}`;
-  }
-  
-  return `${proxy}${originalUrl}`;
-};
-
-/**
- * Переключает на следующий доступный прокси в списке
- * Может использоваться при ошибке текущего прокси
- * 
- * @returns {string} - Название нового текущего прокси
- */
-export const switchToNextProxy = (): string => {
-  currentProxyIndex = (currentProxyIndex + 1) % CORS_PROXIES.length;
-  console.log(`Переключение на следующий CORS прокси: ${CORS_PROXIES[currentProxyIndex]}`);
-  return CORS_PROXIES[currentProxyIndex];
-};
-
-/**
- * Получает имя текущего используемого прокси
- */
-export const getCurrentProxyName = (): string => {
-  const proxyUrl = CORS_PROXIES[currentProxyIndex];
-  // Извлекаем имя домена из URL
-  try {
-    const domain = new URL(proxyUrl.replace('?', '')).hostname;
-    return domain;
-  } catch (e) {
-    return proxyUrl;
-  }
-};
-
-/**
- * Добавляет CORS заголовки к параметрам fetch запроса
- * 
- * @param options - Опции для fetch запроса
- * @returns Обновленные опции с CORS заголовками
- */
-export const addCorsHeaders = (options: RequestInit = {}): RequestInit => {
+export const getCurrentProxyInfo = () => {
   return {
-    ...options,
-    headers: {
-      ...options.headers,
-      'X-Requested-With': 'XMLHttpRequest'
-    },
-    mode: 'cors'
+    index: currentProxyIndex,
+    proxy: corsProxies[currentProxyIndex],
+    allProxies: corsProxies.map(p => ({
+      name: p.name,
+      enabled: p.isEnabled,
+      errorCount: p.errorCount
+    }))
   };
 };
 
 /**
- * Проверяет, должен ли URL использовать CORS прокси
- * 
- * @param url - URL для проверки
- * @returns true, если URL должен использовать CORS прокси
+ * Переключиться на следующий доступный прокси
  */
-export const shouldUseCorsProxy = (url: string): boolean => {
-  // Проверяем, исходит ли URL из источника, который обычно требует CORS прокси
-  return !(
-    !url ||
-    url.startsWith('data:') ||
-    url.includes('amazonaws.com') ||
-    url.includes('cloudfront.net') ||
-    url.includes('blob:') ||
-    url.includes('data:image')
-  );
+export const switchToNextProxy = (): void => {
+  console.log('Переключение на следующий CORS прокси...');
+  
+  // Логируем информацию о текущем прокси
+  console.log(`Текущий прокси (до переключения): ${corsProxies[currentProxyIndex].name}`);
+  console.log(`Статус ошибок: ${corsProxies[currentProxyIndex].errorCount} ошибок`);
+  
+  // Увеличиваем счетчик ошибок для текущего прокси
+  corsProxies[currentProxyIndex].errorCount++;
+  
+  // Сохраняем текущий индекс для сравнения
+  const previousIndex = currentProxyIndex;
+  
+  // Находим следующий включенный прокси
+  let nextProxyIndex = (currentProxyIndex + 1) % corsProxies.length;
+  let loopCount = 0;
+  
+  // Ограничиваем поиск, чтобы избежать бесконечного цикла
+  while (!corsProxies[nextProxyIndex].isEnabled && loopCount < corsProxies.length) {
+    nextProxyIndex = (nextProxyIndex + 1) % corsProxies.length;
+    loopCount++;
+  }
+  
+  // Если нашли другой включенный прокси, переключаемся на него
+  if (corsProxies[nextProxyIndex].isEnabled && nextProxyIndex !== previousIndex) {
+    currentProxyIndex = nextProxyIndex;
+    console.log(`Переключились на новый прокси: ${corsProxies[currentProxyIndex].name}`);
+  } else {
+    // Если все прокси отключены или это единственный включенный прокси, сбрасываем ошибки текущего
+    console.log('Не найдено других включенных прокси, сбрасываем ошибки текущего прокси');
+  }
+  
+  // Выводим информацию о новом текущем прокси
+  console.log(`Текущий прокси (после переключения): ${corsProxies[currentProxyIndex].name}`);
 };
 
 /**
- * Применяет CORS прокси к URL, если он еще не был применен
- * 
- * @param url - Исходный URL
+ * Применяет CORS прокси к URL изображения
+ * @param imageUrl URL изображения
  * @returns URL с примененным CORS прокси
  */
-export const applyCorsProxy = (url: string): string => {
-  // Проверяем, нужно ли использовать прокси
-  if (!url || !shouldUseCorsProxy(url)) {
-    return url;
+export const applyCorsProxy = (imageUrl: string): string => {
+  if (!imageUrl) return '';
+  
+  // Если URL уже содержит известный прокси, не применяем прокси повторно
+  if (
+    imageUrl.includes('corsproxy.io') || 
+    imageUrl.includes('allorigins.win') || 
+    imageUrl.includes('cors-anywhere') ||
+    imageUrl.includes('thingproxy')
+  ) {
+    console.log(`URL уже содержит прокси: ${imageUrl}`);
+    return imageUrl;
   }
   
-  // Если URL уже содержит прокси, возвращаем его как есть
-  if (isProxiedUrl(url)) {
-    return url;
+  // Если изображение по data:image URL, не нужно применять прокси
+  if (imageUrl.startsWith('data:')) {
+    return imageUrl;
+  }
+
+  // Переходим к следующему прокси, если текущий прокси не включен
+  if (!corsProxies[currentProxyIndex].isEnabled) {
+    switchToNextProxy();
+  }
+
+  // Получаем текущий прокси URL
+  const proxyUrl = corsProxies[currentProxyIndex].url;
+  
+  // Если это CORS Anywhere, прокси URL добавляется в начало
+  if (proxyUrl === 'https://cors-anywhere.herokuapp.com/') {
+    console.log(`Применяем прокси ${corsProxies[currentProxyIndex].name} к URL: ${imageUrl}`);
+    return `${proxyUrl}${imageUrl}`;
   }
   
-  // Применяем CORS прокси к URL
-  return getCorsProxyUrl(url);
+  // Для других прокси сервисов используем формат ?url=
+  // Также кодируем URL для предотвращения проблем с символами
+  console.log(`Применяем прокси ${corsProxies[currentProxyIndex].name} к URL: ${imageUrl}`);
+  const encodedUrl = encodeURIComponent(imageUrl);
+  
+  // Для allorigins.win прокси URL уже включает параметр url=
+  if (proxyUrl === 'https://api.allorigins.win/raw?url=') {
+    return `${proxyUrl}${encodedUrl}`;
+  }
+  
+  // Для corsproxy.io
+  if (proxyUrl === 'https://corsproxy.io/?') {
+    return `${proxyUrl}${encodedUrl}`;
+  }
+  
+  // Для thingproxy и других прямых прокси
+  return `${proxyUrl}${imageUrl}`;
 };
 
 /**
- * Проверяет, является ли URL уже проксированным
- * 
- * @param url - URL для проверки
- * @returns true, если URL уже использует CORS прокси
+ * Проверяет, нужно ли использовать CORS прокси для URL
+ * @param url URL для проверки
+ * @returns true, если нужно применить CORS прокси
  */
-export const isProxiedUrl = (url: string): boolean => {
+export const shouldUseCorsProxy = (url: string): boolean => {
   if (!url) return false;
   
-  return CORS_PROXIES.some(proxy => {
-    const proxyDomain = proxy.replace(/^https?:\/\//, '').split('?')[0].split('/')[0];
-    return url.includes(proxyDomain);
-  });
-};
-
-/**
- * Возвращает максимальное количество попыток 
- * (равно количеству доступных прокси)
- */
-export const getMaxProxyAttempts = (): number => {
-  return CORS_PROXIES.length;
-};
-
-/**
- * Сбрасывает индекс текущего прокси на первый в списке
- */
-export const resetProxyIndex = (): void => {
-  currentProxyIndex = 0;
-  console.log(`Сброс прокси на первый в списке: ${CORS_PROXIES[currentProxyIndex]}`);
+  // Проверяем, содержит ли URL уже прокси
+  if (
+    url.includes('corsproxy.io') || 
+    url.includes('allorigins.win') || 
+    url.includes('cors-anywhere') ||
+    url.includes('thingproxy')
+  ) {
+    return false;
+  }
+  
+  // Для локальных и data URL не нужен прокси
+  if (url.startsWith('data:') || url.startsWith('/') || url.startsWith('./')) {
+    return false;
+  }
+  
+  // Список доменов, которым обычно нужен CORS прокси
+  const domainsNeedingProxy = [
+    'googleusercontent.com',
+    'fbcdn.net',
+    'bing.com',
+    'live.com',
+    'google.com',
+    'gstatic.com',
+    'yandex.ru',
+    'yandex.net',
+    'duckduckgo.com',
+    'yimg.com'  // Yahoo Images
+  ];
+  
+  // Проверяем, содержит ли URL какой-либо из проблемных доменов
+  return domainsNeedingProxy.some(domain => url.includes(domain));
 };

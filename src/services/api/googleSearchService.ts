@@ -18,23 +18,35 @@ const imageCache: Record<string, string> = {};
 export const validateGoogleApiKey = async (): Promise<boolean> => {
   try {
     console.log('Проверка валидности Google API ключа...');
+    console.log(`ИСПОЛЬЗУЕМЫЙ API КЛЮЧ: "${GOOGLE_API_KEY}"`);
+    console.log(`ИСПОЛЬЗУЕМЫЙ CX ID: "${GOOGLE_SEARCH_ENGINE_ID}"`);
+    
     // Выполняем простой тестовый запрос
     const testQuery = 'test';
     const apiUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_SEARCH_ENGINE_ID}&q=${testQuery}&searchType=image&num=1`;
     
-    console.log(`Тестовый запрос к Google API: ${apiUrl}`);
+    console.log(`ТЕСТОВЫЙ ЗАПРОС К GOOGLE API (полный URL): ${apiUrl}`);
+    console.log(`Длина API ключа: ${GOOGLE_API_KEY.length}, длина CX ID: ${GOOGLE_SEARCH_ENGINE_ID.length}`);
     
     const response = await fetch(apiUrl);
+    console.log(`ОТВЕТ ОТ GOOGLE API - Статус: ${response.status} ${response.statusText}`);
+    
+    // Выводим все заголовки ответа для анализа
+    console.log('ЗАГОЛОВКИ ОТВЕТА:', Object.fromEntries([...response.headers.entries()]));
+    
     const responseData = await response.json();
     
+    // Выводим часть ответа для диагностики
+    console.log('КРАТКИЙ ОТВЕТ API:', JSON.stringify(responseData).substring(0, 200) + '...');
+    
     if (response.ok && responseData && responseData.items && responseData.items.length > 0) {
-      console.log('Google API ключ валиден:', responseData.items.length > 0 ? 'Получены результаты' : 'Нет результатов');
+      console.log('Google API ключ валиден. Получены результаты поиска.');
       return true;
     } else {
-      console.error('Google API ключ не валиден или есть проблемы с сервисом:', response.status, responseData);
+      console.error('Google API ключ не валиден или есть проблемы с сервисом:', response.status);
       // Логируем детали ошибки
       if (responseData.error) {
-        console.error('Детали ошибки API:', {
+        console.error('ДЕТАЛИ ОШИБКИ API:', {
           code: responseData.error.code,
           message: responseData.error.message,
           errors: responseData.error.errors
@@ -43,8 +55,80 @@ export const validateGoogleApiKey = async (): Promise<boolean> => {
       return false;
     }
   } catch (error) {
-    console.error('Ошибка при проверке Google API ключа:', error);
+    console.error('ОШИБКА ПРИ ПРОВЕРКЕ Google API ключа:', error);
+    // Более подробное логирование для сетевых ошибок
+    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      console.error('СЕТЕВАЯ ОШИБКА: Не удалось выполнить запрос. Возможно, проблемы с подключением к Интернету или CORS.');
+    }
     return false;
+  }
+};
+
+/**
+ * Создает минимальный тестовый запрос к Google API для диагностики
+ * @returns {Promise<string>} Результат тестового запроса
+ */
+export const testMinimalGoogleApiRequest = async (): Promise<string> => {
+  try {
+    console.log('----- ТЕСТОВЫЙ МИНИМАЛЬНЫЙ ЗАПРОС К GOOGLE API -----');
+    console.log(`API КЛЮЧ: "${GOOGLE_API_KEY}"`);
+    console.log(`CX ID: "${GOOGLE_SEARCH_ENGINE_ID}"`);
+    
+    // Минимальный набор параметров
+    const minimalUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_SEARCH_ENGINE_ID}&q=test`;
+    console.log(`МИНИМАЛЬНЫЙ URL: ${minimalUrl}`);
+    
+    // Добавляем случайное число для предотвращения кэширования
+    const noCacheUrl = `${minimalUrl}&_nocache=${Date.now()}`;
+    
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
+      const response = await fetch(noCacheUrl, { 
+        signal: controller.signal,
+        // Добавляем заголовки для диагностики
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
+      clearTimeout(timeoutId);
+      
+      console.log(`СТАТУС ОТВЕТА: ${response.status} ${response.statusText}`);
+      console.log('ЗАГОЛОВКИ ОТВЕТА:', Object.fromEntries([...response.headers.entries()]));
+      
+      // Получаем текст ответа для анализа, даже если это не JSON
+      const responseText = await response.text();
+      console.log('ТЕЛО ОТВЕТА:', responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''));
+      
+      try {
+        // Пробуем распарсить как JSON
+        const jsonData = JSON.parse(responseText);
+        if (jsonData.items && jsonData.items.length > 0) {
+          console.log('ТЕСТОВЫЙ ЗАПРОС УСПЕШЕН! Количество результатов:', jsonData.items.length);
+          return 'Тестовый запрос успешен! API работает корректно.';
+        } else if (jsonData.error) {
+          console.error('ОШИБКА API В ТЕСТОВОМ ЗАПРОСЕ:', jsonData.error);
+          return `Ошибка API: ${jsonData.error.code} - ${jsonData.error.message}`;
+        } else {
+          console.log('ОТВЕТ БЕЗ ОШИБОК, НО БЕЗ РЕЗУЛЬТАТОВ:', jsonData);
+          return 'API вернул ответ без ошибок, но без результатов поиска.';
+        }
+      } catch (jsonError) {
+        console.error('НЕ УДАЛОСЬ РАСПАРСИТЬ ОТВЕТ КАК JSON:', jsonError);
+        return `Некорректный формат ответа: ${responseText.substring(0, 100)}...`;
+      }
+    } catch (fetchError) {
+      console.error('ОШИБКА FETCH ПРИ ТЕСТОВОМ ЗАПРОСЕ:', fetchError);
+      if (fetchError.name === 'AbortError') {
+        return 'Тестовый запрос был прерван по таймауту (10 секунд).';
+      }
+      return `Ошибка при выполнении запроса: ${fetchError.message}`;
+    }
+  } catch (error) {
+    console.error('ОБЩАЯ ОШИБКА В ТЕСТОВОМ ЗАПРОСЕ:', error);
+    return `Непредвиденная ошибка: ${error.message}`;
   }
 };
 
@@ -57,6 +141,12 @@ export const validateGoogleApiKey = async (): Promise<boolean> => {
  */
 export const searchImageGoogleCSE = async (query: string, index: number = 0, retryCount: number = 0): Promise<string> => {
   try {
+    // Подробное логирование параметров запроса
+    console.log(`----- ВЫПОЛНЕНИЕ ЗАПРОСА К GOOGLE CSE -----`);
+    console.log(`Запрос: "${query}", Индекс: ${index}, Попытка: ${retryCount + 1}`);
+    console.log(`API ключ: "${GOOGLE_API_KEY}" (длина: ${GOOGLE_API_KEY.length})`);
+    console.log(`CX ID: "${GOOGLE_SEARCH_ENGINE_ID}" (длина: ${GOOGLE_SEARCH_ENGINE_ID.length})`);
+    
     // Проверяем кэш перед выполнением запроса
     const cacheKey = `${query.toLowerCase()}_${index}`;
     if (imageCache[cacheKey]) {
@@ -64,29 +154,47 @@ export const searchImageGoogleCSE = async (query: string, index: number = 0, ret
       return imageCache[cacheKey];
     }
 
-    console.log(`Поиск изображения через Google CSE для: ${query} (попытка: ${retryCount + 1})`);
-    
     // Формируем URL для запроса к Google Custom Search API
     const encodedQuery = encodeURIComponent(query);
+    console.log(`Запрос после кодирования: "${encodedQuery}"`);
+    
     const apiUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_SEARCH_ENGINE_ID}&q=${encodedQuery}&searchType=image&num=5`;
     
-    console.log(`Запрос к API: ${apiUrl}`);
+    console.log(`ПОЛНЫЙ URL ЗАПРОСА: ${apiUrl}`);
     
     // Выполняем запрос к API
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 секунд таймаут
     
     const response = await fetch(apiUrl, {
-      signal: controller.signal
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json'
+      }
     });
     
     clearTimeout(timeoutId);
     
-    // Подробно логируем заголовки ответа
-    console.log(`Получен ответ от Google CSE API: статус ${response.status}`);
-    console.log('Заголовки ответа:', Object.fromEntries([...response.headers.entries()]));
+    // Подробно логируем информацию об ответе
+    console.log(`ОТВЕТ ОТ GOOGLE CSE API - Статус: ${response.status} ${response.statusText}`);
+    console.log('ЗАГОЛОВКИ ОТВЕТА:', Object.fromEntries([...response.headers.entries()]));
     
     if (!response.ok) {
+      // Детально анализируем ошибку
+      console.error(`ОШИБКА API - Статус: ${response.status} ${response.statusText}`);
+      
+      // Получаем текст ошибки, даже если это не JSON
+      const errorText = await response.text();
+      console.error(`ТЕЛО ОТВЕТА С ОШИБКОЙ: ${errorText.substring(0, 500)}`);
+      
+      try {
+        // Пробуем распарсить как JSON для более подробного анализа
+        const errorJson = JSON.parse(errorText);
+        console.error('ДЕТАЛИ ОШИБКИ JSON:', errorJson);
+      } catch (e) {
+        console.error('Не удалось распарсить ответ ошибки как JSON');
+      }
+      
       // Используем специальный обработчик ошибок API
       const errorDetails = await handleApiError(response);
       
@@ -100,12 +208,22 @@ export const searchImageGoogleCSE = async (query: string, index: number = 0, ret
       return '';
     }
     
-    const data = await response.json();
-    console.log(`Получены данные от Google CSE API: ${JSON.stringify(data).substring(0, 200)}...`);
+    // Получаем JSON-данные
+    const responseText = await response.text();
+    console.log(`НАЧАЛО ОТВЕТА API: ${responseText.substring(0, 200)}...`);
+    
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (jsonError) {
+      console.error('ОШИБКА ПАРСИНГА JSON ОТВЕТА:', jsonError);
+      console.error('ТЕКСТ ОТВЕТА:', responseText.substring(0, 500));
+      return '';
+    }
     
     // Подробно логируем информацию о запросе из ответа
     if (data.queries && data.queries.request && data.queries.request[0]) {
-      console.log('Информация о запросе:', {
+      console.log('ИНФОРМАЦИЯ О ЗАПРОСЕ:', {
         totalResults: data.queries.request[0].totalResults,
         count: data.queries.request[0].count,
         startIndex: data.queries.request[0].startIndex,
@@ -150,7 +268,12 @@ export const searchImageGoogleCSE = async (query: string, index: number = 0, ret
     console.log(`Google CSE не вернул изображений для запроса: ${query}`);
     return '';
   } catch (error) {
-    console.error('Ошибка при поиске изображения через Google CSE:', error);
+    console.error('ОШИБКА ПРИ ПОИСКЕ ИЗОБРАЖЕНИЯ ЧЕРЕЗ GOOGLE CSE:', error);
+    
+    // Детальное логирование ошибки для диагностики
+    console.error('ТИП ОШИБКИ:', error.name);
+    console.error('СООБЩЕНИЕ ОШИБКИ:', error.message);
+    console.error('СТЕК ВЫЗОВОВ:', error.stack);
     
     // Повторная попытка при временной ошибке
     if (error instanceof TypeError && error.message.includes('Failed to fetch') && retryCount < 3) {
@@ -174,14 +297,26 @@ export const searchProductImageGoogle = async (brand: string, product: string, i
   // Формируем запрос из бренда и продукта
   const query = `${brand} ${product}`;
   
+  console.log(`----- ЗАПРОС ИЗОБРАЖЕНИЯ ТОВАРА -----`);
+  console.log(`Бренд: "${brand}", Продукт: "${product}"`);
+  console.log(`Итоговый запрос: "${query}"`);
+  
   // Проверяем API ключ при первом запросе
   if (index === 0) {
+    console.log('Запускаем проверку API ключа Google CSE...');
     const isValid = await validateGoogleApiKey();
     if (!isValid) {
       console.warn('Google API ключ неверен или превышен лимит запросов');
+    } else {
+      console.log('Google API ключ успешно проверен');
     }
+    
+    // Выполняем минимальный тестовый запрос
+    const testResult = await testMinimalGoogleApiRequest();
+    console.log('Результат тестового запроса:', testResult);
   }
   
   // Ищем изображение по запросу
   return await searchImageGoogleCSE(query, index);
 };
+
