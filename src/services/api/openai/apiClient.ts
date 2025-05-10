@@ -1,6 +1,43 @@
 
 import { toast } from "sonner";
 import { getApiKey } from "./config";
+import { getProxyAuthHeader, getProxyUrl } from "../proxyConfig";
+
+/**
+ * Выполнение запроса через HTTP-прокси
+ * @param url URL для запроса
+ * @param options Опции запроса
+ * @returns Promise с результатом запроса
+ */
+const fetchWithProxy = async (url: string, options: RequestInit): Promise<Response> => {
+  try {
+    console.log('Выполняем запрос через прокси...');
+    
+    // Добавляем заголовки для авторизации на прокси
+    const proxyHeaders = {
+      ...options.headers,
+      'Proxy-Authorization': getProxyAuthHeader()
+    };
+    
+    // Создаем URL-объект для прокси
+    const proxyUrl = getProxyUrl();
+    console.log(`Используем прокси: ${proxyUrl}`);
+    
+    // Выполняем запрос через прокси
+    return fetch(url, {
+      ...options,
+      headers: proxyHeaders,
+      // Абсолютный URL гарантирует, что прокси правильно обработает запрос
+      mode: 'cors',
+      credentials: 'omit'
+    });
+  } catch (error) {
+    console.error('Ошибка при запросе через прокси:', error);
+    // Пробуем прямой запрос при ошибке прокси
+    console.log('Пробуем прямой запрос без прокси');
+    return fetch(url, options);
+  }
+};
 
 // Базовая функция для использования OpenAI API с обработкой ошибок
 export const callOpenAI = async (prompt: string, options: {
@@ -8,6 +45,7 @@ export const callOpenAI = async (prompt: string, options: {
   temperature?: number;
   max_tokens?: number;
   responseFormat?: "json_object" | "text";
+  useProxy?: boolean;
 } = {}): Promise<any> => {
   try {
     // Получаем API ключ из localStorage
@@ -25,7 +63,8 @@ export const callOpenAI = async (prompt: string, options: {
       model: "gpt-4o",
       temperature: 0.2,
       max_tokens: 500,
-      responseFormat: "text"
+      responseFormat: "text",
+      useProxy: true
     };
     
     const finalOptions = { ...defaultOptions, ...options };
@@ -48,13 +87,18 @@ export const callOpenAI = async (prompt: string, options: {
       requestBody.response_format = { type: "json_object" };
     }
 
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    };
+
+    // Выполняем запрос к API OpenAI через прокси или напрямую
+    const fetchFunction = finalOptions.useProxy ? fetchWithProxy : fetch;
+    
     // Выполняем запрос к API OpenAI
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetchFunction('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
+      headers,
       body: JSON.stringify(requestBody)
     });
 
@@ -153,6 +197,7 @@ export const fetchFromOpenAI = async (query: string): Promise<any> => {
   return callOpenAI(promptTemplate, {
     responseFormat: "json_object",
     temperature: 0.2,
-    max_tokens: 1000
+    max_tokens: 1000,
+    useProxy: true
   });
 };
