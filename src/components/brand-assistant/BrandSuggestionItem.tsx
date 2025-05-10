@@ -26,7 +26,7 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
           className="self-start sm:self-center whitespace-nowrap"
           onClick={onSelect}
         >
-          Вставить в поиск
+          Искать этот товар
         </Button>
       </div>
     </div>

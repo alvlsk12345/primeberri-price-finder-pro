@@ -5,7 +5,7 @@ import { BrandSuggestion } from "@/services/types";
 
 interface BrandSuggestionListProps {
   suggestions: BrandSuggestion[];
-  onSelect: (brand: string) => void;
+  onSelect: (product: string) => void;
 }
 
 export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({ 
@@ -14,13 +14,13 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
 }) => {
   return (
     <div className="mt-4 p-3 bg-slate-50 rounded-md border">
-      <h3 className="text-sm font-medium mb-2">Рекомендуемые бренды:</h3>
+      <h3 className="text-sm font-medium mb-2">Рекомендуемые товары:</h3>
       <div className="space-y-2">
         {suggestions.map((suggestion, index) => (
           <BrandSuggestionItem 
             key={index} 
             suggestion={suggestion} 
-            onSelect={() => onSelect(suggestion.brand)} 
+            onSelect={() => onSelect(suggestion.product)} 
           />
         ))}
       </div>

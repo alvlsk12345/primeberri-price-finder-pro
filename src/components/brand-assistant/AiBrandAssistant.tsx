@@ -11,10 +11,10 @@ import { getApiKey } from "@/services/api/openaiService";
 import { BrandSuggestion } from "@/services/types";
 
 interface AiBrandAssistantProps {
-  onSelectBrand: (brand: string) => void;
+  onSelectProduct: (product: string, performSearch: boolean) => void;
 }
 
-export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectBrand }) => {
+export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProduct }) => {
   const [isAssistantEnabled, setIsAssistantEnabled] = useState(false);
   const [productDescription, setProductDescription] = useState("");
   const [brandSuggestions, setBrandSuggestions] = useState<BrandSuggestion[]>([]);
@@ -41,16 +41,16 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectBran
       const suggestions = await fetchBrandSuggestions(productDescription);
       setBrandSuggestions(suggestions);
       if (suggestions.length === 0) {
-        toast.warning("Не удалось найти подходящие бренды для вашего запроса");
+        toast.warning("Не удалось найти подходящие товары для вашего запроса");
       }
     } catch (error: any) {
-      console.error('Ошибка при запросе к OpenAI для получения брендов:', error);
+      console.error('Ошибка при запросе к OpenAI для получения товаров:', error);
       if (error.message?.includes("quota")) {
         toast.error("Превышен лимит запросов API. Проверьте ваш тарифный план OpenAI.");
       } else if (error.message?.includes("invalid")) {
         toast.error("Недействительный API ключ. Пожалуйста, проверьте его в настройках.");
       } else {
-        toast.error("Не удалось получить предложения брендов. Попробуйте позже.");
+        toast.error("Не удалось получить предложения товаров. Попробуйте позже.");
       }
     } finally {
       setIsAssistantLoading(false);
@@ -71,7 +71,7 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectBran
           }}
         />
         <label htmlFor="enableAssistant" className="text-sm cursor-pointer">
-          Использовать AI-помощник для поиска брендов
+          Использовать AI-помощник для поиска товаров
         </label>
       </div>
 
@@ -93,12 +93,12 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectBran
               {isAssistantLoading ? (
                 <>
                   <div className="animate-spin w-4 h-4 border-2 border-brand-foreground border-t-transparent rounded-full" />
-                  <span>Поиск брендов...</span>
+                  <span>Поиск товаров...</span>
                 </>
               ) : (
                 <>
                   <Search size={16} />
-                  <span>Найти подходящие бренды</span>
+                  <span>Найти подходящие товары</span>
                 </>
               )}
             </Button>
@@ -109,7 +109,7 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectBran
       {isAssistantEnabled && brandSuggestions.length > 0 && (
         <BrandSuggestionList 
           suggestions={brandSuggestions} 
-          onSelect={onSelectBrand} 
+          onSelect={(product) => onSelectProduct(product, true)} 
         />
       )}
     </div>

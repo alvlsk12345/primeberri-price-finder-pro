@@ -53,11 +53,18 @@ export const SearchForm: React.FC<SearchFormProps> = ({
     }
   };
 
-  const handleSelectBrand = (brand: string) => {
-    setSearchQuery(brand);
-    toast.info(`Бренд "${brand}" добавлен в поле поиска`, {
+  const handleSelectProduct = (product: string, performSearch: boolean = false) => {
+    setSearchQuery(product);
+    toast.info(`Товар "${product}" добавлен в поле поиска`, {
       duration: 2000
     });
+    
+    // Если требуется выполнить поиск сразу после выбора продукта
+    if (performSearch) {
+      setTimeout(() => {
+        executeSearch();
+      }, 500); // Небольшая задержка для лучшего UX
+    }
   };
 
   return (
@@ -105,7 +112,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
         </div>
       )}
 
-      <AiBrandAssistant onSelectBrand={handleSelectBrand} />
+      <AiBrandAssistant onSelectProduct={handleSelectProduct} />
     </div>
   );
 };
