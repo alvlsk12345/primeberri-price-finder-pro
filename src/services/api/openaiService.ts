@@ -1,5 +1,6 @@
 
 import { toast } from "@/components/ui/sonner";
+import { BrandSuggestion } from "@/services/types";
 
 // Функция для получения API ключа из localStorage
 export const getApiKey = (): string => {
@@ -122,6 +123,105 @@ export const fetchFromOpenAI = async (query: string): Promise<any> => {
 
   } catch (error) {
     console.error('Ошибка при запросе к OpenAI:', error);
+    throw error;
+  }
+};
+
+// Новая функция для получения предложений брендов
+export const fetchBrandSuggestions = async (description: string): Promise<BrandSuggestion[]> => {
+  try {
+    // Получаем API ключ из localStorage
+    const apiKey = getApiKey();
+    
+    // Проверка на корректность ключа API
+    if (!apiKey) {
+      toast.error("API ключ не установлен. Пожалуйста, добавьте свой ключ в настройках");
+      throw new Error("API ключ не установлен");
+    }
+
+    console.log('Отправляем запрос к OpenAI для получения брендов...');
+    
+    // Специализированный промпт для получения брендов
+    const brandPrompt = `Помощник для поиска брендов и товаров: Когда пользователь вводит описание товара или запроса, система должна предложить 5 вариантов брендов и соответствующих товаров, которые могут соответствовать запросу. Для каждого бренда вывести его название, название товара и краткое описание товара на русском языке. Ответ должен содержать список из 5 брендов с их товарами, названиями товаров и короткими описаниями на русском языке. Формат: 'Бренд: [название бренда], Товар: [название товара], Описание: [краткое описание товара].
+
+Запрос пользователя: "${description}"`;
+
+    // API запрос к OpenAI
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        temperature: 0.5,
+        max_tokens: 400,
+        messages: [
+          {
+            role: "user",
+            content: brandPrompt
+          }
+        ]
+      })
+    });
+
+    if (!openaiResponse.ok) {
+      const errorData = await openaiResponse.json();
+      const errorMessage = errorData.error?.message || 'Неизвестная ошибка';
+      
+      console.error('Ошибка от API OpenAI при получении брендов:', errorMessage);
+      
+      if (errorMessage.includes("quota")) {
+        toast.error("Превышен лимит запросов API. Проверьте ваш тарифный план OpenAI.");
+        throw new Error("Превышен лимит запросов OpenAI API");
+      } else if (errorMessage.includes("invalid")) {
+        toast.error("Недействительный API ключ. Пожалуйста, проверьте его в настройках.");
+        throw new Error("Недействительный API ключ");
+      } else {
+        toast.error(`Ошибка API: ${errorMessage}`);
+        throw new Error(`Ошибка OpenAI API: ${errorMessage}`);
+      }
+    }
+
+    const data = await openaiResponse.json();
+    console.log('Получен ответ от OpenAI для брендов:', data);
+    
+    const content = data.choices[0]?.message?.content;
+    
+    if (!content) {
+      throw new Error('Пустой ответ от API');
+    }
+
+    // Парсинг ответа в формате "Бренд: X, Товар: Y, Описание: Z"
+    const suggestions: BrandSuggestion[] = [];
+    
+    // Разделяем ответ на строки и извлекаем данные
+    const lines = content.split('\n').filter(line => line.trim() !== '');
+    
+    for (const line of lines) {
+      try {
+        const brandMatch = line.match(/Бренд:\s*([^,]+)/i);
+        const productMatch = line.match(/Товар:\s*([^,]+)/i);
+        const descriptionMatch = line.match(/Описание:\s*(.+)/i);
+        
+        if (brandMatch && productMatch && descriptionMatch) {
+          suggestions.push({
+            brand: brandMatch[1].trim(),
+            product: productMatch[1].trim(),
+            description: descriptionMatch[1].trim()
+          });
+        }
+      } catch (error) {
+        console.error('Ошибка при парсинге строки:', line, error);
+      }
+    }
+
+    // Если у нас нет 5 результатов, возвращаем то что есть
+    return suggestions.slice(0, 5);
+
+  } catch (error) {
+    console.error('Ошибка при запросе к OpenAI для брендов:', error);
     throw error;
   }
 };

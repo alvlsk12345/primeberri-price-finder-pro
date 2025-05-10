@@ -1,4 +1,3 @@
-
 // Определение типов для сервисов
 export type Product = {
   id: string;
@@ -48,3 +47,9 @@ export type ProductFilters = {
   rating?: number;
   sortBy?: SortOption; // Добавлена опция сортировки
 };
+
+export interface BrandSuggestion {
+  brand: string;
+  product: string;
+  description: string;
+}
