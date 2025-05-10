@@ -6,6 +6,7 @@ import { useDemoModeForced } from "../mock/mockServiceConfig";
 import { getApiKey, REQUEST_TIMEOUT } from "./config";
 import { getCachedResponse, setCacheResponse } from "./cacheService";
 import { buildZylalabsUrl } from "./urlBuilder";
+import { toast } from "sonner"; // Добавляем импорт toast из sonner
 
 /**
  * Выполняет запрос к API Zylalabs
@@ -76,7 +77,7 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
       console.error('Ошибка API:', response.status, response.statusText);
       const errorResponse = await response.text();
       console.error('Тело ответа с ошибкой:', errorResponse);
-      return handleApiError(response, errorResponse);
+      return handleApiError(response); // Исправлено: передаем только один аргумент response
     }
     
     // Разбор ответа
