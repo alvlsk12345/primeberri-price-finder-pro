@@ -88,10 +88,14 @@ export function useSearchExecutionActions({
       setCurrentPage(page);
     }
     
+    // Расширенная проверка кеша
+    console.log(`Проверка кеша для запроса "${queryToUse}", страница ${page}`);
+    console.log(`Доступные страницы в кеше:`, Object.keys(cachedResults));
+    
     // Если это та же страница для того же запроса и у нас есть кешированные результаты
     const cachedResultsForQuery = getCachedResults(queryToUse, lastSearchQuery, page);
     if (!forceNewSearch && cachedResultsForQuery) {
-      console.log(`Используем кэшированные результаты для страницы ${page}`);
+      console.log(`Используем кэшированные результаты для страницы ${page}, количество: ${cachedResultsForQuery.length}`);
       setSearchResults(cachedResultsForQuery);
       return;
     }
@@ -118,6 +122,9 @@ export function useSearchExecutionActions({
         filters,
         getSearchCountries
       );
+      
+      // После успешного поиска, проверяем, что страница действительно изменилась
+      console.log(`Поиск завершен. Проверяем текущую страницу: ${currentPage}, запрошенная: ${page}`);
       
       // Если поиск был неудачным, пытаемся использовать кешированные результаты
       if (!result.success) {

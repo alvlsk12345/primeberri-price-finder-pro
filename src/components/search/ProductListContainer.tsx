@@ -25,31 +25,43 @@ export const ProductListContainer: React.FC<ProductListContainerProps> = ({
   onPageChange,
   isDemo = false
 }) => {
-  // Улучшенный обработчик смены страницы с useCallback для оптимизации
+  // Улучшенный обработчик смены страницы с дополнительными проверками и логированием
   const handlePageChange = useCallback((page: number) => {
-    console.log(`ProductListContainer: Смена страницы с ${currentPage} на ${page}`);
+    console.log(`ProductListContainer: Запрос на смену страницы с ${currentPage} на ${page}`);
     
-    // Проверка валидности страницы
-    if (page >= 1 && page <= totalPages && page !== currentPage) {
-      // Показываем индикатор загрузки
-      const toastId = `page-change-${page}`;
-      toast.info(`Загрузка страницы ${page}...`, {
-        id: toastId,
-        duration: 2000
-      });
+    // Валидация страницы для предотвращения некорректных переходов
+    if (page <= 0 || page > totalPages) {
+      console.warn(`ProductListContainer: Запрошена недопустимая страница ${page} (всего: ${totalPages})`);
       
-      // Вызываем функцию смены страницы
-      onPageChange(page);
-    } else if (page === currentPage) {
-      // Уже на этой странице, не нужно перезагружать
-      console.log(`Уже находимся на странице ${page}, никаких изменений не требуется`);
-    } else {
-      // Некорректная страница запрошена
-      console.warn(`Неверный запрос страницы: ${page} (всего: ${totalPages})`);
-      if (page > totalPages) {
-        toast.error(`Страница ${page} не существует. Максимум: ${totalPages}`);
+      if (page > totalPages && totalPages > 0) {
+        toast.error(`Страница ${page} не существует. Максимум: ${totalPages}`, {
+          duration: 3000
+        });
       }
+      return;
     }
+    
+    // Проверка, что запрошенная страница отличается от текущей
+    if (page === currentPage) {
+      console.log(`ProductListContainer: Уже находимся на странице ${page}, переход не требуется`);
+      return;
+    }
+    
+    // Показываем индикатор загрузки
+    console.log(`ProductListContainer: Переход на страницу ${page}`);
+    const toastId = `page-change-${page}`;
+    toast.info(`Загрузка страницы ${page}...`, {
+      id: toastId,
+      duration: 2000
+    });
+    
+    // Вызываем функцию смены страницы
+    onPageChange(page);
+    
+    // Дополнительная проверка через таймаут (для отладки асинхронных проблем)
+    setTimeout(() => {
+      console.log(`ProductListContainer: Через 500мс после запроса страницы ${page}, текущая страница: ${currentPage}`);
+    }, 500);
   }, [currentPage, totalPages, onPageChange]);
 
   return (

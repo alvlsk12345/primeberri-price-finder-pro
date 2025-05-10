@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { Product } from "@/services/types";
 import { NoSearchResults } from './search/NoSearchResults';
 import { ProductListContainer } from './search/ProductListContainer';
@@ -23,6 +23,11 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   onPageChange,
   isDemo = false
 }) => {
+  // Используем useEffect для логирования изменений страницы для отладки
+  useEffect(() => {
+    console.log(`SearchResults: текущая страница изменилась на ${currentPage} (всего страниц: ${totalPages})`);
+  }, [currentPage, totalPages]);
+
   // Используем useMemo для предотвращения лишних перерендеров
   const resultsInfo = useMemo(() => ({
     resultsCount: results?.length || 0,
@@ -63,23 +68,35 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     [productsWithUniqueKeys, startIndex, endIndex]
   );
   
-  // Рассчитываем общее количество страниц
+  // Рассчитываем общее количество страниц и добавляем дополнительную проверку
   const actualTotalPages = useMemo(() => 
     Math.max(1, Math.ceil(productsWithUniqueKeys.length / itemsPerPage)),
     [productsWithUniqueKeys.length]
   );
   
+  // Добавляем проверку для обнаружения несоответствия между рассчитанным и переданным числом страниц
+  useEffect(() => {
+    if (actualTotalPages !== totalPages) {
+      console.warn(`SearchResults: Несоответствие в количестве страниц: рассчитано ${actualTotalPages}, передано ${totalPages}`);
+    }
+  }, [actualTotalPages, totalPages]);
+  
   console.log(`Пагинация: страница ${currentPage}/${actualTotalPages}, показываем товары с ${startIndex+1} по ${Math.min(endIndex, productsWithUniqueKeys.length)}`);
 
-  // Handle page change with validation
+  // Handle page change с улучшенной валидацией и предотвращением навигации
   const handlePageChange = (page: number) => {
     console.log(`SearchResults: Page change requested from ${currentPage} to ${page}`);
     
+    // Усиленная проверка валидности запрошенной страницы
     if (page >= 1 && page <= actualTotalPages && page !== currentPage) {
-      // Убираем setTimeout для немедленного обновления страницы
+      console.log(`SearchResults: Переход на страницу ${page} разрешен`);
       onPageChange(page);
     } else {
-      console.log(`SearchResults: Invalid page change request: ${page}`);
+      if (page === currentPage) {
+        console.log(`SearchResults: Уже находимся на странице ${page}, переход не требуется`);
+      } else {
+        console.log(`SearchResults: Invalid page change request: ${page}, actualTotalPages: ${actualTotalPages}`);
+      }
     }
   };
 
