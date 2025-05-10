@@ -1,3 +1,4 @@
+
 import React, { useMemo, useEffect } from 'react';
 import { Product } from "@/services/types";
 import { NoSearchResults } from './search/NoSearchResults';
@@ -25,7 +26,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
 }) => {
   // Используем useEffect для логирования изменений страницы для отладки
   useEffect(() => {
-    console.log(`SearchResults: текущая страница изменилась на ${currentPage} (всего страниц: ${totalPages})`);
+    console.log(`SearchResults component: текущая страница изменилась на ${currentPage} (всего страниц: ${totalPages})`);
   }, [currentPage, totalPages]);
 
   // Используем useMemo для предотвращения лишних перерендеров
@@ -69,14 +70,22 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   );
   
   // Рассчитываем общее количество страниц на основе фактического количества товаров
-  const actualTotalPages = useMemo(() => 
-    Math.max(1, Math.ceil(productsWithUniqueKeys.length / itemsPerPage)),
-    [productsWithUniqueKeys.length]
-  );
+  const actualTotalPages = useMemo(() => {
+    const calculatedPages = Math.max(1, Math.ceil(productsWithUniqueKeys.length / itemsPerPage));
+    console.log(`SearchResults: рассчитано фактическое количество страниц: ${calculatedPages} (товаров: ${productsWithUniqueKeys.length})`);
+    
+    // Проверка на несоответствие рассчитанных страниц и переданных через props
+    if (calculatedPages !== totalPages) {
+      console.warn(`SearchResults: несоответствие в количестве страниц - рассчитано ${calculatedPages}, но передано ${totalPages}`);
+    }
+    
+    // Используем большее значение для безопасности
+    return Math.max(calculatedPages, totalPages);
+  }, [productsWithUniqueKeys.length, totalPages]);
   
   // УЛУЧШЕННАЯ ЛОГИКА: Логируем и уведомляем о количестве результатов
   useEffect(() => {
-    console.log(`Количество продуктов: ${productsWithUniqueKeys.length}, страниц: ${actualTotalPages}, заявленных страниц: ${totalPages}`);
+    console.log(`SearchResults: количество продуктов: ${productsWithUniqueKeys.length}, страниц: ${actualTotalPages}, заявленных страниц: ${totalPages}`);
     
     // Больше не показываем уведомление о несоответствии количества страниц,
     // так как теперь мы используем actualTotalPages в компоненте ProductListContainer
@@ -84,21 +93,30 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   
   console.log(`Пагинация: страница ${currentPage}/${actualTotalPages}, показываем товары с ${startIndex+1} по ${Math.min(endIndex, productsWithUniqueKeys.length)} из ${productsWithUniqueKeys.length}`);
 
-  // Handle page change с клиентской пагинацией
+  // Handle page change с улучшенной проверкой валидности страницы
   const handlePageChange = (page: number) => {
-    console.log(`SearchResults: Page change requested from ${currentPage} to ${page}`);
+    console.log(`SearchResults: запрос смены страницы с ${currentPage} на ${page} (всего: ${actualTotalPages})`);
     
-    // ИСПРАВЛЕНО: Используем только actualTotalPages вместо maxTotalPages
-    if (page >= 1 && page <= actualTotalPages && page !== currentPage) {
-      console.log(`SearchResults: Переход на страницу ${page} разрешен (клиентская пагинация)`);
-      onPageChange(page);
-    } else {
-      if (page === currentPage) {
-        console.log(`SearchResults: Уже находимся на странице ${page}, переход не требуется`);
-      } else {
-        console.log(`SearchResults: Invalid page change request: ${page}, actualTotalPages: ${actualTotalPages}`);
-      }
+    // Проверяем валидность запрошенной страницы
+    if (page < 1) {
+      console.warn(`SearchResults: запрошена некорректная страница ${page} (меньше 1)`);
+      return;
     }
+    
+    if (page > actualTotalPages) {
+      console.warn(`SearchResults: запрошена страница ${page}, но максимум доступно ${actualTotalPages}`);
+      // Можно либо ограничить страницу максимумом, либо показать уведомление
+      toast.error(`Страница ${page} недоступна. Максимум: ${actualTotalPages}`, { duration: 3000 });
+      return;
+    }
+    
+    if (page === currentPage) {
+      console.log(`SearchResults: уже находимся на странице ${page}, переход не требуется`);
+      return;
+    }
+    
+    console.log(`SearchResults: переход на страницу ${page} разрешен (клиентская пагинация)`);
+    onPageChange(page);
   };
 
   return (
@@ -108,7 +126,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
         selectedProduct={selectedProduct}
         onSelect={onSelect}
         currentPage={currentPage}
-        // ИСПРАВЛЕНО: Используем только actualTotalPages
+        // ИСПРАВЛЕНО: Используем actualTotalPages вместо totalPages
         totalPages={actualTotalPages}
         onPageChange={handlePageChange}
         isDemo={isDemo}

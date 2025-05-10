@@ -1,4 +1,3 @@
-
 import { ProductFilters } from "@/services/types";
 import { useSearchExecutor } from './useSearchExecutor';
 import { useSearchCache } from './useSearchCache';
@@ -17,6 +16,8 @@ type SearchExecutionProps = {
   setCachedResults: (results: {[page: number]: any[]}) => void;
   currentPage: number;
   setCurrentPage: (page: number) => void;
+  totalPages: number; // Добавляем totalPages в props
+  setTotalPages: (pages: number) => void; // Явно добавляем setTotalPages
   filters: ProductFilters;
   setOriginalQuery: (query: string) => void;
   setHasSearched: (searched: boolean) => void;
@@ -39,6 +40,8 @@ export function useSearchExecutionActions({
   setCachedResults,
   currentPage,
   setCurrentPage,
+  totalPages, // Добавляем totalPages
+  setTotalPages, // Добавляем setTotalPages
   filters,
   setOriginalQuery,
   setHasSearched,
@@ -47,7 +50,7 @@ export function useSearchExecutionActions({
   getSearchCountries
 }: SearchExecutionProps) {
   
-  // Используем наши новые рефакторинговые хуки
+  // Используем наши рефакторинговые хуки, теперь с правильной передачей setTotalPages
   const { executeSearch, cleanupSearch } = useSearchExecutor({
     isLoading,
     setIsLoading,
@@ -56,7 +59,7 @@ export function useSearchExecutionActions({
     cachedResults,
     setCachedResults, 
     setCurrentPage,
-    setTotalPages: () => {}, // Временно, будет заменено
+    setTotalPages, // Передаем реальную функцию, а не пустышку
     setHasSearched,
     setIsUsingDemoData,
     setApiInfo
@@ -70,7 +73,7 @@ export function useSearchExecutionActions({
 
   // Основная функция поиска с улучшенной логикой работы с клиентской пагинацией
   const handleSearch = async (page: number = 1, forceNewSearch: boolean = false) => {
-    console.log(`handleSearch вызван: страница ${page}, forceNewSearch: ${forceNewSearch}, текущая страница: ${currentPage}`);
+    console.log(`handleSearch вызван: страница ${page}, forceNewSearch: ${forceNewSearch}, текущая страница: ${currentPage}, totalPages: ${totalPages}`);
     
     // Проверяем, есть ли запрос для поиска
     if (!searchQuery && !lastSearchQuery) {
@@ -88,6 +91,26 @@ export function useSearchExecutionActions({
     
     if (isSameQuery && hasAllResults && !forceNewSearch) {
       console.log(`Смена страницы на ${page} без повторного запроса - используем клиентскую пагинацию`);
+      
+      // Пересчитываем totalPages на основе allSearchResults перед сменой страницы
+      if (allSearchResults.length > 0) {
+        const itemsPerPage = 12;
+        const calculatedPages = Math.ceil(allSearchResults.length / itemsPerPage);
+        console.log(`Пересчитываем страницы: ${calculatedPages} (из ${allSearchResults.length} элементов)`);
+        
+        // Убеждаемся, что totalPages обновлен корректно
+        if (calculatedPages !== totalPages) {
+          console.log(`Корректируем общее число страниц с ${totalPages} на ${calculatedPages}`);
+          setTotalPages(calculatedPages);
+        }
+        
+        // Проверяем валидность запрашиваемой страницы
+        if (page > calculatedPages) {
+          console.log(`Запрошена страница ${page}, но максимум доступно ${calculatedPages}`);
+          page = calculatedPages;
+        }
+      }
+      
       // Просто меняем страницу без новых запросов
       setCurrentPage(page);
       return;
@@ -95,7 +118,7 @@ export function useSearchExecutionActions({
     
     // Если это новый поиск или принудительный поиск, продолжаем обычный процесс
     
-    // Устанавливаем текущую страницу перед выполнением поиска
+    // Устанавливаем текущую страни��у перед выполнением поиска
     if (page !== currentPage) {
       console.log(`Устанавливаем новую текущую страницу: ${page}`);
       setCurrentPage(page);
@@ -138,8 +161,8 @@ export function useSearchExecutionActions({
         getSearchCountries
       );
       
-      // После успешного поиска, проверяем состояние
-      console.log(`Поиск завершен. Текущая страница: ${currentPage}, запрошенная: ${page}, успех: ${result.success}`);
+      // После успешного поиска, проверяем состояние и логируем результат включая totalPages
+      console.log(`Поиск завершен. Текущая страница: ${currentPage}, запрошенная: ${page}, успех: ${result.success}, totalPages: ${totalPages}`);
       
       // Если поиск был неудачным, пытаемся использовать кешированные результаты
       if (!result.success) {

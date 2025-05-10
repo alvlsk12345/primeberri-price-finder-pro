@@ -76,7 +76,7 @@ export function useSearchActions(props: SearchStateProps) {
     getSearchCountries
   } = props;
 
-  // Используем наши новые хуки для различных действий
+  // Используем наши хуки для различных действий, теперь с полным набором параметров
   const { handleSearch, cleanupSearch } = useSearchExecutionActions({
     searchQuery,
     lastSearchQuery,
@@ -85,12 +85,14 @@ export function useSearchActions(props: SearchStateProps) {
     setIsLoading,
     searchResults,
     setSearchResults,
-    allSearchResults,        // Добавляем
-    setAllSearchResults,     // Добавляем
+    allSearchResults,
+    setAllSearchResults,
     cachedResults,
     setCachedResults,
     currentPage,
     setCurrentPage,
+    totalPages, // Добавляем totalPages
+    setTotalPages, // Добавляем setTotalPages
     filters,
     setOriginalQuery,
     setHasSearched,
@@ -103,13 +105,12 @@ export function useSearchActions(props: SearchStateProps) {
     setSelectedProduct
   });
   
-  // Обновлено: передаем setCurrentPage в хук пагинации
   const { handlePageChange } = usePaginationActions({
     currentPage,
-    totalPages,
+    totalPages, // Передаем актуальное количество страниц
     pageChangeCount,
     setPageChangeCount,
-    setCurrentPage, // Добавлен этот параметр для прямого обновления страницы
+    setCurrentPage,
     handleSearch
   });
   

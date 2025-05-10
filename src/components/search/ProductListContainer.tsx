@@ -1,5 +1,5 @@
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Product } from "@/services/types";
 import { ProductList } from '../product/ProductList';
 import { Pagination } from '../product/Pagination';
@@ -25,54 +25,54 @@ export const ProductListContainer: React.FC<ProductListContainerProps> = ({
   onPageChange,
   isDemo = false
 }) => {
+  // Добавляем эффект для логирования обновлений пропсов
+  useEffect(() => {
+    console.log(`ProductListContainer: обновлен с currentPage=${currentPage}, totalPages=${totalPages}, products.length=${products.length}`);
+  }, [currentPage, totalPages, products]);
+
   // Улучшенный обработчик смены страницы для клиентской пагинации
   const handlePageChange = useCallback((page: number) => {
-    console.log(`ProductListContainer: Запрос на смену страницы с ${currentPage} на ${page}`);
+    console.log(`ProductListContainer: запрос на смену страницы с ${currentPage} на ${page}`);
     
-    // ВАЖНОЕ ИСПРАВЛЕНИЕ: Проверяем наличие страниц более осторожно
+    // Базовые проверки валидности
+    if (page === currentPage) {
+      console.log(`ProductListContainer: уже находимся на странице ${page}, переход не требуется`);
+      return;
+    }
+    
+    // ВАЖНОЕ ИСПРАВЛЕНИЕ: проверяем наличие страниц
     if (totalPages <= 0) {
-      console.warn(`ProductListContainer: Некорректное общее количество страниц: ${totalPages}`);
+      console.warn(`ProductListContainer: некорректное общее количество страниц: ${totalPages}`);
       toast.error(`Невозможно перейти на страницу ${page} - страницы не инициализированы`, {
         duration: 3000
       });
       return;
     }
     
-    // Важная проверка: убедиться, что у нас действительно есть больше одной страницы
-    if (totalPages <= 1 && page !== 1) {
-      console.warn(`ProductListContainer: Запрошена страница ${page}, но всего страниц: ${totalPages}`);
-      toast.error(`Страница ${page} недоступна. В данный момент доступна только страница 1.`, {
+    // Проверка на минимальную страницу
+    if (page <= 0) {
+      console.warn(`ProductListContainer: запрошена некорректная страница ${page} (меньше 1)`);
+      return;
+    }
+    
+    // Проверка на максимальную страницу
+    if (page > totalPages) {
+      console.warn(`ProductListContainer: запрошена недопустимая страница ${page} (всего: ${totalPages})`);
+      
+      toast.error(`Страница ${page} не существует. Максимум: ${totalPages}`, {
         duration: 3000
       });
       return;
     }
     
-    // Валидация страницы для предотвращения некорректных переходов
-    if (page <= 0 || page > totalPages) {
-      console.warn(`ProductListContainer: Запрошена недопустимая страница ${page} (всего: ${totalPages})`);
-      
-      if (page > totalPages && totalPages > 0) {
-        toast.error(`Страница ${page} не существует. Максимум: ${totalPages}`, {
-          duration: 3000
-        });
-      }
-      return;
-    }
+    console.log(`ProductListContainer: переход на страницу ${page} (клиентская пагинация)`);
     
-    // Проверка, что запрошенная страница отличается от текущей
-    if (page === currentPage) {
-      console.log(`ProductListContainer: Уже находимся на странице ${page}, переход не требуется`);
-      return;
-    }
-    
-    console.log(`ProductListContainer: Переход на страницу ${page} (клиентская пагинация)`);
-    
-    // Просто вызываем функцию смены страницы, без дополнительных запросов
+    // Вызываем функцию смены страницы из пропсов
     onPageChange(page);
     
     // Дополнительная проверка через таймаут (для отладки)
     setTimeout(() => {
-      console.log(`ProductListContainer: Через 500мс после запроса страницы ${page}, текущая страница: ${currentPage}`);
+      console.log(`ProductListContainer: через 500мс после запроса страницы ${page}, текущая страница: ${currentPage}`);
     }, 500);
   }, [currentPage, totalPages, onPageChange]);
 

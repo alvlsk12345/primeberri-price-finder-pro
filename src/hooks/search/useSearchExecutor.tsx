@@ -1,4 +1,3 @@
-
 import { useRef } from 'react';
 import { Product, ProductFilters, SearchParams } from "@/services/types";
 import { toast } from "sonner";
@@ -11,11 +10,11 @@ type SearchExecutorProps = {
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
   setSearchResults: (results: Product[]) => void;
-  setAllSearchResults: (results: Product[]) => void; // Добавляем установку всех результатов
+  setAllSearchResults: (results: Product[]) => void;
   cachedResults: {[page: number]: Product[]};
   setCachedResults: (results: {[page: number]: Product[]}) => void;
   setCurrentPage: (page: number) => void;
-  setTotalPages: (pages: number) => void; // Будем использовать эту функцию правильно
+  setTotalPages: (pages: number) => void;
   setHasSearched: (searched: boolean) => void;
   setIsUsingDemoData: (usingDemo: boolean) => void;
   setApiInfo: (info: Record<string, string> | undefined) => void;
@@ -29,7 +28,7 @@ export function useSearchExecutor({
   cachedResults,
   setCachedResults,
   setCurrentPage,
-  setTotalPages, // Теперь это реальная функция
+  setTotalPages,
   setHasSearched,
   setIsUsingDemoData,
   setApiInfo,
@@ -113,9 +112,15 @@ export function useSearchExecutor({
           const calculatedTotalPages = Math.max(1, Math.ceil(results.products.length / itemsPerPage));
           console.log(`Вычисляем общее количество страниц на основе ${results.products.length} результатов: ${calculatedTotalPages}`);
           
-          // Устанавливаем общее количество страниц - используем максимальное из вычисленного и полученного от API
-          setTotalPages(Math.max(calculatedTotalPages, results.totalPages || 1));
-          console.log(`Установлено общее количество страниц: ${Math.max(calculatedTotalPages, results.totalPages || 1)}`);
+          // Гарантированно устанавливаем общее количество страниц
+          // используем максимальное из вычисленного и полученного от API
+          const finalTotalPages = Math.max(calculatedTotalPages, results.totalPages || 1);
+          console.log(`Устанавливаем общее количество страниц: ${finalTotalPages}`);
+          setTotalPages(finalTotalPages);
+        } else {
+          // Если нет результатов, устанавливаем 1 страницу
+          console.log(`Нет результатов поиска, устанавливаем 1 страницу`);
+          setTotalPages(1);
         }
         
         // Применяем сортировку и фильтрацию к результатам
@@ -135,6 +140,7 @@ export function useSearchExecutor({
         } else {
           // Если API не вернул результатов
           setSearchResults([]);
+          setTotalPages(1); // Явно устанавливаем 1 страницу при отсутствии результатов
           toast.error('По вашему запросу ничего не найдено. Попробуйте изменить запрос.', { duration: 4000 });
           return { success: false, products: [] };
         }
@@ -142,6 +148,14 @@ export function useSearchExecutor({
         // Обработка ошибки API
         console.error('Ошибка при запросе к API:', apiError);
         toast.error(`Ошибка API: ${apiError.message}`, { duration: 5000 });
+        
+        // В случае ошибки API не сбрасываем totalPages, если у нас есть результаты
+        if (lastSuccessfulResultsRef.current.length === 0) {
+          console.log('Сбрасываем totalPages в 1 из-за ошибки API и отсутствия предыдущих результатов');
+          setTotalPages(1);
+        } else {
+          console.log('Сохраняем предыдущее значение totalPages, несмотря на ошибку API');
+        }
         
         // Возвращаем предыдущие результаты если они есть
         if (lastSuccessfulResultsRef.current.length > 0) {
@@ -157,7 +171,7 @@ export function useSearchExecutor({
       // Повтор запроса при ошибке сети или таймауте
       if (retryAttemptsRef.current < MAX_RETRY_ATTEMPTS) {
         retryAttemptsRef.current++;
-        console.log(`Ошибка при поиске. Повторная попытка ${retryAttemptsRef.current} из ${MAX_RETRY_ATTEMPTS}`);
+        console.log(`Ошибка при поиске. Пов��орная попытка ${retryAttemptsRef.current} из ${MAX_RETRY_ATTEMPTS}`);
         toast.info(`Повторный запрос (попытка ${retryAttemptsRef.current})...`, { duration: 2000 });
         
         // Задержка перед повторной попыткой
