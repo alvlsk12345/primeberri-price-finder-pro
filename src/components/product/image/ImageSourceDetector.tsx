@@ -1,5 +1,5 @@
 
-import { isGoogleShoppingImage, isGoogleCseImage, isZylalabsImage } from '@/services/imageProcessor';
+import { isZylalabsImage, isGoogleCseImage, isGoogleShoppingImage, isProxiedUrl } from '@/services/image';
 
 export interface ImageSourceInfo {
   useAvatar: boolean;
@@ -23,18 +23,15 @@ export function detectImageSource(image: string | null): ImageSourceInfo {
   const isZylalabs = isZylalabsImage(image);
   
   // Проверяем, является ли URL с CORS-прокси
-  const isProxiedUrl = 
-    image.includes('corsproxy.io') || 
-    image.includes('cors-anywhere') || 
-    image.includes('proxy.cors');
+  const isProxiedUrlResult = isProxiedUrl(image);
   
   // Определяем, использовать ли Avatar вместо img
-  const useAvatar = isGoogleImage || isZylalabs || isProxiedUrl || image.includes('encrypted-tbn');
+  const useAvatar = isGoogleImage || isZylalabs || isProxiedUrlResult || image.includes('encrypted-tbn');
   
   return {
     useAvatar,
     isGoogleImage,
     isZylalabs,
-    isProxiedUrl
+    isProxiedUrl: isProxiedUrlResult
   };
 }

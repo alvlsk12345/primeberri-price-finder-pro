@@ -1,5 +1,5 @@
 
-import { processProductImage } from "../imageProcessor";
+import { processProductImage } from "../image";
 import { searchProductImageGoogle } from "./googleSearchService";
 
 /**

@@ -1,6 +1,6 @@
 
 import { Product } from '../types';
-import { processProductImage } from '../imageProcessor';
+import { processProductImage } from '../image';
 
 /**
  * Извлекает числовое значение цены из строкового представления
