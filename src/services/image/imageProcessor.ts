@@ -103,3 +103,37 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
   
   return finalUrl;
 };
+
+/**
+ * Получение URL изображения базового размера
+ */
+export const getBaseSizeImageUrl = (url: string): string => {
+  if (!url) return '';
+  return url.replace(/=w\d+-h\d+/, '=w300-h300');
+};
+
+/**
+ * Получение URL изображения большого размера
+ */
+export const getLargeSizeImageUrl = (url: string): string => {
+  if (!url) return '';
+  return url.replace(/=w\d+-h\d+/, '=w800-h800');
+};
+
+/**
+ * Получение URL изображения размера Zylalabs
+ */
+export const getZylalabsSizeImageUrl = (url: string): string => {
+  if (!url) return '';
+  
+  // Размер для Zylalabs изображений
+  if (isZylalabsImage(url)) {
+    if (url.includes('=s')) {
+      return url.replace(/=s\d+/, '=s400');
+    } else {
+      return url + '=s400';
+    }
+  }
+  
+  return url;
+};

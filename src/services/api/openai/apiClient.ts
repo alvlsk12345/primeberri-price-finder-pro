@@ -44,7 +44,7 @@ export const callOpenAI = async (prompt: string, options: {
       model: "gpt-4o",
       temperature: 0.2,
       max_tokens: 500,
-      responseFormat: "text"
+      responseFormat: "text" as "json_object" | "text"
     };
     
     const finalOptions = { ...defaultOptions, ...options, retryAttempt };
