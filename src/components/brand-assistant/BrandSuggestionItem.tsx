@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { BrandSuggestion } from "@/services/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ImageOff } from "lucide-react";
-import { searchProductImage } from "@/services/api/duckduckgoService";
 import { searchProductImageGoogle } from "@/services/api/googleSearchService";
 import { getPlaceholderImageUrl } from "@/services/imageService";
 
@@ -36,15 +35,9 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
     setIsImageLoading(true);
     
     try {
-      // Сначала пробуем использовать Google CSE API с другим индексом
+      // Пробуем использовать Google CSE API с другим индексом
       console.log(`Поиск запасного изображения через Google CSE для ${suggestion.brand}`);
       let newImageUrl = await searchProductImageGoogle(suggestion.brand, suggestion.product, index + 5);
-      
-      // Если не нашли через Google, пробуем через запасной метод
-      if (!newImageUrl) {
-        console.log(`Поиск запасного изображения через резервный метод для ${suggestion.brand}`);
-        newImageUrl = await searchProductImage(suggestion.brand, suggestion.product, index + 10);
-      }
       
       if (newImageUrl) {
         // Если нашли изображение, устанавливаем его
@@ -89,7 +82,7 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
             </Avatar>
           ) : (
             <div className="h-14 w-14 bg-slate-100 rounded flex items-center justify-center">
-              <ImageOff size={20} className="text-slate-400" />
+              <ImageOff size={20} className="text-gray-400" />
             </div>
           )}
           <div className="flex-1">

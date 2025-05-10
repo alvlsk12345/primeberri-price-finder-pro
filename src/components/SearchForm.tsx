@@ -53,9 +53,27 @@ export const SearchForm: React.FC<SearchFormProps> = ({
     }
   };
 
+  // Обновлено для включения бренда в поисковый запрос
   const handleSelectProduct = (product: string, performSearch: boolean = false) => {
-    setSearchQuery(product);
-    toast.info(`Товар "${product}" добавлен в поле поиска`, {
+    // Находим выбранный товар из AI-помощника по компонентам
+    const componentElements = document.querySelectorAll('.p-2.bg-white.rounded.border');
+    let brandName = '';
+    
+    componentElements.forEach((element) => {
+      const productElement = element.querySelector('p.text-sm');
+      if (productElement && productElement.textContent === product) {
+        const brandElement = element.querySelector('p.font-medium');
+        if (brandElement) {
+          brandName = brandElement.textContent || '';
+        }
+      }
+    });
+    
+    // Формируем запрос, включая бренд, если он найден
+    const searchTerm = brandName ? `${brandName} ${product}` : product;
+    setSearchQuery(searchTerm);
+    
+    toast.info(`Товар "${searchTerm}" добавлен в поле поиска`, {
       duration: 2000
     });
     

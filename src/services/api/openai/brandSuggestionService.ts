@@ -1,10 +1,8 @@
 
 import { toast } from "sonner";
 import { BrandSuggestion } from "@/services/types";
-import { processProductImage } from "@/services/imageProcessor";
-import { searchProductImage } from "@/services/api/duckduckgoService";
-import { searchProductImageGoogle } from "@/services/api/googleSearchService";
 import { getPlaceholderImageUrl } from "@/services/imageService";
+import { searchProductImageGoogle } from "@/services/api/googleSearchService";
 import { callOpenAI } from "./apiClient";
 import { getApiKey } from "./config";
 
@@ -21,15 +19,15 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
 
     console.log('Отправляем запрос к OpenAI для получения брендов...');
     
-    // Специализированный промпт для получения брендов с изображениями
-    const brandPrompt = `Помощник для поиска брендов и товаров: Когда пользователь вводит описание товара или запроса, система должна предложить 5 вариантов брендов и соответствующих товаров, которые могут соответствовать запросу. Для каждого бренда вывести его название, название товара, краткое описание товара. НЕ ВОЗВРАЩАЙТЕ ИЗОБРАЖЕНИЯ И ССЫЛКИ! Ответ должен содержать список из 5 брендов с их товарами, названиями товаров и короткими описаниями. Формат: 'Бренд: [название бренда], Товар: [название товара], Описание: [краткое описание товара]'.
+    // Оптимизированный промпт для более быстрого получения результатов
+    const brandPrompt = `Предложи 3 бренда товаров, соответствующих запросу пользователя. Для каждого бренда укажи: название бренда, название конкретной модели товара, краткое описание товара в одно предложение. Формат ответа строго: 'Бренд: [название бренда], Товар: [название товара], Описание: [краткое описание]'. Ответ должен содержать ровно 3 строки, по одной на каждый бренд.
 
 Запрос пользователя: "${description}"`;
 
-    // Получаем ответ от API
+    // Получаем ответ от API с уменьшенным количеством токенов
     const content = await callOpenAI(brandPrompt, {
       temperature: 0.5,
-      max_tokens: 600
+      max_tokens: 300 // Сокращаем количество токенов для ускорения
     });
 
     if (!content) {
@@ -53,15 +51,9 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
           const product = productMatch[1].trim();
           const description = descriptionMatch[1].trim();
           
-          // Сначала пытаемся найти изображение через Google CSE API
+          // Поиск изображения через Google CSE
           console.log(`Поиск изображения для ${brand} ${product} через Google CSE`);
-          let imageUrl = await searchProductImageGoogle(brand, product, suggestions.length);
-          
-          // Если через Google не нашли, используем резервный метод (старый DuckDuckGo)
-          if (!imageUrl) {
-            console.log(`Google CSE не нашел изображение, пробуем через резервный метод для ${brand} ${product}`);
-            imageUrl = await searchProductImage(brand, product, suggestions.length);
-          }
+          const imageUrl = await searchProductImageGoogle(brand, product, suggestions.length);
           
           suggestions.push({
             brand,
@@ -75,8 +67,8 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
       }
     }
 
-    // Если у нас нет 5 результатов, возвращаем то что есть
-    return suggestions.slice(0, 5);
+    // Возвращаем найденные предложения (до 3 результатов)
+    return suggestions.slice(0, 3);
 
   } catch (error) {
     console.error('Ошибка при запросе к OpenAI для брендов:', error);

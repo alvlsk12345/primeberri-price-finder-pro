@@ -2,83 +2,6 @@
 import { processProductImage } from "../imageProcessor";
 import { searchProductImageGoogle } from "./googleSearchService";
 
-// Кэш для хранения результатов поиска изображений
-const imageCache: Record<string, string> = {};
-
-/**
- * Функция для поиска изображения через DuckDuckGo API
- * @param query Запрос для поиска изображения (например, "бренд продукт")
- * @param index Индекс для генерации уникального изображения
- * @returns URL изображения или пустую строку в случае ошибки
- */
-export const searchImageDuckDuckGo = async (query: string, index: number = 0): Promise<string> => {
-  try {
-    // Проверяем кэш перед выполнением запроса
-    const cacheKey = `${query.toLowerCase()}_${index}`;
-    if (imageCache[cacheKey]) {
-      console.log(`Изображение найдено в кэше для запроса: ${query}`);
-      return imageCache[cacheKey];
-    }
-
-    // Сначала пробуем использовать Google CSE API (основной метод)
-    console.log(`Попытка поиска изображения через Google CSE для: ${query}`);
-    try {
-      const googleImage = await searchProductImageGoogle(query, "", index);
-      if (googleImage) {
-        console.log(`Найдено изображение через Google CSE: ${googleImage}`);
-        imageCache[cacheKey] = googleImage;
-        return googleImage;
-      }
-    } catch (googleError) {
-      console.error('Ошибка при поиске изображения через Google CSE, переключаемся на DuckDuckGo:', googleError);
-    }
-    
-    // Резервный метод - DuckDuckGo API
-    console.log(`Поиск изображения через DuckDuckGo для: ${query} (резервный)`);
-    
-    // Формируем URL для запроса к неофициальному DuckDuckGo API
-    const encodedQuery = encodeURIComponent(query);
-    const apiUrl = `https://duckduckgo.com/i.js?q=${encodedQuery}&o=json`;
-    
-    // Добавляем случайный параметр для обхода кэширования
-    const urlWithNocache = `${apiUrl}&nocache=${Date.now()}`;
-    
-    // Выполняем запрос к API
-    const response = await fetch(urlWithNocache);
-    
-    if (!response.ok) {
-      console.error(`Ошибка запроса DuckDuckGo API: ${response.status}`);
-      return '';
-    }
-    
-    const data = await response.json();
-    
-    // Проверяем, есть ли результаты в ответе
-    if (data && data.results && data.results.length > 0) {
-      // Всегда берем первое (наиболее релевантное) изображение или по индексу
-      const imageIndex = Math.min(index, data.results.length - 1);
-      const imageUrl = data.results[imageIndex]?.image || data.results[0]?.image;
-      
-      if (imageUrl) {
-        // Обрабатываем URL изображения через нашу существующую функцию
-        const processedUrl = processProductImage(imageUrl, index);
-        
-        // Сохраняем результат в кэше
-        imageCache[cacheKey] = processedUrl;
-        
-        console.log(`Найдено изображение через DuckDuckGo: ${processedUrl}`);
-        return processedUrl;
-      }
-    }
-    
-    console.log(`Нет доступных изображений для запроса: ${query}`);
-    return '';
-  } catch (error) {
-    console.error('Ошибка при поиске изображения:', error);
-    return '';
-  }
-};
-
 /**
  * Функция для поиска изображения по бренду и продукту
  * @param brand Название бренда
@@ -87,9 +10,6 @@ export const searchImageDuckDuckGo = async (query: string, index: number = 0): P
  * @returns URL изображения или пустую строку в случае ошибки
  */
 export const searchProductImage = async (brand: string, product: string, index: number = 0): Promise<string> => {
-  // Формируем запрос из бренда и продукта
-  const query = `${brand} ${product}`;
-  
-  // Ищем изображение по запросу
-  return await searchImageDuckDuckGo(query, index);
+  // Используем Google CSE вместо DuckDuckGo
+  return await searchProductImageGoogle(brand, product, index);
 };
