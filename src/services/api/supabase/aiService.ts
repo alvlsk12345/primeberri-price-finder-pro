@@ -1,3 +1,4 @@
+
 import { supabase, isSupabaseConnected } from './client';
 import { isUsingSupabaseBackend, isFallbackEnabled } from './config';
 import { toast } from "sonner";
@@ -131,7 +132,7 @@ export async function fetchBrandSuggestionsViaOpenAI(description: string): Promi
     provider: 'openai',
     prompt: `Ты эксперт по брендам и товарам. Назови 5 популярных брендов с конкретными товарами, которые могут соответствовать запросу: '${description}'. 
 
-ОЧЕНЬ ВАЖНО: Твой ответ должен быть строго в формате массива JSON.
+ОЧЕНЬ ВАЖНО: Твой ответ должен быть строго в формате массива JSON. Не возвращай один объект, только массив объектов.
 
 Формат ответа должен быть таким:
 [
@@ -151,8 +152,21 @@ export async function fetchBrandSuggestionsViaOpenAI(description: string): Promi
   
   console.log('Результат от fetchBrandSuggestionsViaOpenAI:', result);
   
+  // Обрабатываем результат - проверяем формат
+  if (Array.isArray(result)) {
+    return result;
+  } else if (result && typeof result === 'object' && (result.brand || result.product)) {
+    // Если получен один объект вместо массива, преобразуем его в массив из одного элемента
+    console.log('Получен один объект вместо массива, преобразуем его');
+    return [{
+      brand: result.brand || result.name || "Неизвестный бренд",
+      product: result.product || "",
+      description: result.description || "Описание недоступно",
+    }];
+  }
+  
   // Возвращаем результат напрямую, парсинг будет выполнен в parseBrandApiResponse
-  return result;
+  return result || [];
 }
 
 // Функция для поиска через Abacus

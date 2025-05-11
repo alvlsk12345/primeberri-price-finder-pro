@@ -36,9 +36,17 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
         product: brand.product || "",
         description: brand.description || "Описание недоступно",
       }));
+    } else if (result && typeof result === 'object' && (result.brand || result.product)) {
+      // Если получен один объект вместо массива, преобразуем его в массив из одного элемента
+      console.log('Получен один объект вместо массива, преобразуем его');
+      return [{
+        brand: result.brand || result.name || "Неизвестный бренд",
+        product: result.product || "",
+        description: result.description || "Описание недоступно",
+      }];
     }
     
-    // Если не удалось получить корректный массив
+    // Если не удалось получить корректный массив или объект
     console.error('Некорректный формат ответа от OpenAI:', result);
     return [];
     
