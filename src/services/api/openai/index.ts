@@ -1,5 +1,7 @@
 
 // Экспортируем все необходимые функции из подмодулей
 export { getApiKey, setApiKey, hasValidApiKey } from './config';
-export { callOpenAI, fetchFromOpenAI } from './apiClient';
+export { callOpenAI } from './apiClient';
+export { fetchFromOpenAI } from './searchService';
 export { fetchBrandSuggestions } from './brandSuggestionService';
+export { createMockProductsFromQuery } from './responseUtils';
