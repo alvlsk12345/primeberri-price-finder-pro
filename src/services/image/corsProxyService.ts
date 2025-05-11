@@ -1,43 +1,44 @@
 
 /**
- * Заглушка для сервиса CORS-прокси (функциональность удалена)
- * Этот файл содержит заглушки функций, которые использовались ранее
+ * Этот файл содержит функции для работы с прокси-сервером для обхода CORS-ограничений
+ * Новая реализация использует Supabase Edge Functions
  */
 
+import { needsProxying, getProxiedImageUrl } from './imageProxy';
+
 /**
- * Возвращает имя текущего прокси (заглушка)
+ * Возвращает имя текущего прокси
  */
 export const getCurrentProxyName = (): string => {
-  return "Прямое соединение (без прокси)";
+  return "Supabase Edge Function Proxy";
 };
 
 /**
- * Заглушка для функции переключения прокси (больше не используется)
+ * Заглушка для функции переключения прокси (теперь используется один прокси)
  */
 export const switchToNextProxy = (): void => {
-  console.log("Функция переключения прокси недоступна - прокси больше не используются");
+  console.log("Функция переключения прокси недоступна - используется Supabase Edge Function");
 };
 
 /**
  * Сброс индекса прокси (заглушка)
  */
 export const resetProxyIndex = (): void => {
-  console.log("Функция сброса прокси недоступна - прокси больше не используются");
+  console.log("Функция сброса прокси недоступна - используется Supabase Edge Function");
 };
 
 /**
- * Заглушка для применения CORS-прокси к URL (больше не используется)
+ * Применяет CORS-прокси к URL если необходимо
  * @param url URL для обработки
- * @returns Исходный URL без изменений
+ * @returns URL с прокси или оригинальный URL
  */
 export const applyCorsProxy = (url: string): string => {
-  // Просто возвращаем URL без изменений, так как прокси больше не применяются
-  return url;
+  return needsProxying(url) ? getProxiedImageUrl(url) : url;
 };
 
 /**
  * Заглушка для получения максимального количества попыток прокси
  */
 export const getMaxProxyAttempts = (): number => {
-  return 1; // Больше не используются попытки прокси
+  return 1;
 };

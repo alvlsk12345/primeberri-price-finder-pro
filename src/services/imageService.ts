@@ -8,7 +8,8 @@
 export { 
   isGoogleShoppingImage,
   isZylalabsImage,
-  isGoogleCseImage
+  isGoogleCseImage,
+  isUrlWithCorsProxy
 } from './image/imageSourceDetector';
 
 export {
@@ -24,3 +25,8 @@ export {
   getUniqueImageUrl
 } from './image/imageCache';
 
+export {
+  needsProxying,
+  getProxiedImageUrl,
+  isProxiedUrl
+} from './image/imageProxy';

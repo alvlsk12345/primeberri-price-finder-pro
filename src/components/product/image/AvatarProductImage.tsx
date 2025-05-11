@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ImageLoadingState } from './useProductImageLoading';
 import { ImageSourceInfo } from './ImageSourceDetector';
 import { getPlaceholderImageUrl } from '@/services/image/imagePlaceholder';
+import { getProxiedImageUrl, needsProxying } from '@/services/image/imageProxy';
 
 interface AvatarProductImageProps {
   image: string;
@@ -29,6 +30,18 @@ export const AvatarProductImage: React.FC<AvatarProductImageProps> = ({
   
   const MAX_RETRIES = 3;
   
+  // Функция для попытки использования прокси при CORS-ошибках
+  const tryWithProxy = (originalUrl: string) => {
+    // Если URL уже проксирован или не требует проксирования, используем другую стратегию
+    if (isProxiedUrl || !needsProxying(originalUrl)) {
+      return `${originalUrl}?retry=${Date.now()}`;
+    }
+    
+    // Применяем прокси
+    console.log(`Попытка проксирования изображения для обхода CORS: ${originalUrl}`);
+    return getProxiedImageUrl(originalUrl);
+  };
+  
   // Пытаемся автоматически восстановиться после ошибки загрузки 
   useEffect(() => {
     if (imageError && retryCount < MAX_RETRIES) {
@@ -37,8 +50,14 @@ export const AvatarProductImage: React.FC<AvatarProductImageProps> = ({
         console.log(`Повторная попытка загрузки изображения ${retryCount + 1}/${MAX_RETRIES}: ${image}`);
         
         setRetryCount(prev => prev + 1);
-        // Форсируем ререндер изображения
-        setFallbackImage(`${image}?retry=${Date.now()}`);
+        
+        // Если это первая попытка и URL требует проксирования - используем прокси
+        if (retryCount === 0 && needsProxying(image)) {
+          setFallbackImage(tryWithProxy(image));
+        } else {
+          // Иначе просто форсируем ререндер изображения с новым timestamp
+          setFallbackImage(`${image}?retry=${Date.now()}`);
+        }
       }, 1000 * (retryCount + 1)); // Увеличиваем время ожидания с каждой попыткой
       
       return () => clearTimeout(timer);
@@ -73,7 +92,9 @@ export const AvatarProductImage: React.FC<AvatarProductImageProps> = ({
               isRetry: retryCount > 0,
               isProxiedUrl,
               isGoogleImage,
-              isZylalabs
+              isZylalabs,
+              errorType: e.type,
+              corsError: e.currentTarget.src.includes('encrypted-tbn')
             });
             handleImageError();
           }}

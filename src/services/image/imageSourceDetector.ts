@@ -2,6 +2,7 @@
 /**
  * Функции для определения источника изображения
  */
+import { isProxiedUrl } from './imageProxy';
 
 /**
  * Проверяет, является ли URL изображением из Google Shopping
@@ -34,10 +35,10 @@ export const isZylalabsImage = (url: string): boolean => {
 };
 
 /**
- * Проверяет, является ли URL с прокси (для обеспечения совместимости)
+ * Проверяет, является ли URL с прокси
  */
 export const isUrlWithCorsProxy = (url: string): boolean => {
   if (!url) return false;
   
-  return false;
+  return isProxiedUrl(url) || url.includes('juacmpkewomkducoanle.supabase.co/functions/v1/image-proxy');
 };

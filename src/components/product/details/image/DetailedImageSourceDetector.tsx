@@ -22,8 +22,8 @@ export function detectDetailedImageSource(image: string | null): DetailedImageSo
   const isGoogleImage = isGoogleShoppingImage(image) || isGoogleCseImage(image);
   const isZylalabs = isZylalabsImage(image);
   
-  // С удалением CORS-прокси эта функция всегда возвращает false
-  const isProxiedUrlResult = false;
+  // Проверяем, является ли URL с прокси
+  const isProxiedUrlResult = isUrlWithCorsProxy(image);
   
   // Определяем, использовать ли Avatar вместо img
   const useAvatar = isGoogleImage || isZylalabs || image.includes('encrypted-tbn');

@@ -9,9 +9,13 @@ import {
   cleanMarkdownUrl, 
   formatImageUrl 
 } from './imageUrlFormatter';
+import {
+  needsProxying,
+  getProxiedImageUrl
+} from './imageProxy';
 
 /**
- * Улучшенная функция для обработки изображения товара без использования CORS-прокси
+ * Улучшенная функция для обработки изображения товара с поддержкой прокси для CORS
  */
 export const processProductImage = (imageUrl: string | undefined, index: number): string => {
   // Убедимся, что imageUrl - строка
@@ -87,6 +91,13 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
   if (!isValidImageUrl(processedUrl)) {
     console.log(`Невалидный URL изображения: "${processedUrl}"`);
     return '';
+  }
+
+  // Проверяем, нужно ли проксирование для этого URL
+  if (needsProxying(processedUrl)) {
+    const originalUrl = processedUrl;
+    processedUrl = getProxiedImageUrl(processedUrl);
+    console.log(`URL требует проксирования для обхода CORS. Оригинальный: "${originalUrl}", Проксированный: "${processedUrl}"`);
   }
   
   // Добавляем уникальный параметр к URL для избежания кэширования

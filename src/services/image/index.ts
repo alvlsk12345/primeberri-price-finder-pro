@@ -6,3 +6,4 @@ export * from './imageUrlFormatter';
 export * from './imagePlaceholder';
 export * from './imageValidator';
 export * from './imageCache';
+export * from './imageProxy';

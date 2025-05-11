@@ -22,7 +22,7 @@ export function detectImageSource(image: string | null): ImageSourceInfo {
   const isGoogleImage = isGoogleShoppingImage(image) || isGoogleCseImage(image);
   const isZylalabs = isZylalabsImage(image);
   
-  // С удалением CORS-прокси эта функция всегда возвращает false
+  // Проверяем, является ли URL с прокси
   const isProxiedUrlResult = isUrlWithCorsProxy(image);
   
   // Определяем, использовать ли Avatar вместо img
