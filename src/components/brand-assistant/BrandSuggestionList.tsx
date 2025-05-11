@@ -5,7 +5,7 @@ import { BrandSuggestion } from "@/services/types";
 
 interface BrandSuggestionListProps {
   suggestions: BrandSuggestion[];
-  onSelect: (product: string) => void;
+  onSelect: (product: string, performSearch?: boolean) => void;
 }
 
 export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({ 
@@ -35,7 +35,7 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
             <BrandSuggestionItem 
               key={index} 
               suggestion={suggestion} 
-              onSelect={() => {
+              onSelect={(immediate) => {
                 // Определяем значение для поиска на основе доступных данных
                 // Поддерживаем оба формата данных
                 const brand = suggestion.brand || suggestion.name || '';
@@ -50,7 +50,7 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
                   : (brand || product || "");
                     
                 console.log(`Выбран бренд: ${brand}, товар: ${product}, поисковый запрос: ${searchTerm}`);
-                onSelect(searchTerm);
+                onSelect(searchTerm, immediate);
               }} 
               index={index}
             />

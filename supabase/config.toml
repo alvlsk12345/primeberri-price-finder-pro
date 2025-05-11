@@ -37,3 +37,6 @@ port = 54327
 [functions]
 [functions.image-proxy]
 verify_jwt = false
+
+[functions.ai-proxy]
+verify_jwt = false
