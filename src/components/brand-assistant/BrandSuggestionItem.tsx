@@ -1,170 +1,65 @@
 
-import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import React from "react";
 import { BrandSuggestion } from "@/services/types";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ImageOff } from "lucide-react";
-import { findProductImage } from "@/services/api/openai/brandSuggestion/imageUtils";
-import { getPlaceholderImageUrl } from "@/services/imageService";
-import { applyCorsProxy } from "@/services/image/corsProxyService";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface BrandSuggestionItemProps {
   suggestion: BrandSuggestion;
-  onSelect: () => void;
-  index?: number;
+  onSelect: (immediate?: boolean) => void;
+  index: number;
 }
 
 export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({ 
   suggestion, 
-  onSelect,
-  index = 0
+  onSelect, 
+  index 
 }) => {
-  const [imageUrl, setImageUrl] = useState<string | undefined>(suggestion.imageUrl || suggestion.logo);
-  const [isImageLoading, setIsImageLoading] = useState<boolean>(false);
-  const [imageError, setImageError] = useState<boolean>(false);
-  const [retryCount, setRetryCount] = useState<number>(0);
-  const MAX_RETRIES = 3;
+  const brand = suggestion.brand || suggestion.name || '';
+  const product = suggestion.product || 
+    (Array.isArray(suggestion.products) && suggestion.products.length > 0 
+      ? suggestion.products[0] 
+      : '');
+  const description = suggestion.description || '';
 
-  // При первой загрузке компонента ищем изображение, если оно не предоставлено
-  useEffect(() => {
-    const fetchImage = async () => {
-      // Если у нас уже есть URL изображения или уже идёт загрузка, пропускаем
-      if (imageUrl || isImageLoading) return;
-      
-      const brand = suggestion.brand || suggestion.name; // Поддерживаем оба формата
-      const product = suggestion.product || brand; // В случае отсутствия product используем brand
-      
-      if (!brand) return; // Проверка на наличие необходимых данных
-      
-      setIsImageLoading(true);
-      try {
-        console.log(`Поиск изображения для ${brand} ${product}`);
-        
-        // Используем функцию поиска изображения
-        const foundImageUrl = await findProductImage(brand, product, index);
-        
-        if (foundImageUrl) {
-          console.log(`Найдено изображение для ${brand}: ${foundImageUrl.substring(0, 50)}...`);
-          setImageUrl(foundImageUrl);
-          setImageError(false);
-        } else {
-          console.warn(`Изображение не найдено для ${brand}, используем плейсхолдер`);
-          setImageUrl(getPlaceholderImageUrl(brand));
-        }
-      } catch (error) {
-        console.error(`Ошибка при поиске изображения для ${brand}:`, error);
-        setImageUrl(getPlaceholderImageUrl(brand));
-      } finally {
-        setIsImageLoading(false);
-      }
-    };
-    
-    fetchImage();
-  }, [suggestion, imageUrl, isImageLoading, index]);
-
-  // Обработчик ошибки загрузки изображения с улучшенным механизмом повтора
-  const handleImageError = async () => {
-    // Отмечаем, что произошла ошибка
-    setImageError(true);
-    const brand = suggestion.brand || suggestion.name;
-    const product = suggestion.product || brand;
-    
-    console.log(`Ошибка загрузки изображения для ${brand} ${product}`);
-
-    // Если уже загружаем изображение, превысили лимит попыток или нет бренда/продукта, то выходим
-    if (isImageLoading || retryCount >= MAX_RETRIES || !brand) {
-      console.log(`Не пытаемся повторить запрос: загрузка=${isImageLoading}, попытки=${retryCount}/${MAX_RETRIES}`);
-      // Если все попытки исчерпаны, устанавливаем заглушку
-      if (retryCount >= MAX_RETRIES) {
-        console.log(`Исчерпаны все ${MAX_RETRIES} попытки. Устанавливаем заглушку.`);
-        setImageUrl(getPlaceholderImageUrl(brand));
-      }
-      return;
-    }
-
-    // Устанавливаем флаг загрузки и увеличиваем счетчик попыток
-    setIsImageLoading(true);
-    setRetryCount(prev => prev + 1);
-    
-    try {
-      // Добавляем небольшую задержку перед повторным запросом
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Рассчитываем индекс для поиска другого изображения (увеличиваем с каждой попыткой)
-      const newIndex = index + 5 + retryCount;
-      
-      console.log(`Поиск запасного изображения для ${brand} (попытка ${retryCount + 1}/${MAX_RETRIES}, индекс=${newIndex})`);
-      const newImageUrl = await findProductImage(brand, product, newIndex);
-      
-      if (newImageUrl) {
-        // Если нашли изображение, устанавливаем его
-        console.log(`Найдена замена изображения для ${brand} (попытка ${retryCount + 1})`);
-        setImageUrl(newImageUrl);
-        setImageError(false);
-      } else {
-        console.log(`Не удалось найти замену изображения (попытка ${retryCount + 1})`);
-        // Если все попытки исчерпаны, устанавливаем заглушку
-        if (retryCount >= MAX_RETRIES - 1) {
-          setImageUrl(getPlaceholderImageUrl(brand));
-        }
-      }
-    } catch (error) {
-      console.error('Не удалось найти замену изображения:', error);
-      // Если все попытки исчерпаны, устанавливаем заглушку
-      if (retryCount >= MAX_RETRIES - 1) {
-        setImageUrl(getPlaceholderImageUrl(brand));
-      }
-    } finally {
-      // Сбрасываем флаг загрузки
-      setIsImageLoading(false);
-    }
-  };
-
-  // Получаем имя бренда и продукта с учетом возможной разницы в формате данных
-  const brand = suggestion.brand || suggestion.name || "Неизвестный бренд";
-  const product = suggestion.product || brand;
-  const description = suggestion.description || "";
+  // Добавляем небольшую задержку для анимации появления элементов
+  const animationDelay = `${index * 50}ms`;
 
   return (
-    <div className="p-2 bg-white rounded border hover:bg-slate-50 transition-colors">
-      <div className="flex flex-col sm:flex-row justify-between gap-2">
-        <div className="flex gap-3">
-          {(imageUrl || !imageError) ? (
-            <Avatar className="h-14 w-14 rounded">
-              <AvatarImage 
-                src={imageUrl} 
-                alt={product}
-                className="object-cover" 
-                onError={handleImageError}
-                crossOrigin="anonymous"
-              />
-              <AvatarFallback className="bg-slate-100">
-                {isImageLoading ? (
-                  <div className="animate-spin h-4 w-4 border-2 border-slate-400 border-t-transparent rounded-full" />
-                ) : (
-                  <ImageOff size={16} className="text-slate-400" />
-                )}
-              </AvatarFallback>
-            </Avatar>
-          ) : (
-            <div className="h-14 w-14 bg-slate-100 rounded flex items-center justify-center">
-              <ImageOff size={20} className="text-gray-400" />
-            </div>
-          )}
-          <div className="flex-1">
-            <p className="font-medium">{brand}</p>
-            <p className="text-sm">{product}</p>
-            <p className="text-xs text-gray-600">{description}</p>
+    <div 
+      className={cn(
+        "p-2 rounded-md border border-gray-200 bg-white hover:bg-gray-50 transition-all",
+        "transform opacity-0 animate-in fade-in slide-in-from-bottom-2 duration-300"
+      )}
+      style={{ animationDelay }}
+    >
+      <div className="flex flex-col space-y-1">
+        <div className="flex justify-between items-start">
+          <h4 className="text-sm font-semibold text-gray-900">
+            {brand} {product && <span className="font-normal">— {product}</span>}
+          </h4>
+          <div className="flex space-x-1">
+            <Button 
+              onClick={() => onSelect()} 
+              variant="ghost" 
+              size="sm" 
+              className="h-7 px-2 text-xs"
+            >
+              Добавить
+            </Button>
+            <Button 
+              onClick={() => onSelect(true)} 
+              variant="outline" 
+              size="sm" 
+              className="h-7 px-2 text-xs"
+            >
+              Искать
+            </Button>
           </div>
         </div>
-        <Button 
-          variant="brand" 
-          size="sm" 
-          className="self-start sm:self-center whitespace-nowrap"
-          onClick={onSelect}
-        >
-          Искать этот товар
-        </Button>
+        {description && (
+          <p className="text-xs text-gray-600 line-clamp-2">{description}</p>
+        )}
       </div>
     </div>
   );
