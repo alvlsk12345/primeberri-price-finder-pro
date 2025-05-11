@@ -1,52 +1,26 @@
 
-// Ключ для сохранения настроек в localStorage
-const SUPABASE_AI_CONFIG_KEY = 'supabase_ai_config';
+// Проверка на использование бэкенда Supabase
+// Эта настройка влияет на то, будут ли запросы к AI API проходить через Edge Functions
 
-// Интерфейс для конфигурации AI через Supabase
-export interface SupabaseAIConfig {
-  useSupabaseBackend: boolean; // Использовать ли Supabase для вызовов AI API
-  fallbackToDirectCalls: boolean; // Использовать прямые вызовы API при недоступности Supabase
-}
+let useSupabaseBackend = true; // По умолчанию используем Supabase
+let useFallback = true; // Использовать ли fallback при ошибках
 
-// Значения по умолчанию
-const DEFAULT_CONFIG: SupabaseAIConfig = {
-  useSupabaseBackend: true, // По умолчанию используем Supabase
-  fallbackToDirectCalls: true // По умолчанию делаем фоллбэк на прямые вызовы
+// Функция для проверки, используем ли мы Supabase бэкенд
+export const isUsingSupabaseBackend = (): boolean => {
+  return useSupabaseBackend;
 };
 
-// Получение текущей конфигурации
-export function getSupabaseAIConfig(): SupabaseAIConfig {
-  try {
-    const savedConfig = localStorage.getItem(SUPABASE_AI_CONFIG_KEY);
-    return savedConfig ? JSON.parse(savedConfig) : DEFAULT_CONFIG;
-  } catch (e) {
-    console.error('Ошибка при получении настроек Supabase AI:', e);
-    return DEFAULT_CONFIG;
-  }
-}
+// Функция для установки флага использования Supabase
+export const setUseSupabaseBackend = (value: boolean): void => {
+  useSupabaseBackend = value;
+};
 
-// Сохранение конфигурации
-export function setSupabaseAIConfig(config: Partial<SupabaseAIConfig>): SupabaseAIConfig {
-  try {
-    // Объединяем текущие настройки с новыми
-    const currentConfig = getSupabaseAIConfig();
-    const newConfig = { ...currentConfig, ...config };
-    
-    // Сохраняем в localStorage
-    localStorage.setItem(SUPABASE_AI_CONFIG_KEY, JSON.stringify(newConfig));
-    return newConfig;
-  } catch (e) {
-    console.error('Ошибка при сохранении настроек Supabase AI:', e);
-    return DEFAULT_CONFIG;
-  }
-}
+// Функция для проверки, используем ли fallback при ошибках
+export const isFallbackEnabled = (): boolean => {
+  return useFallback;
+};
 
-// Проверка использования Supabase бэкенда для AI
-export function isUsingSupabaseBackend(): boolean {
-  return getSupabaseAIConfig().useSupabaseBackend;
-}
-
-// Проверка использования фоллбэка на прямые вызовы
-export function isFallbackEnabled(): boolean {
-  return getSupabaseAIConfig().fallbackToDirectCalls;
-}
+// Функция для установки флага использования fallback
+export const setFallbackEnabled = (value: boolean): void => {
+  useFallback = value;
+};

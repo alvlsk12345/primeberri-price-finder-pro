@@ -10,11 +10,30 @@ import { isSupabaseConnected } from "../supabase/client";
 export const fetchFromOpenAI = async (query: string): Promise<any> => {
   try {
     // Проверяем, используем ли мы Supabase бэкенд
-    if (isUsingSupabaseBackend() && isSupabaseConnected()) {
+    if (isUsingSupabaseBackend() && await isSupabaseConnected()) {
       console.log('Использование Supabase для поиска товаров через OpenAI');
       try {
         // Используем Supabase Edge Function для вызова OpenAI
-        return await searchViaOpenAI(query);
+        const results = await searchViaOpenAI(query);
+        console.log('Результаты от Supabase OpenAI поиска:', results);
+        
+        // Проверяем, возвращен ли массив результатов
+        if (Array.isArray(results)) {
+          if (results.length === 0) {
+            toast.info('По вашему запросу не найдено товаров. Попробуйте изменить запрос.', { duration: 4000 });
+            console.log('OpenAI не нашел товары по запросу:', query);
+          }
+          return results;
+        }
+        
+        // Проверяем на наличие ошибки в ответе
+        if (results && results.error) {
+          console.error('Ошибка от Supabase OpenAI:', results.error);
+          toast.error(`Ошибка поиска: ${results.error}`, { duration: 3000 });
+          throw new Error(results.error);
+        }
+        
+        return results;
       } catch (error) {
         console.error('Ошибка при использовании Supabase для поиска товаров:', error);
         
@@ -56,11 +75,30 @@ export const fetchFromOpenAI = async (query: string): Promise<any> => {
 Пользовательский запрос: "${query}"
 `;
 
-    return callOpenAI(promptTemplate, {
+    console.log('Прямой запрос к OpenAI с промптом:', promptTemplate);
+    const result = await callOpenAI(promptTemplate, {
       responseFormat: "json_object",
       temperature: 0.2,
       max_tokens: 1000
     });
+    
+    // Добавляем подробное логирование результата
+    console.log('Результат прямого запроса к OpenAI:', result);
+    
+    // Проверка на пустой массив
+    if (Array.isArray(result) && result.length === 0) {
+      console.log('OpenAI вернул пустой массив для запроса:', query);
+      toast.info('По вашему запросу не найдено товаров. Попробуйте изменить запрос.', { duration: 4000 });
+    }
+    
+    // Проверка на корректность формата
+    if (!Array.isArray(result)) {
+      console.warn('OpenAI вернул результат в неожиданном формате:', result);
+      toast.error('Получен неверный формат данных от API. Используем демо-данные.', { duration: 3000 });
+      return createMockProductsFromQuery(query);
+    }
+    
+    return result;
   } catch (error) {
     console.error('Ошибка при запросе к OpenAI:', error);
     

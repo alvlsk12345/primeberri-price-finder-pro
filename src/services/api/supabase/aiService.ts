@@ -53,9 +53,11 @@ export async function callAIViaSupabase(request: AIRequest): Promise<any> {
     });
     
     if (error) {
+      console.error('Ошибка вызова Supabase Edge Function:', error);
       throw new Error(`Ошибка вызова Supabase Edge Function: ${error.message}`);
     }
     
+    console.log('Успешный ответ от Supabase Edge Function:', data);
     return data;
   } catch (error: any) {
     console.error('Ошибка при использовании Supabase для AI:', error);
@@ -89,9 +91,11 @@ async function fallbackToDirectCall(request: AIRequest): Promise<any> {
 
 // Специальная функция для поиска через OpenAI
 export async function searchViaOpenAI(query: string, options?: any): Promise<any> {
-  return callAIViaSupabase({
-    provider: 'openai',
-    prompt: `
+  try {
+    console.log('Запуск searchViaOpenAI с запросом:', query);
+    const result = await callAIViaSupabase({
+      provider: 'openai',
+      prompt: `
 Ты — AI-ассистент для поиска товаров в интернете (Zalando, Amazon, Ozon, Wildberries и другие магазины). На основе пользовательского запроса сгенерируй список из 3 карточек товаров в формате JSON.
 
 ВАЖНО: Твой ответ должен быть МАССИВОМ из 3 объектов товаров в формате JSON. Даже если найден только один товар, верни его как массив из одного элемента.
@@ -118,12 +122,27 @@ export async function searchViaOpenAI(query: string, options?: any): Promise<any
 
 Пользовательский запрос: "${query}"
 `,
-    options: {
-      responseFormat: "json_object",
-      temperature: 0.2,
-      max_tokens: 1000
+      options: {
+        responseFormat: "json_object",
+        temperature: 0.2,
+        max_tokens: 1000,
+        model: "gpt-4o"
+      }
+    });
+    
+    console.log('Результат от searchViaOpenAI:', result);
+    
+    // Проверка на корректность формата
+    if (!Array.isArray(result)) {
+      console.warn('searchViaOpenAI: получен неверный формат данных:', result);
+      throw new Error('Неверный формат данных от AI-сервиса');
     }
-  });
+    
+    return result;
+  } catch (error) {
+    console.error('Ошибка в searchViaOpenAI:', error);
+    throw error;
+  }
 }
 
 // Функция для получения предложений брендов через OpenAI
@@ -142,7 +161,8 @@ export async function fetchBrandSuggestionsViaOpenAI(description: string): Promi
     options: {
       responseFormat: "json_object",
       temperature: 0.2,
-      max_tokens: 1500
+      max_tokens: 1500,
+      model: "gpt-4o"
     }
   });
   
