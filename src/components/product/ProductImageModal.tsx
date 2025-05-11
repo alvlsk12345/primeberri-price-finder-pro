@@ -6,7 +6,6 @@ import { useImageModalLoading } from './modal/useImageModalLoading';
 import { useImageModalSource } from './modal/useImageModalSource';
 import { ImageModalHeader } from './modal/ImageModalHeader';
 import { ImageModalContent } from './modal/ImageModalContent';
-import { switchToNextProxy } from '@/services/image/corsProxyService';
 import { getLargeSizeImageUrl } from '@/services/image/imageProcessor';
 
 interface ProductImageModalProps {
@@ -49,7 +48,6 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
         useAvatar: sourceInfo.useAvatar,
         isGoogleImage: sourceInfo.isGoogleImage,
         isZylalabs: sourceInfo.isZylalabs,
-        isProxiedUrl: sourceInfo.isProxiedUrl
       });
     }
   }, [isOpen, imageUrl, optimizedImageUrl, displayedImage, productTitle, sourceInfo]);
@@ -64,19 +62,9 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
       const timer = setTimeout(() => {
         console.log(`Повторная попытка загрузки изображения в модальном окне ${retryCount + 1}/${MAX_RETRIES}`);
         
-        // Если URL с прокси, пробуем другой прокси
-        if (sourceInfo.isProxiedUrl) {
-          console.log('URL уже проксирован, переключаемся на другой прокси');
-          switchToNextProxy();
-          
-          // Форсируем использование другого прокси для текущего URL
-          setRetryCount(prev => prev + 1);
-          setFallbackImage(`${optimizedImageUrl}?retry=${Date.now()}`);
-        } else {
-          // Если URL без прокси, пробуем добавить прокси
-          setRetryCount(prev => prev + 1);
-          setFallbackImage(`${optimizedImageUrl}?retry=${Date.now()}`);
-        }
+        // Добавляем уникальный параметр к URL для избежания кэширования
+        setRetryCount(prev => prev + 1);
+        setFallbackImage(`${optimizedImageUrl}?retry=${Date.now()}`);
       }, 800 * (retryCount + 1));
       
       return () => clearTimeout(timer);
@@ -85,7 +73,7 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
       console.log(`Все ${MAX_RETRIES} попытки загрузки изображения в модальном окне исчерпаны, используем заглушку`);
       setFallbackImage(getPlaceholderImageUrl(productTitle));
     }
-  }, [loadingState.imageError, retryCount, isOpen, optimizedImageUrl, sourceInfo.isProxiedUrl, productTitle]);
+  }, [loadingState.imageError, retryCount, isOpen, optimizedImageUrl, productTitle]);
   
   // Итоговый URL с учетом попыток восстановления
   const finalImageUrl = fallbackImage || displayedImage;

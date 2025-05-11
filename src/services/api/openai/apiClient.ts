@@ -1,29 +1,27 @@
 
 import { toast } from "sonner";
 import { getApiKey } from "./config";
-import { 
-  getCorsProxyUrl, 
-  getCurrentProxyName 
-} from "@/services/image/corsProxyService";
-import { MAX_RETRY_ATTEMPTS, handleNetworkError } from "./proxyUtils";
 import { processApiResponse } from "./responseUtils";
 
-// Базовая функция для использования OpenAI API с обработкой ошибок и автоматическим переключением прокси
+// Максимальное количество попыток запроса (упрощено без CORS прокси)
+const MAX_RETRY_ATTEMPTS = 2;
+
+// Базовая функция для использования OpenAI API без CORS прокси
 export const callOpenAI = async (prompt: string, options: {
   model?: string;
   temperature?: number;
   max_tokens?: number;
   responseFormat?: "json_object" | "text";
-  retryAttempt?: number; // Счетчик попыток
+  retryAttempt?: number;
 } = {}): Promise<any> => {
   try {
     // Инициализируем счетчик попыток, если он не был передан
     const retryAttempt = options.retryAttempt || 0;
     
-    // Если исчерпаны все попытки с разными прокси, показываем ошибку
+    // Если исчерпаны все попытки, показываем ошибку
     if (retryAttempt >= MAX_RETRY_ATTEMPTS) {
-      toast.error(`Не удалось подключиться ни к одному из доступных CORS прокси. Попробуйте позже.`, { duration: 5000 });
-      throw new Error("Исчерпаны все попытки подключения к CORS прокси");
+      toast.error(`Не удалось выполнить запрос к OpenAI API. Попробуйте позже.`, { duration: 5000 });
+      throw new Error("Исчерпаны все попытки подключения к OpenAI API");
     }
     
     // Получаем API ключ из localStorage
@@ -35,7 +33,7 @@ export const callOpenAI = async (prompt: string, options: {
       throw new Error("API ключ не установлен");
     }
 
-    console.log(`Отправляем запрос к OpenAI через прокси ${getCurrentProxyName()} (попытка ${retryAttempt + 1}/${MAX_RETRY_ATTEMPTS})...`);
+    console.log(`Отправляем запрос к OpenAI API...`);
     
     const defaultOptions = {
       model: "gpt-4o-search-preview-2025-03-11", // Изменено с gpt-4o на новую модель, оптимизированную для поиска
@@ -64,21 +62,16 @@ export const callOpenAI = async (prompt: string, options: {
       requestBody.response_format = { type: "json_object" };
     }
 
-    // Используем CORS прокси для обхода ограничений
-    const originalApiUrl = 'https://api.openai.com/v1/chat/completions';
-    const proxyUrl = getCorsProxyUrl(originalApiUrl);
-
     // Вводим таймаут для запроса
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 секунд
 
-    // Выполняем запрос к API OpenAI через CORS прокси
-    const response = await fetch(proxyUrl, {
+    // Выполняем прямой запрос к API OpenAI
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Original-Authorization': `Bearer ${apiKey}`, // Передаем API ключ в специальном заголовке для прокси
-        'X-Requested-With': 'XMLHttpRequest'
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify(requestBody),
       signal: controller.signal
@@ -101,12 +94,8 @@ export const callOpenAI = async (prompt: string, options: {
         toast.error("Недействительный API ключ. Пожалуйста, проверьте его в настройках.");
         throw new Error("Недействительный API ключ");
       } else {
-        // Переключаемся на другой прокси и пытаемся снова через новую утилиту
-        return handleNetworkError(
-          new Error(errorMessage),
-          prompt,
-          finalOptions
-        );
+        toast.error(`Ошибка OpenAI API: ${errorMessage}`, { duration: 5000 });
+        throw new Error(`Ошибка OpenAI API: ${errorMessage}`);
       }
     }
 
@@ -119,8 +108,39 @@ export const callOpenAI = async (prompt: string, options: {
     return processApiResponse(content, finalOptions.responseFormat);
 
   } catch (error: any) {
-    // Используем общую утилиту для обработки сетевых ошибок
-    return handleNetworkError(error, prompt, options);
+    // Обработка ошибок без использования прокси
+    console.error('Ошибка при запросе к OpenAI:', error);
+    
+    if (error.name === 'AbortError') {
+      console.warn('Запрос был отменен из-за таймаута');
+      toast.error("Превышено время ожидания ответа от сервера. Проверьте подключение к интернету.", { duration: 3000 });
+      
+      // Получаем текущий номер попытки
+      const retryAttempt = options.retryAttempt || 0;
+      
+      // Если не исчерпаны попытки, пробуем снова
+      if (retryAttempt < MAX_RETRY_ATTEMPTS - 1) {
+        return callOpenAI(prompt, {
+          ...options,
+          retryAttempt: retryAttempt + 1
+        });
+      }
+    } else if (error.message.includes('Failed to fetch')) {
+      toast.error('Ошибка сети при подключении к OpenAI API. Проверьте подключение к интернету.', { duration: 5000 });
+      
+      // Получаем текущий номер попытки
+      const retryAttempt = options.retryAttempt || 0;
+      
+      // Если не исчерпаны попытки, пробуем снова
+      if (retryAttempt < MAX_RETRY_ATTEMPTS - 1) {
+        return callOpenAI(prompt, {
+          ...options,
+          retryAttempt: retryAttempt + 1
+        });
+      }
+    }
+    
+    throw error;
   }
 };
 

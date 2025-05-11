@@ -22,11 +22,12 @@ export function detectImageSource(image: string | null): ImageSourceInfo {
   const isGoogleImage = isGoogleShoppingImage(image) || isGoogleCseImage(image);
   const isZylalabs = isZylalabsImage(image);
   
-  // Проверяем, является ли URL с CORS-прокси (используем обновленную функцию)
+  // С удалением CORS-прокси эта функция всегда возвращает false
   const isProxiedUrlResult = isUrlWithCorsProxy(image);
   
   // Определяем, использовать ли Avatar вместо img
-  const useAvatar = isGoogleImage || isZylalabs || isProxiedUrlResult || image.includes('encrypted-tbn');
+  // Для Google Shopping и других проблемных изображений все еще используем Avatar
+  const useAvatar = isGoogleImage || isZylalabs || image.includes('encrypted-tbn');
   
   return {
     useAvatar,

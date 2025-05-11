@@ -7,9 +7,6 @@ export {
     getZylalabsSizeImageUrl
 } from './image/imageProcessor';
 
-// Экспортируем applyCorsProxy для его использования
-export { applyCorsProxy } from './image/corsProxyService';
-
 // Реэкспорт других часто используемых функций для удобства
 export { 
     isZylalabsImage,

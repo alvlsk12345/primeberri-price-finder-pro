@@ -9,15 +9,9 @@ import {
   cleanMarkdownUrl, 
   formatImageUrl 
 } from './imageUrlFormatter';
-import { 
-  shouldUseCorsProxy, 
-  applyCorsProxy,
-  getCurrentProxyInfo,
-  isUrlWithCorsProxy
-} from './corsProxyService';
 
 /**
- * Улучшенная функция для обработки изображения товара
+ * Улучшенная функция для обработки изображения товара без использования CORS-прокси
  */
 export const processProductImage = (imageUrl: string | undefined, index: number): string => {
   // Убедимся, что imageUrl - строка
@@ -51,26 +45,11 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
     console.log(`URL после удаления кавычек: "${processedUrl}"`);
   }
 
-  // Особая обработка для URL от Google (в том числе из Zylalabs API) 
+  // Особая обработка для URL от Google (в том числе из Zylalabs API)
   if (isGoogleShoppingImage(processedUrl)) {
     console.log(`Обнаружен URL Google Shopping: "${processedUrl}"`);
     processedUrl = formatImageUrl(processedUrl);
     console.log(`Форматированный URL Google Shopping: "${processedUrl}"`);
-    
-    // К "encrypted-tbn" URL почти всегда нужен прокси
-    if (processedUrl.includes('encrypted-tbn')) {
-      console.log(`Применяем прокси к Google Shopping URL (encrypted-tbn)`);
-      const proxiedUrl = applyCorsProxy(processedUrl);
-      console.log(`Результат с прокси: "${proxiedUrl}"`);
-      console.log(`Текущий прокси: ${JSON.stringify(getCurrentProxyInfo())}`);
-      return proxiedUrl;
-    }
-    
-    // Добавление прокси к остальным Google Shopping URL
-    console.log(`Применяем прокси к обычному Google Shopping URL`);
-    const proxiedUrl = applyCorsProxy(processedUrl);
-    console.log(`Результат с прокси: "${proxiedUrl}"`);
-    return proxiedUrl;
   }
 
   // Особая обработка для изображений Zylalabs
@@ -78,12 +57,6 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
     console.log(`Обнаружен URL Zylalabs: "${processedUrl}"`);
     processedUrl = formatImageUrl(processedUrl);
     console.log(`Форматированный URL Zylalabs: "${processedUrl}"`);
-    
-    // Применяем CORS-прокси для Zylalabs изображений
-    const proxiedUrl = applyCorsProxy(processedUrl);
-    console.log(`Результат с прокси: "${proxiedUrl}"`);
-    console.log(`Текущий прокси: ${JSON.stringify(getCurrentProxyInfo())}`);
-    return proxiedUrl;
   }
   
   // Для URL от Google CSE используем особую обработку
@@ -91,13 +64,6 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
     console.log(`Обнаружен URL Google CSE: "${processedUrl}"`);
     processedUrl = formatImageUrl(processedUrl);
     console.log(`Форматированный URL Google CSE: "${processedUrl}"`);
-    
-    // Применяем CORS-прокси для изображений Google CSE для решения проблем с CORS
-    console.log(`Применяем прокси к Google CSE URL`);
-    const proxiedUrl = applyCorsProxy(processedUrl);
-    console.log(`Результат с прокси: "${proxiedUrl}"`);
-    console.log(`Текущий прокси: ${JSON.stringify(getCurrentProxyInfo())}`);
-    return proxiedUrl;
   }
   
   // Проверка на специальные форматы URL Google
@@ -105,17 +71,6 @@ export const processProductImage = (imageUrl: string | undefined, index: number)
       processedUrl.includes('ggpht.com')) {
     console.log(`Обнаружен URL Google (прочий): "${processedUrl}"`);
     processedUrl = formatImageUrl(processedUrl);
-    console.log(`Применяем прокси к URL Google`);
-    const proxiedUrl = applyCorsProxy(processedUrl);
-    console.log(`Результат с прокси: "${proxiedUrl}"`);
-    return proxiedUrl;
-  }
-  
-  // Проверяем необходимость использования CORS-прокси для других доменов
-  if (processedUrl && shouldUseCorsProxy(processedUrl)) {
-    console.log(`Применяем прокси к стандартному URL: "${processedUrl}"`);
-    processedUrl = applyCorsProxy(processedUrl);
-    console.log(`Результат с прокси: "${processedUrl}"`);
   }
   
   // Форматируем URL (добавляем протокол, обрабатываем относительные URL)

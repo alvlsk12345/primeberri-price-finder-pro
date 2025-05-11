@@ -22,11 +22,11 @@ export function useImageModalSource(imageUrl: string | null): ImageModalSourceIn
   const isGoogleImage = isGoogleShoppingImage(imageUrl) || isGoogleCseImage(imageUrl);
   const isZylalabs = isZylalabsImage(imageUrl);
   
-  // Проверяем, является ли URL уже проксированным (используем обновленную функцию)
-  const isProxiedUrlResult = isUrlWithCorsProxy(imageUrl);
+  // С удалением CORS-прокси эта функция всегда возвращает false
+  const isProxiedUrlResult = false;
   
   // Решаем, использовать ли Avatar компонент для изображения
-  const useAvatar = isGoogleImage || isZylalabs || isProxiedUrlResult || imageUrl.includes('encrypted-tbn');
+  const useAvatar = isGoogleImage || isZylalabs || imageUrl.includes('encrypted-tbn');
   
   return {
     useAvatar,

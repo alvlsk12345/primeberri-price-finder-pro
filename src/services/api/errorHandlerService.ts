@@ -1,6 +1,5 @@
 
 import { toast } from "sonner";
-import { switchToNextProxy } from "@/services/image/corsProxyService";
 
 /**
  * Handles API response errors based on status codes
@@ -48,13 +47,6 @@ export const handleApiError = async (response: Response): Promise<any> => {
       errorMessage = `Ошибка API: ${response.status}`;
       console.error('Не удалось получить данные ошибки API ни в JSON, ни в текстовом формате');
     }
-  }
-  
-  // Обработка ошибок прокси
-  if (response.status === 403 || response.status === 429) {
-    console.warn('Ошибка CORS прокси (403/429), пробуем другой прокси...');
-    switchToNextProxy();
-    return null; // Возвращаем null, чтобы вызывающий код мог повторить запрос
   }
   
   // Обработка ошибок Google API
@@ -161,7 +153,6 @@ export const handleFetchError = (error: any): void => {
     toast.error('Проблема с сетью. Проверьте подключение к интернету.', { duration: 5000 });
   } else if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
     toast.error('Ошибка соединения при обращении к API. Пробуем другие параметры.', { duration: 3000 });
-    switchToNextProxy(); // Переключаемся на следующий прокси при ошибке соединения
   } else {
     toast.error('Ошибка при получении данных о товарах.', { duration: 5000 });
   }

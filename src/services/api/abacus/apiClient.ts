@@ -1,10 +1,8 @@
 
 import { toast } from "sonner";
 import { getApiKey, API_BASE_URL } from "./config";
-import { getCorsProxyUrl, getCurrentProxyName, switchToNextProxy } from "@/services/image/corsProxyService";
-import { MAX_RETRY_ATTEMPTS } from "../openai/proxyUtils";
 
-// Базовая функция для использования Abacus.ai API с обработкой ошибок
+// Базовая функция для использования Abacus.ai API с обработкой ошибок (без CORS-прокси)
 export const callAbacusAI = async (
   endpoint: string, 
   method: 'GET' | 'POST' = 'POST',
@@ -14,15 +12,6 @@ export const callAbacusAI = async (
   } = {}
 ): Promise<any> => {
   try {
-    // Инициализируем счетчик попыток, если он не был передан
-    const retryAttempt = options.retryAttempt || 0;
-    
-    // Если исчерпаны все попытки с разными прокси, показываем ошибку
-    if (retryAttempt >= MAX_RETRY_ATTEMPTS) {
-      toast.error(`Не удалось подключиться к Abacus.ai API. Попробуйте позже.`, { duration: 5000 });
-      throw new Error("Исчерпаны все попытки подключения к Abacus.ai API");
-    }
-    
     // Получаем API ключ из localStorage
     const apiKey = getApiKey();
     
@@ -32,7 +21,7 @@ export const callAbacusAI = async (
       throw new Error("API ключ Abacus.ai не установлен");
     }
 
-    console.log(`Отправляем запрос к Abacus.ai через прокси ${getCurrentProxyName()} (попытка ${retryAttempt + 1}/${MAX_RETRY_ATTEMPTS})...`);
+    console.log(`Отправляем запрос к Abacus.ai API...`);
     
     // Формируем полный URL эндпоинта
     let fullUrl = `${API_BASE_URL}/${endpoint}`;
@@ -46,9 +35,6 @@ export const callAbacusAI = async (
       fullUrl += `?${params.toString()}`;
     }
     
-    // Используем CORS прокси для обхода ограничений
-    const proxyUrl = getCorsProxyUrl(fullUrl);
-
     // Вводим таймаут для запроса
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 секунд
@@ -58,8 +44,7 @@ export const callAbacusAI = async (
       method,
       headers: {
         'Content-Type': 'application/json',
-        'X-Original-apiKey': apiKey, // Передаем API ключ в специальном заголовке для прокси
-        'X-Requested-With': 'XMLHttpRequest'
+        'Authorization': `Bearer ${apiKey}`
       },
       signal: controller.signal
     };
@@ -69,8 +54,8 @@ export const callAbacusAI = async (
       fetchOptions.body = JSON.stringify(requestData);
     }
 
-    // Выполняем запрос к API через CORS прокси
-    const response = await fetch(proxyUrl, fetchOptions);
+    // Выполняем прямой запрос к API без CORS прокси
+    const response = await fetch(fullUrl, fetchOptions);
 
     // Очищаем таймаут
     clearTimeout(timeoutId);
@@ -81,6 +66,7 @@ export const callAbacusAI = async (
       
       console.error('Ошибка от API Abacus.ai:', errorMessage);
       
+      toast.error(`Ошибка Abacus.ai API: ${errorMessage}`, { duration: 5000 });
       throw new Error(`Ошибка Abacus.ai API: ${errorMessage}`);
     }
 
@@ -99,25 +85,15 @@ export const callAbacusAI = async (
     console.error('Ошибка при запросе к Abacus.ai:', error);
     
     // Проверяем, является ли ошибка таймаутом или сетевой ошибкой
-    if (error.name === 'AbortError' || error.message.includes('Failed to fetch')) {
-      // Если это не последняя попытка, пробуем снова через другой прокси
-      const currentRetryAttempt = options.retryAttempt || 0;
-      
-      if (currentRetryAttempt < MAX_RETRY_ATTEMPTS - 1) {
-        console.log('Переключаемся на другой прокси и повторяем запрос...');
-        
-        // Переключаемся на следующий прокси
-        await switchToNextProxy();
-        
-        // Повторяем запрос с увеличенным счетчиком попыток
-        return callAbacusAI(endpoint, method, requestData, {
-          ...options,
-          retryAttempt: currentRetryAttempt + 1
-        });
-      }
+    if (error.name === 'AbortError') {
+      toast.error('Превышено время ожидания ответа от Abacus.ai API', { duration: 5000 });
+      throw new Error('Превышено время ожидания ответа от Abacus.ai API');
+    } else if (error.message.includes('Failed to fetch')) {
+      toast.error('Ошибка сети при подключении к Abacus.ai API. Проверьте подключение к интернету.', { duration: 5000 });
+      throw new Error('Ошибка сети при подключении к Abacus.ai API');
     }
     
-    // Если это критическая ошибка или все попытки исчерпаны, пробрасываем ошибку дальше
+    // Если это критическая ошибка, пробрасываем ошибку дальше
     throw error;
   }
 };
