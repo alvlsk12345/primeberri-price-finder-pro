@@ -132,10 +132,10 @@ export async function fetchBrandSuggestionsViaOpenAI(description: string): Promi
     provider: 'openai',
     prompt: `Ты — эксперт по брендам и товарам. Пользователь описал тип товара, который они хотят найти. 
 Предложи 5 брендов, которые соответствуют этому описанию. Верни только JSON массив объектов с полями:
-- name: название бренда (только название, без "бренд" или других пояснений)
-- logo: URL логотипа бренда (должен быть прямой ссылкой на изображение в формате PNG, JPG или WebP)
-- description: краткое описание бренда в контексте запрашиваемого товара (1-2 предложения на русском языке)
-- products: массив из 3-5 конкретных товаров этого бренда, соответствующих запросу (только названия товаров)
+- brand: название бренда (например, "Nike", "Adidas", "Columbia")
+- product: название конкретного товара этого бренда (например, "Nike Air Force 1")
+- description: краткое описание товара в контексте запроса (1-2 предложения на русском языке)
+- imageUrl: URL изображения товара (может быть пустым)
 
 Обязательно нужны русские бренды или популярные международные. Не выдумывай бренды и товары.
 Запрашиваемый тип товара: ${description}`,
@@ -146,18 +146,10 @@ export async function fetchBrandSuggestionsViaOpenAI(description: string): Promi
     }
   });
   
-  // Убедимся, что результат соответствует нашей структуре BrandSuggestion
-  if (Array.isArray(result)) {
-    return result.map((item: any): BrandSuggestion => ({
-      name: item.name || 'Неизвестный бренд',
-      logo: item.logo || 'https://via.placeholder.com/100',
-      description: item.description || 'Описание недоступно',
-      products: Array.isArray(item.products) ? item.products : ['Товар 1', 'Товар 2']
-    }));
-  }
+  console.log('Результат от fetchBrandSuggestionsViaOpenAI:', result);
   
-  console.error('Некорректный формат ответа от AI:', result);
-  return [];
+  // Возвращаем результат напрямую, парсинг будет выполнен в parseBrandApiResponse
+  return result;
 }
 
 // Функция для поиска через Abacus
