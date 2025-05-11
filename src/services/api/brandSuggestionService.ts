@@ -19,66 +19,40 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     console.log(`Используем ${provider} для получения предложений брендов`);
     
     // Проверяем, используем ли мы Supabase бэкенд
-    if (isUsingSupabaseBackend() && await isSupabaseConnected()) {
+    const useSupabase = await isUsingSupabaseBackend();
+    const supabaseConnected = await isSupabaseConnected();
+    
+    console.log('Статус Supabase для бренд-сервиса:', {
+      используется: useSupabase,
+      подключен: supabaseConnected
+    });
+    
+    if (useSupabase && supabaseConnected) {
       console.log('Использование Supabase бэкенда для получения предложений брендов');
       try {
-        return await fetchBrandSuggestionsViaOpenAI(description);
+        const result = await fetchBrandSuggestionsViaOpenAI(description);
+        console.log('Результат от Supabase:', result);
+        return result;
       } catch (error) {
         console.error('Ошибка при использовании Supabase для предложений брендов:', error);
         toast.error(`Ошибка Supabase: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
                    { duration: 3000 });
-        toast.info('Используем прямой вызов API как запасной вариант', { duration: 2000 });
+        toast.info('Проверьте настройки Supabase в разделе "Настройки"', { duration: 5000 });
+        
         // Продолжаем с обычным процессом, если Supabase не сработал
       }
+    } else if (!supabaseConnected && useSupabase) {
+      toast.warning('Supabase не подключен, но выбран для использования. Проверьте настройки.', { duration: 5000 });
     }
     
-    // Проверяем наличие валидного API ключа для выбранного провайдера
-    if (provider === 'openai' && !hasValidOpenAIApiKey()) {
-      toast.error("API ключ OpenAI не установлен. Пожалуйста, добавьте свой ключ в настройках");
-      throw new Error("API ключ OpenAI не установлен");
-    } else if (provider === 'abacus' && !hasValidAbacusApiKey()) {
-      toast.error("API ключ Abacus.ai не установлен. Пожалуйста, добавьте свой ключ в настройках");
-      throw new Error("API ключ Abacus.ai не установлен");
-    }
+    // Проверка настрок при попытке прямого вызова API
+    toast.error("Прямые запросы к OpenAI API из браузера блокируются политикой CORS. Пожалуйста, используйте Supabase Edge Function.", { duration: 6000 });
+    toast.info("Перейдите в раздел 'Настройки' и убедитесь, что 'Использовать Supabase Backend' включено", { duration: 5000 });
     
-    // Выбираем функцию в зависимости от провайдера
-    if (provider === 'abacus') {
-      return await fetchBrandSuggestionsFromAbacus(description);
-    } else {
-      // По умолчанию используем OpenAI
-      console.log("Вызываем OpenAI для получения предложений брендов");
-      const suggestions = await fetchBrandSuggestionsFromOpenAI(description);
-      console.log("Получены предложения от OpenAI:", suggestions);
-      return suggestions;
-    }
+    // Возвращаем пустой массив, так как прямые вызовы API невозможны из-за CORS
+    return [];
   } catch (error) {
     console.error(`Ошибка при получении предложений брендов через ${provider}:`, error);
-    
-    // Пытаемся использовать альтернативного провайдера при ошибке
-    try {
-      const alternativeProvider: AIProvider = provider === 'openai' ? 'abacus' : 'openai';
-      
-      // Проверяем наличие ключа для альтернативного провайдера
-      const hasAlternativeKey = alternativeProvider === 'openai' 
-        ? hasValidOpenAIApiKey() 
-        : hasValidAbacusApiKey();
-      
-      if (hasAlternativeKey) {
-        console.log(`Пробуем альтернативного провайдера: ${alternativeProvider}`);
-        toast.info(`Проблема с ${provider}, пробуем использовать ${alternativeProvider}...`, { duration: 3000 });
-        
-        // Выбираем функцию для альтернативного провайдера
-        if (alternativeProvider === 'abacus') {
-          return await fetchBrandSuggestionsFromAbacus(description);
-        } else {
-          return await fetchBrandSuggestionsFromOpenAI(description);
-        }
-      }
-    } catch (alternativeError) {
-      console.error('Ошибка и с альтернативным провайдером:', alternativeError);
-    }
-    
-    // Если обе попытки не удались, возвращаем пустой массив
-    return [];
+    return []; // Возвращаем пустой массив при ошибке
   }
 };

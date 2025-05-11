@@ -20,15 +20,28 @@ serve(async (req) => {
     }
     
     // Получаем параметры запроса
-    const { provider, ...params } = await req.json();
+    const requestData = await req.json();
     
-    // Проверяем наличие провайдера
+    // Обработка проверки соединения
+    if (requestData.testConnection === true) {
+      console.log('Выполняется проверка соединения Edge Function');
+      return new Response(
+        JSON.stringify({ status: 'connected', timestamp: new Date().toISOString() }),
+        { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+      );
+    }
+    
+    const { provider, ...params } = requestData;
+    
+    // Проверяем наличие провайдера для стандартных запросов
     if (!provider) {
       return new Response(
         JSON.stringify({ error: 'Provider is required' }),
         { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }, status: 400 }
       );
     }
+    
+    console.log(`Обработка запроса через Edge Function для провайдера: ${provider}`);
     
     // В зависимости от провайдера вызываем соответствующую функцию
     if (provider === 'openai') {

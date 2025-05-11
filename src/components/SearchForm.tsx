@@ -10,6 +10,11 @@ import { SearchErrorMessage } from './search/SearchErrorMessage';
 import { DiagnosticButtons } from './search/DiagnosticButtons';
 import { useProductSelectionHandler } from './search/ProductSelectionHandler';
 import { NoResultsMessage } from './search/NoResultsMessage';
+import { isSupabaseConnected } from '@/services/api/supabase/client';
+import { isUsingSupabaseBackend } from '@/services/api/supabase/config';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { InfoIcon } from 'lucide-react';
 
 type SearchFormProps = {
   searchQuery: string;
@@ -26,7 +31,29 @@ export const SearchForm: React.FC<SearchFormProps> = ({
 }) => {
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [supabaseStatus, setSupabaseStatus] = useState<{ connected: boolean; enabled: boolean }>({ 
+    connected: false, 
+    enabled: false 
+  });
   const isDemoMode = useDemoModeForced;
+
+  // Проверяем статус Supabase при загрузке
+  useEffect(() => {
+    const checkSupabaseStatus = async () => {
+      const connected = await isSupabaseConnected();
+      const enabled = await isUsingSupabaseBackend();
+      setSupabaseStatus({ connected, enabled });
+      
+      console.log('Проверка статуса Supabase:', { connected, enabled });
+      
+      if (enabled && !connected) {
+        toast.warning('Настройки используют Supabase Backend, но он не подключен. Некоторые функции могут быть недоступны.', 
+                     { duration: 6000 });
+      }
+    };
+    
+    checkSupabaseStatus();
+  }, []);
 
   // Диагностический тест API при первом рендере
   useEffect(() => {
@@ -100,6 +127,31 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       />
       
       <SearchErrorMessage hasError={hasError} errorMessage={errorMessage} />
+      
+      {/* Статус Supabase */}
+      {(!supabaseStatus.connected || !supabaseStatus.enabled) && (
+        <div className="bg-orange-50 border border-orange-200 rounded-md p-3 mb-4">
+          <div className="flex items-start gap-2">
+            <InfoIcon className="text-orange-600 mt-1 shrink-0" size={18} />
+            <div>
+              <p className="text-sm text-orange-800 font-medium mb-2">
+                Внимание: Проблема с настройками Supabase
+              </p>
+              <p className="text-xs text-orange-700 mb-1">
+                {!supabaseStatus.enabled 
+                  ? 'Supabase Backend отключен в настройках. Некоторые функции будут недоступны.' 
+                  : 'Supabase Backend включен, но соединение не установлено.'}
+              </p>
+              <p className="text-xs text-orange-700">
+                Для корректной работы с OpenAI API необходимо настроить Supabase Backend.
+              </p>
+              <Button variant="outline" size="sm" className="mt-2 text-xs">
+                <Link to="/settings">Перейти к настройкам</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       
       <DiagnosticButtons />
 

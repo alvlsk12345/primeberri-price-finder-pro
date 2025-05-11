@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { getApiKey } from "./config";
 import { processApiResponse } from "./responseUtils";
@@ -12,17 +11,33 @@ export const callOpenAI = async (prompt: string, options: OpenAIRequestOptions =
   // Инициализируем обработчик ошибок
   const handleNetworkError = createNetworkErrorHandler(callOpenAI);
 
-  // Проверяем, используем ли мы Supabase бэкенд
-  if (isUsingSupabaseBackend() && await isSupabaseConnected()) {
-    console.log('Использование Supabase для вызова OpenAI API');
+  // Проверяем, используем ли мы Supabase бэкенд и подключен ли он
+  const isSupabaseEnabled = await isUsingSupabaseBackend();
+  const isSupabaseReady = await isSupabaseConnected();
+
+  console.log(`Состояние Supabase для запросов OpenAI: Включен - ${isSupabaseEnabled}, Подключен - ${isSupabaseReady}`);
+  
+  if (isSupabaseEnabled && isSupabaseReady) {
+    console.log('Использование Supabase Edge Function для вызова OpenAI API');
     try {
-      return await searchViaOpenAI(prompt, options);
+      const result = await searchViaOpenAI(prompt, options);
+      console.log('Получен результат через Supabase Edge Function:', result);
+      return result;
     } catch (error) {
       console.error('Ошибка при использовании Supabase для OpenAI:', error);
       toast.error(`Ошибка Supabase: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, { duration: 3000 });
-      // Продолжаем с прямым вызовом API как запасной вариант
-      toast.info('Используем прямой вызов API как запасной вариант', { duration: 2000 });
+      
+      // Проверяем включен ли фоллбэк, прежде чем продолжить с прямым вызовом
+      const useDirectFallback = await isFallbackEnabled();
+      if (useDirectFallback) {
+        toast.info('Используем прямой вызов API как запасной вариант', { duration: 2000 });
+        console.log('Активирован фоллбэк на прямой вызов OpenAI API');
+      } else {
+        throw error; // Если фоллбэк отключен, пробрасываем ошибку дальше
+      }
     }
+  } else {
+    console.log('Supabase не используется или не подключен, пытаемся выполнить прямой запрос к OpenAI API');
   }
 
   try {
@@ -44,6 +59,10 @@ export const callOpenAI = async (prompt: string, options: OpenAIRequestOptions =
       throw new Error("API ключ не установлен");
     }
 
+    toast.error("Прямые запросы к OpenAI API из браузера блокируются политикой CORS. Пожалуйста, используйте Supabase Edge Function.", { duration: 6000 });
+    throw new Error("CORS блокирует прямой доступ к OpenAI API. Используйте Supabase Edge Function.");
+
+    // Прямой вызов API заблокирован из-за CORS, поэтому код ниже не будет исполнен
     console.log(`Отправляем запрос к OpenAI API...`);
     
     const defaultOptions = {
@@ -136,6 +155,17 @@ export const callOpenAI = async (prompt: string, options: OpenAIRequestOptions =
     return handleNetworkError(error, prompt, options);
   }
 };
+
+// Функция для проверки, включен ли фоллбэк на прямые вызовы
+async function isFallbackEnabled(): Promise<boolean> {
+  try {
+    const { isFallbackEnabled } = await import("../supabase/config");
+    return isFallbackEnabled();
+  } catch (e) {
+    console.error('Ошибка при проверке статуса фоллбэка:', e);
+    return false;
+  }
+}
 
 // Экспортируем функцию поиска из отдельного файла
 export { fetchFromOpenAI } from './searchService';
