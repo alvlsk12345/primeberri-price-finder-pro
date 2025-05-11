@@ -24,24 +24,32 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
     <div className="mt-4 p-3 bg-slate-50 rounded-md border">
       <h3 className="text-sm font-medium mb-2">Рекомендуемые товары:</h3>
       <div className="space-y-2">
-        {suggestions.map((suggestion, index) => (
-          <BrandSuggestionItem 
-            key={index} 
-            suggestion={suggestion} 
-            onSelect={() => {
-              // Определяем значение для поиска на основе доступных данных
-              // Поддерживаем оба формата данных
-              const searchTerm = suggestion.product || 
-                (Array.isArray(suggestion.products) && suggestion.products.length > 0 
-                  ? suggestion.products[0] 
-                  : suggestion.name || suggestion.brand || "");
-                  
-              console.log(`Выбран бренд: ${suggestion.brand || suggestion.name}, поисковый запрос: ${searchTerm}`);  
-              onSelect(searchTerm);
-            }} 
-            index={index}
-          />
-        ))}
+        {suggestions.map((suggestion, index) => {
+          // Проверка наличия необходимых полей
+          if (!suggestion.brand && !suggestion.name) {
+            console.warn(`Предложение #${index} не содержит имя бренда:`, suggestion);
+          }
+          
+          return (
+            <BrandSuggestionItem 
+              key={index} 
+              suggestion={suggestion} 
+              onSelect={() => {
+                // Определяем значение для поиска на основе доступных данных
+                // Поддерживаем оба формата данных
+                const searchTerm = suggestion.product || 
+                  (Array.isArray(suggestion.products) && suggestion.products.length > 0 
+                    ? suggestion.products[0] 
+                    : suggestion.name || suggestion.brand || "");
+                    
+                const brandName = suggestion.brand || suggestion.name || "Бренд";
+                console.log(`Выбран бренд: ${brandName}, поисковый запрос: ${searchTerm}`);
+                onSelect(searchTerm);
+              }} 
+              index={index}
+            />
+          );
+        })}
       </div>
     </div>
   );

@@ -9,19 +9,21 @@ const imageCache: Record<string, string> = {};
 // Поиск изображения для продукта с таймаутом и кэшированием
 export async function findProductImage(brand: string, product: string, index: number): Promise<string> {
   try {
-    if (!brand) {
-      console.warn('Бренд не указан для поиска изображения');
+    if (!brand && !product) {
+      console.warn('Ни бренд, ни продукт не указаны для поиска изображения');
       return getPlaceholderImageUrl('unknown');
     }
     
-    console.log(`Поиск изображения для ${brand} ${product} через Google CSE (индекс: ${index})`);
+    // Используем бренд+продукт для поиска, но если продукт не задан - только бренд
+    const searchQuery = product ? `${brand} ${product}` : brand;
+    console.log(`Поиск изображения для запроса: "${searchQuery}" (индекс: ${index})`);
     
     // Создаем ключ кэша
-    const cacheKey = `img_${brand}_${product}_${index}`.toLowerCase().replace(/\s+/g, '_');
+    const cacheKey = `img_${searchQuery}_${index}`.toLowerCase().replace(/\s+/g, '_');
     
     // Проверяем локальный кэш в памяти (более быстрый доступ)
     if (imageCache[cacheKey]) {
-      console.log(`Найдено кэшированное изображение в памяти для ${brand} ${product}`);
+      console.log(`Найдено кэшированное изображение в памяти для ${searchQuery}`);
       return imageCache[cacheKey];
     }
     
@@ -29,7 +31,7 @@ export async function findProductImage(brand: string, product: string, index: nu
     try {
       const cachedImage = localStorage.getItem(cacheKey);
       if (cachedImage) {
-        console.log(`Найдено кэшированное изображение в localStorage для ${brand} ${product}`);
+        console.log(`Найдено кэшированное изображение в localStorage для ${searchQuery}`);
         // Сохраняем также в локальный кэш для ускорения последующих запросов
         imageCache[cacheKey] = cachedImage;
         return cachedImage;
@@ -39,7 +41,7 @@ export async function findProductImage(brand: string, product: string, index: nu
     }
     
     // Поиск изображения с ограничением времени
-    const imagePromise = searchProductImageGoogle(brand, product, index);
+    const imagePromise = searchProductImageGoogle(brand, product || brand, index);
     
     // Устанавливаем таймаут для поиска изображения (8 секунд)
     const timeoutPromise = new Promise<string | null>((_, reject) => 
@@ -65,13 +67,13 @@ export async function findProductImage(brand: string, product: string, index: nu
       
       return processedUrl;
     } else {
-      console.warn(`Изображение не найдено для ${brand} ${product}, используем плейсхолдер`);
+      console.warn(`Изображение не найдено для ${searchQuery}, используем плейсхолдер`);
       return getPlaceholderImageUrl(brand);
     }
   } catch (imageError) {
     console.error("Ошибка при поиске изображения:", imageError);
     // В случае ошибки поиска изображения используем заполнитель
-    return getPlaceholderImageUrl(brand);
+    return getPlaceholderImageUrl(brand || 'unknown');
   }
 }
 

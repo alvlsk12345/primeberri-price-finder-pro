@@ -22,12 +22,12 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     
     // Генерируем промпт для API
     const brandPrompt = generateBrandSuggestionPrompt(description);
+    console.log('Сформированный промпт:', brandPrompt.substring(0, 150) + '...');
     
     // Получаем ответ от API с оптимизированными параметрами для JSON-формата
-    console.log('Отправляем промпт к OpenAI с запросом JSON-формата');
+    console.log('Отправляем запрос к OpenAI с указанием формата ответа JSON');
     
     // Используем модель gpt-4o с низкой температурой для более структурированных ответов
-    // и указываем формат ответа response_format: "json_object"
     const content = await callOpenAI(brandPrompt, {
       temperature: 0.2,
       max_tokens: 1000,
@@ -35,15 +35,15 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
       responseFormat: "json_object"
     });
 
-    console.log('Получен ответ от OpenAI (первые 100 символов):', 
-                typeof content === 'string' ? content.substring(0, 100) : 'Не строка');
+    console.log('Получен ответ от OpenAI:', 
+                typeof content === 'string' ? content.substring(0, 200) + '...' : 'Не строка');
 
     // Парсим ответ от API, используя улучшенный парсер
     const suggestions = await parseBrandApiResponse(content);
     console.log('Распарсенные предложения:', suggestions);
 
     // Если не удалось получить хотя бы одно предложение, создаем демо-данные
-    if (suggestions.length === 0) {
+    if (!suggestions || suggestions.length === 0) {
       console.warn('Не удалось получить корректные предложения от OpenAI, создаем демо-данные');
       toast.warning("Не удалось получить реальные данные о брендах. Показываем примеры.", { duration: 4000 });
       return createMockBrandSuggestions(description);
@@ -58,9 +58,8 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
       }
     }
 
-    console.log(`Возвращаем ${suggestions.length} предложений брендов:`, suggestions);
+    console.log(`Возвращаем ${suggestions.length} предложений брендов`);
     return suggestions.slice(0, 5); // Возвращаем до 5 результатов
-
   } catch (error) {
     console.error('Ошибка при запросе к OpenAI для брендов:', error);
     

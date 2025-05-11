@@ -124,10 +124,11 @@ export const callOpenAI = async (prompt: string, options: {
     }
 
     const data = await response.json();
-    console.log('Получен ответ от OpenAI:', data);
+    console.log('Получен ответ от OpenAI:', JSON.stringify(data).substring(0, 300) + '...');
     
     const content = data.choices[0]?.message?.content;
-    console.log('Содержимое ответа OpenAI:', content);
+    console.log('Содержимое ответа OpenAI (первые 300 символов):', 
+                typeof content === 'string' ? content.substring(0, 300) + '...' : 'Не строка');
     
     // Используем общую утилиту для обработки ответа
     return processApiResponse(content, finalOptions.responseFormat);

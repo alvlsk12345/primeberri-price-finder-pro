@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 
 /**
@@ -28,6 +27,21 @@ export const handleApiError = async (response: Response): Promise<any> => {
       errorData: JSON.stringify(errorResponse).substring(0, 500)
     });
     
+    // Если это ошибка от OpenAI API
+    if (response.url.includes('openai.com') && errorResponse.error) {
+      console.error('СТРУКТУРА ОШИБКИ OPENAI API:', {
+        type: errorResponse.error.type,
+        message: errorResponse.error.message,
+        param: errorResponse.error.param,
+        code: errorResponse.error.code
+      });
+      
+      // Более подробный анализ ошибок OpenAI
+      if (errorResponse.error.message.includes('content filtering')) {
+        toast.error("Запрос заблокирован из-за правил модерации OpenAI. Измените формулировку.", { duration: 7000 });
+      }
+    }
+    
     // Если это ошибка от Google API, более подробно логируем её структуру
     if (response.url.includes('googleapis.com') && errorResponse.error) {
       console.error('СТРУКТУРА ОШИБКИ GOOGLE API:', {
@@ -36,16 +50,6 @@ export const handleApiError = async (response: Response): Promise<any> => {
         errors: errorResponse.error.errors,
         status: errorResponse.error.status,
         details: errorResponse.error.details
-      });
-    }
-    
-    // Если это ошибка от OpenAI API
-    if (response.url.includes('openai.com') && errorResponse.error) {
-      console.error('СТРУКТУРА ОШИБКИ OPENAI API:', {
-        type: errorResponse.error.type,
-        message: errorResponse.error.message,
-        param: errorResponse.error.param,
-        code: errorResponse.error.code
       });
     }
   } catch (e) {
@@ -110,7 +114,12 @@ export const handleApiError = async (response: Response): Promise<any> => {
       toast.error("Превышен лимит запросов OpenAI API. Попробуйте позже или проверьте ваш тариф.", { duration: 7000 });
       return null;
     } else if (response.status === 400) {
-      toast.error(`Ошибка в запросе к OpenAI API: ${errorMessage}`, { duration: 7000 });
+      // Дополнительная обработка ошибок формата JSON
+      if (errorMessage.includes('JSON')) {
+        toast.error(`Ошибка в формате JSON при запросе к OpenAI API. Пробуем повторить с другими настройками.`, { duration: 6000 });
+      } else {
+        toast.error(`Ошибка в запросе к OpenAI API: ${errorMessage}`, { duration: 7000 });
+      }
       return null;
     }
   }
