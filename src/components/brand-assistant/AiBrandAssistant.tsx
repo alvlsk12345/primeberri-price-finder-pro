@@ -63,6 +63,7 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
 
     console.log("Запрос поиска товаров с текстом:", productDescription);
     setIsAssistantLoading(true);
+    setBrandSuggestions([]); // Очищаем предыдущие результаты
     
     try {
       // Добавляем запрос на получение 5 результатов в описание
@@ -84,6 +85,12 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
       if (suggestions && !Array.isArray(suggestions)) {
         console.log("Получен один объект вместо массива, преобразуем его");
         suggestions = [suggestions];
+      }
+      
+      // Дополнительная проверка для обработки ответа формата {products: [...]}
+      if (suggestions && 'products' in suggestions && Array.isArray(suggestions.products)) {
+        console.log("Получен объект с массивом products, извлекаем его");
+        suggestions = suggestions.products;
       }
       
       // Явно устанавливаем состояние на основе полученных данных
@@ -140,10 +147,22 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
     }
   };
 
-  // Явная проверка состояния brandSuggestions для отладки
+  // Проверяем состояние brandSuggestions для отладки
   useEffect(() => {
     console.log('Состояние brandSuggestions обновлено:', brandSuggestions);
   }, [brandSuggestions]);
+
+  // Создаем функцию для показа отладочной информации
+  const renderDebugInfo = () => {
+    if (brandSuggestions && brandSuggestions.length > 0) {
+      return (
+        <div className="mt-2">
+          <p className="text-xs text-gray-500">Данные для отладки: получено {brandSuggestions.length} предложений</p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="mt-3">
@@ -221,16 +240,13 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
         </div>
       )}
 
+      {renderDebugInfo()}
+
       {isAssistantEnabled && brandSuggestions && brandSuggestions.length > 0 && (
-        <>
-          <div className="mt-2">
-            <p className="text-xs text-gray-500">Данные для отладки: получено {brandSuggestions.length} предложений</p>
-          </div>
-          <BrandSuggestionList 
-            suggestions={brandSuggestions} 
-            onSelect={onSelectProduct} 
-          />
-        </>
+        <BrandSuggestionList 
+          suggestions={brandSuggestions} 
+          onSelect={onSelectProduct} 
+        />
       )}
     </div>
   );

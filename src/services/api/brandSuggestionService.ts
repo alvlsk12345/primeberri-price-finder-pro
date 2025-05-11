@@ -36,9 +36,15 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
         console.log('Результат от Supabase:', result);
         
         // Проверка на валидность данных
-        if (!result || (Array.isArray(result) && result.length === 0)) {
+        if (!result) {
           console.warn('Пустой ответ от Supabase Edge Function');
           return [];
+        }
+        
+        // Если результат содержит поле products, извлекаем его
+        if (result && !Array.isArray(result) && result.products && Array.isArray(result.products)) {
+          console.log("Извлекаем массив products из объекта результата");
+          return result.products;
         }
         
         // Нормализация результатов: если получен один объект вместо массива
@@ -47,7 +53,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
           return [result];
         }
         
-        return result || [];
+        return Array.isArray(result) ? result : [];
       } catch (error) {
         console.error('Ошибка при использовании Supabase для предложений брендов:', error);
         toast.error(`Ошибка Supabase: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,

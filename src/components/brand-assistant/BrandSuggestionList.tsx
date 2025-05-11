@@ -24,12 +24,21 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
     );
   }
 
-  // Нормализация результатов: если получен один объект вместо массива,
-  // преобразуем его в массив с одним элементом
-  const normalizedSuggestions = Array.isArray(suggestions) 
-    ? suggestions 
-    : [suggestions];
-    
+  // Проверяем, имеет ли suggestions свойство products или нужно работать напрямую с массивом предложений
+  let normalizedSuggestions: BrandSuggestion[] = suggestions;
+  
+  // Проверяем, если suggestions - не массив, а объект с products полем
+  if (!Array.isArray(suggestions) && suggestions.products && Array.isArray(suggestions.products)) {
+    normalizedSuggestions = suggestions.products;
+    console.log("Нормализация: извлечены продукты из объекта", normalizedSuggestions);
+  }
+  
+  // Если это все еще не массив, преобразуем в массив
+  if (!Array.isArray(normalizedSuggestions)) {
+    normalizedSuggestions = [normalizedSuggestions];
+    console.log("Нормализация: объект преобразован в массив", normalizedSuggestions);
+  }
+  
   console.log("Нормализованные предложения:", normalizedSuggestions);
 
   return (

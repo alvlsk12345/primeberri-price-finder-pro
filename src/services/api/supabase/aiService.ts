@@ -117,16 +117,21 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
     console.log('Результат от fetchBrandSuggestionsViaOpenAI:', data);
     
     // Проверка на валидность полученных данных
-    if (!data || (Array.isArray(data) && data.length === 0)) {
-      console.warn('Пустой массив в данных ответа');
+    if (!data) {
+      console.warn('Пустой ответ от Supabase Edge Function');
       return [];
     }
     
-    // Обработка ответа в зависимости от формата
-    // Может быть массив объектов BrandSuggestion или один объект
+    // Обработка разных форматов ответа от OpenAI
     if (Array.isArray(data)) {
+      // Если data уже массив объектов BrandSuggestion
       return data;
     } else if (typeof data === 'object') {
+      // Проверяем, если пришел объект с полем products (результат от модели GPT)
+      if (data.products && Array.isArray(data.products)) {
+        return data.products;
+      }
+      
       // Проверяем, имеет ли объект нужные свойства для BrandSuggestion
       if (data.brand || data.name) {
         return [data as BrandSuggestion];
