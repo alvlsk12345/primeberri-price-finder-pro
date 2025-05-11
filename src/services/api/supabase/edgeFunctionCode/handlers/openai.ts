@@ -1,5 +1,6 @@
 
 // Обработчик для запросов к OpenAI
+import { CORS_HEADERS, DEFAULT_OPENAI_OPTIONS } from '../config';
 
 /**
  * Обрабатывает запросы к OpenAI API через Edge Function
@@ -19,9 +20,6 @@ export async function handleOpenAIRequest({
     responseFormat?: "json_object" | "text";
   } 
 }, OPENAI_API_KEY: string) {
-  // Импортируем CORS заголовки и дефолтные опции
-  import { CORS_HEADERS, DEFAULT_OPENAI_OPTIONS } from '../config';
-  
   // Проверяем наличие ключа API
   if (!OPENAI_API_KEY) {
     return new Response(
@@ -40,7 +38,13 @@ export async function handleOpenAIRequest({
     } = options;
     
     // Формируем тело запроса
-    const requestBody = {
+    const requestBody: {
+      model: string;
+      temperature: number;
+      max_tokens: number;
+      messages: { role: string; content: string }[];
+      response_format?: { type: string };
+    } = {
       model,
       temperature,
       max_tokens,

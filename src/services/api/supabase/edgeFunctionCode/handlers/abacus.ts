@@ -1,5 +1,6 @@
 
 // Обработчик для запросов к Abacus AI
+import { CORS_HEADERS, ABACUS_API_BASE_URL } from '../config';
 
 /**
  * Обрабатывает запросы к Abacus API через Edge Function
@@ -16,9 +17,6 @@ export async function handleAbacusRequest({
   method?: 'GET' | 'POST';
   requestData?: Record<string, any>;
 }, ABACUS_API_KEY: string) {
-  // Импортируем CORS заголовки и дефолтные опции
-  import { CORS_HEADERS, ABACUS_API_BASE_URL } from '../config';
-  
   // Проверяем наличие ключа API
   if (!ABACUS_API_KEY) {
     return new Response(
@@ -41,7 +39,14 @@ export async function handleAbacusRequest({
     }
     
     // Формируем опции для запроса
-    const fetchOptions = {
+    const fetchOptions: {
+      method: 'GET' | 'POST';
+      headers: {
+        'Content-Type': string;
+        'Authorization': string;
+      };
+      body?: string;
+    } = {
       method,
       headers: {
         'Content-Type': 'application/json',
