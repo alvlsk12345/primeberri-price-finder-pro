@@ -13,7 +13,23 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     if (isUsingSupabaseBackend() && await isSupabaseConnected()) {
       console.log('Использование Supabase для получения предложений брендов через OpenAI');
       const result = await fetchBrandSuggestionsViaOpenAI(description);
-      return result;
+      
+      // Убедимся, что результат всегда возвращается как массив BrandSuggestion[]
+      if (Array.isArray(result)) {
+        return result;
+      }
+      
+      // Если результат не массив, но имеет поле products, возвращаем его
+      if (result && typeof result === 'object' && 'products' in result) {
+        const products = (result as any).products;
+        if (Array.isArray(products)) {
+          return products;
+        }
+      }
+      
+      // В случае непредвиденного формата возвращаем пустой массив
+      console.warn('Неожиданный формат результата от Supabase:', result);
+      return [];
     }
 
     // Формируем промпт для получения предложений по брендам
@@ -21,7 +37,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
 
     // Вызываем OpenAI API с обновленными настройками
     const result = await callOpenAI(prompt, {
-      model: "gpt-4o", // Обновляем на gpt-4o, который поддерживает responseFormat: "json_object"
+      model: "gpt-4o", // Используем gpt-4o
       temperature: 0.3,
       max_tokens: 500,
       responseFormat: "json_object",
@@ -37,17 +53,26 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
         product: brand.product || "",
         description: brand.description || "Описание недоступно",
       }));
-    } else if (result && typeof result === 'object' && (result.brand || result.product)) {
-      // Если получен один объект вместо массива, преобразуем его в массив из одного элемента
-      console.log('Получен один объект вместо массива, преобразуем его');
-      return [{
-        brand: result.brand || result.name || "Неизвестный бренд",
-        product: result.product || "",
-        description: result.description || "Описание недоступно",
-      }];
+    } else if (result && typeof result === 'object') {
+      // Проверяем наличие поля products
+      if ('products' in result && Array.isArray((result as any).products)) {
+        return (result as any).products.map((brand: any) => ({
+          brand: brand.brand || brand.name || "Неизвестный бренд",
+          product: brand.product || "",
+          description: brand.description || "Описание недоступно",
+        }));
+      } else if (result.brand || result.product) {
+        // Если получен один объект вместо массива
+        console.log('Получен один объект вместо массива, преобразуем его');
+        return [{
+          brand: result.brand || result.name || "Неизвестный бренд",
+          product: result.product || "",
+          description: result.description || "Описание недоступно",
+        }];
+      }
     }
     
-    // Если не удалось получить корректный массив или объект
+    // Если не удалось получить корректный результат
     console.error('Некорректный формат ответа от OpenAI:', result);
     return [];
     

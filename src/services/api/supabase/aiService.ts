@@ -31,9 +31,10 @@ export const callAIViaSupabase = async (params: {
 
     console.log(`Отправка запроса к Supabase Edge Function: ai-proxy, провайдер: ${params.provider}`, requestBody);
     
-    // Вызываем Edge Function для запроса к AI
+    // Вызываем Edge Function для запроса к AI с таймаутом
     const { data, error } = await supabase.functions.invoke('ai-proxy', {
-      body: requestBody
+      body: requestBody,
+      responseType: 'json'
     });
     
     if (error) {
@@ -98,8 +99,13 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
   try {
     console.log('Вызов AI через Supabase Edge Function: openai');
     
-    // Вызываем Edge Function для запроса к OpenAI
-    const { data, error } = await supabase.functions.invoke('ai-proxy', {
+    // Устанавливаем таймаут для запроса
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Превышено время ожидания ответа от Supabase Edge Function')), 20000);
+    });
+
+    // Создаем основной запрос
+    const requestPromise = supabase.functions.invoke('ai-proxy', {
       body: { 
         provider: 'openai',
         action: 'getBrandSuggestions',
@@ -107,6 +113,12 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
         count: 5 // Запрашиваем 5 результатов
       }
     });
+
+    // Используем Promise.race для ограничения времени ожидания
+    const result = await Promise.race([requestPromise, timeoutPromise]);
+    
+    // Проверяем результат
+    const { data, error } = result as { data: any, error: any };
     
     if (error) {
       console.error('Ошибка при вызове Supabase Edge Function:', error);
@@ -139,7 +151,13 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
     }
     
     console.log('Нормализованные результаты:', normalizedResults);
-    return normalizedResults;
+    
+    // Убедимся, что все объекты в массиве имеют нужную структуру
+    return normalizedResults.map(item => ({
+      brand: item.brand || item.name || 'Неизвестный бренд',
+      product: item.product || '',
+      description: item.description || 'Описание недоступно'
+    }));
   } catch (error) {
     console.error('Ошибка при получении предложений брендов через Supabase:', error);
     throw error;

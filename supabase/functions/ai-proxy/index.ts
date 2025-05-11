@@ -11,16 +11,26 @@ const ABACUS_API_KEY = Deno.env.get('ABACUS_API_KEY');
 
 // Обработчик запросов
 serve(async (req) => {
+  // CORS preflight обработка
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { 
+      headers: CORS_HEADERS 
+    });
+  }
+  
   try {
-    // CORS preflight обработка
-    if (req.method === 'OPTIONS') {
-      return new Response(null, { 
-        headers: CORS_HEADERS 
-      });
+    // Пытаемся получить данные запроса с таймаутом для чтения тела
+    let requestData;
+    try {
+      const requestText = await req.text();
+      requestData = requestText ? JSON.parse(requestText) : {};
+    } catch (e) {
+      console.error('Ошибка при чтении тела запроса:', e);
+      return new Response(
+        JSON.stringify({ error: 'Ошибка чтения запроса: ' + e.message }),
+        { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }, status: 400 }
+      );
     }
-    
-    // Получаем параметры запроса
-    const requestData = await req.json();
     
     // Обработка проверки соединения
     if (requestData.testConnection === true) {
@@ -44,16 +54,38 @@ serve(async (req) => {
     console.log(`Обработка запроса через Edge Function для провайдера: ${provider}`, params);
     
     // В зависимости от провайдера вызываем соответствующую функцию
+    let responseData;
+    
     if (provider === 'openai') {
-      return await handleOpenAIRequest(params, OPENAI_API_KEY);
+      if (!OPENAI_API_KEY) {
+        return new Response(
+          JSON.stringify({ error: 'OPENAI_API_KEY не настроен в Edge Function' }),
+          { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }, status: 500 }
+        );
+      }
+      
+      responseData = await handleOpenAIRequest(params);
     } else if (provider === 'abacus') {
-      return await handleAbacusRequest(params, ABACUS_API_KEY);
+      if (!ABACUS_API_KEY) {
+        return new Response(
+          JSON.stringify({ error: 'ABACUS_API_KEY не настроен в Edge Function' }),
+          { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }, status: 500 }
+        );
+      }
+      
+      responseData = await handleAbacusRequest(params);
+    } else {
+      // Если провайдер не поддерживается, возвращаем ошибку
+      return new Response(
+        JSON.stringify({ error: `Unsupported provider: ${provider}` }),
+        { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }, status: 400 }
+      );
     }
     
-    // Если провайдер не поддерживается, возвращаем ошибку
+    // Возвращаем результат с CORS заголовками
     return new Response(
-      JSON.stringify({ error: `Unsupported provider: ${provider}` }),
-      { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }, status: 400 }
+      JSON.stringify(responseData),
+      { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
     );
   } catch (error) {
     // Обработка ошибок

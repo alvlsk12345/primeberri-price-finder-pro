@@ -40,59 +40,78 @@ const getBrandSuggestions = async (
   count: number = 3
 ): Promise<Brand[]> => {
   try {
-    // Формируем системный промт
-    const systemPrompt = `Ты - эксперт по товарам. Пользователь опишет, что ищет, а ты предложишь конкретные товары.
-Ответ должен содержать только JSON-массив products с объектами, содержащими поля:
-1. brand - название бренда
-2. product - название модели или товара
+    // Формируем системный промпт с более четкими инструкциями
+    const systemPrompt = `Ты - эксперт по электронным товарам и аксессуарам для мобильных устройств.
+Твоя задача - предложить конкретные товары на основе описания пользователя.
+Ответ ДОЛЖЕН содержать ТОЛЬКО JSON-массив products с объектами, где каждый объект имеет:
+1. brand - название бренда (строка)
+2. product - название модели или товара (строка)
 3. description - краткое описание товара на русском языке (1-2 предложения)
 
-Формат: {"products": [{"brand": "...", "product": "...", "description": "..."}]}`;
+Формат: {"products": [{"brand": "...", "product": "...", "description": "..."}]}
 
-    // Формируем запрос к OpenAI
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt,
-        },
-        {
-          role: "user",
-          content: description,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 800,
-      response_format: { type: "json_object" }
-    });
+Всегда возвращай точно 5 результатов. Не нумеруй результаты.`;
 
-    // Получаем текст ответа
-    const content = response.choices[0].message.content;
-    console.log("OpenAI response content:", content);
+    console.log('Запрос к OpenAI с описанием:', description);
+    
+    // Добавляем таймаут для запроса
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-    if (!content) {
-      throw new Error("Пустой ответ от OpenAI");
-    }
-
-    // Парсим JSON
     try {
-      const data = JSON.parse(content) as BrandResponse;
-      
-      // Проверяем, есть ли массив products в ответе
-      if (data && data.products && Array.isArray(data.products)) {
-        console.log("Успешно получен массив products:", data.products);
-        return data.products; // Возвращаем массив products
-      } else {
-        console.error("Некорректный формат ответа от OpenAI:", data);
+      // Формируем запрос к OpenAI с моделью gpt-4o как указано
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o", // Используем модель gpt-4o вместо gpt-4o-mini
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
+          {
+            role: "user",
+            content: description,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 500, // Уменьшаем количество токенов для ускорения ответа
+        response_format: { type: "json_object" }
+      });
+
+      // Очищаем таймаут
+      clearTimeout(timeoutId);
+
+      // Получаем текст ответа
+      const content = response.choices[0].message.content;
+      console.log("OpenAI ответ получен, длина:", content?.length || 0);
+
+      if (!content) {
+        console.error("Пустой ответ от OpenAI");
+        return [];
+      }
+
+      // Парсим JSON
+      try {
+        const data = JSON.parse(content) as BrandResponse;
+        
+        // Проверяем, есть ли массив products в ответе
+        if (data && data.products && Array.isArray(data.products)) {
+          console.log("Успешно получен массив products:", data.products.length);
+          return data.products; // Возвращаем массив products
+        } else {
+          console.error("Некорректный формат ответа от OpenAI:", data);
+          return [];
+        }
+      } catch (error) {
+        console.error("Ошибка при парсинге JSON:", error);
         return [];
       }
     } catch (error) {
-      console.error("Ошибка при парсинге JSON:", error);
-      throw new Error("Не удалось обработать ответ от OpenAI");
+      // Отменяем таймаут при ошибке
+      clearTimeout(timeoutId);
+      throw error;
     }
   } catch (error) {
     console.error("Ошибка при получении предложений брендов:", error);
-    throw error;
+    return [];
   }
 };

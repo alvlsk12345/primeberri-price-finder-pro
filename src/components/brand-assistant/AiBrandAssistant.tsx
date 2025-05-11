@@ -4,7 +4,7 @@ import { BrandSuggestionList } from "./BrandSuggestionList";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search } from "lucide-react";
+import { Search, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { fetchBrandSuggestions } from "@/services/api/brandSuggestionService";
 import { getApiKey } from "@/services/api/openai/config";
@@ -22,12 +22,15 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
   const [brandSuggestions, setBrandSuggestions] = useState<BrandSuggestion[]>([]);
   const [isAssistantLoading, setIsAssistantLoading] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [supabaseStatus, setSupabaseStatus] = useState<{connected: boolean; enabled: boolean}>({
     connected: false,
     enabled: false
   });
 
   const MAX_RETRIES = 2;
+  const REQUEST_TIMEOUT = 20000; // 20 секунд таймаут
 
   // Проверяем статус Supabase при загрузке компонента
   useEffect(() => {
@@ -64,15 +67,33 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
     console.log("Запрос поиска товаров с текстом:", productDescription);
     setIsAssistantLoading(true);
     setBrandSuggestions([]); // Очищаем предыдущие результаты
+    setHasError(false);
+    setErrorMessage("");
+    
+    // Устанавливаем таймаут для запроса
+    let timeoutId: NodeJS.Timeout | null = setTimeout(() => {
+      setIsAssistantLoading(false);
+      setHasError(true);
+      setErrorMessage("Превышено время ожидания ответа (20 секунд). Попробуйте упростить запрос или повторите попытку позже.");
+      toast.error("Превышено время ожидания ответа", { duration: 5000 });
+      timeoutId = null;
+    }, REQUEST_TIMEOUT);
     
     try {
       // Добавляем запрос на получение 5 результатов в описание
       const enhancedDescription = productDescription + 
-        ". Пожалуйста, предложите 5 конкретных товаров с указанием бренда и модели.";
+        ". Пожалуйста, предложите 5 конкретных товаров с указанием бренда и модели. Описание должно быть кратким.";
       
       console.log(`Отправляем запрос на поиск брендов: "${enhancedDescription}"`);
       
       let suggestions = await fetchBrandSuggestions(enhancedDescription);
+      
+      // Очищаем таймаут, так как запрос завершился
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      
       console.log("Получены предложения брендов:", suggestions);
       
       // Проверка на валидность полученных данных
@@ -88,9 +109,9 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
       }
       
       // Дополнительная проверка для обработки ответа формата {products: [...]}
-      if (suggestions && 'products' in suggestions && Array.isArray(suggestions.products)) {
+      if (suggestions && 'products' in suggestions && Array.isArray((suggestions as any).products)) {
         console.log("Получен объект с массивом products, извлекаем его");
-        suggestions = suggestions.products;
+        suggestions = (suggestions as any).products;
       }
       
       // Явно устанавливаем состояние на основе полученных данных
@@ -98,6 +119,8 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
       setBrandSuggestions(Array.isArray(suggestions) ? suggestions : []);
       
       if (!suggestions || suggestions.length === 0) {
+        setHasError(true);
+        setErrorMessage("Не удалось найти подходящие товары для вашего запроса. Попробуйте изменить описание.");
         toast.warning("Не удалось найти подходящие товары для вашего запроса");
       } else {
         // Сбрасываем счетчик повторов при успешном запросе
@@ -105,6 +128,12 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
         toast.success(`Найдено ${suggestions.length} предложений товаров`);
       }
     } catch (error: any) {
+      // Очищаем таймаут, так как запрос завершился с ошибкой
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      
       console.error('Ошибка при запросе к AI для получения товаров:', error);
       
       // Проверяем, можно ли повторить запрос
@@ -125,16 +154,26 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
         return;
       }
       
+      setHasError(true);
+      
       // Обработка других типов ошибок
       if (error.message?.includes("quota")) {
+        setErrorMessage("Превышен лимит запросов API. Проверьте ваш тарифный план OpenAI.");
         toast.error("Превышен лимит запросов API. Проверьте ваш тарифный план OpenAI.");
       } else if (error.message?.includes("invalid")) {
+        setErrorMessage("Недействительный API ключ. Проверьте настройки.");
         toast.error("Недействительный API ключ. Пожалуйста, проверьте его в настройках.");
       } else if (error.message?.includes("API ключ не установлен")) {
+        setErrorMessage("Необходимо указать API ключ OpenAI в настройках.");
         toast.error("Необходимо указать API ключ OpenAI в настройках.");
       } else if (error.message?.includes("Failed to fetch") || error.message?.includes("Исчерпаны все попытки")) {
+        setErrorMessage("Не удалось подключиться к API. Проверьте подключение к интернету.");
         toast.error("Не удалось подключиться к API. Проверьте подключение к интернету или перейдите в настройки для проверки API.");
+      } else if (error.message?.includes("время ожидания")) {
+        setErrorMessage("Запрос занял слишком много времени. Возможны проблемы с сервером.");
+        toast.error("Запрос занял слишком много времени. Попробуйте позже.");
       } else {
+        setErrorMessage("Не удалось получить предложения товаров. Попробуйте позже.");
         toast.error("Не удалось получить предложения товаров. Попробуйте позже или проверьте настройки API.");
       }
       
@@ -152,18 +191,6 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
     console.log('Состояние brandSuggestions обновлено:', brandSuggestions);
   }, [brandSuggestions]);
 
-  // Создаем функцию для показа отладочной информации
-  const renderDebugInfo = () => {
-    if (brandSuggestions && brandSuggestions.length > 0) {
-      return (
-        <div className="mt-2">
-          <p className="text-xs text-gray-500">Данные для отладки: получено {brandSuggestions.length} предложений</p>
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <div className="mt-3">
       <div className="flex items-center gap-2">
@@ -174,6 +201,8 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
             setIsAssistantEnabled(!!checked);
             if (!checked) {
               setBrandSuggestions([]);
+              setHasError(false);
+              setErrorMessage("");
             }
           }}
         />
@@ -214,7 +243,16 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
             </Button>
           </div>
           
-          {brandSuggestions.length === 0 && !isAssistantLoading && (getApiKey() || supabaseStatus.connected) && (
+          {hasError && errorMessage && (
+            <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-md text-sm text-destructive">
+              <div className="flex items-start gap-2">
+                <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
+                <div>{errorMessage}</div>
+              </div>
+            </div>
+          )}
+          
+          {brandSuggestions.length === 0 && !isAssistantLoading && !hasError && (getApiKey() || supabaseStatus.connected) && (
             <div className="mt-2 text-sm text-gray-500 text-center">
               <p>Введите описание товара и нажмите "Найти подходящие товары"</p>
             </div>
@@ -239,8 +277,6 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
           )}
         </div>
       )}
-
-      {renderDebugInfo()}
 
       {isAssistantEnabled && brandSuggestions && brandSuggestions.length > 0 && (
         <BrandSuggestionList 
