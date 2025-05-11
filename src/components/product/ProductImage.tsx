@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ImageOff } from "lucide-react";
 import { getPlaceholderImageUrl } from '@/services/image/imagePlaceholder';

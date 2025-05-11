@@ -19,16 +19,11 @@ export const processApiResponse = (content: any, responseFormat: "json_object" |
         .replace(/^```\s*/i, '')
         .replace(/\s*```$/i, '')
         .trim();
-      
-      console.log('Очищенный контент для парсинга JSON:', cleanedContent.substring(0, 100) + '...');
-      
+
       // Парсим JSON
-      const parsedJson = JSON.parse(cleanedContent);
-      console.log('Успешно распарсен JSON, тип:', Array.isArray(parsedJson) ? 'массив' : typeof parsedJson);
-      return parsedJson;
+      return JSON.parse(cleanedContent);
     } catch (parseError) {
       console.error('Ошибка при парсинге JSON ответа:', parseError);
-      console.log('Контент, который не удалось распарсить:', content);
       // Возвращаем сырой контент для дальнейшей обработки
       return content;
     }
