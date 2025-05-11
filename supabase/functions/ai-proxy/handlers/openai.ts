@@ -11,7 +11,7 @@ export interface OpenAIBrandSuggestion {
 export async function handleOpenAIRequest(params: any, apiKey?: string): Promise<Response> {
   if (!apiKey) {
     return new Response(
-      JSON.stringify({ error: 'OpenAI API key is not configured' }),
+      JSON.stringify({ error: 'OpenAI API key not configured' }),
       { status: 400, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
     );
   }
@@ -164,7 +164,8 @@ async function handleBrandSuggestions(description: string, apiKey: string, count
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: 1000
+        max_tokens: 1000,
+        response_format: { type: "json_object" } // Указываем формат ответа как JSON
       })
     });
 
@@ -181,32 +182,52 @@ async function handleBrandSuggestions(description: string, apiKey: string, count
     const content = data.choices[0].message.content;
     console.log('OpenAI response content:', content);
     
-    // Извлекаем JSON из ответа
-    let jsonMatch = content.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      jsonMatch = content.match(/\{[\s\S]*\}/);
-    }
-    
-    if (!jsonMatch) {
-      console.error('Не удалось извлечь JSON из ответа OpenAI:', content);
-      return new Response(
-        JSON.stringify({ error: 'Failed to parse OpenAI response as JSON' }),
-        { status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
-      );
-    }
-    
-    // Пытаемся распарсить JSON
+    // Пытаемся распарсить JSON напрямую, так как мы указали response_format: "json_object"
     try {
-      const suggestions = JSON.parse(jsonMatch[0]);
+      const parsedContent = JSON.parse(content);
+      
+      // Проверяем, есть ли в ответе массив товаров
+      if (Array.isArray(parsedContent)) {
+        return new Response(
+          JSON.stringify(parsedContent),
+          { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+        );
+      } 
+      
+      // Проверяем, есть ли в ответе поле с массивом товаров
+      if (parsedContent.products && Array.isArray(parsedContent.products)) {
+        return new Response(
+          JSON.stringify(parsedContent.products),
+          { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+        );
+      }
+      
+      // Проверяем, есть ли в ответе поле suggestions или results
+      if (parsedContent.suggestions && Array.isArray(parsedContent.suggestions)) {
+        return new Response(
+          JSON.stringify(parsedContent.suggestions),
+          { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+        );
+      }
+      
+      if (parsedContent.results && Array.isArray(parsedContent.results)) {
+        return new Response(
+          JSON.stringify(parsedContent.results),
+          { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+        );
+      }
+      
+      // Если это объект, но не найдены известные поля, возвращаем сам объект
       return new Response(
-        JSON.stringify(suggestions),
+        JSON.stringify(parsedContent),
         { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
       );
     } catch (error) {
       console.error('Error parsing JSON from OpenAI response:', error);
-      // Если не удалось распарсить, возвращаем текстовый ответ
+      
+      // Если не удалось распарсить как JSON, возвращаем ошибку
       return new Response(
-        JSON.stringify({ error: 'Failed to parse OpenAI response', content }),
+        JSON.stringify({ error: 'Failed to parse OpenAI response as JSON', content }),
         { status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
       );
     }

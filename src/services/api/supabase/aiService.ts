@@ -29,7 +29,7 @@ export const callAIViaSupabase = async (params: {
       ...(params.body && { body: params.body }),
     };
 
-    console.log(`Отправка запроса к Supabase Edge Function: ai-proxy, провайдер: ${params.provider}`);
+    console.log(`Отправка запроса к Supabase Edge Function: ai-proxy, провайдер: ${params.provider}`, requestBody);
     
     // Вызываем Edge Function для запроса к AI
     const { data, error } = await supabase.functions.invoke('ai-proxy', {
@@ -39,6 +39,10 @@ export const callAIViaSupabase = async (params: {
     if (error) {
       console.error('Ошибка при вызове Supabase Edge Function:', error);
       throw new Error(`Ошибка Supabase: ${error.message}`);
+    }
+    
+    if (!data) {
+      console.warn('Пустой ответ от Supabase Edge Function');
     }
     
     return data;
@@ -88,6 +92,8 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
   }
   
   try {
+    console.log('Вызов AI через Supabase Edge Function: openai');
+    
     // Вызываем Edge Function для запроса к OpenAI
     const { data, error } = await supabase.functions.invoke('ai-proxy', {
       body: { 
@@ -109,6 +115,12 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
     }
     
     console.log('Результат от fetchBrandSuggestionsViaOpenAI:', data);
+    
+    // Проверка на валидность полученных данных
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      console.warn('Пустой массив в данных ответа');
+      return [];
+    }
     
     // Обработка ответа в зависимости от формата
     // Может быть массив объектов BrandSuggestion или один объект

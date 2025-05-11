@@ -12,7 +12,11 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
   suggestions, 
   onSelect 
 }) => {
-  if (!suggestions || suggestions.length === 0) {
+  console.log("Отрисовка BrandSuggestionList с данными:", suggestions);
+  
+  // Проверка на пустой массив или отсутствие данных
+  if (!suggestions || !Array.isArray(suggestions) || suggestions.length === 0) {
+    console.warn("BrandSuggestionList: получен пустой или неверный массив предложений", suggestions);
     return (
       <div className="mt-4 p-3 bg-slate-50 rounded-md border">
         <p className="text-sm text-gray-500">Нет предложений по брендам для данного запроса.</p>
@@ -25,6 +29,8 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
   const normalizedSuggestions = Array.isArray(suggestions) 
     ? suggestions 
     : [suggestions];
+    
+  console.log("Нормализованные предложения:", normalizedSuggestions);
 
   return (
     <div className="mt-4 p-3 bg-slate-50 rounded-md border">
@@ -34,7 +40,7 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
       <div className="space-y-3">
         {normalizedSuggestions.map((suggestion, index) => {
           // Проверка наличия необходимых полей
-          if (!suggestion.brand && !suggestion.name) {
+          if (!suggestion || (!suggestion.brand && !suggestion.name)) {
             console.warn(`Предложение #${index} не содержит имя бренда:`, suggestion);
             return null; // Не отображаем некорректные элементы
           }

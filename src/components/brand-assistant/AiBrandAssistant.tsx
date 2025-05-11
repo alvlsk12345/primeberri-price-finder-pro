@@ -32,9 +32,14 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
   // Проверяем статус Supabase при загрузке компонента
   useEffect(() => {
     const checkSupabaseStatus = async () => {
-      const connected = await isSupabaseConnected();
-      const enabled = await isUsingSupabaseBackend();
-      setSupabaseStatus({ connected, enabled });
+      try {
+        const connected = await isSupabaseConnected();
+        const enabled = await isUsingSupabaseBackend();
+        console.log('Статус Supabase в AiBrandAssistant:', { connected, enabled });
+        setSupabaseStatus({ connected, enabled });
+      } catch (error) {
+        console.error('Ошибка при проверке статуса Supabase:', error);
+      }
     };
     
     checkSupabaseStatus();
@@ -69,13 +74,21 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
       let suggestions = await fetchBrandSuggestions(enhancedDescription);
       console.log("Получены предложения брендов:", suggestions);
       
+      // Проверка на валидность полученных данных
+      if (!suggestions) {
+        console.warn("Получен пустой ответ от fetchBrandSuggestions");
+        suggestions = [];
+      }
+      
       // Нормализация результатов: если получен один объект вместо массива
       if (suggestions && !Array.isArray(suggestions)) {
         console.log("Получен один объект вместо массива, преобразуем его");
         suggestions = [suggestions];
       }
       
-      setBrandSuggestions(suggestions);
+      // Явно устанавливаем состояние на основе полученных данных
+      console.log("Устанавливаем состояние brandSuggestions:", suggestions);
+      setBrandSuggestions(Array.isArray(suggestions) ? suggestions : []);
       
       if (!suggestions || suggestions.length === 0) {
         toast.warning("Не удалось найти подходящие товары для вашего запроса");
@@ -117,12 +130,20 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
       } else {
         toast.error("Не удалось получить предложения товаров. Попробуйте позже или проверьте настройки API.");
       }
+      
+      // При ошибке устанавливаем пустой массив предложений
+      setBrandSuggestions([]);
     } finally {
       setIsAssistantLoading(false);
       // Сбрасываем счетчик повторов при любом финальном результате
       setRetryCount(0);
     }
   };
+
+  // Явная проверка состояния brandSuggestions для отладки
+  useEffect(() => {
+    console.log('Состояние brandSuggestions обновлено:', brandSuggestions);
+  }, [brandSuggestions]);
 
   return (
     <div className="mt-3">
@@ -200,11 +221,16 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
         </div>
       )}
 
-      {isAssistantEnabled && brandSuggestions.length > 0 && (
-        <BrandSuggestionList 
-          suggestions={brandSuggestions} 
-          onSelect={onSelectProduct} 
-        />
+      {isAssistantEnabled && brandSuggestions && brandSuggestions.length > 0 && (
+        <>
+          <div className="mt-2">
+            <p className="text-xs text-gray-500">Данные для отладки: получено {brandSuggestions.length} предложений</p>
+          </div>
+          <BrandSuggestionList 
+            suggestions={brandSuggestions} 
+            onSelect={onSelectProduct} 
+          />
+        </>
       )}
     </div>
   );

@@ -35,6 +35,12 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
         const result = await fetchBrandSuggestionsViaOpenAI(description);
         console.log('Результат от Supabase:', result);
         
+        // Проверка на валидность данных
+        if (!result || (Array.isArray(result) && result.length === 0)) {
+          console.warn('Пустой ответ от Supabase Edge Function');
+          return [];
+        }
+        
         // Нормализация результатов: если получен один объект вместо массива
         if (result && !Array.isArray(result)) {
           console.log("Получен один объект вместо массива, преобразуем его");
@@ -48,10 +54,12 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
                    { duration: 3000 });
         toast.info('Проверьте настройки Supabase в разделе "Настройки"', { duration: 5000 });
         
-        // Продолжаем с обычным процессом, если Supabase не сработал
+        // Возвращаем пустой массив, так как произошла ошибка
+        return [];
       }
     } else if (!supabaseConnected && useSupabase) {
       toast.warning('Supabase не подключен, но выбран для использования. Проверьте настройки.', { duration: 5000 });
+      return []; // Возвращаем пустой массив, так как Supabase не подключен
     }
     
     // Проверка настрок при попытке прямого вызова API
