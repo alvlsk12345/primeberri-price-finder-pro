@@ -5,6 +5,12 @@
 let useSupabaseBackend = true; // По умолчанию используем Supabase
 let useFallback = true; // Использовать ли fallback при ошибках
 
+// Интерфейс для конфигурации Supabase AI
+export interface SupabaseAIConfig {
+  useSupabaseBackend?: boolean;
+  fallbackToDirectCalls?: boolean;
+}
+
 // Функция для проверки, используем ли мы Supabase бэкенд
 export const isUsingSupabaseBackend = (): boolean => {
   return useSupabaseBackend;
@@ -23,4 +29,22 @@ export const isFallbackEnabled = (): boolean => {
 // Функция для установки флага использования fallback
 export const setFallbackEnabled = (value: boolean): void => {
   useFallback = value;
+};
+
+// Функция для получения полной конфигурации Supabase AI
+export const getSupabaseAIConfig = (): SupabaseAIConfig => {
+  return {
+    useSupabaseBackend: useSupabaseBackend,
+    fallbackToDirectCalls: useFallback
+  };
+};
+
+// Функция для обновления конфигурации Supabase AI
+export const setSupabaseAIConfig = (config: SupabaseAIConfig): void => {
+  if (config.useSupabaseBackend !== undefined) {
+    useSupabaseBackend = config.useSupabaseBackend;
+  }
+  if (config.fallbackToDirectCalls !== undefined) {
+    useFallback = config.fallbackToDirectCalls;
+  }
 };

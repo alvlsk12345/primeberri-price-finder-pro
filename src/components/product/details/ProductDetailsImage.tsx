@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { getPlaceholderImageUrl } from '@/services/image/imagePlaceholder';
 import { ProductImageModal } from '../ProductImageModal';
