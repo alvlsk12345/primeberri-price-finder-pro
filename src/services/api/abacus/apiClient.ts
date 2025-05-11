@@ -1,14 +1,14 @@
 
 import { toast } from "sonner";
 import { getApiKey, API_BASE_URL } from "./config";
-import { getCorsProxyUrl, getCurrentProxyName } from "@/services/image/corsProxyService";
+import { getCorsProxyUrl, getCurrentProxyName, switchToNextProxy } from "@/services/image/corsProxyService";
 import { MAX_RETRY_ATTEMPTS } from "../openai/proxyUtils";
 
 // Базовая функция для использования Abacus.ai API с обработкой ошибок
 export const callAbacusAI = async (
   endpoint: string, 
   method: 'GET' | 'POST' = 'POST',
-  data: Record<string, any> = {},
+  requestData: Record<string, any> = {},
   options: {
     retryAttempt?: number;
   } = {}
@@ -38,9 +38,9 @@ export const callAbacusAI = async (
     let fullUrl = `${API_BASE_URL}/${endpoint}`;
     
     // Для GET-запросов добавляем параметры в URL
-    if (method === 'GET' && Object.keys(data).length > 0) {
+    if (method === 'GET' && Object.keys(requestData).length > 0) {
       const params = new URLSearchParams();
-      Object.entries(data).forEach(([key, value]) => {
+      Object.entries(requestData).forEach(([key, value]) => {
         params.append(key, String(value));
       });
       fullUrl += `?${params.toString()}`;
@@ -65,8 +65,8 @@ export const callAbacusAI = async (
     };
     
     // Добавляем тело запроса для POST-запросов
-    if (method === 'POST' && Object.keys(data).length > 0) {
-      fetchOptions.body = JSON.stringify(data);
+    if (method === 'POST' && Object.keys(requestData).length > 0) {
+      fetchOptions.body = JSON.stringify(requestData);
     }
 
     // Выполняем запрос к API через CORS прокси
@@ -84,16 +84,16 @@ export const callAbacusAI = async (
       throw new Error(`Ошибка Abacus.ai API: ${errorMessage}`);
     }
 
-    const data = await response.json();
-    console.log('Получен ответ от Abacus.ai:', data);
+    const responseData = await response.json();
+    console.log('Получен ответ от Abacus.ai:', responseData);
     
     // Проверяем успешность запроса по полю success в ответе
-    if (data && data.success === false) {
-      throw new Error(data.error || "Неизвестная ошибка API");
+    if (responseData && responseData.success === false) {
+      throw new Error(responseData.error || "Неизвестная ошибка API");
     }
     
     // Возвращаем результат запроса
-    return data.result || data;
+    return responseData.result || responseData;
 
   } catch (error: any) {
     console.error('Ошибка при запросе к Abacus.ai:', error);
@@ -101,16 +101,18 @@ export const callAbacusAI = async (
     // Проверяем, является ли ошибка таймаутом или сетевой ошибкой
     if (error.name === 'AbortError' || error.message.includes('Failed to fetch')) {
       // Если это не последняя попытка, пробуем снова через другой прокси
-      if (retryAttempt < MAX_RETRY_ATTEMPTS - 1) {
+      const currentRetryAttempt = options.retryAttempt || 0;
+      
+      if (currentRetryAttempt < MAX_RETRY_ATTEMPTS - 1) {
         console.log('Переключаемся на другой прокси и повторяем запрос...');
         
         // Переключаемся на следующий прокси
         await switchToNextProxy();
         
         // Повторяем запрос с увеличенным счетчиком попыток
-        return callAbacusAI(endpoint, method, data, {
+        return callAbacusAI(endpoint, method, requestData, {
           ...options,
-          retryAttempt: retryAttempt + 1
+          retryAttempt: currentRetryAttempt + 1
         });
       }
     }
