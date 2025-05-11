@@ -5,18 +5,13 @@ import { processApiResponse } from "./responseUtils";
 import { isUsingSupabaseBackend } from "../supabase/config";
 import { isSupabaseConnected } from "../supabase/client";
 import { searchViaOpenAI } from "../supabase/aiService";
-
-// Максимальное количество попыток запроса
-const MAX_RETRY_ATTEMPTS = 2;
+import { MAX_RETRY_ATTEMPTS, createNetworkErrorHandler, OpenAIRequestOptions } from "./proxyUtils";
 
 // Базовая функция для использования OpenAI API без CORS прокси
-export const callOpenAI = async (prompt: string, options: {
-  model?: string;
-  temperature?: number;
-  max_tokens?: number;
-  responseFormat?: "json_object" | "text";
-  retryAttempt?: number;
-} = {}): Promise<any> => {
+export const callOpenAI = async (prompt: string, options: OpenAIRequestOptions = {}): Promise<any> => {
+  // Инициализируем обработчик ошибок
+  const handleNetworkError = createNetworkErrorHandler(callOpenAI);
+
   // Проверяем, используем ли мы Supabase бэкенд
   if (isUsingSupabaseBackend() && await isSupabaseConnected()) {
     console.log('Использование Supabase для вызова OpenAI API');
@@ -137,36 +132,8 @@ export const callOpenAI = async (prompt: string, options: {
     // Обработка ошибок без использования прокси
     console.error('Ошибка при запросе к OpenAI:', error);
     
-    if (error.name === 'AbortError') {
-      console.warn('Запрос был отменен из-за таймаута');
-      toast.error("Превышено время ожидания ответа от сервера. Проверьте подключение к интернету.", { duration: 3000 });
-      
-      // Получаем текущий номер попытки
-      const retryAttempt = options.retryAttempt || 0;
-      
-      // Если не исчерпаны попытки, пробуем снова
-      if (retryAttempt < MAX_RETRY_ATTEMPTS - 1) {
-        return callOpenAI(prompt, {
-          ...options,
-          retryAttempt: retryAttempt + 1
-        });
-      }
-    } else if (error.message.includes('Failed to fetch')) {
-      toast.error('Ошибка сети при подключении к OpenAI API. Проверьте подключение к интернету.', { duration: 5000 });
-      
-      // Получаем текущий номер попытки
-      const retryAttempt = options.retryAttempt || 0;
-      
-      // Если не исчерпаны попытки, пробуем снова
-      if (retryAttempt < MAX_RETRY_ATTEMPTS - 1) {
-        return callOpenAI(prompt, {
-          ...options,
-          retryAttempt: retryAttempt + 1
-        });
-      }
-    }
-    
-    throw error;
+    // Используем обработчик сетевых ошибок
+    return handleNetworkError(error, prompt, options);
   }
 };
 
