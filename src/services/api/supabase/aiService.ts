@@ -1,4 +1,3 @@
-
 import { supabase, isSupabaseConnected } from './client';
 import { isUsingSupabaseBackend, isFallbackEnabled } from './config';
 import { toast } from "sonner";
@@ -92,7 +91,7 @@ export async function searchViaOpenAI(query: string, options?: any): Promise<any
   return callAIViaSupabase({
     provider: 'openai',
     prompt: `
-Ты — AI-ассистент для поиска товаров в интернете (Zalando, Amazon, Ozon, Wildberries и другие магазины). На основе пользовательского запроса сгенерируй список из 3 карточек товаров в формате JSON.
+Ты — AI-ассистент для поиска товаров в интернете (Zalando, Amazon, Ozon, Wildberries и друг��е магазины). На основе пользовательского запроса сгенерируй список из 3 карточек товаров в формате JSON.
 
 ВАЖНО: Твой ответ должен быть МАССИВОМ из 3 объектов товаров в формате JSON. Даже если найден только один товар, верни его как массив из одного элемента.
 
@@ -130,13 +129,23 @@ export async function searchViaOpenAI(query: string, options?: any): Promise<any
 export async function fetchBrandSuggestionsViaOpenAI(description: string): Promise<BrandSuggestion[]> {
   const result = await callAIViaSupabase({
     provider: 'openai',
-    prompt: `Ты эксперт по брендам и товарам. Назови 5 популярных брендов с конкретными товарами, которые могут соответствовать запросу: '${description}'. \n\nОЧЕНЬ ВАЖНО: Твой ответ должен быть строго в формате массива JSON.\n\nФормат ответа должен быть таким:\n[\n  {"brand": "Название бренда 1", "product": "Название товара 1", "description": "Описание товара 1"},\n  {"brand": "Название бренда 2", "product": "Название товара 2", "description": "Описание товара 2"},\n  {"brand": "Название бренда 3", "product": "Название товара 3", "description": "Описание товара 3"},\n  {"brand": "Название бренда 4", "product": "Название товара 4", "description": "Описание товара 4"},\n  {"brand": "Название бренда 5", "product": "Название товара 5", "description": "Описание товара 5"}\n]`,
+    prompt: `Ты эксперт по брендам и товарам. Назови 5 популярных брендов с конкретными товарами, которые могут соответствовать запросу: '${description}'. 
+
+ОЧЕНЬ ВАЖНО: Твой ответ должен быть строго в формате массива JSON.
+
+Формат ответа должен быть таким:
+[
+  {"brand": "Название бренда 1", "product": "Название товара 1", "description": "Описание товара 1"},
+  {"brand": "Название бренда 2", "product": "Название товара 2", "description": "Описание товара 2"},
+  {"brand": "Название бренда 3", "product": "Название товара 3", "description": "Описание товара 3"},
+  {"brand": "Название бренда 4", "product": "Название товара 4", "description": "Описание товара 4"},
+  {"brand": "Название бренда 5", "product": "Название товара 5", "description": "Описание товара 5"}
+]`,
     options: {
       model: "gpt-4",
       max_tokens: 500,
       temperature: 0.3,
-      n: 1,
-      stop: ["\n"]
+      responseFormat: "json_object"
     }
   });
   

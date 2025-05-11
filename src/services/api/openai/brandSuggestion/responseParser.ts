@@ -1,4 +1,3 @@
-
 import { BrandSuggestion } from "@/services/types";
 import { findProductImage } from "./imageUtils";
 
@@ -129,13 +128,13 @@ export async function parseBrandApiResponse(content: string | any): Promise<Bran
     
     console.log(`Найдено ${items.length} предложений:`, items);
     
-    // Преобразуем в формат BrandSuggestion в соответствии с новым форматом
+    // Преобразуем в формат BrandSuggestion
     const results: BrandSuggestion[] = [];
     
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       
-      // Обрабатываем поля согласно новому формату
+      // Обрабатываем поля согласно формату
       const brandName = item.brand || "";
       const productName = item.product || "";
       const description = item.description || "";
@@ -153,7 +152,7 @@ export async function parseBrandApiResponse(content: string | any): Promise<Bran
         }
       }
       
-      // Добавляем в результаты в новом формате
+      // Добавляем в результаты в требуемом формате
       results.push({
         brand: brandName,
         product: productName,

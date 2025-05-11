@@ -1,4 +1,3 @@
-
 // Определение типов для сервисов
 export type Product = {
   id: string;
@@ -51,13 +50,12 @@ export type ProductFilters = {
 
 // Обновленный интерфейс BrandSuggestion
 export interface BrandSuggestion {
-  name: string;       // Название бренда
+  name?: string;       // Название бренда (необязательное)
   logo?: string;      // URL логотипа бренда
-  description: string; // Описание бренда
+  description?: string; // Описание бренда
   products?: string[]; // Массив товаров бренда
-  // Оставляем старые поля для обратной совместимости
-  brand?: string;      // Устаревшее: название бренда
-  product?: string;    // Устаревшее: название товара
-  imageUrl?: string;   // Устаревшее: URL изображения
+  // Основные поля для текущего формата ответа
+  brand?: string;      // Название бренда
+  product?: string;    // Название товара
+  imageUrl?: string;   // URL изображения
 }
-

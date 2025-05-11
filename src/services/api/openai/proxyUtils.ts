@@ -11,6 +11,8 @@ export interface OpenAIRequestOptions {
   max_tokens?: number;
   responseFormat?: "json_object" | "text";
   retryAttempt?: number;
+  n?: number;
+  stop?: string[];
 }
 
 // Интерфейс для функции обработки ошибок

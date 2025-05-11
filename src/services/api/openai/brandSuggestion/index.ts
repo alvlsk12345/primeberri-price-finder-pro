@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { BrandSuggestion } from "@/services/types";
 import { callOpenAI } from "../apiClient";
@@ -32,8 +31,6 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
       temperature: 0.3,
       max_tokens: 500,
       model: "gpt-4",
-      n: 1,
-      stop: ["\n"],
       responseFormat: "json_object"
     });
 
