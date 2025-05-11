@@ -20,7 +20,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
 
     // Вызываем OpenAI API с обновленными настройками
     const result = await callOpenAI(prompt, {
-      model: "gpt-4",
+      model: "gpt-4o", // Обновляем на gpt-4o, который поддерживает responseFormat: "json_object"
       temperature: 0.3,
       max_tokens: 500,
       responseFormat: "json_object",

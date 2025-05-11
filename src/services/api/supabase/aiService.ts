@@ -142,7 +142,7 @@ export async function fetchBrandSuggestionsViaOpenAI(description: string): Promi
   {"brand": "Название бренда 5", "product": "Название товара 5", "description": "Описание товара 5"}
 ]`,
     options: {
-      model: "gpt-4",
+      model: "gpt-4o",
       max_tokens: 500,
       temperature: 0.3,
       responseFormat: "json_object"
