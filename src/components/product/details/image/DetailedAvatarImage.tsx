@@ -6,7 +6,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { DetailedImageLoadingState } from './useDetailedImageLoading';
 import { DetailedImageSourceInfo } from './DetailedImageSourceDetector';
 import { getPlaceholderImageUrl } from '@/services/image/imagePlaceholder';
-import { switchToNextProxy } from '@/services/image/corsProxyService';
 
 interface DetailedAvatarImageProps {
   image: string;
@@ -37,12 +36,6 @@ export const DetailedAvatarImage: React.FC<DetailedAvatarImageProps> = ({
       const timer = setTimeout(() => {
         console.log(`Повторная попытка загрузки детального изображения ${retryCount + 1}/${MAX_RETRIES}: ${image}`);
         
-        // Переключаемся на другой прокси если URL уже проксирован
-        if (isProxiedUrl) {
-          console.log(`Детальное изображение уже проксировано, переключаемся на следующий прокси`);
-          switchToNextProxy();
-        }
-        
         setRetryCount(prev => prev + 1);
         // Форсируем ререндер изображения
         setFallbackImage(`${image}?retry=${Date.now()}`);
@@ -54,7 +47,7 @@ export const DetailedAvatarImage: React.FC<DetailedAvatarImageProps> = ({
       console.log(`Все ${MAX_RETRIES} попытки загрузки детального изображения исчерпаны, используем заглушку`);
       setFallbackImage(title ? getPlaceholderImageUrl(title) : null);
     }
-  }, [imageError, retryCount, image, title, isProxiedUrl]);
+  }, [imageError, retryCount, image, title]);
   
   // Используем источник изображения с учетом повторных попыток
   const imageSrc = fallbackImage || image;

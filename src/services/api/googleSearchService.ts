@@ -1,6 +1,5 @@
 
 import { processProductImage } from "../image";
-import { applyCorsProxy } from "../image/corsProxyService";
 import { handleApiError } from "./errorHandlerService";
 
 // API ключ для Google Custom Search API

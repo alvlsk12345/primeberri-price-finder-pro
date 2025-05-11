@@ -6,7 +6,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ImageOff } from "lucide-react";
 import { searchProductImageGoogle } from "@/services/api/googleSearchService";
 import { getPlaceholderImageUrl } from "@/services/image/imagePlaceholder";
-import { switchToNextProxy } from "@/services/image/corsProxyService";
 
 interface BrandSuggestionItemProps {
   suggestion: BrandSuggestion;
@@ -38,11 +37,6 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
       if (retryCount >= MAX_RETRIES) {
         console.log(`Исчерпаны все ${MAX_RETRIES} попытки. Устанавливаем заглушку.`);
         setImageUrl(getPlaceholderImageUrl(suggestion.brand));
-        
-        // Если текущий URL использует прокси, пробуем переключиться на другой
-        if (imageUrl && (imageUrl.includes('corsproxy') || imageUrl.includes('allorigins'))) {
-          switchToNextProxy();
-        }
       }
       return;
     }

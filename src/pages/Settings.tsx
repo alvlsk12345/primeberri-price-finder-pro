@@ -13,12 +13,11 @@ import { getApiKey as getOpenAIApiKey } from "@/services/api/openai/config";
 import { callAbacusAI } from "@/services/api/abacus/apiClient";
 import { getApiKey as getAbacusApiKey } from "@/services/api/abacus/config";
 import { toast } from "sonner";
-import { getCurrentProxyName, resetProxyIndex } from "@/services/image/corsProxyService";
 import { getSelectedAIProvider, setSelectedAIProvider, AIProvider } from "@/services/api/aiProviderService";
 
 const Settings = () => {
   const [apiStatus, setApiStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
-  const [proxyInfo, setProxyInfo] = useState<string>(getCurrentProxyName());
+  const [proxyInfo] = useState<string>("Прямое соединение (без прокси)");
   const [selectedProvider, setSelectedProvider] = useState<AIProvider>(getSelectedAIProvider());
 
   // Функция для тестирования подключения к API
@@ -56,8 +55,7 @@ const Settings = () => {
       
       // Если запрос успешен, обновляем статус
       setApiStatus('success');
-      toast.success(`Проверка API ${selectedProvider.toUpperCase()} успешна! Используемый прокси: ${getCurrentProxyName()}`);
-      setProxyInfo(getCurrentProxyName());
+      toast.success(`Проверка API ${selectedProvider.toUpperCase()} успешна! Режим соединения: прямой`);
     } catch (error: any) {
       console.error(`Ошибка при тестировании API ${selectedProvider}:`, error);
       setApiStatus('error');
@@ -72,13 +70,6 @@ const Settings = () => {
         toast.error(`Ошибка при тестировании API: ${error.message}`);
       }
     }
-  };
-
-  // Функция для сброса настроек прокси
-  const resetProxySettings = () => {
-    resetProxyIndex();
-    setProxyInfo(getCurrentProxyName());
-    toast.info(`Прокси сброшен на ${getCurrentProxyName()}`);
   };
 
   // Функция для обработки изменения провайдера
@@ -158,7 +149,6 @@ const Settings = () => {
                   </div>
                   <p className="text-sm text-amber-700">
                     Для работы поиска требуется действующий API ключ Zylalabs. Если у вас нет своего ключа, используется предустановленный ключ.
-                    При ошибке 401 нажмите "Сбросить ключ".
                   </p>
                 </div>
                 <ApiKeyForm keyType="zylalabs" />
@@ -201,7 +191,7 @@ const Settings = () => {
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Используемый CORS прокси:</span>
+                      <span className="text-sm">Режим соединения:</span>
                       <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">{proxyInfo}</span>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2 mt-2">
@@ -219,14 +209,6 @@ const Settings = () => {
                         ) : (
                           'Проверить API'
                         )}
-                      </Button>
-                      <Button 
-                        onClick={resetProxySettings}
-                        variant="outline"
-                        className="flex-1"
-                      >
-                        <RefreshCw size={16} className="mr-2" />
-                        Сбросить прокси
                       </Button>
                     </div>
                   </div>
@@ -270,7 +252,7 @@ const Settings = () => {
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Используемый CORS прокси:</span>
+                      <span className="text-sm">Режим соединения:</span>
                       <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">{proxyInfo}</span>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2 mt-2">
@@ -288,14 +270,6 @@ const Settings = () => {
                         ) : (
                           'Проверить API'
                         )}
-                      </Button>
-                      <Button 
-                        onClick={resetProxySettings}
-                        variant="outline"
-                        className="flex-1"
-                      >
-                        <RefreshCw size={16} className="mr-2" />
-                        Сбросить прокси
                       </Button>
                     </div>
                   </div>

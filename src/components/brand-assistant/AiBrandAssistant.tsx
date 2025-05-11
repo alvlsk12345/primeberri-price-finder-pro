@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { BrandSuggestionList } from "./BrandSuggestionList";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,6 @@ import { toast } from "sonner";
 import { fetchBrandSuggestions } from "@/services/api/brandSuggestionService";
 import { getApiKey } from "@/services/api/openai/config";
 import { BrandSuggestion } from "@/services/types";
-import { switchToNextProxy } from "@/services/image/corsProxyService";
 
 interface AiBrandAssistantProps {
   onSelectProduct: (product: string, performSearch: boolean) => void;
@@ -58,11 +58,8 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
         // Увеличиваем счетчик попыток
         setRetryCount(prevCount => prevCount + 1);
         
-        // Переключаем на следующий прокси
-        switchToNextProxy();
-        
         // Показываем уведомление о повторной попытке
-        toast.info(`Проблема соединения. Пробуем другой прокси (попытка ${retryCount + 1}/${MAX_RETRIES})...`, {
+        toast.info(`Проблема соединения. Пробуем еще раз (попытка ${retryCount + 1}/${MAX_RETRIES})...`, {
           duration: 2000
         });
         
