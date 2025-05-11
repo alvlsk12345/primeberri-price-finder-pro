@@ -30,9 +30,18 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     if (useSupabase && supabaseConnected) {
       console.log('Использование Supabase бэкенда для получения предложений брендов');
       try {
+        // Вызов AI через Supabase Edge Function
+        console.log('Вызов AI через Supabase Edge Function:', provider);
         const result = await fetchBrandSuggestionsViaOpenAI(description);
         console.log('Результат от Supabase:', result);
-        return result;
+        
+        // Нормализация результатов: если получен один объект вместо массива
+        if (result && !Array.isArray(result)) {
+          console.log("Получен один объект вместо массива, преобразуем его");
+          return [result];
+        }
+        
+        return result || [];
       } catch (error) {
         console.error('Ошибка при использовании Supabase для предложений брендов:', error);
         toast.error(`Ошибка Supabase: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,

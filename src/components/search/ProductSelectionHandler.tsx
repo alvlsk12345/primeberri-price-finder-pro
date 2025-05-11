@@ -19,33 +19,24 @@ export const useProductSelectionHandler = (
     }
     
     try {
-      // Находим выбранный товар из AI-помощника по компонентам
-      const componentElements = document.querySelectorAll('.p-2.bg-white.rounded.border');
-      let brandName = '';
+      // Устанавливаем поисковый запрос
+      setSearchQuery(product);
       
-      componentElements.forEach((element) => {
-        const productElement = element.querySelector('p.text-sm');
-        if (productElement && productElement.textContent === product) {
-          const brandElement = element.querySelector('p.font-medium');
-          if (brandElement) {
-            brandName = brandElement.textContent || '';
-          }
-        }
-      });
+      console.log(`Товар "${product}" добавлен в поле поиска`);
       
-      // Формируем запрос, включая бренд, если он найден
-      const searchTerm = brandName ? `${brandName} ${product}` : product;
-      setSearchQuery(searchTerm);
-      
-      toast.info(`Товар "${searchTerm}" добавлен в поле поиска`, {
-        duration: 2000
-      });
-      
-      // Если требуется выполнить поиск сразу после выбора продукта
       if (performSearch) {
+        toast.info(`Начинаем поиск товара: ${product}`, {
+          duration: 2000
+        });
+        
+        // Небольшая задержка для лучшего UX
         setTimeout(() => {
           executeSearch();
-        }, 500); // Небольшая задержка для лучшего UX
+        }, 300);
+      } else {
+        toast.info(`Товар "${product}" добавлен в поле поиска`, {
+          duration: 2000
+        });
       }
     } catch (error) {
       console.error('Ошибка при выборе продукта:', error);

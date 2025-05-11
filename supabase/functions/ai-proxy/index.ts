@@ -41,7 +41,7 @@ serve(async (req) => {
       );
     }
     
-    console.log(`Обработка запроса через Edge Function для провайдера: ${provider}`);
+    console.log(`Обработка запроса через Edge Function для провайдера: ${provider}`, params);
     
     // В зависимости от провайдера вызываем соответствующую функцию
     if (provider === 'openai') {

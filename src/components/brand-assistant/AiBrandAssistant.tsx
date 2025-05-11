@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { fetchBrandSuggestions } from "@/services/api/brandSuggestionService";
 import { getApiKey } from "@/services/api/openai/config";
 import { BrandSuggestion } from "@/services/types";
+import { isSupabaseConnected } from "@/services/api/supabase/client";
+import { isUsingSupabaseBackend } from "@/services/api/supabase/config";
 
 interface AiBrandAssistantProps {
   onSelectProduct: (product: string, performSearch: boolean) => void;
@@ -20,18 +22,33 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
   const [brandSuggestions, setBrandSuggestions] = useState<BrandSuggestion[]>([]);
   const [isAssistantLoading, setIsAssistantLoading] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [supabaseStatus, setSupabaseStatus] = useState<{connected: boolean; enabled: boolean}>({
+    connected: false,
+    enabled: false
+  });
 
   const MAX_RETRIES = 2;
+
+  // Проверяем статус Supabase при загрузке компонента
+  useEffect(() => {
+    const checkSupabaseStatus = async () => {
+      const connected = await isSupabaseConnected();
+      const enabled = await isUsingSupabaseBackend();
+      setSupabaseStatus({ connected, enabled });
+    };
+    
+    checkSupabaseStatus();
+  }, []);
 
   useEffect(() => {
     if (isAssistantEnabled) {
       const apiKey = getApiKey();
-      if (!apiKey) {
-        toast.error("Для использования AI-помощника необходимо указать ключ OpenAI API в настройках");
+      if (!apiKey && !supabaseStatus.connected) {
+        toast.error("Для использования AI-помощника необходим ключ API или подключение к Supabase");
         setIsAssistantEnabled(false);
       }
     }
-  }, [isAssistantEnabled]);
+  }, [isAssistantEnabled, supabaseStatus]);
 
   const handleGetBrandSuggestions = async () => {
     if (!productDescription.trim()) {
@@ -43,15 +60,24 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
     setIsAssistantLoading(true);
     
     try {
-      // Добавляем подробное логирование
-      console.log(`Отправляем запрос на поиск брендов для: "${productDescription}"`);
+      // Добавляем запрос на получение 5 результатов в описание
+      const enhancedDescription = productDescription + 
+        ". Пожалуйста, предложите 5 конкретных товаров с указанием бренда и модели.";
       
-      const suggestions = await fetchBrandSuggestions(productDescription);
+      console.log(`Отправляем запрос на поиск брендов: "${enhancedDescription}"`);
+      
+      let suggestions = await fetchBrandSuggestions(enhancedDescription);
       console.log("Получены предложения брендов:", suggestions);
+      
+      // Нормализация результатов: если получен один объект вместо массива
+      if (suggestions && !Array.isArray(suggestions)) {
+        console.log("Получен один объект вместо массива, преобразуем его");
+        suggestions = [suggestions];
+      }
       
       setBrandSuggestions(suggestions);
       
-      if (suggestions.length === 0) {
+      if (!suggestions || suggestions.length === 0) {
         toast.warning("Не удалось найти подходящие товары для вашего запроса");
       } else {
         // Сбрасываем счетчик повторов при успешном запросе
@@ -59,7 +85,7 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
         toast.success(`Найдено ${suggestions.length} предложений товаров`);
       }
     } catch (error: any) {
-      console.error('Ошибка при запросе к OpenAI для получения товаров:', error);
+      console.error('Ошибка при запросе к AI для получения товаров:', error);
       
       // Проверяем, можно ли повторить запрос
       if (retryCount < MAX_RETRIES && error.message?.includes("Failed to fetch")) {
@@ -148,16 +174,25 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
             </Button>
           </div>
           
-          {brandSuggestions.length === 0 && !isAssistantLoading && getApiKey() && (
+          {brandSuggestions.length === 0 && !isAssistantLoading && (getApiKey() || supabaseStatus.connected) && (
             <div className="mt-2 text-sm text-gray-500 text-center">
               <p>Введите описание товара и нажмите "Найти подходящие товары"</p>
             </div>
           )}
           
-          {!getApiKey() && isAssistantEnabled && (
+          {(!getApiKey() && !supabaseStatus.connected) && isAssistantEnabled && (
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-md mt-3">
               <p className="text-sm text-amber-700">
-                Для работы AI-помощника необходимо указать API ключ OpenAI в настройках приложения.
+                Для работы AI-помощника необходимо настроить подключение к Supabase или указать API ключ OpenAI в настройках.
+                <a href="/settings" className="ml-1 underline font-medium">Перейти к настройкам</a>
+              </p>
+            </div>
+          )}
+          
+          {!supabaseStatus.enabled && supabaseStatus.connected && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md mt-3">
+              <p className="text-sm text-blue-700">
+                Рекомендуется включить опцию "Использовать Supabase Backend" в настройках для обхода ограничений CORS.
                 <a href="/settings" className="ml-1 underline font-medium">Перейти к настройкам</a>
               </p>
             </div>
@@ -168,7 +203,7 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
       {isAssistantEnabled && brandSuggestions.length > 0 && (
         <BrandSuggestionList 
           suggestions={brandSuggestions} 
-          onSelect={(product) => onSelectProduct(product, true)} 
+          onSelect={onSelectProduct} 
         />
       )}
     </div>

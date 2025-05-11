@@ -1,145 +1,125 @@
 
-// Обработчик для запросов к OpenAI API
-import { CORS_HEADERS, DEFAULT_OPENAI_OPTIONS } from '../config.ts';
+import { CORS_HEADERS } from '../config.ts';
 
-/**
- * Обрабатывает запросы к OpenAI API через Edge Function
- * @param params Параметры запроса (промпт и опции)
- * @param OPENAI_API_KEY API ключ OpenAI
- * @returns Promise с объектом Response
- */
-export async function handleOpenAIRequest({
-  prompt,
-  options = {}
-}: {
-  prompt: string;
-  options?: {
-    model?: string;
-    temperature?: number;
-    max_tokens?: number;
-    responseFormat?: "json_object" | "text";
-  } 
-}, OPENAI_API_KEY: string) {
-  // Проверяем наличие ключа API
-  if (!OPENAI_API_KEY) {
-    console.error('OpenAI API key не настроен в Edge Function');
+export interface OpenAIBrandSuggestion {
+  brand: string;
+  product: string;
+  description: string;
+}
+
+// Обработчик запросов к OpenAI
+export async function handleOpenAIRequest(params: any, apiKey?: string): Promise<Response> {
+  if (!apiKey) {
     return new Response(
-      JSON.stringify({ error: 'OpenAI API key not configured' }),
-      { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }, status: 500 }
+      JSON.stringify({ error: 'OpenAI API key is not configured' }),
+      { status: 400, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
     );
   }
-  
+
   try {
-    console.log('Edge Function: обработка запроса к OpenAI с промптом длиной:', prompt.length);
+    const { action, description, count = 5 } = params;
     
-    // Устанавливаем параметры запроса
-    const {
-      model = DEFAULT_OPENAI_OPTIONS.model,
-      temperature = DEFAULT_OPENAI_OPTIONS.temperature,
-      max_tokens = DEFAULT_OPENAI_OPTIONS.max_tokens,
-      responseFormat = "text",
-    } = options;
-    
-    console.log(`Edge Function: использую модель ${model}, temperature: ${temperature}, max_tokens: ${max_tokens}, format: ${responseFormat}`);
-    
-    // Формируем тело запроса
-    const requestBody: {
-      model: string;
-      temperature: number;
-      max_tokens: number;
-      messages: { role: string; content: string }[];
-      response_format?: { type: string };
-    } = {
-      model,
-      temperature,
-      max_tokens,
-      messages: [
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-    };
-    
-    // Добавляем формат ответа, если задан JSON
-    if (responseFormat === "json_object") {
-      console.log('Edge Function: запрашиваем ответ в формате JSON');
-      requestBody.response_format = { type: "json_object" };
+    console.log(`Обработка OpenAI запроса: ${action}`, { description: description?.substring(0, 50) + '...' });
+
+    // Обработка различных типов запросов
+    if (action === 'getBrandSuggestions') {
+      return await handleBrandSuggestions(description, apiKey, count);
     }
+
+    // Если действие не поддерживается
+    return new Response(
+      JSON.stringify({ error: `Unsupported action: ${action}` }),
+      { status: 400, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+    );
+  } catch (error) {
+    console.error('Error in handleOpenAIRequest:', error);
+    return new Response(
+      JSON.stringify({ error: error.message || 'Error processing OpenAI request' }),
+      { status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+    );
+  }
+}
+
+// Функция для получения предложений по брендам
+async function handleBrandSuggestions(description: string, apiKey: string, count: number): Promise<Response> {
+  try {
+    // Создаем промпт, запрашивающий конкретное количество результатов
+    const prompt = `
+    Пользователь ищет товар и предоставил следующее описание: "${description}"
     
-    // Выполняем запрос к API OpenAI
+    Предложи ${count} конкретных товаров с указанием бренда и конкретной модели/названия, которые соответствуют этому описанию.
+    
+    Формат ответа должен быть строго в виде JSON массива объектов с полями:
+    - brand: название бренда
+    - product: название модели или продукта
+    - description: краткое описание товара, 1-2 предложения
+    `;
+
+    // Отправляем запрос к OpenAI API
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'Ты - ассистент по подбору товаров, который предлагает конкретные бренды и модели на основе описания пользователя.' },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 1000
+      })
     });
-    
+
     if (!response.ok) {
-      const data = await response.json();
-      const errorMessage = data.error?.message || 'Unknown error from OpenAI';
-      console.error('Edge Function: ошибка от API OpenAI:', errorMessage);
-      throw new Error(errorMessage);
+      const errorData = await response.json();
+      console.error('OpenAI API error:', errorData);
+      return new Response(
+        JSON.stringify({ error: `OpenAI API error: ${errorData.error?.message || 'Unknown error'}` }),
+        { status: response.status, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+      );
     }
-    
-    // Получаем ответ
+
     const data = await response.json();
-    console.log('Edge Function: получен ответ от OpenAI API');
+    const content = data.choices[0].message.content;
+    console.log('OpenAI response content:', content);
     
-    // Получаем содержимое ответа
-    const content = data.choices[0]?.message?.content;
-    console.log('Edge Function: содержимое ответа (первые 100 символов):', 
-      content ? content.substring(0, 100) + '...' : 'Пусто');
-    
-    // Обрабатываем ответ в зависимости от формата
-    if (responseFormat === "json_object") {
-      try {
-        // Если запрошен JSON, пытаемся распарсить ответ
-        let parsedJson;
-        try {
-          parsedJson = JSON.parse(content);
-        } catch (jsonError) {
-          console.warn('Edge Function: не удалось распарсить JSON напрямую, пробуем очистить контент');
-          
-          // Пытаемся удалить markdown обрамление, если оно есть
-          let cleanContent = content.trim()
-            .replace(/^```json\s*/g, '')
-            .replace(/\s*```$/g, '');
-            
-          parsedJson = JSON.parse(cleanContent);
-        }
-        
-        console.log('Edge Function: JSON успешно распарсен');
-        
-        // ВАЖНОЕ ИЗМЕНЕНИЕ: Возвращаем распарсенный JSON напрямую, без обертки в result
-        return new Response(
-          JSON.stringify(parsedJson),
-          { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
-        );
-      } catch (e) {
-        console.warn('Edge Function: ошибка при парсинге JSON ответа:', e);
-        console.warn('Edge Function: возвращаем оригинальный текст');
-        
-        // В случае ошибки парсинга возвращаем оригинальный текст без обертки в result
-        return new Response(
-          content,
-          { headers: { 'Content-Type': 'text/plain', ...CORS_HEADERS } }
-        );
-      }
+    // Извлекаем JSON из ответа
+    let jsonMatch = content.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      jsonMatch = content.match(/\{[\s\S]*\}/);
     }
     
-    // Для текстового формата просто возвращаем содержимое без обертки в result
-    return new Response(
-      content,
-      { headers: { 'Content-Type': 'text/plain', ...CORS_HEADERS } }
-    );
+    if (!jsonMatch) {
+      console.error('Не удалось извлечь JSON из ответа OpenAI:', content);
+      return new Response(
+        JSON.stringify({ error: 'Failed to parse OpenAI response as JSON' }),
+        { status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+      );
+    }
+    
+    // Пытаемся распарсить JSON
+    try {
+      const suggestions = JSON.parse(jsonMatch[0]);
+      return new Response(
+        JSON.stringify(suggestions),
+        { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+      );
+    } catch (error) {
+      console.error('Error parsing JSON from OpenAI response:', error);
+      // Если не удалось распарсить, возвращаем текстовый ответ
+      return new Response(
+        JSON.stringify({ error: 'Failed to parse OpenAI response', content }),
+        { status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+      );
+    }
   } catch (error) {
-    console.error('Edge Function: ошибка при обработке запроса к OpenAI:', error);
+    console.error('Error in handleBrandSuggestions:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Error calling OpenAI API' }),
-      { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }, status: 500 }
+      JSON.stringify({ error: error.message || 'Error getting brand suggestions' }),
+      { status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
     );
   }
 }

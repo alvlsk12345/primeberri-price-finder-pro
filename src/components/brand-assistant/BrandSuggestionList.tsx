@@ -20,13 +20,21 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
     );
   }
 
+  // Нормализация результатов: если получен один объект вместо массива,
+  // преобразуем его в массив с одним элементом
+  const normalizedSuggestions = Array.isArray(suggestions) 
+    ? suggestions 
+    : [suggestions];
+
   return (
     <div className="mt-4 p-3 bg-slate-50 rounded-md border">
-      <h3 className="text-sm font-medium mb-2">Рекомендуемые товары:</h3>
-      <div className="space-y-2">
-        {suggestions.map((suggestion, index) => {
-          // Проверка наличия необходимых полей в соответствии с новым форматом
-          if (!suggestion.brand) {
+      <h3 className="text-sm font-medium mb-3">
+        Рекомендуемые товары ({normalizedSuggestions.length}):
+      </h3>
+      <div className="space-y-3">
+        {normalizedSuggestions.map((suggestion, index) => {
+          // Проверка наличия необходимых полей
+          if (!suggestion.brand && !suggestion.name) {
             console.warn(`Предложение #${index} не содержит имя бренда:`, suggestion);
             return null; // Не отображаем некорректные элементы
           }
@@ -37,7 +45,7 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
               suggestion={suggestion} 
               onSelect={(immediate) => {
                 // Определяем значение для поиска на основе доступных данных
-                const brand = suggestion.brand || '';
+                const brand = suggestion.brand || suggestion.name || '';
                 const product = suggestion.product || '';
                     
                 // Формируем поисковый запрос с брендом и продуктом
