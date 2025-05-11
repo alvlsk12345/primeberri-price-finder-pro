@@ -1,14 +1,15 @@
 import React, { KeyboardEvent, useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, AlertCircle, RefreshCw, Info } from 'lucide-react';
+import { Search, AlertCircle, RefreshCw, Info, Bot } from 'lucide-react';
 import { toast } from "sonner";
 import { useDemoModeForced } from '@/services/api/mock/mockServiceConfig';
 import { containsCyrillicCharacters } from '@/services/translationService';
 import { AiBrandAssistant } from './brand-assistant/AiBrandAssistant';
 import { testMinimalGoogleApiRequest } from '@/services/api/googleSearchService';
 import { callOpenAI } from '@/services/api/openai';
-import { hasValidApiKey } from '@/services/api/openai';
+import { hasValidApiKey as hasValidOpenAIApiKey } from '@/services/api/openai';
+import { getSelectedAIProvider, getProviderDisplayName, getProviderModelName } from '@/services/api/aiProviderService';
 
 type SearchFormProps = {
   searchQuery: string;
@@ -27,7 +28,9 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   const [isTesting, setIsTesting] = useState(false);
   const [openAiStatus, setOpenAiStatus] = useState<'неизвестно' | 'работает' | 'ошибка'>('неизвестно');
   const isDemoMode = useDemoModeForced;
-  const MODEL_NAME = "gpt-4o-search-preview-2025-03-11"; // Добавляем константу для отображения названия модели
+  const selectedProvider = getSelectedAIProvider();
+  const providerDisplayName = getProviderDisplayName(selectedProvider);
+  const modelName = getProviderModelName(selectedProvider);
 
   // Диагностический тест API при первом рендере
   useEffect(() => {
@@ -95,7 +98,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
     try {
       setIsTesting(true);
       
-      if (!hasValidApiKey()) {
+      if (!hasValidOpenAIApiKey()) {
         toast.error("API ключ OpenAI не установлен или имеет неверный формат", {
           duration: 5000,
           description: "Добавьте ключ в настройках приложения"
@@ -109,14 +112,14 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       const response = await callOpenAI("Ответь одним словом: Работает?", {
         temperature: 0.1,
         max_tokens: 50,
-        model: MODEL_NAME // Используем константу вместо жестко закодированного значения
+        model: "gpt-4o-search-preview-2025-03-11"
       });
       
       if (response && typeof response === 'string') {
         console.log("Ответ от OpenAI API:", response);
         toast.success(`Тест OpenAI API успешен! Ответ: ${response}`, {
           duration: 5000,
-          description: `Используется модель: ${MODEL_NAME}`
+          description: `Используется модель: gpt-4o-search-preview-2025-03-11`
         });
         setOpenAiStatus('работает');
       } else {
@@ -249,12 +252,12 @@ export const SearchForm: React.FC<SearchFormProps> = ({
           size="sm"
           variant="ghost"
           className="text-xs flex items-center gap-1 text-muted-foreground"
-          onClick={() => toast.info(`Используется модель: ${MODEL_NAME}`, { 
-            description: "Модель оптимизирована для поисковых запросов" 
+          onClick={() => toast.info(`Активный AI провайдер: ${providerDisplayName}`, { 
+            description: `Используется модель: ${modelName}` 
           })}
         >
-          <Info size={14} />
-          Инфо о модели
+          <Bot size={14} />
+          AI: {providerDisplayName}
         </Button>
       </div>
 

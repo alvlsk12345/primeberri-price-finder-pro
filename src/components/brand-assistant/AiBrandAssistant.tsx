@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { BrandSuggestionList } from "./BrandSuggestionList";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Search } from "lucide-react";
 import { toast } from "sonner";
-import { fetchBrandSuggestions } from "@/services/api/openai/brandSuggestionService";
+import { fetchBrandSuggestions } from "@/services/api/brandSuggestionService";
 import { getApiKey } from "@/services/api/openai/config";
 import { BrandSuggestion } from "@/services/types";
 import { switchToNextProxy } from "@/services/image/corsProxyService";
