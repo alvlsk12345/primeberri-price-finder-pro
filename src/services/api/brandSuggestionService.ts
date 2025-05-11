@@ -19,7 +19,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     console.log(`Используем ${provider} для получения предложений брендов`);
     
     // Проверяем, используем ли мы Supabase бэкенд
-    if (isUsingSupabaseBackend() && isSupabaseConnected()) {
+    if (isUsingSupabaseBackend() && await isSupabaseConnected()) {
       console.log('Использование Supabase бэкенда для получения предложений брендов');
       try {
         return await fetchBrandSuggestionsViaOpenAI(description);
@@ -75,7 +75,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
       console.error('Ошибка и с альтернативным провайдером:', alternativeError);
     }
     
-    // Если обе попытки не удались, пробрасываем оригинальную ошибку
-    throw error;
+    // Если обе попытки не удались, возвращаем пустой массив
+    return [];
   }
 };

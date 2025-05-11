@@ -49,9 +49,15 @@ export type ProductFilters = {
   sortBy?: SortOption; // Добавлена опция сортировки
 };
 
+// Обновленный интерфейс BrandSuggestion
 export interface BrandSuggestion {
-  brand: string;
-  product: string;
-  description: string;
-  imageUrl?: string; // Добавлено новое поле для URL изображения
+  name: string;       // Название бренда
+  logo?: string;      // URL логотипа бренда
+  description: string; // Описание бренда
+  products?: string[]; // Массив товаров бренда
+  // Оставляем старые поля для обратной совместимости
+  brand?: string;      // Устаревшее: название бренда
+  product?: string;    // Устаревшее: название товара
+  imageUrl?: string;   // Устаревшее: URL изображения
 }
+

@@ -11,7 +11,7 @@ import { isSupabaseConnected } from "../supabase/client";
 export const fetchBrandSuggestions = async (description: string): Promise<BrandSuggestion[]> => {
   try {
     // Проверяем, используем ли мы Supabase бэкенд
-    if (isUsingSupabaseBackend() && isSupabaseConnected()) {
+    if (isUsingSupabaseBackend() && await isSupabaseConnected()) {
       console.log('Использование Supabase для получения предложений брендов');
       try {
         // Используем Edge Function для получения предложений брендов

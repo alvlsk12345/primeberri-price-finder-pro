@@ -20,7 +20,12 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
           <BrandSuggestionItem 
             key={index} 
             suggestion={suggestion} 
-            onSelect={() => onSelect(suggestion.product)} 
+            // Используем первый товар из массива products или старое поле product
+            onSelect={() => onSelect(
+              Array.isArray(suggestion.products) && suggestion.products.length > 0 
+                ? suggestion.products[0] 
+                : suggestion.product || suggestion.name
+            )} 
             index={index}
           />
         ))}

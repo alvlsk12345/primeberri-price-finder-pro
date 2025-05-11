@@ -4,6 +4,7 @@ import { isUsingSupabaseBackend, isFallbackEnabled } from './config';
 import { toast } from "sonner";
 import { callOpenAI as directCallOpenAI } from '../openai/apiClient';
 import { callAbacusAI as directCallAbacusAI } from '../abacus/apiClient';
+import { BrandSuggestion } from '@/services/types';
 
 // Типы для запросов к AI через Supabase
 interface AIRequestBase {
@@ -34,7 +35,7 @@ type AIRequest = OpenAIRequest | AbacusRequest;
 // Основная функция для вызова AI через Supabase Edge Functions
 export async function callAIViaSupabase(request: AIRequest): Promise<any> {
   // Проверяем, должны ли мы использовать Supabase и подключен ли он
-  if (!isUsingSupabaseBackend() || !isSupabaseConnected()) {
+  if (!isUsingSupabaseBackend() || !await isSupabaseConnected()) {
     // Выполняем прямой вызов API, если не используем Supabase или он недоступен
     return fallbackToDirectCall(request);
   }
@@ -126,8 +127,8 @@ export async function searchViaOpenAI(query: string, options?: any): Promise<any
 }
 
 // Функция для получения предложений брендов через OpenAI
-export async function fetchBrandSuggestionsViaOpenAI(description: string): Promise<any> {
-  return callAIViaSupabase({
+export async function fetchBrandSuggestionsViaOpenAI(description: string): Promise<BrandSuggestion[]> {
+  const result = await callAIViaSupabase({
     provider: 'openai',
     prompt: `Ты — эксперт по брендам и товарам. Пользователь описал тип товара, который они хотят найти. 
 Предложи 5 брендов, которые соответствуют этому описанию. Верни только JSON массив объектов с полями:
@@ -144,6 +145,19 @@ export async function fetchBrandSuggestionsViaOpenAI(description: string): Promi
       max_tokens: 1500
     }
   });
+  
+  // Убедимся, что результат соответствует нашей структуре BrandSuggestion
+  if (Array.isArray(result)) {
+    return result.map((item: any): BrandSuggestion => ({
+      name: item.name || 'Неизвестный бренд',
+      logo: item.logo || 'https://via.placeholder.com/100',
+      description: item.description || 'Описание недоступно',
+      products: Array.isArray(item.products) ? item.products : ['Товар 1', 'Товар 2']
+    }));
+  }
+  
+  console.error('Некорректный формат ответа от AI:', result);
+  return [];
 }
 
 // Функция для поиска через Abacus

@@ -9,7 +9,7 @@ import { isSupabaseConnected } from "../supabase/client";
 export const fetchBrandSuggestions = async (description: string): Promise<BrandSuggestion[]> => {
   try {
     // Проверяем, используем ли мы Supabase бэкенд
-    if (isUsingSupabaseBackend() && isSupabaseConnected()) {
+    if (isUsingSupabaseBackend() && await isSupabaseConnected()) {
       console.log('Использование Supabase для получения предложений брендов через OpenAI');
       return await fetchBrandSuggestionsViaOpenAI(description);
     }
@@ -35,6 +35,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     
     // Обрабатываем ответ
     if (Array.isArray(result)) {
+      // Приведение возвращаемых данных к типу BrandSuggestion
       return result.map((brand: any) => ({
         name: brand.name || "Неизвестный бренд",
         logo: brand.logo || "https://via.placeholder.com/100",
