@@ -52,7 +52,7 @@ export const callOpenAI = async (prompt: string, options: {
     console.log(`Отправляем запрос к OpenAI API...`);
     
     const defaultOptions = {
-      model: "gpt-4o-search-preview-2025-03-11", // Изменено с gpt-4o на новую модель, оптимизированную для поиска
+      model: "gpt-4o", // Изменено с gpt-4o-search-preview-2025-03-11 на gpt-4o
       temperature: 0.2,
       max_tokens: 500,
       responseFormat: "text" as "json_object" | "text"

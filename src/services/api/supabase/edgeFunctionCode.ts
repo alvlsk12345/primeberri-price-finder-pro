@@ -60,7 +60,7 @@ async function handleOpenAIRequest({ prompt, options = {} }) {
   try {
     // Устанавливаем параметры запроса
     const {
-      model = "gpt-4o-search-preview-2025-03-11",
+      model = "gpt-4o",
       temperature = 0.2,
       max_tokens = 500,
       responseFormat = "text",

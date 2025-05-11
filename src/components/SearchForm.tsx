@@ -112,14 +112,14 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       const response = await callOpenAI("Ответь одним словом: Работает?", {
         temperature: 0.1,
         max_tokens: 50,
-        model: "gpt-4o-search-preview-2025-03-11"
+        model: "gpt-4o"
       });
       
       if (response && typeof response === 'string') {
         console.log("Ответ от OpenAI API:", response);
         toast.success(`Тест OpenAI API успешен! Ответ: ${response}`, {
           duration: 5000,
-          description: `Используется модель: gpt-4o-search-preview-2025-03-11`
+          description: `Используется модель: gpt-4o`
         });
         setOpenAiStatus('работает');
       } else {
