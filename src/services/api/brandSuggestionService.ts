@@ -1,5 +1,5 @@
 
-import { BrandSuggestion, BrandResponse } from "@/services/types";
+import { BrandSuggestion } from "@/services/types";
 import { fetchBrandSuggestions as fetchBrandSuggestionsFromOpenAI } from "./openai";
 import { fetchBrandSuggestions as fetchBrandSuggestionsFromAbacus } from "./abacus";
 import { getSelectedAIProvider, AIProvider } from "./aiProviderService";
@@ -41,26 +41,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
           return [];
         }
         
-        // Нормализация результатов
-        let normalizedResults: BrandSuggestion[] = [];
-        
-        if (Array.isArray(result)) {
-          // Если результат уже массив
-          normalizedResults = result;
-        } else if (result && typeof result === 'object') {
-          // Проверяем наличие поля products - исправлено с типизацией
-          if ('products' in result && Array.isArray((result as any).products)) {
-            normalizedResults = (result as any).products;
-          } else {
-            // Если это одиночный объект с нужными полями
-            if ('brand' in result || 'name' in result) {
-              normalizedResults = [result as BrandSuggestion];
-            }
-          }
-        }
-        
-        console.log('Нормализованные результаты:', normalizedResults);
-        return normalizedResults;
+        return result; // Функция fetchBrandSuggestionsViaOpenAI теперь всегда возвращает BrandSuggestion[]
       } catch (error) {
         console.error('Ошибка при использовании Supabase для предложений брендов:', error);
         toast.error(`Ошибка Supabase: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,

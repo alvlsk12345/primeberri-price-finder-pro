@@ -12,7 +12,8 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     // Проверяем, используем ли мы Supabase бэкенд
     if (isUsingSupabaseBackend() && await isSupabaseConnected()) {
       console.log('Использование Supabase для получения предложений брендов через OpenAI');
-      return await fetchBrandSuggestionsViaOpenAI(description);
+      const result = await fetchBrandSuggestionsViaOpenAI(description);
+      return result;
     }
 
     // Формируем промпт для получения предложений по брендам

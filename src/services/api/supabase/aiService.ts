@@ -87,8 +87,10 @@ export const searchViaAbacus = async (endpoint: string, method: 'GET' | 'POST' =
 
 /**
  * Функция для получения предложений брендов через OpenAI API через Supabase Edge Function
+ * @param description Описание запроса
+ * @returns Массив предложений брендов
  */
-export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promise<BrandSuggestion[] | { products?: BrandSuggestion[] }> => {
+export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promise<BrandSuggestion[]> => {
   if (!supabase) {
     throw new Error('Supabase client не инициализирован');
   }
@@ -137,7 +139,7 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
     }
     
     console.log('Нормализованные результаты:', normalizedResults);
-    return normalizedResults.length > 0 ? normalizedResults : data;
+    return normalizedResults;
   } catch (error) {
     console.error('Ошибка при получении предложений брендов через Supabase:', error);
     throw error;

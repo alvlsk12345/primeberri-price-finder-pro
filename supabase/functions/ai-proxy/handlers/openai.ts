@@ -34,11 +34,11 @@ export const handleOpenAIRequest = async (
   }
 };
 
-// Функция для получения предложений брендов
+// Функция для получения предложений брендов, всегда возвращает массив BrandSuggestion
 const getBrandSuggestions = async (
   description: string,
   count: number = 3
-): Promise<Brand[] | BrandResponse> => {
+): Promise<Brand[]> => {
   try {
     // Формируем системный промт
     const systemPrompt = `Ты - эксперт по товарам. Пользователь опишет, что ищет, а ты предложишь конкретные товары.
@@ -82,10 +82,10 @@ const getBrandSuggestions = async (
       // Проверяем, есть ли массив products в ответе
       if (data && data.products && Array.isArray(data.products)) {
         console.log("Успешно получен массив products:", data.products);
-        return data; // Возвращаем полный объект с массивом products
+        return data.products; // Возвращаем массив products
       } else {
         console.error("Некорректный формат ответа от OpenAI:", data);
-        return { products: [] };
+        return [];
       }
     } catch (error) {
       console.error("Ошибка при парсинге JSON:", error);
