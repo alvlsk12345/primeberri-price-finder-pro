@@ -1,5 +1,5 @@
 
-import { BrandSuggestion } from "@/services/types";
+import { BrandSuggestion, BrandResponse } from "@/services/types";
 import { fetchBrandSuggestions as fetchBrandSuggestionsFromOpenAI } from "./openai";
 import { fetchBrandSuggestions as fetchBrandSuggestionsFromAbacus } from "./abacus";
 import { getSelectedAIProvider, AIProvider } from "./aiProviderService";
@@ -41,19 +41,26 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
           return [];
         }
         
-        // Если результат содержит поле products, извлекаем его
-        if (result && !Array.isArray(result) && result.products && Array.isArray(result.products)) {
-          console.log("Извлекаем массив products из объекта результата");
-          return result.products;
+        // Нормализация результатов
+        let normalizedResults: BrandSuggestion[] = [];
+        
+        if (Array.isArray(result)) {
+          // Если результат уже массив
+          normalizedResults = result;
+        } else if (result && typeof result === 'object') {
+          // Проверяем наличие поля products
+          if ('products' in result && Array.isArray(result.products)) {
+            normalizedResults = result.products;
+          } else {
+            // Если это одиночный объект с нужными полями
+            if ('brand' in result || 'name' in result) {
+              normalizedResults = [result as BrandSuggestion];
+            }
+          }
         }
         
-        // Нормализация результатов: если получен один объект вместо массива
-        if (result && !Array.isArray(result)) {
-          console.log("Получен один объект вместо массива, преобразуем его");
-          return [result];
-        }
-        
-        return Array.isArray(result) ? result : [];
+        console.log('Нормализованные результаты:', normalizedResults);
+        return normalizedResults;
       } catch (error) {
         console.error('Ошибка при использовании Supabase для предложений брендов:', error);
         toast.error(`Ошибка Supabase: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,

@@ -1,6 +1,6 @@
 
 import { supabase } from './client';
-import { BrandSuggestion } from "@/services/types";
+import { BrandSuggestion, BrandResponse } from "@/services/types";
 import { OpenAIRequestOptions } from "../openai/proxyUtils";
 
 /**
@@ -116,40 +116,26 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
     
     console.log('Результат от fetchBrandSuggestionsViaOpenAI:', data);
     
-    // Проверка на валидность полученных данных
-    if (!data) {
-      console.warn('Пустой ответ от Supabase Edge Function');
-      return [];
-    }
+    // Нормализация результатов
+    let normalizedResults: BrandSuggestion[] = [];
     
-    // Обработка разных форматов ответа от OpenAI
     if (Array.isArray(data)) {
-      // Если data уже массив объектов BrandSuggestion
-      return data;
-    } else if (typeof data === 'object') {
-      // Проверяем, если пришел объект с полем products (результат от модели GPT)
-      if (data.products && Array.isArray(data.products)) {
-        return data.products;
-      }
-      
-      // Проверяем, имеет ли объект нужные свойства для BrandSuggestion
-      if (data.brand || data.name) {
-        return [data as BrandSuggestion];
-      }
-      
-      // Проверяем, есть ли вложенное поле suggestions или results
-      if (data.suggestions) {
-        return Array.isArray(data.suggestions) ? data.suggestions : [data.suggestions];
-      }
-      
-      if (data.results) {
-        return Array.isArray(data.results) ? data.results : [data.results];
+      // Если результат уже массив
+      normalizedResults = data;
+    } else if (data && typeof data === 'object') {
+      // Проверяем наличие поля products
+      if ('products' in data && Array.isArray(data.products)) {
+        normalizedResults = data.products;
+      } else {
+        // Если это одиночный объект с нужными полями
+        if ('brand' in data || 'name' in data) {
+          normalizedResults = [data as BrandSuggestion];
+        }
       }
     }
     
-    console.warn('Неизвестный формат ответа от Supabase Edge Function:', data);
-    return [];
-    
+    console.log('Нормализованные результаты:', normalizedResults);
+    return normalizedResults;
   } catch (error) {
     console.error('Ошибка при получении предложений брендов через Supabase:', error);
     throw error;

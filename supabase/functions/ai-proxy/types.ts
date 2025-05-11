@@ -6,3 +6,7 @@ export interface Brand {
   description?: string;
   products?: string[];
 }
+
+export interface BrandResponse {
+  products?: Brand[];
+}

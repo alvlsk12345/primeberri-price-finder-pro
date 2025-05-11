@@ -1,10 +1,10 @@
 
 import React from "react";
 import { BrandSuggestionItem } from "./BrandSuggestionItem";
-import { BrandSuggestion } from "@/services/types";
+import { BrandSuggestion, BrandResponse } from "@/services/types";
 
 interface BrandSuggestionListProps {
-  suggestions: BrandSuggestion[];
+  suggestions: BrandSuggestion[] | BrandResponse;
   onSelect: (product: string, performSearch?: boolean) => void;
 }
 
@@ -15,7 +15,7 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
   console.log("Отрисовка BrandSuggestionList с данными:", suggestions);
   
   // Проверка на пустой массив или отсутствие данных
-  if (!suggestions || !Array.isArray(suggestions) || suggestions.length === 0) {
+  if (!suggestions || (Array.isArray(suggestions) && suggestions.length === 0)) {
     console.warn("BrandSuggestionList: получен пустой или неверный массив предложений", suggestions);
     return (
       <div className="mt-4 p-3 bg-slate-50 rounded-md border">
@@ -24,22 +24,34 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
     );
   }
 
-  // Проверяем, имеет ли suggestions свойство products или нужно работать напрямую с массивом предложений
-  let normalizedSuggestions: BrandSuggestion[] = suggestions;
+  // Нормализация данных: преобразование различных форматов в массив BrandSuggestion
+  let normalizedSuggestions: BrandSuggestion[] = [];
   
-  // Проверяем, если suggestions - не массив, а объект с products полем
-  if (!Array.isArray(suggestions) && suggestions.products && Array.isArray(suggestions.products)) {
-    normalizedSuggestions = suggestions.products;
-    console.log("Нормализация: извлечены продукты из объекта", normalizedSuggestions);
-  }
-  
-  // Если это все еще не массив, преобразуем в массив
-  if (!Array.isArray(normalizedSuggestions)) {
-    normalizedSuggestions = [normalizedSuggestions];
-    console.log("Нормализация: объект преобразован в массив", normalizedSuggestions);
+  if (Array.isArray(suggestions)) {
+    // Если suggestions уже массив
+    normalizedSuggestions = suggestions;
+    console.log("Данные уже в формате массива:", normalizedSuggestions);
+  } else if (suggestions && typeof suggestions === 'object') {
+    // Проверяем наличие поля products
+    if ('products' in suggestions && Array.isArray(suggestions.products)) {
+      normalizedSuggestions = suggestions.products;
+      console.log("Извлечен массив products из объекта:", normalizedSuggestions);
+    } else {
+      // Если это одиночный объект, преобразуем его в массив
+      normalizedSuggestions = [suggestions as unknown as BrandSuggestion];
+      console.log("Одиночный объект преобразован в массив:", normalizedSuggestions);
+    }
   }
   
   console.log("Нормализованные предложения:", normalizedSuggestions);
+
+  if (normalizedSuggestions.length === 0) {
+    return (
+      <div className="mt-4 p-3 bg-slate-50 rounded-md border">
+        <p className="text-sm text-gray-500">Нет предложений по брендам для данного запроса.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-4 p-3 bg-slate-50 rounded-md border">

@@ -1,11 +1,11 @@
 
-import { OpenAIApi } from "https://esm.sh/openai@4.24.1";
-import { Brand } from "../types.ts";
+import { OpenAI } from "https://esm.sh/openai@4.24.1";
+import { Brand, BrandResponse } from "../types.ts";
 
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
 // Настройка клиента OpenAI
-const openai = new OpenAIApi({
+const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
   dangerouslyAllowBrowser: true
 });
@@ -77,7 +77,7 @@ const getBrandSuggestions = async (
 
     // Парсим JSON
     try {
-      const data = JSON.parse(content);
+      const data = JSON.parse(content) as BrandResponse;
       
       // Проверяем, есть ли массив products в ответе
       if (data && data.products && Array.isArray(data.products)) {
