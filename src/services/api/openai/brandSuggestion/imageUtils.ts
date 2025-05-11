@@ -1,6 +1,7 @@
 
 import { searchProductImageGoogle } from "@/services/api/googleSearchService";
 import { getPlaceholderImageUrl } from "@/services/imageService";
+import { applyCorsProxy } from "@/services/image/corsProxyService";
 
 // Поиск изображения для продукта с таймаутом
 export async function findProductImage(brand: string, product: string, index: number): Promise<string> {
@@ -19,8 +20,10 @@ export async function findProductImage(brand: string, product: string, index: nu
     const imageUrl = await Promise.race([imagePromise, timeoutPromise]);
     
     if (imageUrl) {
-      console.log(`Найдено изображение: ${imageUrl}`);
-      return imageUrl;
+      // Применяем CORS прокси к URL изображения при необходимости
+      const processedUrl = applyCorsProxy(imageUrl);
+      console.log(`Найдено изображение: ${processedUrl}`);
+      return processedUrl;
     } else {
       console.warn(`Изображение не найдено для ${brand} ${product}, используем плейсхолдер`);
       return getPlaceholderImageUrl(brand);

@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ImageOff } from "lucide-react";
 import { searchProductImageGoogle } from "@/services/api/googleSearchService";
 import { getPlaceholderImageUrl } from "@/services/image/imagePlaceholder";
+import { applyCorsProxy } from "@/services/image/corsProxyService";
 
 interface BrandSuggestionItemProps {
   suggestion: BrandSuggestion;
@@ -23,6 +24,44 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
   const [imageError, setImageError] = useState<boolean>(false);
   const [retryCount, setRetryCount] = useState<number>(0);
   const MAX_RETRIES = 3;
+
+  // При первой загрузке компонента ищем изображение, если оно не предоставлено
+  useEffect(() => {
+    const fetchImage = async () => {
+      // Если у нас уже есть URL изображения или уже идёт загрузка, пропускаем
+      if (imageUrl || isImageLoading || !suggestion.brand || !suggestion.product) return;
+      
+      setIsImageLoading(true);
+      try {
+        console.log(`Поиск изображения для ${suggestion.brand} ${suggestion.product}`);
+        
+        // Используем Google CSE API для поиска изображения
+        const foundImageUrl = await searchProductImageGoogle(
+          suggestion.brand, 
+          suggestion.product, 
+          index
+        );
+        
+        if (foundImageUrl) {
+          // Применяем CORS прокси если необходимо
+          const processedUrl = applyCorsProxy(foundImageUrl);
+          console.log(`Найдено изображение: ${processedUrl}`);
+          setImageUrl(processedUrl);
+          setImageError(false);
+        } else {
+          console.warn(`Изображение не найдено для ${suggestion.brand}, используем плейсхолдер`);
+          setImageUrl(getPlaceholderImageUrl(suggestion.brand));
+        }
+      } catch (error) {
+        console.error(`Ошибка при поиске изображения для ${suggestion.brand}:`, error);
+        setImageUrl(getPlaceholderImageUrl(suggestion.brand));
+      } finally {
+        setIsImageLoading(false);
+      }
+    };
+    
+    fetchImage();
+  }, [suggestion, imageUrl, isImageLoading, index]);
 
   // Обработчик ошибки загрузки изображения с улучшенным механизмом повтора
   const handleImageError = async () => {
