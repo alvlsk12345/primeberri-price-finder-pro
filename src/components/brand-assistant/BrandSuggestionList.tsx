@@ -28,6 +28,7 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
           // Проверка наличия необходимых полей
           if (!suggestion.brand && !suggestion.name) {
             console.warn(`Предложение #${index} не содержит имя бренда:`, suggestion);
+            return null; // Не отображаем некорректные элементы
           }
           
           return (
@@ -37,13 +38,18 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
               onSelect={() => {
                 // Определяем значение для поиска на основе доступных данных
                 // Поддерживаем оба формата данных
-                const searchTerm = suggestion.product || 
+                const brand = suggestion.brand || suggestion.name || '';
+                const product = suggestion.product || 
                   (Array.isArray(suggestion.products) && suggestion.products.length > 0 
                     ? suggestion.products[0] 
-                    : suggestion.name || suggestion.brand || "");
+                    : '');
                     
-                const brandName = suggestion.brand || suggestion.name || "Бренд";
-                console.log(`Выбран бренд: ${brandName}, поисковый запрос: ${searchTerm}`);
+                // Формируем поисковый запрос с брендом и продуктом
+                const searchTerm = brand && product 
+                  ? `${brand} ${product}` 
+                  : (brand || product || "");
+                    
+                console.log(`Выбран бренд: ${brand}, товар: ${product}, поисковый запрос: ${searchTerm}`);
                 onSelect(searchTerm);
               }} 
               index={index}

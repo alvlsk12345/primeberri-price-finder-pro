@@ -18,11 +18,12 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
       throw new Error("API ключ не установлен");
     }
 
-    console.log('Отправляем запрос к OpenAI для получения брендов...');
+    console.log('Отправляем запрос к OpenAI для получения брендов для запроса:', description);
     
     // Генерируем промпт для API
     const brandPrompt = generateBrandSuggestionPrompt(description);
-    console.log('Сформированный промпт:', brandPrompt.substring(0, 150) + '...');
+    console.log('Сформированный промпт (первые 150 символов):', 
+                brandPrompt.substring(0, 150) + '...');
     
     // Получаем ответ от API с оптимизированными параметрами для JSON-формата
     console.log('Отправляем запрос к OpenAI с указанием формата ответа JSON');
@@ -36,7 +37,9 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     });
 
     console.log('Получен ответ от OpenAI:', 
-                typeof content === 'string' ? content.substring(0, 200) + '...' : 'Не строка');
+                typeof content === 'string' ? 
+                  (content.length > 200 ? content.substring(0, 200) + '...' : content) 
+                  : 'Не строка');
 
     // Парсим ответ от API, используя улучшенный парсер
     const suggestions = await parseBrandApiResponse(content);

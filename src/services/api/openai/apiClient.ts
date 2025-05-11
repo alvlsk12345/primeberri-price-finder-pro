@@ -108,7 +108,7 @@ export const callOpenAI = async (prompt: string, options: {
       const errorData = await response.json().catch(() => ({ error: { message: "Не удалось прочитать ответ" } }));
       const errorMessage = errorData.error?.message || 'Неизвестная ошибка';
       
-      console.error('Ошибка от API OpenAI:', errorMessage);
+      console.error('Ошибка от API OpenAI:', errorMessage, 'Полный ответ:', errorData);
       
       // Проверяем специфические ошибки и даем понятные сообщения
       if (errorMessage.includes("quota")) {

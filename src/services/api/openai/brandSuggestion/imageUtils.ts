@@ -18,8 +18,11 @@ export async function findProductImage(brand: string, product: string, index: nu
     const searchQuery = product ? `${brand} ${product}` : brand;
     console.log(`Поиск изображения для запроса: "${searchQuery}" (индекс: ${index})`);
     
-    // Создаем ключ кэша
-    const cacheKey = `img_${searchQuery}_${index}`.toLowerCase().replace(/\s+/g, '_');
+    // Создаем ключ кэша с очисткой от специальных символов
+    const cacheKey = `img_${searchQuery}_${index}`
+      .toLowerCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^a-zа-я0-9_]/gi, '');
     
     // Проверяем локальный кэш в памяти (более быстрый доступ)
     if (imageCache[cacheKey]) {
@@ -49,7 +52,13 @@ export async function findProductImage(brand: string, product: string, index: nu
     );
     
     // Используем Race для ограничения времени выполнения
-    const imageUrl = await Promise.race([imagePromise, timeoutPromise]);
+    let imageUrl: string;
+    try {
+      imageUrl = await Promise.race([imagePromise, timeoutPromise]) || '';
+    } catch (timeoutError) {
+      console.warn(`Превышено время поиска изображения для ${searchQuery}:`, timeoutError);
+      return getPlaceholderImageUrl(brand);
+    }
     
     if (imageUrl) {
       // Применяем CORS прокси к URL изображения при необходимости
