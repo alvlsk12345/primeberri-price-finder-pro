@@ -108,13 +108,9 @@ export async function parseBrandApiResponse(content: string | any): Promise<Bran
         items = jsonData[arrayField];
       }
       // Если это один объект с полями brand и products
-      else if (jsonData.brand && jsonData.products) {
-        console.log('Обнаружен формат с одним объектом бренда и массивом products');
-        items = jsonData.products.map((product: string | any) => ({
-          brand: jsonData.brand,
-          product: typeof product === 'string' ? product : (product.name || product.product || ''),
-          description: product.description || jsonData.description || ''
-        }));
+      else if (jsonData.brand && jsonData.product) {
+        console.log('Обнаружен формат с одним объектом бренда и товаром');
+        items = [jsonData];
       }
       else {
         console.error('Не удалось найти массив данных в ответе:', jsonData);
@@ -133,40 +129,36 @@ export async function parseBrandApiResponse(content: string | any): Promise<Bran
     
     console.log(`Найдено ${items.length} предложений:`, items);
     
-    // Преобразуем в формат BrandSuggestion и добавляем изображения
+    // Преобразуем в формат BrandSuggestion в соответствии с новым форматом
     const results: BrandSuggestion[] = [];
     
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      const brand = item.brand || item.name || '';
-      const product = item.product || item.name || '';
-      const description = item.description || '';
       
-      console.log(`Обрабатываем предложение ${i+1}: ${brand} - ${product}`);
+      // Обрабатываем поля согласно новому формату
+      const brandName = item.brand || "";
+      const productName = item.product || "";
+      const description = item.description || "";
       
-      // Поиск изображения для товара
-      let imageUrl = item.imageUrl || item.logo || '';
-      if (!imageUrl && brand) {
-        console.log(`Ищем изображение для ${brand} ${product}`);
+      console.log(`Обрабатываем предложение ${i+1}: ${brandName} - ${productName}`);
+      
+      // Поиск изображения для товара если оно не указано
+      let imageUrl = '';
+      if (brandName) {
         try {
-          imageUrl = await findProductImage(brand, product, i);
+          imageUrl = await findProductImage(brandName, productName, i);
           console.log(`Найдено изображение: ${imageUrl}`);
         } catch (err) {
           console.error(`Ошибка при поиске изображения:`, err);
         }
       }
       
-      // Добавляем в результаты, поддерживая оба формата
+      // Добавляем в результаты в новом формате
       results.push({
-        brand: brand,
-        product: product,
+        brand: brandName,
+        product: productName,
         description: description,
         imageUrl: imageUrl,
-        
-        // Поддержка старого формата для совместимости
-        name: brand,
-        logo: imageUrl,
-        products: product ? [product] : []
       });
     }
     

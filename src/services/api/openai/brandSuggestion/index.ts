@@ -25,14 +25,15 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     console.log('Сформированный промпт (первые 150 символов):', 
                 brandPrompt.substring(0, 150) + '...');
     
-    // Получаем ответ от API с оптимизированными параметрами для JSON-формата
-    console.log('Отправляем запрос к OpenAI с указанием формата ответа JSON');
+    // Получаем ответ от API с обновленными параметрами
+    console.log('Отправляем запрос к OpenAI с обновленными параметрами');
     
-    // Используем модель gpt-4o с низкой температурой для более структурированных ответов
     const content = await callOpenAI(brandPrompt, {
-      temperature: 0.2,
-      max_tokens: 1000,
-      model: "gpt-4o",
+      temperature: 0.3,
+      max_tokens: 500,
+      model: "gpt-4",
+      n: 1,
+      stop: ["\n"],
       responseFormat: "json_object"
     });
 

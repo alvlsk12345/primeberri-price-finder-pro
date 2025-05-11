@@ -25,8 +25,8 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
       <h3 className="text-sm font-medium mb-2">Рекомендуемые товары:</h3>
       <div className="space-y-2">
         {suggestions.map((suggestion, index) => {
-          // Проверка наличия необходимых полей
-          if (!suggestion.brand && !suggestion.name) {
+          // Проверка наличия необходимых полей в соответствии с новым форматом
+          if (!suggestion.brand) {
             console.warn(`Предложение #${index} не содержит имя бренда:`, suggestion);
             return null; // Не отображаем некорректные элементы
           }
@@ -37,12 +37,8 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
               suggestion={suggestion} 
               onSelect={(immediate) => {
                 // Определяем значение для поиска на основе доступных данных
-                // Поддерживаем оба формата данных
-                const brand = suggestion.brand || suggestion.name || '';
-                const product = suggestion.product || 
-                  (Array.isArray(suggestion.products) && suggestion.products.length > 0 
-                    ? suggestion.products[0] 
-                    : '');
+                const brand = suggestion.brand || '';
+                const product = suggestion.product || '';
                     
                 // Формируем поисковый запрос с брендом и продуктом
                 const searchTerm = brand && product 

@@ -15,21 +15,15 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     }
 
     // Формируем промпт для получения предложений по брендам
-    const prompt = `Ты — эксперт по брендам и товарам. Пользователь описал тип товара, который они хотят найти. 
-Предложи 5 брендов, которые соответствуют этому описанию. Верни только JSON массив объектов с полями:
-- name: название бренда (только название, без "бренд" или других пояснений)
-- logo: URL логотипа бренда (должен быть прямой ссылкой на изображение в формате PNG, JPG или WebP)
-- description: краткое описание бренда в контексте запрашиваемого товара (1-2 предложения на русском языке)
-- products: массив из 3-5 конкретных товаров этого бренда, соответствующих запросу (только названия товаров)
+    const prompt = `Ты эксперт по брендам и товарам. Назови 5 популярных брендов с конкретными товарами, которые могут соответствовать запросу: '${description}'. \n\nОЧЕНЬ ВАЖНО: Твой ответ должен быть строго в формате массива JSON.\n\nФормат ответа должен быть таким:\n[\n  {"brand": "Название бренда 1", "product": "Название товара 1", "description": "Описание товара 1"},\n  {"brand": "Название бренда 2", "product": "Название товара 2", "description": "Описание товара 2"},\n  {"brand": "Название бренда 3", "product": "Название товара 3", "description": "Описание товара 3"},\n  {"brand": "Название бренда 4", "product": "Название товара 4", "description": "Описание товара 4"},\n  {"brand": "Название бренда 5", "product": "Название товара 5", "description": "Описание товара 5"}\n]`;
 
-Обязательно нужны русские бренды или популярные международные. Не выдумывай бренды и товары.
-Запрашиваемый тип товара: ${description}`;
-
-    // Вызываем OpenAI API
+    // Вызываем OpenAI API с обновленными настройками
     const result = await callOpenAI(prompt, {
-      model: "gpt-4o",
-      temperature: 0.2,
-      max_tokens: 1500,
+      model: "gpt-4",
+      temperature: 0.3,
+      max_tokens: 500,
+      n: 1,
+      stop: ["\n"],
       responseFormat: "json_object"
     });
     
@@ -37,10 +31,9 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     if (Array.isArray(result)) {
       // Приведение возвращаемых данных к типу BrandSuggestion
       return result.map((brand: any) => ({
-        name: brand.name || "Неизвестный бренд",
-        logo: brand.logo || "https://via.placeholder.com/100",
+        brand: brand.brand || brand.name || "Неизвестный бренд",
+        product: brand.product || "",
         description: brand.description || "Описание недоступно",
-        products: Array.isArray(brand.products) ? brand.products : ["Товар 1", "Товар 2"]
       }));
     }
     
