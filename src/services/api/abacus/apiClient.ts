@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { getApiKey, API_BASE_URL } from "./config";
 import { isUsingSupabaseBackend } from "../supabase/config";
@@ -19,7 +18,8 @@ export const callAbacusAI = async (
     console.log(`Использование Supabase для вызова Abacus.ai API: ${endpoint}`);
     try {
       // Используем Supabase Edge Function для вызова Abacus.ai
-      return await searchViaAbacus(endpoint, requestData);
+      // Исправляем передачу параметров - правильно передаем метод как второй аргумент, а данные как третий
+      return await searchViaAbacus(endpoint, method, requestData);
     } catch (error) {
       console.error('Ошибка при использовании Supabase для Abacus.ai:', error);
       toast.error(`Ошибка Supabase для Abacus.ai: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, { duration: 3000 });
