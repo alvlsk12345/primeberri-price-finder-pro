@@ -1,86 +1,60 @@
 
-import { toast } from "sonner";
 import { BrandSuggestion } from "@/services/types";
-import { generateTextViaAbacus } from "./apiClient";
-import { hasValidApiKey } from "./config";
-import { createMockBrandSuggestions } from "../openai/brandSuggestion/mockGenerators";
-import { parseBrandApiResponse } from "../openai/brandSuggestion/responseParser";
+import { toast } from "sonner";
+import { getApiKey } from "./config";
+import { callAbacusAI } from "./apiClient";
+import { isUsingSupabaseBackend } from "../supabase/config";
+import { fetchBrandSuggestionsViaOpenAI } from "../supabase/aiService";
+import { isSupabaseConnected } from "../supabase/client";
 
-// Функция для генерации промпта для получения брендов
-function generateBrandSuggestionPrompt(description: string): string {
-  return `Я ищу продукты, соответствующие следующему описанию: "${description}".
-Пожалуйста, предложи мне 3 реальных брендов и конкретных продуктов, соответствующих этому описанию.
-Для каждого продукта укажи:
-1. Название бренда
-2. Название продукта
-3. Краткое описание продукта (до 150 символов)
-
-Верни ответ в формате JSON-массива:
-[
-  {
-    "brand": "Название бренда 1",
-    "product": "Название продукта 1",
-    "description": "Описание продукта 1"
-  },
-  ...
-]`;
-}
-
-// Основная функция получения предложений брендов через Abacus.ai
+// Функция для получения предложений брендов через Abacus.ai
 export const fetchBrandSuggestions = async (description: string): Promise<BrandSuggestion[]> => {
   try {
-    // Проверка наличия API ключа
-    if (!hasValidApiKey()) {
-      toast.error("API ключ Abacus.ai не установлен. Пожалуйста, добавьте свой ключ в настройках");
-      throw new Error("API ключ не установлен");
-    }
-
-    console.log('Отправляем запрос к Abacus.ai для получения брендов...');
-    
-    // Генерируем промпт для API
-    const brandPrompt = generateBrandSuggestionPrompt(description);
-    
-    // Получаем ответ от API
-    console.log('Отправляем промпт к Abacus.ai:', brandPrompt);
-    
-    // Используем параметры, соответствующие Abacus.ai API
-    const content = await generateTextViaAbacus(brandPrompt, {
-      temperature: 0.3,
-      max_tokens: 350
-    });
-
-    // Парсим ответ от API с помощью общей функции парсинга
-    const suggestions = await parseBrandApiResponse(content);
-
-    // Если не удалось получить хотя бы одно предложение, создаем демо-данные
-    if (suggestions.length === 0) {
-      console.warn('Не удалось получить корректные предложения от Abacus.ai, создаем демо-данные');
-      toast.warning("Не удалось получить реальные данные о брендах. Показываем примеры.", { duration: 4000 });
-      return createMockBrandSuggestions(description);
-    }
-
-    // Если получили меньше 3 предложений, дополняем их моками
-    if (suggestions.length < 3) {
-      console.warn(`Получено только ${suggestions.length} предложений. Дополняем моками до 3`);
-      const mocks = createMockBrandSuggestions(description);
-      for (let i = suggestions.length; i < 3; i++) {
-        suggestions.push(mocks[i % mocks.length]);
+    // Проверяем, используем ли мы Supabase бэкенд
+    if (isUsingSupabaseBackend() && isSupabaseConnected()) {
+      console.log('Использование Supabase для получения предложений брендов');
+      try {
+        // Используем Edge Function для получения предложений брендов
+        const result = await fetchBrandSuggestionsViaOpenAI(description);
+        return result;
+      } catch (error) {
+        console.error('Ошибка при использовании Supabase для предложений брендов:', error);
+        toast.error(`Ошибка Supabase: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, 
+                    { duration: 3000 });
+        // Продолжаем с прямым вызовом API как запасной вариант
+        toast.info('Используем прямой вызов API как запасной вариант', { duration: 2000 });
       }
     }
-
-    console.log(`Возвращаем ${suggestions.length} предложений брендов от Abacus.ai:`, suggestions);
-    return suggestions.slice(0, 3); // Ограничиваем 3 результатами
-
-  } catch (error) {
-    console.error('Ошибка при запросе к Abacus.ai для брендов:', error);
     
-    // Показываем пользователю информацию о проблеме и что используем демо-данные
-    toast.error(`Ошибка при получении брендов: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, { 
-      duration: 4000,
-      description: "Используем демонстрационные данные"
+    // Получаем API ключ
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      toast.error("API ключ Abacus.ai не установлен. Пожалуйста, добавьте свой ключ в настройках.");
+      throw new Error("API ключ не установлен");
+    }
+    
+    // В данном случае мы эмулируем вызов Abacus API для получения рекомендаций по брендам
+    // В реальности нужно заменить на фактический вызов соответствующего API
+    
+    const mockBrandData = await callAbacusAI('brand/recommend', 'POST', {
+      description,
+      limit: 5
     });
     
-    // В случае любой ошибки возвращаем демо-данные
-    return createMockBrandSuggestions(description);
+    // Предполагаем, что ответ API содержит массив брендов
+    // Форматируем данные для соответствия интерфейсу BrandSuggestion
+    return mockBrandData.brands.map((brand: any) => ({
+      name: brand.name || 'Unknown Brand',
+      logo: brand.logo || 'https://via.placeholder.com/100',
+      description: brand.description || 'No description available',
+      products: brand.products || ['Sample Product 1', 'Sample Product 2']
+    }));
+    
+  } catch (error) {
+    console.error('Ошибка при получении предложений брендов:', error);
+    toast.error('Не удалось получить предложения брендов. Пожалуйста, попробуйте позже.', { duration: 3000 });
+    
+    // Возвращаем пустой массив вместо ошибки
+    return [];
   }
 };

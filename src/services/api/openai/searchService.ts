@@ -2,10 +2,31 @@
 import { toast } from "sonner";
 import { callOpenAI } from "./apiClient";
 import { createMockProductsFromQuery } from "./responseUtils";
+import { isUsingSupabaseBackend, isFallbackEnabled } from "../supabase/config";
+import { searchViaOpenAI } from "../supabase/aiService";
+import { isSupabaseConnected } from "../supabase/client";
 
 // Специфичная функция для общего использования OpenAI API для поиска товаров
 export const fetchFromOpenAI = async (query: string): Promise<any> => {
   try {
+    // Проверяем, используем ли мы Supabase бэкенд
+    if (isUsingSupabaseBackend() && isSupabaseConnected()) {
+      console.log('Использование Supabase для поиска товаров через OpenAI');
+      try {
+        // Используем Supabase Edge Function для вызова OpenAI
+        return await searchViaOpenAI(query);
+      } catch (error) {
+        console.error('Ошибка при использовании Supabase для поиска товаров:', error);
+        
+        // Если включен фоллбэк, продолжаем с прямым вызовом
+        if (isFallbackEnabled()) {
+          toast.info('Переключение на прямой вызов API OpenAI...', { duration: 2000 });
+        } else {
+          throw error;
+        }
+      }
+    }
+
     // Улучшенный промпт для обработки сложных запросов
     const promptTemplate = `
 Ты — AI-ассистент для поиска товаров в интернете (Zalando, Amazon, Ozon, Wildberries и другие магазины). На основе пользовательского запроса сгенерируй список из 3 карточек товаров в формате JSON.

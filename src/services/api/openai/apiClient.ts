@@ -2,8 +2,11 @@
 import { toast } from "sonner";
 import { getApiKey } from "./config";
 import { processApiResponse } from "./responseUtils";
+import { isUsingSupabaseBackend } from "../supabase/config";
+import { isSupabaseConnected } from "../supabase/client";
+import { searchViaOpenAI } from "../supabase/aiService";
 
-// Максимальное количество попыток запроса (упрощено без CORS прокси)
+// Максимальное количество попыток запроса
 const MAX_RETRY_ATTEMPTS = 2;
 
 // Базовая функция для использования OpenAI API без CORS прокси
@@ -14,6 +17,19 @@ export const callOpenAI = async (prompt: string, options: {
   responseFormat?: "json_object" | "text";
   retryAttempt?: number;
 } = {}): Promise<any> => {
+  // Проверяем, используем ли мы Supabase бэкенд
+  if (isUsingSupabaseBackend() && isSupabaseConnected()) {
+    console.log('Использование Supabase для вызова OpenAI API');
+    try {
+      return await searchViaOpenAI(prompt, options);
+    } catch (error) {
+      console.error('Ошибка при использовании Supabase для OpenAI:', error);
+      toast.error(`Ошибка Supabase: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, { duration: 3000 });
+      // Продолжаем с прямым вызовом API как запасной вариант
+      toast.info('Используем прямой вызов API как запасной вариант', { duration: 2000 });
+    }
+  }
+
   try {
     // Инициализируем счетчик попыток, если он не был передан
     const retryAttempt = options.retryAttempt || 0;

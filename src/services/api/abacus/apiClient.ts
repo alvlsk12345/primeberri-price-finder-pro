@@ -1,6 +1,9 @@
 
 import { toast } from "sonner";
 import { getApiKey, API_BASE_URL } from "./config";
+import { isUsingSupabaseBackend } from "../supabase/config";
+import { searchViaAbacus } from "../supabase/aiService";
+import { isSupabaseConnected } from "../supabase/client";
 
 // Базовая функция для использования Abacus.ai API с обработкой ошибок (без CORS-прокси)
 export const callAbacusAI = async (
@@ -11,6 +14,20 @@ export const callAbacusAI = async (
     retryAttempt?: number;
   } = {}
 ): Promise<any> => {
+  // Проверяем, используем ли мы Supabase бэкенд
+  if (isUsingSupabaseBackend() && isSupabaseConnected()) {
+    console.log(`Использование Supabase для вызова Abacus.ai API: ${endpoint}`);
+    try {
+      // Используем Supabase Edge Function для вызова Abacus.ai
+      return await searchViaAbacus(endpoint, requestData);
+    } catch (error) {
+      console.error('Ошибка при использовании Supabase для Abacus.ai:', error);
+      toast.error(`Ошибка Supabase для Abacus.ai: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, { duration: 3000 });
+      // Продолжаем с прямым вызовом API как запасной вариант
+      toast.info('Используем прямой вызов API Abacus.ai как запасной вариант', { duration: 2000 });
+    }
+  }
+
   try {
     // Получаем API ключ из localStorage
     const apiKey = getApiKey();

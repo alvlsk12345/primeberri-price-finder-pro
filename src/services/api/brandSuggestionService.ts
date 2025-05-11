@@ -6,6 +6,9 @@ import { getSelectedAIProvider, AIProvider } from "./aiProviderService";
 import { toast } from "sonner";
 import { hasValidApiKey as hasValidOpenAIApiKey } from "./openai/config";
 import { hasValidApiKey as hasValidAbacusApiKey } from "./abacus/config";
+import { isUsingSupabaseBackend } from "./supabase/config";
+import { isSupabaseConnected } from "./supabase/client";
+import { fetchBrandSuggestionsViaOpenAI } from "./supabase/aiService";
 
 // Основная функция получения брендов, которая выбирает подходящий провайдер
 export const fetchBrandSuggestions = async (description: string): Promise<BrandSuggestion[]> => {
@@ -14,6 +17,20 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
   
   try {
     console.log(`Используем ${provider} для получения предложений брендов`);
+    
+    // Проверяем, используем ли мы Supabase бэкенд
+    if (isUsingSupabaseBackend() && isSupabaseConnected()) {
+      console.log('Использование Supabase бэкенда для получения предложений брендов');
+      try {
+        return await fetchBrandSuggestionsViaOpenAI(description);
+      } catch (error) {
+        console.error('Ошибка при использовании Supabase для предложений брендов:', error);
+        toast.error(`Ошибка Supabase: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
+                   { duration: 3000 });
+        toast.info('Используем прямой вызов API как запасной вариант', { duration: 2000 });
+        // Продолжаем с обычным процессом, если Supabase не сработал
+      }
+    }
     
     // Проверяем наличие валидного API ключа для выбранного провайдера
     if (provider === 'openai' && !hasValidOpenAIApiKey()) {

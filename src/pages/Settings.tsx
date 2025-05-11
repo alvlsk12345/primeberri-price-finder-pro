@@ -1,30 +1,90 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageHeader } from "@/components/PageHeader";
 import { ApiKeyForm } from "@/components/ApiKeyForm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, RefreshCw, CheckCircle, XCircle, Bot } from "lucide-react";
+import { AlertCircle, RefreshCw, CheckCircle, XCircle, Bot, Database } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { callOpenAI } from "@/services/api/openai/apiClient";
 import { getApiKey as getOpenAIApiKey } from "@/services/api/openai/config";
 import { callAbacusAI } from "@/services/api/abacus/apiClient";
 import { getApiKey as getAbacusApiKey } from "@/services/api/abacus/config";
 import { toast } from "sonner";
 import { getSelectedAIProvider, setSelectedAIProvider, AIProvider } from "@/services/api/aiProviderService";
+import { 
+  isSupabaseConnected, 
+  checkSupabaseConnection 
+} from "@/services/api/supabase/client";
+import { 
+  isUsingSupabaseBackend, 
+  isFallbackEnabled,
+  getSupabaseAIConfig, 
+  setSupabaseAIConfig 
+} from "@/services/api/supabase/config";
+import { callAIViaSupabase } from "@/services/api/supabase/aiService";
+import { AI_PROXY_EDGE_FUNCTION_GUIDE } from "@/services/api/supabase/edgeFunctionCode";
 
 const Settings = () => {
   const [apiStatus, setApiStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
-  const [proxyInfo] = useState<string>("Прямое соединение (без прокси)");
+  const [proxyInfo, setProxyInfo] = useState<string>("Прямое соединение (без прокси)");
   const [selectedProvider, setSelectedProvider] = useState<AIProvider>(getSelectedAIProvider());
+  const [supabaseConnected, setSupabaseConnected] = useState<boolean>(false);
+  const [supabaseStatus, setSupabaseStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
+  const [useSupabaseBE, setUseSupabaseBE] = useState<boolean>(isUsingSupabaseBackend());
+  const [useFallback, setUseFallback] = useState<boolean>(isFallbackEnabled());
+
+  // Проверяем подключение к Supabase при загрузке
+  useEffect(() => {
+    async function checkConnection() {
+      setSupabaseStatus('checking');
+      try {
+        const connected = await checkSupabaseConnection();
+        setSupabaseConnected(connected);
+        setSupabaseStatus(connected ? 'connected' : 'disconnected');
+        if (connected) {
+          toast.success('Соединение с Supabase установлено', { duration: 3000 });
+        }
+      } catch (error) {
+        console.error('Ошибка при проверке подключения к Supabase:', error);
+        setSupabaseConnected(false);
+        setSupabaseStatus('disconnected');
+      }
+    }
+    
+    checkConnection();
+  }, []);
+  
+  // Получаем настройки Supabase AI
+  useEffect(() => {
+    const config = getSupabaseAIConfig();
+    setUseSupabaseBE(config.useSupabaseBackend);
+    setUseFallback(config.fallbackToDirectCalls);
+  }, []);
 
   // Функция для тестирования подключения к API
   const testApiConnection = async () => {
     setApiStatus('testing');
     
     try {
+      if (useSupabaseBE && supabaseConnected) {
+        // Проверяем работу через Supabase
+        await callAIViaSupabase({
+          provider: selectedProvider === 'openai' ? 'openai' : 'abacus',
+          prompt: selectedProvider === 'openai' ? "Скажи 'привет'" : undefined,
+          endpoint: selectedProvider === 'abacus' ? 'testConnection' : undefined,
+          method: 'GET'
+        });
+        
+        setApiStatus('success');
+        toast.success(`Проверка API ${selectedProvider.toUpperCase()} через Supabase успешна!`);
+        return;
+      }
+      
+      // Если Supabase не используется или недоступен, проверяем прямое соединение
       if (selectedProvider === 'openai') {
         // Проверяем наличие API ключа OpenAI
         const apiKey = getOpenAIApiKey();
@@ -49,12 +109,12 @@ const Settings = () => {
         }
         
         // Выполняем простой запрос к API Abacus (для теста)
-        // Примечание: нужно заменить на реальный метод API Abacus
         await callAbacusAI('testConnection', 'GET');
       }
       
       // Если запрос успешен, обновляем статус
       setApiStatus('success');
+      setProxyInfo('Прямое соединение');
       toast.success(`Проверка API ${selectedProvider.toUpperCase()} успешна! Режим соединения: прямой`);
     } catch (error: any) {
       console.error(`Ошибка при тестировании API ${selectedProvider}:`, error);
@@ -79,12 +139,121 @@ const Settings = () => {
     toast.success(`AI провайдер изменен на ${value.toUpperCase()}`);
     setApiStatus('idle'); // Сбрасываем статус API при смене провайдера
   };
+  
+  // Функция для изменения режима работы с Supabase
+  const handleSupabaseBackendChange = (checked: boolean) => {
+    setUseSupabaseBE(checked);
+    setSupabaseAIConfig({ useSupabaseBackend: checked });
+    
+    if (checked && !supabaseConnected) {
+      toast.warning('Supabase не подключен. Проверьте настройки подключения или используйте прямое соединение.', 
+                   { duration: 5000 });
+    } else if (checked) {
+      toast.success('Режим Supabase Backend активирован', { duration: 3000 });
+    } else {
+      toast.info('Используется прямое соединение с API', { duration: 3000 });
+    }
+  };
+  
+  // Функция для изменения режима фоллбэка
+  const handleFallbackChange = (checked: boolean) => {
+    setUseFallback(checked);
+    setSupabaseAIConfig({ fallbackToDirectCalls: checked });
+    
+    if (checked) {
+      toast.success('Фоллбэк на прямые вызовы API активирован', { duration: 3000 });
+    } else {
+      toast.info('Фоллбэк на прямые вызовы API отключен', { duration: 3000 });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader />
       
       <main className="container mx-auto py-10 px-4">
+        <Card className="max-w-md mx-auto mb-6">
+          <CardHeader>
+            <CardTitle className="text-xl">Настройки Supabase</CardTitle>
+            <CardDescription>
+              Настройка интеграции с Supabase для AI поиска
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-md mb-4">
+              <div className="flex items-center gap-2 text-blue-700 mb-2">
+                <Database size={18} />
+                <span className="font-medium">Интеграция с Supabase</span>
+              </div>
+              <p className="text-sm text-blue-700 mb-3">
+                Интеграция с Supabase позволяет безопасно использовать API ключи и предотвращать проблемы с CORS. 
+                Edge Function обрабатывает вызовы к API, делая взаимодействие более стабильным.
+              </p>
+              
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm font-medium">Статус подключения:</span>
+                <div className="flex items-center gap-2">
+                  {supabaseStatus === 'checking' && <RefreshCw size={18} className="text-blue-500 animate-spin" />}
+                  {supabaseStatus === 'connected' && <CheckCircle size={18} className="text-green-500" />}
+                  {supabaseStatus === 'disconnected' && <XCircle size={18} className="text-red-500" />}
+                  <span className={`text-sm ${
+                    supabaseStatus === 'connected' ? 'text-green-600' : 
+                    supabaseStatus === 'disconnected' ? 'text-red-600' : 
+                    'text-blue-600'
+                  }`}>
+                    {supabaseStatus === 'connected' ? 'Подключено' : 
+                     supabaseStatus === 'disconnected' ? 'Не подключено' : 
+                     'Проверка...'}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <Label htmlFor="useSupabaseBackend" className="text-sm font-medium">Использовать Supabase Backend</Label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    API вызовы будут проходить через Edge Functions
+                  </p>
+                </div>
+                <Switch
+                  id="useSupabaseBackend"
+                  checked={useSupabaseBE}
+                  onCheckedChange={handleSupabaseBackendChange}
+                  disabled={!supabaseConnected && supabaseStatus !== 'checking'}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="useFallback" className="text-sm font-medium">Фоллбэк на прямые вызовы</Label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Использовать прямые API вызовы при ошибке Supabase
+                  </p>
+                </div>
+                <Switch
+                  id="useFallback"
+                  checked={useFallback}
+                  onCheckedChange={handleFallbackChange}
+                  disabled={!useSupabaseBE}
+                />
+              </div>
+              
+              {!supabaseConnected && supabaseStatus !== 'checking' && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                  <p className="flex items-center gap-1 font-medium mb-1">
+                    <AlertCircle size={16} />
+                    Supabase не подключен
+                  </p>
+                  <p>
+                    Чтобы использовать Supabase Backend, подключите проект к Supabase, используя зеленую кнопку в верхней части интерфейса,
+                    и создайте Edge Function 'ai-proxy'.
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="max-w-md mx-auto mb-6">
           <CardHeader>
             <CardTitle className="text-xl">Выбор AI провайдера</CardTitle>
@@ -161,8 +330,10 @@ const Settings = () => {
                     <span className="font-medium">Важная информация</span>
                   </div>
                   <p className="text-sm text-amber-700">
-                    Для работы поиска через AI требуется действующий API ключ OpenAI. Ваш ключ хранится только в вашем браузере и не передается третьим лицам. 
-                    Если вы видите сообщение о превышении квоты, вам нужно проверить баланс вашего аккаунта OpenAI.
+                    Для работы поиска через AI требуется действующий API ключ OpenAI. 
+                    {useSupabaseBE ? ' При использовании Supabase ключ должен быть добавлен в секреты Supabase Edge Function.' : 
+                      ' Ваш ключ хранится только в вашем браузере и не передается третьим лицам.'}
+                    {!useSupabaseBE && ' Если вы видите сообщение о превышении квоты, вам нужно проверить баланс вашего аккаунта OpenAI.'}
                   </p>
                 </div>
                 <ApiKeyForm keyType="openai" />
@@ -192,7 +363,9 @@ const Settings = () => {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Режим соединения:</span>
-                      <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">{proxyInfo}</span>
+                      <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
+                        {useSupabaseBE && supabaseConnected ? 'Supabase Backend' : proxyInfo}
+                      </span>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2 mt-2">
                       <Button 
@@ -222,8 +395,10 @@ const Settings = () => {
                     <span className="font-medium">Важная информация</span>
                   </div>
                   <p className="text-sm text-amber-700">
-                    Для работы поиска через Abacus.ai требуется действующий API ключ. Ваш ключ хранится только 
-                    в вашем браузере и не передается третьим лицам. Получите ключ в панели управления Abacus.ai.
+                    Для работы поиска через Abacus.ai требуется действующий API ключ. 
+                    {useSupabaseBE ? ' При использовании Supabase ключ должен быть добавлен в секреты Supabase Edge Function.' : 
+                      ' Ваш ключ хранится только в вашем браузере и не передается третьим лицам.'}
+                    {' '}Получите ключ в панели управления Abacus.ai.
                   </p>
                 </div>
                 <ApiKeyForm keyType="abacus" />
@@ -253,7 +428,9 @@ const Settings = () => {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Режим соединения:</span>
-                      <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">{proxyInfo}</span>
+                      <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
+                        {useSupabaseBE && supabaseConnected ? 'Supabase Backend' : proxyInfo}
+                      </span>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2 mt-2">
                       <Button 
