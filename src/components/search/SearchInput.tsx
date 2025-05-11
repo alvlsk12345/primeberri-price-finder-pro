@@ -22,9 +22,20 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   // Обработчик нажатия клавиши Enter
   const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchQuery.trim() !== '') {
+      console.log('Enter нажат, выполняем поиск с запросом:', searchQuery);
       executeSearch();
       e.preventDefault();
     }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('Текст в поле поиска изменен:', e.target.value);
+    setSearchQuery(e.target.value);
+  };
+
+  const handleSearchClick = () => {
+    console.log('Кнопка поиска нажата, выполняем поиск с запросом:', searchQuery);
+    executeSearch();
   };
 
   return (
@@ -33,14 +44,14 @@ export const SearchInput: React.FC<SearchInputProps> = ({
         <Input 
           placeholder="Введите название товара, например, кожаная сумка, кроссовки Nike..." 
           value={searchQuery} 
-          onChange={e => setSearchQuery(e.target.value)} 
+          onChange={handleInputChange} 
           onKeyDown={handleKeyPress} 
           className={`w-full ${hasError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
           aria-label="Поисковый запрос"
         />
       </div>
       <Button 
-        onClick={executeSearch} 
+        onClick={handleSearchClick} 
         disabled={isLoading || !searchQuery.trim()} 
         className="min-w-[120px] sm:min-w-[200px]" 
         variant="brand"

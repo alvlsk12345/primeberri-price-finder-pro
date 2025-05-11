@@ -39,9 +39,16 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
       return;
     }
 
+    console.log("Запрос поиска товаров с текстом:", productDescription);
     setIsAssistantLoading(true);
+    
     try {
+      // Добавляем подробное логирование
+      console.log(`Отправляем запрос на поиск брендов для: "${productDescription}"`);
+      
       const suggestions = await fetchBrandSuggestions(productDescription);
+      console.log("Получены предложения брендов:", suggestions);
+      
       setBrandSuggestions(suggestions);
       
       if (suggestions.length === 0) {
@@ -49,6 +56,7 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
       } else {
         // Сбрасываем счетчик повторов при успешном запросе
         setRetryCount(0);
+        toast.success(`Найдено ${suggestions.length} предложений товаров`);
       }
     } catch (error: any) {
       console.error('Ошибка при запросе к OpenAI для получения товаров:', error);
@@ -113,7 +121,10 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
           <Textarea
             placeholder="Опишите, что вы хотите найти, например: удобные кроссовки для бега по пересеченной местности"
             value={productDescription}
-            onChange={(e) => setProductDescription(e.target.value)}
+            onChange={(e) => {
+              console.log("Текст в Textarea изменен:", e.target.value);
+              setProductDescription(e.target.value);
+            }}
             className="min-h-[80px] resize-none"
           />
           <div className="flex justify-end">

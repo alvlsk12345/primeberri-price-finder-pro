@@ -113,27 +113,27 @@ export async function handleOpenAIRequest({
         
         console.log('Edge Function: JSON успешно распарсен');
         
-        // Возвращаем распарсенный JSON как ответ
+        // ВАЖНОЕ ИЗМЕНЕНИЕ: Возвращаем распарсенный JSON напрямую, без обертки в result
         return new Response(
           JSON.stringify(parsedJson),
           { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
         );
       } catch (e) {
         console.warn('Edge Function: ошибка при парсинге JSON ответа:', e);
-        console.warn('Edge Function: возвращаем оригинальный текст как result');
+        console.warn('Edge Function: возвращаем оригинальный текст');
         
-        // В случае ошибки парсинга возвращаем оригинальный текст
+        // В случае ошибки парсинга возвращаем оригинальный текст без обертки в result
         return new Response(
-          JSON.stringify({ result: content }),
-          { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+          content,
+          { headers: { 'Content-Type': 'text/plain', ...CORS_HEADERS } }
         );
       }
     }
     
-    // Для текстового формата просто возвращаем содержимое
+    // Для текстового формата просто возвращаем содержимое без обертки в result
     return new Response(
-      JSON.stringify({ result: content }),
-      { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+      content,
+      { headers: { 'Content-Type': 'text/plain', ...CORS_HEADERS } }
     );
   } catch (error) {
     console.error('Edge Function: ошибка при обработке запроса к OpenAI:', error);

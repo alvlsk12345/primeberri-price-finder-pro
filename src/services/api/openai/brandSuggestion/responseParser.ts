@@ -3,25 +3,49 @@ import { BrandSuggestion } from "@/services/types";
 import { findProductImage } from "./imageUtils";
 
 // Функция для парсинга ответа от API и создания объектов предложений брендов
-export async function parseBrandApiResponse(content: string): Promise<BrandSuggestion[]> {
+export async function parseBrandApiResponse(content: string | any): Promise<BrandSuggestion[]> {
   try {
     if (!content) {
       console.error("Получен пустой ответ от API");
       return [];
     }
     
-    console.log('Ответ от OpenAI для брендов (первые 200 символов):', 
-                typeof content === 'string' ? content.substring(0, 200) + '...' : 'Не строка');
+    console.log('Ответ от OpenAI для брендов (тип):', typeof content);
+    if (typeof content === 'string') {
+      console.log('Ответ как строка (первые 200 символов):', content.substring(0, 200) + '...');
+    } else {
+      console.log('Ответ как объект:', content);
+    }
 
     let jsonData: any;
     
-    // Предварительная обработка строки для удаления лишних символов
-    if (typeof content === 'string') {
+    // Проверяем, является ли content уже объектом (может быть после парсинга в edge функции)
+    if (typeof content !== 'string') {
+      jsonData = content;
+    }
+    // Если content - строка, пытаемся распарсить
+    else {
       // Удаляем все ведущие и завершающие нестандартные символы
       let cleanContent = content.trim();
       
       // Удаляем маркеры кода markdown если они есть
       cleanContent = cleanContent.replace(/^```json\s*/g, '').replace(/\s*```$/g, '');
+      
+      // Проверяем, является ли строка обернутой в объект с полем result
+      // (устаревший формат для совместимости)
+      if (cleanContent.startsWith('{"result":')) {
+        try {
+          const resultObj = JSON.parse(cleanContent);
+          if (resultObj.result) {
+            // Если есть поле result, используем его содержимое
+            cleanContent = typeof resultObj.result === 'string' ? 
+              resultObj.result : 
+              JSON.stringify(resultObj.result);
+          }
+        } catch (e) {
+          console.warn('Не удалось обработать объект с полем result:', e);
+        }
+      }
       
       // Удаляем возможные объекты-обертки JSON
       if (cleanContent.startsWith('{"suggestions":') || 
@@ -62,12 +86,6 @@ export async function parseBrandApiResponse(content: string): Promise<BrandSugge
           return [];
         }
       }
-    } else if (typeof content === 'object') {
-      // Если контент уже является объектом (возможно уже распарсен)
-      jsonData = content;
-    } else {
-      console.error('Ответ от API имеет неподдерживаемый тип:', typeof content);
-      return [];
     }
     
     // Проверяем различные форматы ответа
