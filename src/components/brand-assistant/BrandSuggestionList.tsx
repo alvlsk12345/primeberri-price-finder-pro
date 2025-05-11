@@ -20,12 +20,15 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
           <BrandSuggestionItem 
             key={index} 
             suggestion={suggestion} 
-            // Используем первый товар из массива products или старое поле product
-            onSelect={() => onSelect(
-              Array.isArray(suggestion.products) && suggestion.products.length > 0 
-                ? suggestion.products[0] 
-                : suggestion.product || suggestion.name
-            )} 
+            onSelect={() => {
+              // Определяем значение для поиска на основе доступных данных
+              const searchTerm = suggestion.product || 
+                (Array.isArray(suggestion.products) && suggestion.products.length > 0 
+                  ? suggestion.products[0] 
+                  : suggestion.name || suggestion.brand || "");
+                  
+              onSelect(searchTerm);
+            }} 
             index={index}
           />
         ))}

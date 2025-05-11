@@ -18,7 +18,7 @@ export const callOpenAI = async (prompt: string, options: {
   retryAttempt?: number;
 } = {}): Promise<any> => {
   // Проверяем, используем ли мы Supabase бэкенд
-  if (isUsingSupabaseBackend() && isSupabaseConnected()) {
+  if (isUsingSupabaseBackend() && await isSupabaseConnected()) {
     console.log('Использование Supabase для вызова OpenAI API');
     try {
       return await searchViaOpenAI(prompt, options);
@@ -52,7 +52,7 @@ export const callOpenAI = async (prompt: string, options: {
     console.log(`Отправляем запрос к OpenAI API...`);
     
     const defaultOptions = {
-      model: "gpt-4o", // Изменено с gpt-4o-search-preview-2025-03-11 на gpt-4o
+      model: "gpt-4o", // Используем gpt-4o как базовую модель
       temperature: 0.2,
       max_tokens: 500,
       responseFormat: "text" as "json_object" | "text"
@@ -76,11 +76,19 @@ export const callOpenAI = async (prompt: string, options: {
     // Добавляем формат ответа, если задан JSON
     if (finalOptions.responseFormat === "json_object") {
       requestBody.response_format = { type: "json_object" };
+      console.log("Запрашиваем ответ в формате JSON");
     }
 
     // Вводим таймаут для запроса
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 секунд
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // Увеличиваем таймаут до 15 секунд
+
+    console.log(`Отправка запроса к OpenAI с параметрами:`, {
+      model: finalOptions.model,
+      temperature: finalOptions.temperature,
+      max_tokens: finalOptions.max_tokens,
+      responseFormat: finalOptions.responseFormat
+    });
 
     // Выполняем прямой запрос к API OpenAI
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -119,6 +127,7 @@ export const callOpenAI = async (prompt: string, options: {
     console.log('Получен ответ от OpenAI:', data);
     
     const content = data.choices[0]?.message?.content;
+    console.log('Содержимое ответа OpenAI:', content);
     
     // Используем общую утилиту для обработки ответа
     return processApiResponse(content, finalOptions.responseFormat);

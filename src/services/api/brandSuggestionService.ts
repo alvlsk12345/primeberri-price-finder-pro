@@ -46,7 +46,10 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
       return await fetchBrandSuggestionsFromAbacus(description);
     } else {
       // По умолчанию используем OpenAI
-      return await fetchBrandSuggestionsFromOpenAI(description);
+      console.log("Вызываем OpenAI для получения предложений брендов");
+      const suggestions = await fetchBrandSuggestionsFromOpenAI(description);
+      console.log("Получены предложения от OpenAI:", suggestions);
+      return suggestions;
     }
   } catch (error) {
     console.error(`Ошибка при получении предложений брендов через ${provider}:`, error);

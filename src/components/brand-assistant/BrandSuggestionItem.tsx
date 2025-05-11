@@ -29,16 +29,21 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
   useEffect(() => {
     const fetchImage = async () => {
       // Если у нас уже есть URL изображения или уже идёт загрузка, пропускаем
-      if (imageUrl || isImageLoading || !suggestion.brand || !suggestion.product) return;
+      if (imageUrl || isImageLoading) return;
+      
+      const brand = suggestion.brand || suggestion.name; // Поддерживаем оба формата
+      const product = suggestion.product || brand; // В случае отсутствия product используем brand
+      
+      if (!brand) return; // Проверка на наличие необходимых данных
       
       setIsImageLoading(true);
       try {
-        console.log(`Поиск изображения для ${suggestion.brand} ${suggestion.product}`);
+        console.log(`Поиск изображения для ${brand} ${product}`);
         
         // Используем Google CSE API для поиска изображения
         const foundImageUrl = await searchProductImageGoogle(
-          suggestion.brand, 
-          suggestion.product, 
+          brand, 
+          product, 
           index
         );
         
@@ -49,12 +54,12 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
           setImageUrl(processedUrl);
           setImageError(false);
         } else {
-          console.warn(`Изображение не найдено для ${suggestion.brand}, используем плейсхолдер`);
-          setImageUrl(getPlaceholderImageUrl(suggestion.brand));
+          console.warn(`Изображение не найдено для ${brand}, используем плейсхолдер`);
+          setImageUrl(getPlaceholderImageUrl(brand));
         }
       } catch (error) {
-        console.error(`Ошибка при поиске изображения для ${suggestion.brand}:`, error);
-        setImageUrl(getPlaceholderImageUrl(suggestion.brand));
+        console.error(`Ошибка при поиске изображения для ${brand}:`, error);
+        setImageUrl(getPlaceholderImageUrl(brand));
       } finally {
         setIsImageLoading(false);
       }
@@ -67,15 +72,18 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
   const handleImageError = async () => {
     // Отмечаем, что произошла ошибка
     setImageError(true);
-    console.log(`Ошибка загрузки изображения для ${suggestion.brand} ${suggestion.product}`);
+    const brand = suggestion.brand || suggestion.name;
+    const product = suggestion.product || brand;
+    
+    console.log(`Ошибка загрузки изображения для ${brand} ${product}`);
 
     // Если уже загружаем изображение, превысили лимит попыток или нет бренда/продукта, то выходим
-    if (isImageLoading || retryCount >= MAX_RETRIES || !suggestion.brand || !suggestion.product) {
+    if (isImageLoading || retryCount >= MAX_RETRIES || !brand) {
       console.log(`Не пытаемся повторить запрос: загрузка=${isImageLoading}, попытки=${retryCount}/${MAX_RETRIES}`);
       // Если все попытки исчерпаны, устанавливаем заглушку
       if (retryCount >= MAX_RETRIES) {
         console.log(`Исчерпаны все ${MAX_RETRIES} попытки. Устанавливаем заглушку.`);
-        setImageUrl(getPlaceholderImageUrl(suggestion.brand));
+        setImageUrl(getPlaceholderImageUrl(brand));
       }
       return;
     }
@@ -92,26 +100,26 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
       const newIndex = index + 5 + retryCount;
       
       // Пробуем использовать Google CSE API с другим индексом
-      console.log(`Поиск запасного изображения через Google CSE для ${suggestion.brand} (попытка ${retryCount + 1}/${MAX_RETRIES}, индекс=${newIndex})`);
-      let newImageUrl = await searchProductImageGoogle(suggestion.brand, suggestion.product, newIndex);
+      console.log(`Поиск запасного изображения через Google CSE для ${brand} (попытка ${retryCount + 1}/${MAX_RETRIES}, индекс=${newIndex})`);
+      let newImageUrl = await searchProductImageGoogle(brand, product, newIndex);
       
       if (newImageUrl) {
         // Если нашли изображение, устанавливаем его
-        console.log(`Найдена замена изображения для ${suggestion.brand} (попытка ${retryCount + 1})`);
+        console.log(`Найдена замена изображения для ${brand} (попытка ${retryCount + 1})`);
         setImageUrl(newImageUrl);
         setImageError(false);
       } else {
         console.log(`Не удалось найти замену изображения (попытка ${retryCount + 1})`);
         // Если все попытки исчерпаны, устанавливаем заглушку
         if (retryCount >= MAX_RETRIES - 1) {
-          setImageUrl(getPlaceholderImageUrl(suggestion.brand));
+          setImageUrl(getPlaceholderImageUrl(brand));
         }
       }
     } catch (error) {
       console.error('Не удалось найти замену изображения:', error);
       // Если все попытки исчерпаны, устанавливаем заглушку
       if (retryCount >= MAX_RETRIES - 1) {
-        setImageUrl(getPlaceholderImageUrl(suggestion.brand));
+        setImageUrl(getPlaceholderImageUrl(brand));
       }
     } finally {
       // Сбрасываем флаг загрузки
@@ -122,9 +130,14 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
   // Эффект для логирования процесса загрузки изображения
   useEffect(() => {
     if (imageUrl) {
-      console.log(`Загрузка изображения для ${suggestion.brand} ${suggestion.product}: ${imageUrl.substring(0, 100)}`);
+      console.log(`Загрузка изображения для ${suggestion.brand || suggestion.name}: ${imageUrl.substring(0, 100)}...`);
     }
-  }, [imageUrl, suggestion.brand, suggestion.product]);
+  }, [imageUrl, suggestion.brand, suggestion.name]);
+
+  // Получаем имя бренда и продукта с учетом возможной разницы в формате данных
+  const brand = suggestion.brand || suggestion.name || "Неизвестный бренд";
+  const product = suggestion.product || brand;
+  const description = suggestion.description || "";
 
   return (
     <div className="p-2 bg-white rounded border hover:bg-slate-50 transition-colors">
@@ -134,7 +147,7 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
             <Avatar className="h-14 w-14 rounded">
               <AvatarImage 
                 src={imageUrl} 
-                alt={suggestion.product}
+                alt={product}
                 className="object-cover" 
                 onError={handleImageError}
                 crossOrigin="anonymous"
@@ -153,9 +166,9 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
             </div>
           )}
           <div className="flex-1">
-            <p className="font-medium">{suggestion.brand}</p>
-            <p className="text-sm">{suggestion.product}</p>
-            <p className="text-xs text-gray-600">{suggestion.description}</p>
+            <p className="font-medium">{brand}</p>
+            <p className="text-sm">{product}</p>
+            <p className="text-xs text-gray-600">{description}</p>
           </div>
         </div>
         <Button 

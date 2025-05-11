@@ -23,18 +23,23 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     // Генерируем промпт для API
     const brandPrompt = generateBrandSuggestionPrompt(description);
     
-    // Получаем ответ от API с оптимизированными параметрами для лучшего качества
+    // Получаем ответ от API с оптимизированными параметрами для JSON-формата
     console.log('Отправляем промпт к OpenAI:', brandPrompt);
     
-    // Используем температуру ближе к 0 для более точных ответов
+    // Используем модель gpt-4o с низкой температурой для более структурированных ответов
+    // и указываем формат ответа response_format: "json_object"
     const content = await callOpenAI(brandPrompt, {
-      temperature: 0.3,
-      max_tokens: 350,
-      model: "gpt-4o" // Изменено на gpt-4o
+      temperature: 0.2,
+      max_tokens: 500,
+      model: "gpt-4o",
+      responseFormat: "json_object"
     });
+
+    console.log('Получен ответ от OpenAI:', content);
 
     // Парсим ответ от API
     const suggestions = await parseBrandApiResponse(content);
+    console.log('Распарсенные предложения:', suggestions);
 
     // Если не удалось получить хотя бы одно предложение, создаем демо-данные
     if (suggestions.length === 0) {
@@ -53,7 +58,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     }
 
     console.log(`Возвращаем ${suggestions.length} предложений брендов:`, suggestions);
-    return suggestions.slice(0, 3); // Ограничиваем 3 результатами
+    return suggestions.slice(0, 5); // Возвращаем до 5 результатов
 
   } catch (error) {
     console.error('Ошибка при запросе к OpenAI для брендов:', error);

@@ -38,6 +38,16 @@ export const handleApiError = async (response: Response): Promise<any> => {
         details: errorResponse.error.details
       });
     }
+    
+    // Если это ошибка от OpenAI API
+    if (response.url.includes('openai.com') && errorResponse.error) {
+      console.error('СТРУКТУРА ОШИБКИ OPENAI API:', {
+        type: errorResponse.error.type,
+        message: errorResponse.error.message,
+        param: errorResponse.error.param,
+        code: errorResponse.error.code
+      });
+    }
   } catch (e) {
     console.log('Не удалось распарсить ответ как JSON, пробуем получить текст...');
     try {
@@ -86,12 +96,21 @@ export const handleApiError = async (response: Response): Promise<any> => {
         toast.error("Превышен лимит запросов Google API или неверный ключ.", { duration: 5000 });
       }
       return null;
-    } else if (response.status === 400) {
-      toast.error(`Google API: ${errorMessage}`, { duration: 5000 });
+    }
+  }
+  
+  // Обработка ошибок OpenAI API
+  if (response.url.includes('openai.com')) {
+    console.error(`ОШИБКА OPENAI API ${response.status}: ${errorMessage}`);
+    
+    if (response.status === 401) {
+      toast.error("Недействительный API-ключ OpenAI. Проверьте правильность ключа в настройках.", { duration: 7000 });
       return null;
     } else if (response.status === 429) {
-      toast.error(`Превышен лимит запросов Google API. Повторите попытку позже.`, { duration: 5000 });
-      // Возвращаем null, чтобы вызывающий код мог попробовать другие варианты
+      toast.error("Превышен лимит запросов OpenAI API. Попробуйте позже или проверьте ваш тариф.", { duration: 7000 });
+      return null;
+    } else if (response.status === 400) {
+      toast.error(`Ошибка в запросе к OpenAI API: ${errorMessage}`, { duration: 7000 });
       return null;
     }
   }
@@ -154,6 +173,6 @@ export const handleFetchError = (error: any): void => {
   } else if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
     toast.error('Ошибка соединения при обращении к API. Пробуем другие параметры.', { duration: 3000 });
   } else {
-    toast.error('Ошибка при получении данных о товарах.', { duration: 5000 });
+    toast.error('Ошибка при получении данных. Подробности в консоли.', { duration: 5000 });
   }
 };
