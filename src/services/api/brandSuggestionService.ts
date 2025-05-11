@@ -48,9 +48,9 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
           // Если результат уже массив
           normalizedResults = result;
         } else if (result && typeof result === 'object') {
-          // Проверяем наличие поля products
-          if ('products' in result && Array.isArray(result.products)) {
-            normalizedResults = result.products;
+          // Проверяем наличие поля products - исправлено с типизацией
+          if ('products' in result && Array.isArray((result as any).products)) {
+            normalizedResults = (result as any).products;
           } else {
             // Если это одиночный объект с нужными полями
             if ('brand' in result || 'name' in result) {

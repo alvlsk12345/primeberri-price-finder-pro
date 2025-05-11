@@ -38,7 +38,7 @@ export const handleOpenAIRequest = async (
 const getBrandSuggestions = async (
   description: string,
   count: number = 3
-): Promise<Brand[]> => {
+): Promise<Brand[] | BrandResponse> => {
   try {
     // Формируем системный промт
     const systemPrompt = `Ты - эксперт по товарам. Пользователь опишет, что ищет, а ты предложишь конкретные товары.
@@ -81,10 +81,11 @@ const getBrandSuggestions = async (
       
       // Проверяем, есть ли массив products в ответе
       if (data && data.products && Array.isArray(data.products)) {
-        return data.products;
+        console.log("Успешно получен массив products:", data.products);
+        return data; // Возвращаем полный объект с массивом products
       } else {
         console.error("Некорректный формат ответа от OpenAI:", data);
-        return [];
+        return { products: [] };
       }
     } catch (error) {
       console.error("Ошибка при парсинге JSON:", error);

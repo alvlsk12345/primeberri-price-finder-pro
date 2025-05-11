@@ -33,8 +33,8 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
     console.log("Данные уже в формате массива:", normalizedSuggestions);
   } else if (suggestions && typeof suggestions === 'object') {
     // Проверяем наличие поля products
-    if ('products' in suggestions && Array.isArray(suggestions.products)) {
-      normalizedSuggestions = suggestions.products;
+    if ('products' in suggestions && Array.isArray((suggestions as BrandResponse).products)) {
+      normalizedSuggestions = (suggestions as BrandResponse).products || [];
       console.log("Извлечен массив products из объекта:", normalizedSuggestions);
     } else {
       // Если это одиночный объект, преобразуем его в массив

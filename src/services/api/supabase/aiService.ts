@@ -85,8 +85,10 @@ export const searchViaAbacus = async (endpoint: string, method: 'GET' | 'POST' =
   }
 };
 
-// Функция для получения предложений брендов через OpenAI API через Supabase Edge Function
-export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promise<BrandSuggestion[]> => {
+/**
+ * Функция для получения предложений брендов через OpenAI API через Supabase Edge Function
+ */
+export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promise<BrandSuggestion[] | { products?: BrandSuggestion[] }> => {
   if (!supabase) {
     throw new Error('Supabase client не инициализирован');
   }
@@ -124,8 +126,8 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
       normalizedResults = data;
     } else if (data && typeof data === 'object') {
       // Проверяем наличие поля products
-      if ('products' in data && Array.isArray(data.products)) {
-        normalizedResults = data.products;
+      if ('products' in data && Array.isArray((data as any).products)) {
+        normalizedResults = (data as any).products;
       } else {
         // Если это одиночный объект с нужными полями
         if ('brand' in data || 'name' in data) {
@@ -135,7 +137,7 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
     }
     
     console.log('Нормализованные результаты:', normalizedResults);
-    return normalizedResults;
+    return normalizedResults.length > 0 ? normalizedResults : data;
   } catch (error) {
     console.error('Ошибка при получении предложений брендов через Supabase:', error);
     throw error;
