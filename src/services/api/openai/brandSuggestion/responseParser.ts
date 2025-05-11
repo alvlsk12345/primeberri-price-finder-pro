@@ -76,42 +76,53 @@ async function extractSuggestionsFromText(text: string): Promise<BrandSuggestion
   }
 }
 
-// Функция для валидации массива предложений
-function isBrandSuggestionArray(arr: any[]): arr is Array<{brand: string; product: string; description: string; imageUrl?: string}> {
+// Функция для валидации массива предложений - обновлена для поддержки старого формата
+function isBrandSuggestionArray(arr: any[]): arr is Array<{brand?: string; name?: string; product?: string; description: string; imageUrl?: string; logo?: string; products?: string[]}> {
   return arr.length > 0 && arr.every(item => 
     typeof item === 'object' && 
-    typeof item.brand === 'string' && 
-    typeof item.product === 'string' && 
+    (typeof item.brand === 'string' || typeof item.name === 'string') && 
+    (typeof item.product === 'string' || Array.isArray(item.products)) && 
     typeof item.description === 'string' && 
-    (item.imageUrl === undefined || typeof item.imageUrl === 'string')
+    (item.imageUrl === undefined || typeof item.imageUrl === 'string' || 
+     item.logo === undefined || typeof item.logo === 'string')
   );
 }
 
-// Функция для добавления изображений к предложениям
-async function addImagesIfNeeded(suggestions: Array<{brand: string; product: string; description: string; imageUrl?: string}>): Promise<BrandSuggestion[]> {
+// Функция для добавления изображений к предложениям и приведения к нужному формату
+async function addImagesIfNeeded(suggestions: Array<any>): Promise<BrandSuggestion[]> {
   const results: BrandSuggestion[] = [];
   
   for (let i = 0; i < suggestions.length; i++) {
     const item = suggestions[i];
+    let imageUrl = item.imageUrl || item.logo;
     
-    if (!item.imageUrl) {
-      console.log(`Ищем изображение для ${item.brand} ${item.product}`);
+    if (!imageUrl) {
+      console.log(`Ищем изображение для ${item.brand || item.name} ${item.product || (item.products && item.products[0])}`);
       try {
-        const imageUrl = await findProductImage(item.brand, item.product, i);
-        results.push({
-          ...item,
-          imageUrl
-        });
+        imageUrl = await findProductImage(
+          item.brand || item.name || '', 
+          item.product || (item.products && item.products[0]) || '', 
+          i
+        );
       } catch (err) {
-        console.error(`Ошибка при поиске изображения для ${item.brand}:`, err);
-        results.push({
-          ...item,
-          imageUrl: `https://placehold.co/600x400?text=${encodeURIComponent(item.brand)}`
-        });
+        console.error(`Ошибка при поиске изображения для ${item.brand || item.name}:`, err);
+        imageUrl = `https://placehold.co/600x400?text=${encodeURIComponent(item.brand || item.name || '')}`;
       }
-    } else {
-      results.push(item);
     }
+    
+    // Создаем объект, соответствующий BrandSuggestion, с учетом как старых, так и новых полей
+    results.push({
+      // Приоритет отдаем новым полям (name, logo, products)
+      name: item.name || item.brand || '',
+      logo: item.logo || imageUrl || '',
+      description: item.description || '',
+      products: item.products || [item.product || ''],
+      
+      // Сохраняем совместимость со старым форматом
+      brand: item.brand || item.name || '',
+      product: item.product || (item.products && item.products[0]) || '',
+      imageUrl: imageUrl || ''
+    });
   }
   
   return results;
