@@ -1,8 +1,10 @@
+
 import { BrandSuggestion } from "@/services/types";
 import { callOpenAI } from "./apiClient";
 import { isUsingSupabaseBackend } from "../supabase/config";
 import { fetchBrandSuggestionsViaOpenAI } from "../supabase/aiService";
 import { isSupabaseConnected } from "../supabase/client";
+import { generateBrandSuggestionPrompt } from "./brandSuggestion/promptUtils";
 
 // Функция для получения предложений брендов через OpenAI
 export const fetchBrandSuggestions = async (description: string): Promise<BrandSuggestion[]> => {
@@ -21,7 +23,9 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
       model: "gpt-4",
       temperature: 0.3,
       max_tokens: 500,
-      responseFormat: "json_object"
+      responseFormat: "json_object",
+      n: 1,
+      stop: ["\n"]
     });
     
     // Обрабатываем ответ
