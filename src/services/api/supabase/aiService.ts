@@ -26,7 +26,7 @@ export const callAIViaSupabase = async (params: {
       ...(params.options && { options: params.options }),
       ...(params.endpoint && { endpoint: params.endpoint }),
       ...(params.method && { method: params.method }),
-      ...(params.body && { ...params.body }),
+      ...(params.body && { body: params.body }),
     };
 
     console.log(`Отправка запроса к Supabase Edge Function: ai-proxy, провайдер: ${params.provider}`);

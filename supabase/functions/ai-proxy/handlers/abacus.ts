@@ -11,12 +11,12 @@ import { CORS_HEADERS, ABACUS_API_BASE_URL } from '../config.ts';
 export async function handleAbacusRequest({ 
   endpoint, 
   method = 'POST', 
-  requestData = {} 
+  body = {} 
 }: {
   endpoint: string;
   method?: 'GET' | 'POST';
-  requestData?: Record<string, any>;
-}, ABACUS_API_KEY: string) {
+  body?: Record<string, any>;
+}, ABACUS_API_KEY?: string) {
   // Проверяем наличие ключа API
   if (!ABACUS_API_KEY) {
     return new Response(
@@ -30,9 +30,9 @@ export async function handleAbacusRequest({
     let fullUrl = `${ABACUS_API_BASE_URL}/${endpoint}`;
     
     // Для GET-запросов добавляем параметры в URL
-    if (method === 'GET' && Object.keys(requestData).length > 0) {
+    if (method === 'GET' && Object.keys(body).length > 0) {
       const params = new URLSearchParams();
-      Object.entries(requestData).forEach(([key, value]) => {
+      Object.entries(body).forEach(([key, value]) => {
         params.append(key, String(value));
       });
       fullUrl += `?${params.toString()}`;
@@ -55,9 +55,11 @@ export async function handleAbacusRequest({
     };
     
     // Добавляем тело запроса для POST-запросов
-    if (method === 'POST' && Object.keys(requestData).length > 0) {
-      fetchOptions.body = JSON.stringify(requestData);
+    if (method === 'POST' && Object.keys(body).length > 0) {
+      fetchOptions.body = JSON.stringify(body);
     }
+    
+    console.log(`Отправка запроса к Abacus API: ${fullUrl}`, method);
     
     // Выполняем запрос к API Abacus
     const response = await fetch(fullUrl, fetchOptions);

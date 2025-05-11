@@ -17,6 +17,12 @@ export async function handleOpenAIRequest(params: any, apiKey?: string): Promise
   }
 
   try {
+    // Общий проброс запросов к OpenAI
+    if (params.prompt !== undefined) {
+      return await handleGenericOpenAIRequest(params, apiKey);
+    }
+    
+    // Специфические действия
     const { action, description, count = 5 } = params;
     
     console.log(`Обработка OpenAI запроса: ${action}`, { description: description?.substring(0, 50) + '...' });
@@ -36,6 +42,95 @@ export async function handleOpenAIRequest(params: any, apiKey?: string): Promise
     return new Response(
       JSON.stringify({ error: error.message || 'Error processing OpenAI request' }),
       { status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+    );
+  }
+}
+
+// Обработчик общих запросов к OpenAI
+async function handleGenericOpenAIRequest(params: any, apiKey: string): Promise<Response> {
+  try {
+    const { prompt, options = {} } = params;
+    
+    // Устанавливаем параметры запроса
+    const {
+      model = "gpt-4o",
+      temperature = 0.2,
+      max_tokens = 500,
+      responseFormat = "text",
+    } = options;
+    
+    // Формируем тело запроса
+    const requestBody: any = {
+      model,
+      temperature,
+      max_tokens,
+      messages: [
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+    };
+    
+    // Добавляем формат ответа, если задан JSON
+    if (responseFormat === "json_object") {
+      requestBody.response_format = { type: "json_object" };
+    }
+    
+    console.log(`Отправка запроса к OpenAI API с параметрами:`, {
+      model: model,
+      temperature: temperature,
+      max_tokens: max_tokens,
+      responseFormat: responseFormat
+    });
+    
+    // Выполняем запрос к API OpenAI
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+    
+    // Обрабатываем ответ
+    const data = await response.json();
+    
+    if (!response.ok) {
+      const errorMessage = data.error?.message || 'Unknown error from OpenAI';
+      throw new Error(errorMessage);
+    }
+    
+    // Получаем содержимое ответа
+    const content = data.choices[0]?.message?.content;
+    
+    // Обрабатываем ответ в зависимости от формата
+    if (responseFormat === "json_object") {
+      try {
+        return new Response(
+          JSON.stringify(JSON.parse(content)),
+          { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+        );
+      } catch (e) {
+        console.warn('Failed to parse JSON from OpenAI response:', e);
+        return new Response(
+          JSON.stringify({ result: content }),
+          { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+        );
+      }
+    }
+    
+    // Для текстового формата просто возвращаем содержимое
+    return new Response(
+      JSON.stringify({ result: content }),
+      { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+    );
+  } catch (error) {
+    console.error('OpenAI API Error:', error);
+    return new Response(
+      JSON.stringify({ error: error.message || 'Error calling OpenAI API' }),
+      { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }, status: 500 }
     );
   }
 }
