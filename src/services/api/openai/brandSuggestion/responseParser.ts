@@ -10,120 +10,115 @@ export async function parseBrandApiResponse(content: string): Promise<BrandSugge
       return [];
     }
     
-    console.log('Ответ от OpenAI для брендов:', content);
+    console.log('Ответ от OpenAI для брендов (первые 200 символов):', content.substring(0, 200));
 
-    // Попытка найти JSON в ответе
-    const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) || 
-                       content.match(/\[\s*\{\s*"brand"\s*:/);
-    
-    let jsonContent = content;
-    
-    if (jsonMatch && jsonMatch[1]) {
-      jsonContent = jsonMatch[1];
-    }
-    
-    // Пробуем извлечь массив объектов из текста
-    const suggestions: BrandSuggestion[] = await extractSuggestionsFromText(jsonContent);
-    
-    // Если удалось получить предложения, возвращаем их
-    if (suggestions.length > 0) {
-      console.log(`Получено ${suggestions.length} предложений от API:`, suggestions);
-      return suggestions;
-    }
-    
-    // Если не удалось получить предложения из JSON
-    console.warn('Не удалось разобрать JSON из ответа API');
-    return [];
-  } catch (error) {
-    console.error('Ошибка при парсинге ответа API по брендам:', error);
-    return [];
-  }
-}
-
-// Функция для извлечения предложений из текстового ответа
-async function extractSuggestionsFromText(text: string): Promise<BrandSuggestion[]> {
-  try {
-    // Пытаемся парсить как JSON напрямую
-    let data = JSON.parse(text);
-    
-    // Если это массив, используем его
-    if (Array.isArray(data)) {
-      // Проверяем, что это массив предложений
-      if (isBrandSuggestionArray(data)) {
-        return await addImagesIfNeeded(data);
-      }
-    }
-    
-    // Если в ответе объект с массивом
-    if (data.suggestions && Array.isArray(data.suggestions)) {
-      if (isBrandSuggestionArray(data.suggestions)) {
-        return await addImagesIfNeeded(data.suggestions);
-      }
-    }
-    
-    // Если в ответе объект с продуктами или брендами
-    if (data.products && Array.isArray(data.products)) {
-      return await addImagesIfNeeded(data.products);
-    } else if (data.brands && Array.isArray(data.brands)) {
-      return await addImagesIfNeeded(data.brands);
-    }
-    
-    console.warn('Не удалось найти массив предложений в JSON');
-    return [];
-  } catch (error) {
-    console.error('Ошибка при извлечении предложений из текста:', error);
-    return [];
-  }
-}
-
-// Функция для валидации массива предложений - обновлена для поддержки старого формата
-function isBrandSuggestionArray(arr: any[]): arr is Array<{brand?: string; name?: string; product?: string; description: string; imageUrl?: string; logo?: string; products?: string[]}> {
-  return arr.length > 0 && arr.every(item => 
-    typeof item === 'object' && 
-    (typeof item.brand === 'string' || typeof item.name === 'string') && 
-    (typeof item.product === 'string' || Array.isArray(item.products)) && 
-    typeof item.description === 'string' && 
-    (item.imageUrl === undefined || typeof item.imageUrl === 'string' || 
-     item.logo === undefined || typeof item.logo === 'string')
-  );
-}
-
-// Функция для добавления изображений к предложениям и приведения к нужному формату
-async function addImagesIfNeeded(suggestions: Array<any>): Promise<BrandSuggestion[]> {
-  const results: BrandSuggestion[] = [];
-  
-  for (let i = 0; i < suggestions.length; i++) {
-    const item = suggestions[i];
-    let imageUrl = item.imageUrl || item.logo;
-    
-    if (!imageUrl) {
-      console.log(`Ищем изображение для ${item.brand || item.name} ${item.product || (item.products && item.products[0])}`);
-      try {
-        imageUrl = await findProductImage(
-          item.brand || item.name || '', 
-          item.product || (item.products && item.products[0]) || '', 
-          i
-        );
-      } catch (err) {
-        console.error(`Ошибка при поиске изображения для ${item.brand || item.name}:`, err);
-        imageUrl = `https://placehold.co/600x400?text=${encodeURIComponent(item.brand || item.name || '')}`;
-      }
-    }
-    
-    // Создаем объект, соответствующий BrandSuggestion, с учетом как старых, так и новых полей
-    results.push({
-      // Приоритет отдаем новым полям (name, logo, products)
-      name: item.name || item.brand || '',
-      logo: item.logo || imageUrl || '',
-      description: item.description || '',
-      products: item.products || [item.product || ''],
+    let jsonData: any;
+    try {
+      // Пытаемся распарсить JSON напрямую
+      jsonData = JSON.parse(content);
+      console.log('JSON успешно распарсен');
+    } catch (parseError) {
+      console.error('Ошибка при парсинге JSON:', parseError);
       
-      // Сохраняем совместимость со старым форматом
-      brand: item.brand || item.name || '',
-      product: item.product || (item.products && item.products[0]) || '',
-      imageUrl: imageUrl || ''
-    });
+      // Пытаемся найти JSON в ответе, если он обернут в какой-то текст
+      const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) || 
+                         content.match(/\{\s*"suggestions"\s*:\s*\[/) ||
+                         content.match(/\[\s*\{\s*"brand"\s*:/);
+      
+      if (jsonMatch && jsonMatch[1]) {
+        try {
+          console.log('Найден JSON в тексте, пытаемся распарсить');
+          jsonData = JSON.parse(jsonMatch[1]);
+        } catch (nestedParseError) {
+          console.error('Ошибка при парсинге найденного JSON:', nestedParseError);
+          return [];
+        }
+      } else {
+        console.error('Не удалось найти JSON в ответе');
+        return [];
+      }
+    }
+    
+    // Проверяем различные форматы ответа
+    let suggestions: any[] = [];
+    
+    // Формат 1: { "suggestions": [ {...}, {...} ] }
+    if (jsonData && jsonData.suggestions && Array.isArray(jsonData.suggestions)) {
+      console.log('Обнаружен формат с suggestions массивом');
+      suggestions = jsonData.suggestions;
+    } 
+    // Формат 2: [ {...}, {...} ]
+    else if (Array.isArray(jsonData)) {
+      console.log('Обнаружен формат с массивом объектов');
+      suggestions = jsonData;
+    }
+    // Формат 3: { "items": [ {...}, {...} ] } или другие варианты
+    else if (jsonData && jsonData.items && Array.isArray(jsonData.items)) {
+      console.log('Обнаружен формат с items массивом');
+      suggestions = jsonData.items;
+    }
+    // Формат 4: { "brands": [ {...}, {...} ] }
+    else if (jsonData && jsonData.brands && Array.isArray(jsonData.brands)) {
+      console.log('Обнаружен формат с brands массивом');
+      suggestions = jsonData.brands;
+    }
+    // Формат 5: { "products": [ {...}, {...} ] }
+    else if (jsonData && jsonData.products && Array.isArray(jsonData.products)) {
+      console.log('Обнаружен формат с products массивом');
+      suggestions = jsonData.products;
+    } else {
+      console.error('Не удалось найти массив предложений в ответе:', jsonData);
+      return [];
+    }
+    
+    if (suggestions.length === 0) {
+      console.error('Массив предложений пуст');
+      return [];
+    }
+    
+    console.log(`Найдено ${suggestions.length} предложений:`, suggestions);
+    
+    // Преобразуем в формат BrandSuggestion и добавляем изображения
+    const results: BrandSuggestion[] = [];
+    
+    for (let i = 0; i < suggestions.length; i++) {
+      const item = suggestions[i];
+      const brand = item.brand || item.name || '';
+      const product = item.product || '';
+      const description = item.description || '';
+      
+      console.log(`Обрабатываем предложение ${i+1}: ${brand} - ${product}`);
+      
+      // Поиск изображения для товара
+      let imageUrl = item.imageUrl || item.logo || '';
+      if (!imageUrl && brand) {
+        console.log(`Ищем изображение для ${brand} ${product}`);
+        try {
+          imageUrl = await findProductImage(brand, product, i);
+          console.log(`Найдено изображение: ${imageUrl}`);
+        } catch (err) {
+          console.error(`Ошибка при поиске изображения:`, err);
+        }
+      }
+      
+      // Добавляем в результаты
+      results.push({
+        brand,
+        product,
+        description,
+        imageUrl,
+        
+        // Поддержка старого формата
+        name: brand,
+        logo: imageUrl,
+        products: product ? [product] : []
+      });
+    }
+    
+    console.log(`Финальный результат: ${results.length} предложений`, results);
+    return results;
+  } catch (error) {
+    console.error('Критическая ошибка при парсинге ответа API по брендам:', error);
+    return [];
   }
-  
-  return results;
 }

@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { BrandSuggestion } from "@/services/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ImageOff } from "lucide-react";
-import { searchProductImageGoogle } from "@/services/api/googleSearchService";
-import { getPlaceholderImageUrl } from "@/services/image/imagePlaceholder";
+import { findProductImage } from "@/services/api/openai/brandSuggestion/imageUtils";
+import { getPlaceholderImageUrl } from "@/services/imageService";
 import { applyCorsProxy } from "@/services/image/corsProxyService";
 
 interface BrandSuggestionItemProps {
@@ -19,7 +19,7 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
   onSelect,
   index = 0
 }) => {
-  const [imageUrl, setImageUrl] = useState<string | undefined>(suggestion.imageUrl);
+  const [imageUrl, setImageUrl] = useState<string | undefined>(suggestion.imageUrl || suggestion.logo);
   const [isImageLoading, setIsImageLoading] = useState<boolean>(false);
   const [imageError, setImageError] = useState<boolean>(false);
   const [retryCount, setRetryCount] = useState<number>(0);
@@ -40,18 +40,12 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
       try {
         console.log(`Поиск изображения для ${brand} ${product}`);
         
-        // Используем Google CSE API для поиска изображения
-        const foundImageUrl = await searchProductImageGoogle(
-          brand, 
-          product, 
-          index
-        );
+        // Используем функцию поиска изображения
+        const foundImageUrl = await findProductImage(brand, product, index);
         
         if (foundImageUrl) {
-          // Применяем CORS прокси если необходимо
-          const processedUrl = applyCorsProxy(foundImageUrl);
-          console.log(`Найдено изображение: ${processedUrl}`);
-          setImageUrl(processedUrl);
+          console.log(`Найдено изображение для ${brand}: ${foundImageUrl.substring(0, 50)}...`);
+          setImageUrl(foundImageUrl);
           setImageError(false);
         } else {
           console.warn(`Изображение не найдено для ${brand}, используем плейсхолдер`);
@@ -99,9 +93,8 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
       // Рассчитываем индекс для поиска другого изображения (увеличиваем с каждой попыткой)
       const newIndex = index + 5 + retryCount;
       
-      // Пробуем использовать Google CSE API с другим индексом
-      console.log(`Поиск запасного изображения через Google CSE для ${brand} (попытка ${retryCount + 1}/${MAX_RETRIES}, индекс=${newIndex})`);
-      let newImageUrl = await searchProductImageGoogle(brand, product, newIndex);
+      console.log(`Поиск запасного изображения для ${brand} (попытка ${retryCount + 1}/${MAX_RETRIES}, индекс=${newIndex})`);
+      const newImageUrl = await findProductImage(brand, product, newIndex);
       
       if (newImageUrl) {
         // Если нашли изображение, устанавливаем его
@@ -126,13 +119,6 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
       setIsImageLoading(false);
     }
   };
-  
-  // Эффект для логирования процесса загрузки изображения
-  useEffect(() => {
-    if (imageUrl) {
-      console.log(`Загрузка изображения для ${suggestion.brand || suggestion.name}: ${imageUrl.substring(0, 100)}...`);
-    }
-  }, [imageUrl, suggestion.brand, suggestion.name]);
 
   // Получаем имя бренда и продукта с учетом возможной разницы в формате данных
   const brand = suggestion.brand || suggestion.name || "Неизвестный бренд";
