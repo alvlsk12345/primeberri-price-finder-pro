@@ -35,14 +35,16 @@ export const SearchInput: React.FC<SearchInputProps> = ({
           value={searchQuery} 
           onChange={e => setSearchQuery(e.target.value)} 
           onKeyDown={handleKeyPress} 
-          className={`w-full ${hasError ? 'border-red-500' : ''}`} 
+          className={`w-full ${hasError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+          aria-label="Поисковый запрос"
         />
       </div>
       <Button 
         onClick={executeSearch} 
         disabled={isLoading || !searchQuery.trim()} 
-        className="min-w-[200px]" 
+        className="min-w-[120px] sm:min-w-[200px]" 
         variant="brand"
+        aria-label="Поиск товаров"
       >
         {isLoading ? (
           <span className="flex items-center gap-2">

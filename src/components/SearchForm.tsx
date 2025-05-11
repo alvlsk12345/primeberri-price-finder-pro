@@ -9,6 +9,7 @@ import { SearchInput } from './search/SearchInput';
 import { SearchErrorMessage } from './search/SearchErrorMessage';
 import { DiagnosticButtons } from './search/DiagnosticButtons';
 import { useProductSelectionHandler } from './search/ProductSelectionHandler';
+import { NoResultsMessage } from './search/NoResultsMessage';
 
 type SearchFormProps = {
   searchQuery: string;
@@ -24,6 +25,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   isLoading
 }) => {
   const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const isDemoMode = useDemoModeForced;
 
   // Диагностический тест API при первом рендере
@@ -65,17 +67,22 @@ export const SearchForm: React.FC<SearchFormProps> = ({
         toast.error('Пожалуйста, введите запрос для поиска');
         return;
       }
+      
+      // Сбрасываем состояние ошибки перед новым поиском
       setHasError(false);
+      setErrorMessage("");
 
       // Дополнительное уведомление для отладки
-      toast.info('Выполняем поиск через Zylalabs API', {
+      toast.info('Выполняем поиск товаров', {
         duration: 2000
       });
+      
       handleSearch();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Ошибка при попытке поиска:', error);
-      setHasError(false); // Reset error state to prevent UI hanging
-      toast.error('Произошла ошибка при поиске. Пожалуйста, попробуйте снова.');
+      setHasError(true);
+      setErrorMessage(error?.message || 'Произошла ошибка при поиске. Пожалуйста, попробуйте снова.');
+      toast.error('Произошла ошибка при поиске. Подробности в консоли.');
     }
   };
 
@@ -83,7 +90,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   const { handleSelectProduct } = useProductSelectionHandler(setSearchQuery, executeSearch);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <SearchInput
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -92,11 +99,13 @@ export const SearchForm: React.FC<SearchFormProps> = ({
         hasError={hasError}
       />
       
-      <SearchErrorMessage hasError={hasError} />
+      <SearchErrorMessage hasError={hasError} errorMessage={errorMessage} />
       
       <DiagnosticButtons />
 
       <AiBrandAssistant onSelectProduct={handleSelectProduct} />
+      
+      <NoResultsMessage />
     </div>
   );
 };

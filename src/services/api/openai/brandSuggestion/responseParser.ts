@@ -14,92 +14,112 @@ export async function parseBrandApiResponse(content: string): Promise<BrandSugge
                 typeof content === 'string' ? content.substring(0, 200) + '...' : 'Не строка');
 
     let jsonData: any;
-    try {
-      // Пытаемся распарсить JSON напрямую
-      jsonData = typeof content === 'string' ? JSON.parse(content) : content;
-      console.log('JSON успешно распарсен:', jsonData);
-    } catch (parseError) {
-      console.error('Ошибка при парсинге JSON:', parseError);
+    
+    // Предварительная обработка строки для удаления лишних символов
+    if (typeof content === 'string') {
+      // Удаляем все ведущие и завершающие нестандартные символы
+      let cleanContent = content.trim();
       
-      // Пытаемся найти JSON в ответе, если он обернут в какой-то текст
-      if (typeof content === 'string') {
-        const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) || 
-                         content.match(/\{\s*"suggestions"\s*:\s*\[/) ||
-                         content.match(/\[\s*\{\s*"brand"\s*:/);
+      // Удаляем маркеры кода markdown если они есть
+      cleanContent = cleanContent.replace(/^```json\s*/g, '').replace(/\s*```$/g, '');
+      
+      // Удаляем возможные объекты-обертки JSON
+      if (cleanContent.startsWith('{"suggestions":') || 
+          cleanContent.startsWith('{"brands":') || 
+          cleanContent.startsWith('{"items":') || 
+          cleanContent.startsWith('{"products":')) {
+        try {
+          // Пытаемся распарсить как объект с массивом
+          const tempObj = JSON.parse(cleanContent);
+          // Извлекаем массив из объекта-обертки
+          if (tempObj.suggestions) cleanContent = JSON.stringify(tempObj.suggestions);
+          else if (tempObj.brands) cleanContent = JSON.stringify(tempObj.brands);
+          else if (tempObj.items) cleanContent = JSON.stringify(tempObj.items);
+          else if (tempObj.products) cleanContent = JSON.stringify(tempObj.products);
+        } catch (e) {
+          console.warn('Не удалось обработать объект-обертку:', e);
+        }
+      }
+      
+      try {
+        jsonData = JSON.parse(cleanContent);
+        console.log('JSON успешно распарсен:', jsonData);
+      } catch (parseError) {
+        console.error('Ошибка при парсинге JSON:', parseError);
         
-        if (jsonMatch && jsonMatch[1]) {
+        // Если не получилось распарсить, пробуем найти JSON в тексте
+        const jsonMatch = cleanContent.match(/\[\s*\{.+?\}\s*\]/s);
+        if (jsonMatch) {
           try {
-            console.log('Найден JSON в тексте, пытаемся распарсить');
-            jsonData = JSON.parse(jsonMatch[1]);
+            console.log('Найден JSON массив в тексте, пытаемся распарсить');
+            jsonData = JSON.parse(jsonMatch[0]);
           } catch (nestedParseError) {
             console.error('Ошибка при парсинге найденного JSON:', nestedParseError);
             return [];
           }
         } else {
-          console.error('Не удалось найти JSON в ответе');
+          console.error('Не удалось найти JSON массив в ответе');
           return [];
         }
-      } else {
-        console.error('Ответ от API не является строкой:', content);
-        return [];
       }
-    }
-    
-    // Проверяем различные форматы ответа
-    let suggestions: any[] = [];
-    
-    // Формат 1: { "suggestions": [ {...}, {...} ] }
-    if (jsonData && jsonData.suggestions && Array.isArray(jsonData.suggestions)) {
-      console.log('Обнаружен формат с массивом suggestions');
-      suggestions = jsonData.suggestions;
-    } 
-    // Формат 2: [ {...}, {...} ]
-    else if (Array.isArray(jsonData)) {
-      console.log('Обнаружен формат с массивом объектов');
-      suggestions = jsonData;
-    }
-    // Формат 3: { "items": [ {...}, {...} ] } или другие варианты
-    else if (jsonData && jsonData.items && Array.isArray(jsonData.items)) {
-      console.log('Обнаружен формат с массивом items');
-      suggestions = jsonData.items;
-    }
-    // Формат 4: { "brands": [ {...}, {...} ] }
-    else if (jsonData && jsonData.brands && Array.isArray(jsonData.brands)) {
-      console.log('Обнаружен формат с массивом brands');
-      suggestions = jsonData.brands;
-    }
-    // Формат 5: { "products": [ {...}, {...} ] }
-    else if (jsonData && jsonData.products && Array.isArray(jsonData.products)) {
-      console.log('Обнаружен формат с массивом products');
-      suggestions = jsonData.products;
-    } 
-    // Формат 6: Один объект с массивом продуктов
-    else if (jsonData && jsonData.brand && jsonData.products && Array.isArray(jsonData.products)) {
-      console.log('Обнаружен формат с одним объектом бренда и массивом products');
-      // Превращаем один объект бренда с массивом продуктов в массив объектов
-      suggestions = jsonData.products.map((product: string | any) => ({
-        brand: jsonData.brand,
-        product: typeof product === 'string' ? product : (product.name || product.product || ''),
-        description: product.description || jsonData.description || ''
-      }));
-    }
-    else {
-      console.error('Не удалось найти массив предложений в ответе:', jsonData);
+    } else if (typeof content === 'object') {
+      // Если контент уже является объектом (возможно уже распарсен)
+      jsonData = content;
+    } else {
+      console.error('Ответ от API имеет неподдерживаемый тип:', typeof content);
       return [];
     }
     
-    if (!suggestions || suggestions.length === 0) {
+    // Проверяем различные форматы ответа
+    let items: any[] = [];
+    
+    // Если данные уже являются массивом
+    if (Array.isArray(jsonData)) {
+      console.log('Обнаружен прямой массив объектов');
+      items = jsonData;
+    } 
+    // Если данные - объект с массивом
+    else if (jsonData && typeof jsonData === 'object') {
+      // Пробуем извлечь массив из любого поля, которое его содержит
+      const arrayField = Object.keys(jsonData).find(
+        key => Array.isArray(jsonData[key])
+      );
+      
+      if (arrayField) {
+        console.log(`Обнаружен массив в поле ${arrayField}`);
+        items = jsonData[arrayField];
+      }
+      // Если это один объект с полями brand и products
+      else if (jsonData.brand && jsonData.products) {
+        console.log('Обнаружен формат с одним объектом бренда и массивом products');
+        items = jsonData.products.map((product: string | any) => ({
+          brand: jsonData.brand,
+          product: typeof product === 'string' ? product : (product.name || product.product || ''),
+          description: product.description || jsonData.description || ''
+        }));
+      }
+      else {
+        console.error('Не удалось найти массив данных в ответе:', jsonData);
+        return [];
+      }
+    }
+    else {
+      console.error('Неподдерживаемый формат данных:', jsonData);
+      return [];
+    }
+    
+    if (!items || items.length === 0) {
       console.error('Массив предложений пуст');
       return [];
     }
     
-    console.log(`Найдено ${suggestions.length} предложений:`, suggestions);
+    console.log(`Найдено ${items.length} предложений:`, items);
     
     // Преобразуем в формат BrandSuggestion и добавляем изображения
     const results: BrandSuggestion[] = [];
     
-    for (let i = 0; i < suggestions.length; i++) {
-      const item = suggestions[i];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
       const brand = item.brand || item.name || '';
       const product = item.product || item.name || '';
       const description = item.description || '';
