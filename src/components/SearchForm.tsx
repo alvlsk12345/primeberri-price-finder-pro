@@ -1,9 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { toast } from "sonner";
 import { useDemoModeForced } from '@/services/api/mock/mockServiceConfig';
 import { containsCyrillicCharacters } from '@/services/translationService';
 import { AiBrandAssistant } from './brand-assistant/AiBrandAssistant';
-import { testMinimalGoogleApiRequest } from '@/services/api/googleSearchService';
 import { SearchInput } from './search/SearchInput';
 import { SearchErrorMessage } from './search/SearchErrorMessage';
 import { useProductSelectionHandler } from './search/ProductSelectionHandler';
@@ -53,37 +53,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
     checkSupabaseStatus();
   }, []);
 
-  // Диагностический тест API при первом рендере
-  useEffect(() => {
-    const testGoogleApi = async () => {
-      console.log('Выполнение диагностического теста Google API...');
-      try {
-        const result = await testMinimalGoogleApiRequest();
-        console.log('Результат диагностического теста Google API:', result);
-        
-        if (result.includes('успешен')) {
-          toast.success('Диагностический тест Google API успешен!', { duration: 5000 });
-        } else {
-          toast.error(`Проблема с Google API: ${result}`, { duration: 7000 });
-        }
-      } catch (error) {
-        console.error('Ошибка при выполнении диагностического теста:', error);
-        toast.error('Ошибка при диагностике Google API. Проверьте консоль.', { duration: 5000 });
-      }
-    };
-    
-    // Запускаем тест при загрузке компонента
-    testGoogleApi();
-    
-    // Выводим инструкции для отладки в браузере
-    console.log('------- ИНСТРУКЦИИ ПО ОТЛАДКЕ GOOGLE API -------');
-    console.log('1. Откройте инструменты разработчика (F12 или Ctrl+Shift+I)');
-    console.log('2. Перейдите на вкладку "Сеть" (Network)');
-    console.log('3. Найдите запросы к googleapis.com');
-    console.log('4. Проверьте ст��тус запроса (должен быть 200)');
-    console.log('5. Проверьте ответ запроса на наличие данных');
-    console.log('--------------------------------------------');
-  }, []);
+  // Удалён автоматический диагностический тест API
 
   // Функция выполнения поиска с дополнительными проверками
   const executeSearch = () => {

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Bot } from 'lucide-react';
+import { RefreshCw, Bot, Search } from 'lucide-react';
 import { toast } from "sonner";
 import { testMinimalGoogleApiRequest } from '@/services/api/googleSearchService';
 import { callOpenAI } from '@/services/api/openai';
@@ -12,7 +12,9 @@ import { isUsingSupabaseBackend } from '@/services/api/supabase/config';
 
 export const DiagnosticButtons: React.FC = () => {
   const [isTesting, setIsTesting] = useState(false);
+  const [isTestingGoogle, setIsTestingGoogle] = useState(false);
   const [openAiStatus, setOpenAiStatus] = useState<'неизвестно' | 'работает' | 'ошибка'>('неизвестно');
+  const [googleApiStatus, setGoogleApiStatus] = useState<'неизвестно' | 'работает' | 'ошибка'>('неизвестно');
   const selectedProvider = getSelectedAIProvider();
   const providerDisplayName = getProviderDisplayName(selectedProvider);
   const modelName = getProviderModelName(selectedProvider);
@@ -32,12 +34,23 @@ export const DiagnosticButtons: React.FC = () => {
   // Тест Google API
   const testGoogleApi = async () => {
     try {
+      setIsTestingGoogle(true);
       toast.loading("Тестирование Google API...");
       const result = await testMinimalGoogleApiRequest();
-      toast.info(`Тест Google API: ${result}`, { duration: 7000 });
+      
+      if (result.includes('успешен')) {
+        setGoogleApiStatus('работает');
+        toast.success(`Тест Google API: ${result}`, { duration: 7000 });
+      } else {
+        setGoogleApiStatus('ошибка');
+        toast.error(`Ошибка Google API: ${result}`, { duration: 7000 });
+      }
     } catch (error) {
       console.error("Ошибка при тестировании Google API:", error);
+      setGoogleApiStatus('ошибка');
       toast.error(`Ошибка Google API: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+    } finally {
+      setIsTestingGoogle(false);
     }
   };
 
@@ -117,11 +130,26 @@ export const DiagnosticButtons: React.FC = () => {
       <Button
         onClick={testGoogleApi}
         size="sm"
-        variant="outline"
-        className="text-xs"
+        variant={googleApiStatus === 'работает' ? "outline" : "secondary"}
+        className={`text-xs flex items-center gap-1 ${
+          googleApiStatus === 'работает' ? 'border-green-500 text-green-700' : 
+          googleApiStatus === 'ошибка' ? 'bg-red-100 text-red-700 hover:bg-red-200' : ''
+        }`}
+        disabled={isTestingGoogle}
         type="button"
       >
-        Тест Google API
+        {isTestingGoogle ? (
+          <>
+            <div className="animate-spin w-3 h-3 border border-current border-t-transparent rounded-full mr-1" />
+            Тестирование...
+          </>
+        ) : (
+          <>
+            <Search size={14} />
+            Тест Google API {googleApiStatus !== 'неизвестно' ? 
+              `(${googleApiStatus === 'работает' ? '✓' : '✗'})` : ''}
+          </>
+        )}
       </Button>
       
       <Button
