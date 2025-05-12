@@ -12,7 +12,8 @@ const CORS_PROBLEM_DOMAINS = [
   'googleusercontent.com',
   'gstatic.com',
   'ggpht.com',
-  'zylalabs.com'
+  'zylalabs.com',
+  'promptapi.com'
 ];
 
 /**
@@ -22,7 +23,7 @@ export const needsProxying = (url: string): boolean => {
   if (!url) return false;
   
   // Если URL уже проксирован, не проксируем повторно
-  if (url.includes(PROXY_SUFFIX)) return false;
+  if (isProxiedUrl(url)) return false;
   
   // Не проксируем data URLs
   if (url.startsWith('data:')) return false;
@@ -51,7 +52,7 @@ export const getProxiedImageUrl = (url: string, directFetch: boolean = false): s
     const encodedUrl = encodeURIComponent(url);
     
     // Для Zylalabs изображений всегда используем directFetch при первой загрузке
-    const shouldBypassCache = directFetch || url.includes('zylalabs.com');
+    const shouldBypassCache = directFetch || url.includes('zylalabs.com') || url.includes('promptapi.com');
     
     // Конструируем URL к Edge Function с кэшированием изображений
     let proxyUrl = `https://juacmpkewomkducoanle.supabase.co/functions/v1/image-proxy?url=${encodedUrl}${PROXY_SUFFIX}`;
@@ -75,5 +76,5 @@ export const getProxiedImageUrl = (url: string, directFetch: boolean = false): s
  * Проверяет, является ли URL проксированным
  */
 export const isProxiedUrl = (url: string): boolean => {
-  return url ? url.includes(PROXY_SUFFIX) : false;
+  return url ? url.includes(PROXY_SUFFIX) || url.includes('/functions/v1/image-proxy') : false;
 };

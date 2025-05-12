@@ -12,3 +12,14 @@ export interface CacheCheckResult {
   url?: string;
   error?: string;
 }
+
+export interface ProxyResult {
+  success: boolean;
+  contentType?: string;
+  blob?: Blob;
+  status?: number;
+  statusText?: string;
+  headers?: Record<string, string>;
+  url?: string;
+}
+

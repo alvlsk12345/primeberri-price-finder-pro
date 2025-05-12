@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getPlaceholderImageUrl } from '@/services/image/imagePlaceholder';
 import { ImageModalSourceInfo } from './useImageModalSource';
+import { isGoogleThumbnail, isZylalabsImage } from '@/services/image/imageSourceDetector';
 
 interface ImageModalContentProps {
   displayedImage: string;
@@ -32,6 +33,12 @@ export const ImageModalContent: React.FC<ImageModalContentProps> = ({
   const { useAvatar, isGoogleImage, isZylalabs, isProxiedUrl } = sourceInfo;
   const placeholderImage = getPlaceholderImageUrl(productTitle);
   
+  // Определяем, является ли изображение миниатюрой Google
+  const isGoogleThumb = isGoogleThumbnail(displayedImage);
+  
+  // Более точно определяем, является ли изображение от Zylalabs
+  const isZylalabsImgSrc = isZylalabsImage(displayedImage);
+  
   // Подробное логирование для отладки
   React.useEffect(() => {
     console.log('Отрисовка контента модального окна:', {
@@ -39,12 +46,15 @@ export const ImageModalContent: React.FC<ImageModalContentProps> = ({
       imageLoading,
       imageError,
       retryCount,
-      isProxiedUrl
+      isProxiedUrl,
+      isGoogleThumb,
+      isZylalabsImgSrc,
+      imageUrl: displayedImage.substring(0, 100) + (displayedImage.length > 100 ? '...' : '')
     });
-  }, [useAvatar, imageLoading, imageError, retryCount, isProxiedUrl]);
+  }, [useAvatar, imageLoading, imageError, retryCount, isProxiedUrl, displayedImage]);
   
   // Если нужно использовать Avatar компонент (для Google, Zylalabs и прочих проксированных URL)
-  if (useAvatar) {
+  if (useAvatar || isGoogleThumb || isZylalabsImgSrc) {
     return (
       <div className="w-full relative">
         {imageLoading && (
@@ -58,14 +68,16 @@ export const ImageModalContent: React.FC<ImageModalContentProps> = ({
             className="object-contain"
             onError={(e) => {
               console.error('Ошибка загрузки изображения в модальном окне:', {
-                src: e.currentTarget.src,
-                isRetry: retryCount > 0
+                src: e.currentTarget.src.substring(0, 100) + '...',
+                isRetry: retryCount > 0,
+                isGoogleThumb,
+                isZylalabsImgSrc
               });
               handleImageError();
             }}
             onLoad={(e) => {
               console.log('Изображение в модальном окне успешно загружено:', {
-                src: e.currentTarget.src,
+                src: e.currentTarget.src.substring(0, 50) + '...',
                 isRetry: retryCount > 0
               });
               handleImageLoad();
@@ -86,7 +98,8 @@ export const ImageModalContent: React.FC<ImageModalContentProps> = ({
               <ImageOff size={36} className="text-gray-500" />
               <p className="text-sm text-gray-600 mt-1">Ошибка загрузки изображения</p>
               <p className="text-xs text-gray-600">
-                {isZylalabs ? "Zylalabs API" : 
+                {isZylalabsImgSrc ? "Zylalabs API" : 
+                isGoogleThumb ? "Google Thumbnail" :
                 isGoogleImage ? "Google API" : 
                 isProxiedUrl ? "Проксированный URL" : "Внешний источник"}
               </p>
@@ -112,7 +125,7 @@ export const ImageModalContent: React.FC<ImageModalContentProps> = ({
         alt={productTitle}
         className="w-full max-h-[400px] object-contain"
         onError={(e) => {
-          console.error('Ошибка загрузки стандартного изображения в модальном окне:', displayedImage);
+          console.error('Ошибка загрузки стандартного изображения в модальном окне:', displayedImage.substring(0, 100) + '...');
           e.currentTarget.onerror = null; // Предотвращаем бесконечную рекурсию
           handleImageError();
         }}

@@ -60,21 +60,20 @@ export function generateCacheFileName(url: string): string {
 export function isZylalabsUrl(url: string): boolean {
   return url.includes('zylalabs.com') || 
          url.includes('api.promptapi.com') || 
-         url.includes('api.eu-central.promptapi.com');
+         url.includes('api.eu-central.promptapi.com') ||
+         url.includes('zyla-api') ||
+         url.includes('zylahome');
 }
 
 /**
- * Обрабатывает URL изображения от Zylalabs для прямого доступа
- * Возвращает исходный URL, но логирует для отладки
+ * Проверяет, является ли URL источником из Google
  */
-export function processZylalabsUrl(url: string, requestId: string): string {
-  if (!url) return url;
-  
-  // Логируем URL для отладки
-  logMessage(LogLevel.INFO, `[${requestId}] Обрабатываем URL Zylalabs: ${url}`);
-  
-  // Для Zylalabs просто возвращаем исходный URL
-  return url;
+export function isGoogleUrl(url: string): boolean {
+  return url.includes('google.com') || 
+         url.includes('googleusercontent.com') || 
+         url.includes('gstatic.com') ||
+         url.includes('ggpht.com') ||
+         url.includes('encrypted-tbn');
 }
 
 /**
@@ -140,6 +139,14 @@ export function getImageRequestHeaders(url: string): Record<string, string> {
   if (isZylalabsUrl(url)) {
     headers['Origin'] = 'https://zylalabs.com';
     headers['Referer'] = 'https://zylalabs.com/';
+    headers['Sec-Fetch-Dest'] = 'image';
+    headers['Sec-Fetch-Mode'] = 'cors';
+    headers['Sec-Fetch-Site'] = 'cross-site';
+  }
+  // Для Google источников добавляем специальные заголовки
+  else if (isGoogleUrl(url)) {
+    headers['Origin'] = 'https://www.google.com';
+    headers['Referer'] = 'https://www.google.com/';
   }
   
   return headers;

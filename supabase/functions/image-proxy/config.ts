@@ -24,3 +24,20 @@ export const ENHANCED_REQUEST_HEADERS = {
 
 // Таймаут для запросов изображений (в миллисекундах)
 export const REQUEST_TIMEOUT = 15000;
+
+// Заголовки для запросов к Zylalabs
+export const ZYLALABS_REQUEST_HEADERS = {
+  ...ENHANCED_REQUEST_HEADERS,
+  'Origin': 'https://zylalabs.com',
+  'Sec-Fetch-Dest': 'image',
+  'Sec-Fetch-Mode': 'cors',
+  'Sec-Fetch-Site': 'cross-site'
+};
+
+// Заголовки для запросов к Google изображениям
+export const GOOGLE_REQUEST_HEADERS = {
+  ...ENHANCED_REQUEST_HEADERS,
+  'Referer': 'https://www.google.com/',
+  'Origin': 'https://www.google.com'
+};
+
