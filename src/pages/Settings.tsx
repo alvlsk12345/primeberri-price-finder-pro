@@ -27,6 +27,8 @@ import {
 import { callAIViaSupabase } from "@/services/api/supabase/aiService";
 import { AI_PROXY_EDGE_FUNCTION_GUIDE } from "@/services/api/supabase/edgeFunctionCode";
 import { DiagnosticButtons } from "@/components/search/DiagnosticButtons";
+import { ApiUsageInfo } from "@/components/search/ApiUsageInfo";
+import { useSearch } from "@/contexts/SearchContext";
 
 const Settings = () => {
   const [apiStatus, setApiStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
@@ -36,6 +38,7 @@ const Settings = () => {
   const [supabaseStatus, setSupabaseStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
   const [useSupabaseBE, setUseSupabaseBE] = useState<boolean>(isUsingSupabaseBackend());
   const [useFallback, setUseFallback] = useState<boolean>(isFallbackEnabled());
+  const { apiInfo } = useSearch();
 
   // Проверяем подключение к Supabase при загрузке
   useEffect(() => {
@@ -303,6 +306,16 @@ const Settings = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Блок для статистики использования API */}
+            <div className="mb-4">
+              <h3 className="text-base font-medium mb-3">Статистика использования API</h3>
+              {apiInfo && Object.keys(apiInfo).length > 0 ? (
+                <ApiUsageInfo />
+              ) : (
+                <p className="text-sm text-gray-500">Информация будет доступна после выполнения поисковых запросов</p>
+              )}
+            </div>
+            
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-md mb-6">
               <h3 className="text-base font-medium mb-3">Диагностика API</h3>
               <p className="text-sm text-gray-600 mb-3">

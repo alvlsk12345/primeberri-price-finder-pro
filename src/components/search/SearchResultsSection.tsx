@@ -3,7 +3,6 @@ import React, { useEffect } from 'react';
 import { SearchResults } from "@/components/SearchResults";
 import { FilterSection } from "@/components/search/FilterSection";
 import { useSearch } from "@/contexts/SearchContext";
-import { ApiUsageInfo } from "@/components/search/ApiUsageInfo";
 import { SearchResultsAlert } from "@/components/search/SearchResultsAlert";
 import { SortButtons } from "../filter/SortButtons";
 import { SortOption } from "@/services/types";
@@ -72,8 +71,6 @@ export const SearchResultsSection: React.FC = () => {
             </div>}
         </div>
       </div>
-      
-      {apiInfo && Object.keys(apiInfo).length > 0 && <ApiUsageInfo />}
       
       <SearchResults results={searchResults} onSelect={handleProductSelect} selectedProduct={selectedProduct} currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} isDemo={isUsingDemoData} />
     </div>;
