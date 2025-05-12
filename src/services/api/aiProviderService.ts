@@ -1,48 +1,83 @@
 
-// Константа для названия ключа в localStorage
-const AI_PROVIDER_KEY = 'selected_ai_provider';
+// Ключ для хранения выбранного провайдера AI в localStorage
+const AI_PROVIDER_STORAGE_KEY = 'ai_provider';
 
-// Типы поддерживаемых AI провайдеров
+// Типы провайдеров AI, поддерживаемых приложением
 export type AIProvider = 'openai' | 'abacus' | 'perplexity';
 
-// Установка провайдера по умолчанию (OpenAI)
-export const DEFAULT_PROVIDER: AIProvider = 'openai';
+// Значение провайдера AI по умолчанию
+const DEFAULT_PROVIDER: AIProvider = 'openai';
 
-// Функция для получения текущего выбранного провайдера
+/**
+ * Получение выбранного провайдера AI из localStorage
+ * @returns Выбранный провайдер AI или провайдер по умолчанию
+ */
 export const getSelectedAIProvider = (): AIProvider => {
-  const provider = localStorage.getItem(AI_PROVIDER_KEY);
-  return (provider as AIProvider) || DEFAULT_PROVIDER;
+  try {
+    const savedProvider = localStorage.getItem(AI_PROVIDER_STORAGE_KEY);
+    
+    // Проверяем, является ли сохраненный провайдер допустимым значением
+    if (
+      savedProvider === 'openai' ||
+      savedProvider === 'abacus' ||
+      savedProvider === 'perplexity'
+    ) {
+      return savedProvider;
+    }
+    
+    // Возвращаем значение по умолчанию для недопустимых или отсутствующих значений
+    return DEFAULT_PROVIDER;
+  } catch (error) {
+    console.error('Ошибка при получении провайдера AI из localStorage:', error);
+    return DEFAULT_PROVIDER; // Возвращаем значение по умолчанию в случае ошибки
+  }
 };
 
-// Функция для установки провайдера
+/**
+ * Установка выбранного провайдера AI в localStorage
+ * @param provider Провайдер AI для сохранения
+ */
 export const setSelectedAIProvider = (provider: AIProvider): void => {
-  localStorage.setItem(AI_PROVIDER_KEY, provider);
+  try {
+    localStorage.setItem(AI_PROVIDER_STORAGE_KEY, provider);
+    console.log(`Установлен провайдер AI: ${provider}`);
+  } catch (error) {
+    console.error('Ошибка при сохранении провайдера AI в localStorage:', error);
+  }
 };
 
-// Функция для получения названия провайдера для отображения
+/**
+ * Получение отображаемого имени для провайдера AI
+ * @param provider Провайдер AI
+ * @returns Отображаемое имя провайдера
+ */
 export const getProviderDisplayName = (provider: AIProvider): string => {
   switch (provider) {
     case 'openai':
       return 'OpenAI';
     case 'abacus':
-      return 'Abacus.ai';
+      return 'Abacus.AI';
     case 'perplexity':
-      return 'Perplexity AI';
+      return 'Perplexity';
     default:
-      return 'AI Provider';
+      return 'Неизвестный провайдер';
   }
 };
 
-// Функция для получения модели или версии провайдера
+/**
+ * Получение названия модели для провайдера AI
+ * @param provider Провайдер AI
+ * @returns Название модели провайдера
+ */
 export const getProviderModelName = (provider: AIProvider): string => {
   switch (provider) {
     case 'openai':
-      return 'GPT-4o-search-preview';
+      return 'GPT-4o';
     case 'abacus':
-      return 'Text Generation Model';
+      return 'Llama 3';
     case 'perplexity':
-      return 'llama-3.1-sonar-small-128k';
+      return 'Llama 3.1 Sonar';
     default:
-      return 'AI Model';
+      return 'Неизвестная модель';
   }
 };

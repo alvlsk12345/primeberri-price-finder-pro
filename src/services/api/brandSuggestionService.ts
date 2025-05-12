@@ -1,7 +1,7 @@
 import { BrandSuggestion } from "@/services/types";
 import { fetchBrandSuggestions as fetchBrandSuggestionsFromOpenAI } from "./openai";
 import { fetchBrandSuggestions as fetchBrandSuggestionsFromAbacus } from "./abacus";
-import { fetchBrandSuggestions as fetchBrandSuggestionsFromPerplexity } from "./perplexity/brandSuggestion";
+import { fetchBrandSuggestions as fetchBrandSuggestionsFromPerplexity } from "./perplexity";
 import { getSelectedAIProvider, AIProvider } from "./aiProviderService";
 import { toast } from "sonner";
 import { hasValidApiKey as hasValidOpenAIApiKey } from "./openai/config";
@@ -9,7 +9,10 @@ import { hasValidApiKey as hasValidAbacusApiKey } from "./abacus/config";
 import { hasValidApiKey as hasValidPerplexityApiKey } from "./perplexity/config";
 import { isUsingSupabaseBackend } from "./supabase/config";
 import { isSupabaseConnected } from "./supabase/client";
-import { fetchBrandSuggestionsViaOpenAI } from "./supabase/aiService";
+import { 
+  fetchBrandSuggestionsViaOpenAI, 
+  fetchBrandSuggestionsViaPerplexity 
+} from "./supabase/aiService";
 
 // Кэш предложений брендов по запросам
 const brandSuggestionsCache: Map<string, {timestamp: number, suggestions: BrandSuggestion[]}> = new Map();
@@ -117,7 +120,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     }
 
     // Если Perplexity выбран, но не настроен на сервере - используем прямой вызов
-    const forceDirectCall = provider === 'perplexity';
+    const forceDirectCall = provider === 'perplexity' && !hasApiKey;
     
     // Если используем Supabase и оно подключено (кроме Perplexity, который не настроен на сервере)
     if (useSupabaseConnected && !forceDirectCall) {
@@ -131,10 +134,29 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
           duration: 15000
         });
         
-        const result = await Promise.race([
-          fetchBrandSuggestionsViaOpenAI(description),
-          timeoutPromise
-        ]);
+        let result: BrandSuggestion[] = [];
+        
+        // Выбор соответствующего API для Supabase в зависимости от провайдера
+        switch (provider) {
+          case 'openai':
+            result = await Promise.race([
+              fetchBrandSuggestionsViaOpenAI(description),
+              timeoutPromise
+            ]);
+            break;
+          case 'perplexity':
+            result = await Promise.race([
+              fetchBrandSuggestionsViaPerplexity(description),
+              timeoutPromise
+            ]);
+            break;
+          default:
+            // Для остальных провайдеров используем OpenAI как запасной вариант
+            result = await Promise.race([
+              fetchBrandSuggestionsViaOpenAI(description),
+              timeoutPromise
+            ]);
+        }
         
         toast.dismiss('ai-suggestion-loading');
         
