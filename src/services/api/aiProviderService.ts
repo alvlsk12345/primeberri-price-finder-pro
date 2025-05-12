@@ -3,7 +3,7 @@
 const AI_PROVIDER_KEY = 'selected_ai_provider';
 
 // Типы поддерживаемых AI провайдеров
-export type AIProvider = 'openai' | 'abacus';
+export type AIProvider = 'openai' | 'abacus' | 'perplexity';
 
 // Установка провайдера по умолчанию (OpenAI)
 export const DEFAULT_PROVIDER: AIProvider = 'openai';
@@ -26,6 +26,8 @@ export const getProviderDisplayName = (provider: AIProvider): string => {
       return 'OpenAI';
     case 'abacus':
       return 'Abacus.ai';
+    case 'perplexity':
+      return 'Perplexity AI';
     default:
       return 'AI Provider';
   }
@@ -38,6 +40,8 @@ export const getProviderModelName = (provider: AIProvider): string => {
       return 'GPT-4o-search-preview';
     case 'abacus':
       return 'Text Generation Model';
+    case 'perplexity':
+      return 'llama-3.1-sonar-small-128k';
     default:
       return 'AI Model';
   }

@@ -1,3 +1,4 @@
+
 import { BrandSuggestion } from "@/services/types";
 import { findProductImage } from "./imageUtils";
 
@@ -9,7 +10,7 @@ export async function parseBrandApiResponse(content: string | any): Promise<Bran
       return [];
     }
     
-    console.log('Ответ от OpenAI для брендов (тип):', typeof content);
+    console.log('Ответ от AI для брендов (тип):', typeof content);
     if (typeof content === 'string') {
       console.log('Ответ как строка (первые 200 символов):', content.substring(0, 200) + '...');
     } else {
@@ -29,36 +30,35 @@ export async function parseBrandApiResponse(content: string | any): Promise<Bran
       
       // Удаляем маркеры кода markdown если они есть
       cleanContent = cleanContent.replace(/^```json\s*/g, '').replace(/\s*```$/g, '');
+      cleanContent = cleanContent.replace(/^```\s*/g, '').replace(/\s*```$/g, '');
       
-      // Проверяем, является ли строка обернутой в объект с полем result
-      // (устаревший формат для совместимости)
-      if (cleanContent.startsWith('{"result":')) {
-        try {
-          const resultObj = JSON.parse(cleanContent);
-          if (resultObj.result) {
-            // Если есть поле result, используем его содержимое
-            cleanContent = typeof resultObj.result === 'string' ? 
-              resultObj.result : 
-              JSON.stringify(resultObj.result);
-          }
-        } catch (e) {
-          console.warn('Не удалось обработать объект с полем result:', e);
-        }
+      // Проверяем наличие дополнительного текста до или после JSON
+      const jsonStart = cleanContent.indexOf('[');
+      const jsonEnd = cleanContent.lastIndexOf(']');
+      
+      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+        cleanContent = cleanContent.substring(jsonStart, jsonEnd + 1);
       }
       
-      // Удаляем возможные объекты-обертки JSON
-      if (cleanContent.startsWith('{"suggestions":') || 
-          cleanContent.startsWith('{"brands":') || 
-          cleanContent.startsWith('{"items":') || 
-          cleanContent.startsWith('{"products":')) {
+      // Проверяем, является ли строка обернутой в объект с полем result/suggestions/etc.
+      if (cleanContent.startsWith('{') && !cleanContent.startsWith('[')) {
         try {
-          // Пытаемся распарсить как объект с массивом
-          const tempObj = JSON.parse(cleanContent);
-          // Извлекаем массив из объекта-обертки
-          if (tempObj.suggestions) cleanContent = JSON.stringify(tempObj.suggestions);
-          else if (tempObj.brands) cleanContent = JSON.stringify(tempObj.brands);
-          else if (tempObj.items) cleanContent = JSON.stringify(tempObj.items);
-          else if (tempObj.products) cleanContent = JSON.stringify(tempObj.products);
+          const wrapper = JSON.parse(cleanContent);
+          // Проверяем различные возможные поля с массивом данных
+          const possibleArrayFields = ['result', 'results', 'suggestions', 'brands', 'items', 'products', 'data'];
+          
+          for (const field of possibleArrayFields) {
+            if (wrapper[field] && (Array.isArray(wrapper[field]) || typeof wrapper[field] === 'string')) {
+              // Если нашли поле с массивом, используем его содержимое
+              if (Array.isArray(wrapper[field])) {
+                cleanContent = JSON.stringify(wrapper[field]);
+                break;
+              } else if (typeof wrapper[field] === 'string') {
+                cleanContent = wrapper[field];
+                break;
+              }
+            }
+          }
         } catch (e) {
           console.warn('Не удалось обработать объект-обертку:', e);
         }
@@ -98,20 +98,23 @@ export async function parseBrandApiResponse(content: string | any): Promise<Bran
     // Если данные - объект с массивом
     else if (jsonData && typeof jsonData === 'object') {
       // Пробуем извлечь массив из любого поля, которое его содержит
-      const arrayField = Object.keys(jsonData).find(
-        key => Array.isArray(jsonData[key])
-      );
+      const possibleArrayFields = ['suggestions', 'brands', 'items', 'products', 'data', 'result', 'results'];
       
-      if (arrayField) {
-        console.log(`Обнаружен массив в поле ${arrayField}`);
-        items = jsonData[arrayField];
+      for (const field of possibleArrayFields) {
+        if (jsonData[field] && Array.isArray(jsonData[field])) {
+          console.log(`Обнаружен массив в поле ${field}`);
+          items = jsonData[field];
+          break;
+        }
       }
+      
       // Если это один объект с полями brand и products
-      else if (jsonData.brand && jsonData.product) {
+      if (items.length === 0 && jsonData.brand && jsonData.product) {
         console.log('Обнаружен формат с одним объектом бренда и товаром');
         items = [jsonData];
       }
-      else {
+      
+      if (items.length === 0) {
         console.error('Не удалось найти массив данных в ответе:', jsonData);
         return [];
       }

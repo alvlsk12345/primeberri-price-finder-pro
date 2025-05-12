@@ -12,6 +12,8 @@ import { callOpenAI } from "@/services/api/openai/apiClient";
 import { getApiKey as getOpenAIApiKey } from "@/services/api/openai/config";
 import { callAbacusAI } from "@/services/api/abacus/apiClient";
 import { getApiKey as getAbacusApiKey } from "@/services/api/abacus/config";
+import { callPerplexityAI } from "@/services/api/perplexity/apiClient";
+import { getApiKey as getPerplexityApiKey } from "@/services/api/perplexity/config";
 import { toast } from "sonner";
 import { getSelectedAIProvider, setSelectedAIProvider, AIProvider } from "@/services/api/aiProviderService";
 import { 
@@ -76,7 +78,7 @@ const Settings = () => {
       if (useSupabaseBE && supabaseConnected) {
         // Проверяем работу через Supabase
         await callAIViaSupabase({
-          provider: selectedProvider === 'openai' ? 'openai' : 'abacus',
+          provider: selectedProvider === 'openai' ? 'openai' : selectedProvider === 'abacus' ? 'abacus' : 'perplexity',
           prompt: selectedProvider === 'openai' ? "Скажи 'привет'" : undefined,
           endpoint: selectedProvider === 'abacus' ? 'testConnection' : undefined,
           method: 'GET'
@@ -113,6 +115,20 @@ const Settings = () => {
         
         // Выполняем простой запрос к API Abacus (для теста)
         await callAbacusAI('testConnection', 'GET');
+      } else if (selectedProvider === 'perplexity') {
+        // Проверяем наличие API ключа Perplexity
+        const apiKey = getPerplexityApiKey();
+        if (!apiKey) {
+          toast.error("API ключ Perplexity не установлен. Пожалуйста, добавьте свой ключ сначала.");
+          setApiStatus('error');
+          return;
+        }
+        
+        // Выполняем простой запрос к API Perplexity
+        await callPerplexityAI("Скажи 'привет'", {
+          max_tokens: 10,
+          temperature: 0
+        });
       }
       
       // Если запрос успешен, обновляем статус
@@ -294,6 +310,13 @@ const Settings = () => {
                   <span>Abacus.ai</span>
                 </Label>
               </div>
+              <div className="flex items-center space-x-2 border p-3 rounded-md hover:bg-gray-50 cursor-pointer">
+                <RadioGroupItem value="perplexity" id="perplexity" />
+                <Label htmlFor="perplexity" className="flex items-center gap-2 cursor-pointer">
+                  <Bot size={18} className="text-purple-600" />
+                  <span>Perplexity AI (Llama 3.1)</span>
+                </Label>
+              </div>
             </RadioGroup>
           </CardContent>
         </Card>
@@ -327,10 +350,11 @@ const Settings = () => {
             </div>
             
             <Tabs defaultValue="zylalabs">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="zylalabs">Zylalabs API</TabsTrigger>
                 <TabsTrigger value="openai">OpenAI API</TabsTrigger>
                 <TabsTrigger value="abacus">Abacus.ai API</TabsTrigger>
+                <TabsTrigger value="perplexity">Perplexity API</TabsTrigger>
               </TabsList>
               
               <TabsContent value="zylalabs">
@@ -453,6 +477,70 @@ const Settings = () => {
                       <span className="text-sm">Режим соединения:</span>
                       <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
                         {useSupabaseBE && supabaseConnected ? 'Supabase Backend' : proxyInfo}
+                      </span>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                      <Button 
+                        onClick={testApiConnection} 
+                        disabled={apiStatus === 'testing'}
+                        variant="default" 
+                        className="flex-1"
+                      >
+                        {apiStatus === 'testing' ? (
+                          <>
+                            <RefreshCw size={16} className="mr-2 animate-spin" />
+                            Проверка...
+                          </>
+                        ) : (
+                          'Проверить API'
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="perplexity">
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md mb-4">
+                  <div className="flex items-center gap-2 text-amber-700 mb-2">
+                    <AlertCircle size={18} />
+                    <span className="font-medium">Важная информация</span>
+                  </div>
+                  <p className="text-sm text-amber-700">
+                    Для работы поиска через Perplexity AI требуется действующий API ключ. 
+                    Perplexity API работает только в режиме прямого запроса (без Supabase).
+                    Ваш ключ хранится только в вашем браузере и не передается третьим лицам.
+                  </p>
+                </div>
+                <ApiKeyForm keyType="perplexity" />
+                
+                <div className="mt-6 space-y-4">
+                  <h3 className="text-base font-medium">Проверка подключения к API</h3>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Статус API:</span>
+                      <div className="flex items-center gap-2">
+                        {apiStatus === 'idle' && <span className="text-gray-500">Не проверено</span>}
+                        {apiStatus === 'testing' && <RefreshCw size={18} className="text-blue-500 animate-spin" />}
+                        {apiStatus === 'success' && <CheckCircle size={18} className="text-green-500" />}
+                        {apiStatus === 'error' && <XCircle size={18} className="text-red-500" />}
+                        <span className={`text-sm ${
+                          apiStatus === 'success' ? 'text-green-600' : 
+                          apiStatus === 'error' ? 'text-red-600' : 
+                          apiStatus === 'testing' ? 'text-blue-600' : 
+                          'text-gray-600'
+                        }`}>
+                          {apiStatus === 'success' ? 'Работает' : 
+                           apiStatus === 'error' ? 'Ошибка' :
+                           apiStatus === 'testing' ? 'Проверка...' : 
+                           'Не проверен'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Режим соединения:</span>
+                      <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
+                        Прямое соединение
                       </span>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2 mt-2">

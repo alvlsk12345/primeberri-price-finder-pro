@@ -2,10 +2,12 @@
 import { BrandSuggestion } from "@/services/types";
 import { fetchBrandSuggestions as fetchBrandSuggestionsFromOpenAI } from "./openai";
 import { fetchBrandSuggestions as fetchBrandSuggestionsFromAbacus } from "./abacus";
+import { fetchBrandSuggestions as fetchBrandSuggestionsFromPerplexity } from "./perplexity/brandSuggestion";
 import { getSelectedAIProvider, AIProvider } from "./aiProviderService";
 import { toast } from "sonner";
 import { hasValidApiKey as hasValidOpenAIApiKey } from "./openai/config";
 import { hasValidApiKey as hasValidAbacusApiKey } from "./abacus/config";
+import { hasValidApiKey as hasValidPerplexityApiKey } from "./perplexity/config";
 import { isUsingSupabaseBackend } from "./supabase/config";
 import { isSupabaseConnected } from "./supabase/client";
 import { fetchBrandSuggestionsViaOpenAI } from "./supabase/aiService";
@@ -83,19 +85,43 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     
     // Уменьшаем время ожидания с помощью Promise.race и таймаута
     const timeoutPromise = new Promise<BrandSuggestion[]>((_, reject) => {
-      setTimeout(() => reject(new Error('Таймаут запроса предложений брендов')), 12000); // 12 секунд
+      setTimeout(() => reject(new Error('Таймаут запроса предложений брендов')), 15000); // Увеличиваем таймаут до 15 секунд
     });
     
     // Проверяем, используем ли мы Supabase бэкенд
-    const useSupabase = await isUsingSupabaseBackend();
-    const supabaseConnected = await isSupabaseConnected();
+    let useSupabaseConnected = false;
+    try {
+      const useSupabase = await isUsingSupabaseBackend();
+      const supabaseConnected = await isSupabaseConnected();
+      useSupabaseConnected = useSupabase && supabaseConnected;
+      
+      console.log('Статус Supabase для бренд-сервиса:', {
+        используется: useSupabase,
+        подключен: supabaseConnected
+      });
+    } catch (e) {
+      console.warn('Ошибка при проверке статуса Supabase:', e);
+    }
     
-    console.log('Статус Supabase для бренд-сервиса:', {
-      используется: useSupabase,
-      подключен: supabaseConnected
-    });
+    // Проверка API ключей для прямого подключения
+    let hasApiKey = false;
+    switch (provider) {
+      case 'openai':
+        hasApiKey = hasValidOpenAIApiKey();
+        break;
+      case 'abacus':
+        hasApiKey = hasValidAbacusApiKey();
+        break;
+      case 'perplexity':
+        hasApiKey = hasValidPerplexityApiKey();
+        break;
+    }
+
+    // Если Perplexity выбран, но не настроен на сервере - используем прямой вызов
+    const forceDirectCall = provider === 'perplexity';
     
-    if (useSupabase && supabaseConnected) {
+    // Если используем Supabase и оно подключено (кроме Perplexity, который не настроен на сервере)
+    if (useSupabaseConnected && !forceDirectCall) {
       console.log('Использование Supabase бэкенда для получения предложений брендов');
       try {
         // Вызов AI через Supabase Edge Function с таймаутом
@@ -103,7 +129,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
         
         toast.loading('Получение рекомендаций AI...', {
           id: 'ai-suggestion-loading',
-          duration: 12000
+          duration: 15000
         });
         
         const result = await Promise.race([
@@ -118,37 +144,105 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
         // Проверка на валидность данных
         if (!result || result.length === 0) {
           console.warn('Пустой ответ от Supabase Edge Function');
+          // Если нет результатов, пробуем прямой вызов если есть API ключ
+          if (hasApiKey) {
+            console.log('Пробуем прямой вызов API...');
+            return await directApiCall(provider, description, timeoutPromise);
+          }
           return [];
         }
         
         // Кэшируем полученные предложения
         cacheSuggestions(description, result);
         
-        return result; // Функция fetchBrandSuggestionsViaOpenAI теперь всегда возвращает BrandSuggestion[]
+        return result;
       } catch (error) {
         toast.dismiss('ai-suggestion-loading');
         console.error('Ошибка при использовании Supabase для предложений брендов:', error);
+        
+        // При ошибке Supabase пробуем прямой вызов, если есть API ключ
+        if (hasApiKey) {
+          console.log('Пробуем прямой вызов API после ошибки Supabase...');
+          toast.info('Переключение на прямой вызов API...', { duration: 3000 });
+          return await directApiCall(provider, description, timeoutPromise);
+        }
+        
         toast.error(`Ошибка Supabase: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
                    { duration: 3000 });
-        toast.info('Проверьте настройки Supabase в разделе "Настройки"', { duration: 5000 });
-        
-        // Возвращаем пустой массив, так как произошла ошибка
         return [];
       }
-    } else if (!supabaseConnected && useSupabase) {
-      toast.warning('Supabase не подключен, но выбран для использования. Проверьте настройки.', { duration: 5000 });
-      return []; // Возвращаем пустой массив, так как Supabase не подключен
+    } else {
+      // Прямой вызов API (для Perplexity или если Supabase не используется)
+      if (!hasApiKey) {
+        if (provider === 'perplexity') {
+          toast.error("API ключ Perplexity не настроен. Пожалуйста, добавьте ключ в настройках.", { duration: 5000 });
+        } else {
+          toast.error(`API ключ ${provider} не настроен. Проверьте настройки.`, { duration: 5000 });
+        }
+        return [];
+      }
+      
+      return await directApiCall(provider, description, timeoutPromise);
     }
-    
-    // Проверка настрок при попытке прямого вызова API
-    toast.error("Прямые запросы к OpenAI API из браузера блокируются политикой CORS. Пожалуйста, используйте Supabase Edge Function.", { duration: 6000 });
-    toast.info("Перейдите в раздел 'Настройки' и убедитесь, что 'Использовать Supabase Backend' включено", { duration: 5000 });
-    
-    // Возвращаем пустой массив, так как прямые вызовы API невозможны из-за CORS
-    return [];
   } catch (error) {
     console.error(`Ошибка при получении предложений брендов через ${provider}:`, error);
     toast.dismiss('ai-suggestion-loading');
     return []; // Возвращаем пустой массив при ошибке
+  }
+};
+
+// Вспомогательная функция для прямого вызова API
+const directApiCall = async (
+  provider: AIProvider, 
+  description: string, 
+  timeoutPromise: Promise<BrandSuggestion[]>
+): Promise<BrandSuggestion[]> => {
+  toast.loading('Получение рекомендаций AI...', {
+    id: 'ai-suggestion-loading',
+    duration: 15000
+  });
+  
+  try {
+    console.log(`Прямой вызов API ${provider} для получения брендов...`);
+    
+    let result: BrandSuggestion[] = [];
+    
+    // Выбор соответствующего API в зависимости от провайдера
+    switch (provider) {
+      case 'openai':
+        result = await Promise.race([
+          fetchBrandSuggestionsFromOpenAI(description),
+          timeoutPromise
+        ]);
+        break;
+      case 'abacus':
+        result = await Promise.race([
+          fetchBrandSuggestionsFromAbacus(description),
+          timeoutPromise
+        ]);
+        break;
+      case 'perplexity':
+        result = await Promise.race([
+          fetchBrandSuggestionsFromPerplexity(description),
+          timeoutPromise
+        ]);
+        break;
+    }
+    
+    toast.dismiss('ai-suggestion-loading');
+    
+    if (result && result.length > 0) {
+      // Кэшируем полученные результаты
+      cacheSuggestions(description, result);
+      return result;
+    }
+    
+    console.warn(`Пустой результат от прямого вызова API ${provider}`);
+    return [];
+  } catch (error) {
+    console.error(`Ошибка при прямом вызове API ${provider}:`, error);
+    toast.dismiss('ai-suggestion-loading');
+    toast.error(`Ошибка API ${provider}: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, { duration: 3000 });
+    return [];
   }
 };
