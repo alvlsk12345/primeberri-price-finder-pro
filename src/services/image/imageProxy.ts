@@ -39,9 +39,10 @@ export const needsProxying = (url: string): boolean => {
 /**
  * Создает URL для проксированного изображения
  * @param url Оригинальный URL изображения
+ * @param directFetch Флаг для прямой загрузки без кэширования
  * @returns URL к прокси-эндпоинту с оригинальным URL в качестве параметра
  */
-export const getProxiedImageUrl = (url: string): string => {
+export const getProxiedImageUrl = (url: string, directFetch: boolean = false): string => {
   if (!url) return '';
   if (!needsProxying(url)) return url;
   
@@ -50,7 +51,12 @@ export const getProxiedImageUrl = (url: string): string => {
     const encodedUrl = encodeURIComponent(url);
     
     // Конструируем URL к Edge Function с кэшированием изображений
-    const proxyUrl = `https://juacmpkewomkducoanle.supabase.co/functions/v1/image-proxy?url=${encodedUrl}${PROXY_SUFFIX}`;
+    let proxyUrl = `https://juacmpkewomkducoanle.supabase.co/functions/v1/image-proxy?url=${encodedUrl}${PROXY_SUFFIX}`;
+    
+    // Добавляем параметр для обхода кэша, если запрошено
+    if (directFetch) {
+      proxyUrl += '&bypassCache=true';
+    }
     
     return proxyUrl;
   } catch (error) {

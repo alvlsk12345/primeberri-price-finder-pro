@@ -175,6 +175,8 @@ serve(async (req) => {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
       },
+      // Добавляем таймаут для запроса
+      signal: AbortSignal.timeout(10000) // 10 секунд таймаут
     };
     
     // Запрашиваем изображение
@@ -203,11 +205,14 @@ serve(async (req) => {
     const contentType = imageResponse.headers.get('Content-Type') || 'image/jpeg';
     const imageBlob = await imageResponse.blob();
     
-    // Сохраняем изображение в кэш
-    const cachedUrl = await saveImageToCache(decodedUrl, imageBlob, contentType);
+    // Сохраняем изображение в кэш, только если не запрошен обход кэша
+    let cachedUrl = null;
+    if (!bypassCache) {
+      cachedUrl = await saveImageToCache(decodedUrl, imageBlob, contentType);
+    }
     
     // Если успешно сохранили в кэш, перенаправляем на кэшированную версию
-    if (cachedUrl) {
+    if (cachedUrl && !bypassCache) {
       return new Response(null, {
         status: 302,
         headers: {
@@ -218,13 +223,13 @@ serve(async (req) => {
       });
     }
     
-    // Если не удалось сохранить в кэш, возвращаем изображение напрямую
+    // Если не удалось сохранить в кэш или запрошен обход кэша, возвращаем изображение напрямую
     return new Response(imageBlob, {
       status: 200,
       headers: {
         ...corsHeaders,
         'Content-Type': contentType,
-        'Cache-Control': `public, max-age=${CACHE_TIME}`,
+        'Cache-Control': `public, max-age=${bypassCache ? 0 : CACHE_TIME}`,
       }
     });
 

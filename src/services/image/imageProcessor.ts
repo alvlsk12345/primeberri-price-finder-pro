@@ -11,9 +11,14 @@ import { getProxiedImageUrl } from './imageProxy';
  * Обрабатывает URL изображения продукта для оптимизации отображения
  * @param imageUrl Исходный URL изображения
  * @param indexOrUseCache Индекс изображения или флаг использования кэша
+ * @param directFetch Флаг для обхода кэша при первой загрузке
  * @returns Оптимизированный URL изображения
  */
-export const processProductImage = (imageUrl: string | null, indexOrUseCache: number | boolean = true): string | null => {
+export const processProductImage = (
+  imageUrl: string | null, 
+  indexOrUseCache: number | boolean = true,
+  directFetch: boolean = false
+): string | null => {
   if (!imageUrl || !isValidImageUrl(imageUrl)) {
     return null;
   }
@@ -31,8 +36,11 @@ export const processProductImage = (imageUrl: string | null, indexOrUseCache: nu
   const shouldUseCache = isZylalabsImage(imageUrl) ? true : useCache;
   const uniqueUrl = getUniqueImageUrl(imageUrl, index, shouldUseCache);
   
+  // Для изображений из Zylalabs всегда используем directFetch=true при первой загрузке
+  const shouldDirectFetch = directFetch || isZylalabsImage(imageUrl);
+  
   // Применяем прокси только если нужно
-  return needsProxy ? getProxiedImageUrl(uniqueUrl) : uniqueUrl;
+  return needsProxy ? getProxiedImageUrl(uniqueUrl, shouldDirectFetch) : uniqueUrl;
 };
 
 /**

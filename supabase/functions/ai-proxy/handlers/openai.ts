@@ -28,7 +28,7 @@ export const handleOpenAIRequest = async (
 
   switch (params.action) {
     case "getBrandSuggestions":
-      return await getBrandSuggestions(params.description || "", params.count || 3);
+      return await getBrandSuggestions(params.description || "", params.count || 6);
     default:
       throw new Error(`Неизвестное действие: ${params.action}`);
   }
@@ -37,7 +37,7 @@ export const handleOpenAIRequest = async (
 // Функция для получения предложений брендов, всегда возвращает массив BrandSuggestion
 const getBrandSuggestions = async (
   description: string,
-  count: number = 3
+  count: number = 6
 ): Promise<Brand[]> => {
   try {
     // Формируем системный промпт с более четкими инструкциями
@@ -50,7 +50,7 @@ const getBrandSuggestions = async (
 
 Формат: {"products": [{"brand": "...", "product": "...", "description": "..."}]}
 
-Всегда возвращай точно 5 результатов. Не нумеруй результаты.`;
+Всегда возвращай точно 6 результатов. Не нумеруй результаты.`;
 
     console.log('Запрос к OpenAI с описанием:', description);
     
@@ -61,7 +61,7 @@ const getBrandSuggestions = async (
     try {
       // Формируем запрос к OpenAI с моделью gpt-4o как указано
       const response = await openai.chat.completions.create({
-        model: "gpt-4o", // Используем модель gpt-4o вместо gpt-4o-mini
+        model: "gpt-4o", // Используем модель gpt-4o вместо gpt-4o-mini для лучших результатов
         messages: [
           {
             role: "system",
