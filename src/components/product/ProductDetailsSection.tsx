@@ -16,7 +16,7 @@ export const ProductDetailsSection: React.FC = () => {
     return (
       <div className="mt-6">
         <CostCalculator product={selectedProduct} />
-        <ActionButtons product={selectedProduct} query={searchQuery} />
+        <ActionButtons selectedProduct={selectedProduct} searchQuery={searchQuery} />
       </div>
     );
   } catch (error) {
