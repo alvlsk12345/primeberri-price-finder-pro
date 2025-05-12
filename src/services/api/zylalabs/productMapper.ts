@@ -56,10 +56,10 @@ export const mapProductsFromApi = (products: any[], params: any): Product[] => {
     
     if (product.product_photos && product.product_photos.length > 0) {
       console.log(`Найдены product_photos, используем первое из ${product.product_photos.length} изображений`);
-      imageUrl = processProductImage(product.product_photos[0], index);
+      imageUrl = processProductImage(product.product_photos[0], index) || '';
     } else if (product.image) {
       console.log(`Найдено поле image: ${product.image?.substring(0, 100)}`);
-      imageUrl = processProductImage(product.image, index);
+      imageUrl = processProductImage(product.image, index) || '';
     } else {
       console.log(`Не найдены изображения для товара ${product.product_title || 'Unknown'}`);
       imageUrl = '';

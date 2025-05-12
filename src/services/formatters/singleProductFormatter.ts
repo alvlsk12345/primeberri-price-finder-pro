@@ -49,17 +49,17 @@ export const formatSingleProduct = async (
     console.log(`Форматирование товара с id ${id}, название: ${title}`);
     
     if (product.product_photos && product.product_photos.length > 0) {
-      // Используем первое изображение из списка и обрабатываем его через processProductImage
+      // Используем первое изображение из списка и обрабатываем его 
       console.log(`Обрабатываем URL из product_photos: ${product.product_photos[0]}`);
-      image = processProductImage(product.product_photos[0], 0);
+      image = processProductImage(product.product_photos[0], true) || '';
     } else if (product.image) {
       // Используем указанное изображение
       console.log(`Обрабатываем URL из поля image: ${product.image}`);
-      image = processProductImage(product.image, 0);
+      image = processProductImage(product.image, true) || '';
     } else if (product.thumbnail) {
       // Используем миниатюру
       console.log(`Обрабатываем URL из поля thumbnail: ${product.thumbnail}`);
-      image = processProductImage(product.thumbnail, 0);
+      image = processProductImage(product.thumbnail, true) || '';
     }
     
     console.log(`Результат обработки изображения для товара ${id}: ${image}`);

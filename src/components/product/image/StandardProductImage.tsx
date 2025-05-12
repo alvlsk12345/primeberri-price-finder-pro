@@ -7,7 +7,7 @@ interface StandardProductImageProps {
   image: string;
   title: string;
   imageState: {
-    isLoading: boolean;
+    imageLoading: boolean;
     imageError: boolean;
   };
   onClick: () => void;
@@ -19,7 +19,7 @@ export const StandardProductImage: React.FC<StandardProductImageProps> = ({
   imageState,
   onClick
 }) => {
-  const { isLoading, imageError } = imageState;
+  const { imageLoading, imageError } = imageState;
   
   // Используем loading="lazy" для изображений, чтобы 
   // браузер загружал их только при необходимости
@@ -28,7 +28,7 @@ export const StandardProductImage: React.FC<StandardProductImageProps> = ({
       className="relative w-full h-[150px] mb-3 cursor-pointer overflow-hidden"
       onClick={onClick}
     >
-      {isLoading && (
+      {imageLoading && (
         <Skeleton className="absolute inset-0 w-full h-full" />
       )}
       
@@ -42,7 +42,7 @@ export const StandardProductImage: React.FC<StandardProductImageProps> = ({
           src={image}
           alt={title}
           className={`object-contain w-full h-full transition-opacity duration-200 ${
-            isLoading ? 'opacity-0' : 'opacity-100'
+            imageLoading ? 'opacity-0' : 'opacity-100'
           }`}
           loading="lazy" // Добавляем lazy loading
           onError={(e) => {

@@ -10,19 +10,24 @@ import { getProxiedImageUrl } from './imageProxy';
 /**
  * Обрабатывает URL изображения продукта для оптимизации отображения
  * @param imageUrl Исходный URL изображения
- * @param useCache Использовать кэширование (по умолчанию true)
+ * @param indexOrUseCache Индекс изображения или флаг использования кэша
  * @returns Оптимизированный URL изображения
  */
-export const processProductImage = (imageUrl: string | null, useCache: boolean = true): string | null => {
+export const processProductImage = (imageUrl: string | null, indexOrUseCache: number | boolean = true): string | null => {
   if (!imageUrl || !isValidImageUrl(imageUrl)) {
     return null;
   }
+
+  // Определяем, является ли второй параметр индексом или флагом кэширования
+  const isIndex = typeof indexOrUseCache === 'number';
+  const useCache = isIndex ? true : indexOrUseCache;
+  const index = isIndex ? indexOrUseCache : undefined;
 
   // Проверяем, нужна ли прокси для изображения
   const needsProxy = isZylalabsImage(imageUrl) || isGoogleShoppingImage(imageUrl);
   
   // Получаем URL с учетом кэширования
-  const uniqueUrl = getUniqueImageUrl(imageUrl, undefined, useCache);
+  const uniqueUrl = getUniqueImageUrl(imageUrl, index, useCache);
   
   // Применяем прокси только если нужно
   return needsProxy ? getProxiedImageUrl(uniqueUrl) : uniqueUrl;
