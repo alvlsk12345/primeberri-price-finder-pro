@@ -16,7 +16,7 @@ export function useProductImageLoading(
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [loadAttempts, setLoadAttempts] = useState(0);
-  const maxAttempts = 2;
+  const maxAttempts = 4; // Увеличиваем с 2 до 4
 
   // Сбрасываем состояние при изменении URL изображения
   useEffect(() => {
@@ -70,27 +70,47 @@ export function useProductImageLoading(
       productId,
       imageUrl: image,
       attempt: newAttempts,
-      maxAttempts
+      maxAttempts,
+      isZylalabs: image?.includes('zylalabs.com'),
+      isProxy: image?.includes('image-proxy'),
+      directFetch: image?.includes('directFetch=true')
     });
     
     // Попытка повторной загрузки с параметром directFetch при первой ошибке
     if (newAttempts < maxAttempts && image) {
       console.log(`Попытка повторной загрузки изображения (${newAttempts}/${maxAttempts})`, image);
       
-      // Устанавливаем таймаут, чтобы избежать слишком быстрых повторных попыток
+      // Устанавливаем экспоненциальную задержку между попытками
+      const delay = Math.min(300 * Math.pow(2, newAttempts - 1), 3000);
+      
       setTimeout(() => {
         const imgElement = document.querySelector(`img[src="${image}"]`) as HTMLImageElement;
         if (imgElement) {
           // Добавляем параметр для обхода кэша
           let newSrc = image;
+          
+          // Добавляем параметр timestamp для предотвращения кэширования браузером
+          const timestamp = Date.now();
           if (image.includes('?')) {
-            newSrc = `${image}&directFetch=true&t=${Date.now()}`;
+            newSrc = `${image}&t=${timestamp}&retryAttempt=${newAttempts}`;
           } else {
-            newSrc = `${image}?directFetch=true&t=${Date.now()}`;
+            newSrc = `${image}?t=${timestamp}&retryAttempt=${newAttempts}`;
           }
+          
+          // Добавляем параметр directFetch для обхода кэша при проблемах
+          if (!newSrc.includes('directFetch=true')) {
+            newSrc += '&directFetch=true';
+          }
+          
           imgElement.src = newSrc;
+          
+          console.log(`Изображение запрошено повторно с src:`, {
+            originalSrc: image,
+            newSrc: newSrc,
+            delay
+          });
         }
-      }, 1000);
+      }, delay);
     } else {
       setImageLoading(false);
       setImageError(true);

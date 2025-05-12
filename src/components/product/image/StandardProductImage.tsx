@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Skeleton } from "@/components/ui/skeleton";
 import { ImageOff } from "lucide-react";
 
@@ -21,34 +21,67 @@ export const StandardProductImage: React.FC<StandardProductImageProps> = ({
 }) => {
   const { imageLoading, imageError } = imageState;
   const [retryCount, setRetryCount] = useState(0);
-  const maxRetries = 2;
+  const [isRetrying, setIsRetrying] = useState(false);
+  const maxRetries = 4; // Увеличиваем максимальное количество попыток с 2 до 4
   
-  // Функция для повторной попытки загрузки изображения
+  // Состояние для отслеживания ошибок загрузки
+  const [loadingErrors, setLoadingErrors] = useState<any[]>([]);
+  
+  // Сбрасываем состояние при изменении URL изображения
+  useEffect(() => {
+    setRetryCount(0);
+    setIsRetrying(false);
+    setLoadingErrors([]);
+  }, [image]);
+  
+  // Функция для повторной попытки загрузки изображения с экспоненциальной задержкой
   const retryImageLoad = () => {
     if (retryCount < maxRetries) {
-      console.log(`Повторная попытка загрузки изображения (${retryCount + 1}/${maxRetries})`, image);
-      setRetryCount(prev => prev + 1);
+      setIsRetrying(true);
       
-      // Принудительно перезагружаем изображение с новым параметром временного штампа
-      const imgElement = document.querySelector(`img[src="${image}"]`) as HTMLImageElement;
-      if (imgElement) {
-        const timestamp = Date.now();
-        let newSrc = image;
+      // Устанавливаем задержку с экспоненциальным ростом
+      const delay = 300 * Math.pow(2, retryCount);
+      console.log(`Повторная попытка загрузки изображения (${retryCount + 1}/${maxRetries}) через ${delay}мс`, image);
+      
+      setTimeout(() => {
+        setRetryCount(prev => prev + 1);
         
-        // Добавляем параметр для предотвращения кэширования браузером
-        if (image.includes('?')) {
-          newSrc += `&t=${timestamp}`;
-        } else {
-          newSrc += `?t=${timestamp}`;
+        // Принудительно перезагружаем изображение с новым параметром временного штампа
+        const imgElement = document.querySelector(`img[src="${image}"]`) as HTMLImageElement;
+        if (imgElement) {
+          const timestamp = Date.now();
+          let newSrc = image;
+          
+          // Добавляем параметр для предотвращения кэширования браузером
+          if (image.includes('?')) {
+            newSrc += `&t=${timestamp}`;
+          } else {
+            newSrc += `?t=${timestamp}`;
+          }
+          
+          // Добавляем параметр directFetch для обхода кэша при проблемах
+          if (!newSrc.includes('directFetch=true')) {
+            newSrc += '&directFetch=true';
+          }
+          
+          // Добавляем параметр retryAttempt для отслеживания попыток
+          newSrc += `&retryAttempt=${retryCount + 1}`;
+          
+          imgElement.src = newSrc;
+          
+          // Логируем более подробную информацию о попытке
+          console.log(`Попытка ${retryCount + 1}/${maxRetries} загрузки изображения:`, {
+            originalUrl: image,
+            newUrl: newSrc,
+            errors: loadingErrors
+          });
         }
         
-        // Добавляем параметр directFetch для обхода кэша при проблемах
-        if (!newSrc.includes('directFetch=true')) {
-          newSrc += '&directFetch=true';
-        }
-        
-        imgElement.src = newSrc;
-      }
+        // Сбрасываем флаг попытки загрузки через небольшой промежуток времени
+        setTimeout(() => {
+          setIsRetrying(false);
+        }, 1000);
+      }, delay);
     }
   };
   
@@ -57,7 +90,7 @@ export const StandardProductImage: React.FC<StandardProductImageProps> = ({
       className="relative w-full h-[150px] mb-3 cursor-pointer overflow-hidden"
       onClick={onClick}
     >
-      {imageLoading && (
+      {(imageLoading || isRetrying) && (
         <Skeleton className="absolute inset-0 w-full h-full" />
       )}
       
@@ -76,21 +109,39 @@ export const StandardProductImage: React.FC<StandardProductImageProps> = ({
               Повторить загрузку
             </button>
           )}
+          {retryCount > 0 && (
+            <p className="text-xs text-gray-400 mt-1">Попытка {retryCount}/{maxRetries}</p>
+          )}
         </div>
       ) : (
         <img
           src={image}
           alt={title}
           className={`object-contain w-full h-full transition-opacity duration-200 ${
-            imageLoading ? 'opacity-0' : 'opacity-100'
+            imageLoading || isRetrying ? 'opacity-0' : 'opacity-100'
           }`}
           loading="lazy"
           decoding="async"
           crossOrigin="anonymous"
           onError={(e) => {
-            console.error('Ошибка загрузки изображения:', image);
+            // Собираем информацию об ошибке для диагностики
+            const errorInfo = {
+              timestamp: new Date().toISOString(),
+              imageUrl: image,
+              attempt: retryCount + 1,
+              element: e.currentTarget.outerHTML.substring(0, 100)
+            };
             
-            // Проверяем, можем ли повторить попытку загрузки
+            // Сохраняем информацию об ошибке
+            setLoadingErrors(prev => [...prev, errorInfo]);
+            
+            console.error('Ошибка загрузки изображения:', {
+              ...errorInfo,
+              isZylalabs: image.includes('zylalabs'),
+              isProxied: image.includes('proxied=true')
+            });
+            
+            // Проверяем, можем ли повторить попытку загрузки автоматически
             if (retryCount < maxRetries) {
               retryImageLoad();
             } else {
@@ -99,6 +150,16 @@ export const StandardProductImage: React.FC<StandardProductImageProps> = ({
             }
           }}
         />
+      )}
+      
+      {/* Индикатор повторных попыток */}
+      {isRetrying && !imageError && (
+        <div className="absolute bottom-0 left-0 right-0 bg-blue-500 h-1 animate-pulse">
+          <div 
+            className="h-full bg-blue-700" 
+            style={{width: `${(retryCount / maxRetries) * 100}%`}}
+          ></div>
+        </div>
       )}
     </div>
   );

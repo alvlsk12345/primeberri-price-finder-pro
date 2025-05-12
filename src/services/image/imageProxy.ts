@@ -50,13 +50,19 @@ export const getProxiedImageUrl = (url: string, directFetch: boolean = false): s
     // Кодируем URL для безопасной передачи в качестве параметра
     const encodedUrl = encodeURIComponent(url);
     
+    // Для Zylalabs изображений всегда используем directFetch при первой загрузке
+    const shouldBypassCache = directFetch || url.includes('zylalabs.com');
+    
     // Конструируем URL к Edge Function с кэшированием изображений
     let proxyUrl = `https://juacmpkewomkducoanle.supabase.co/functions/v1/image-proxy?url=${encodedUrl}${PROXY_SUFFIX}`;
     
     // Добавляем параметр для обхода кэша, если запрошено
-    if (directFetch) {
+    if (shouldBypassCache) {
       proxyUrl += '&bypassCache=true';
     }
+    
+    // Добавляем уникальный timestamp для предотвращения кэширования браузером
+    proxyUrl += `&t=${Date.now()}`;
     
     return proxyUrl;
   } catch (error) {

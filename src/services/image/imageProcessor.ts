@@ -32,8 +32,7 @@ export const processProductImage = (
   const needsProxy = isZylalabsImage(imageUrl) || isGoogleShoppingImage(imageUrl);
   
   // Получаем URL с учетом кэширования
-  // Важно: всегда используем кэширование для Zylalabs изображений
-  const shouldUseCache = isZylalabsImage(imageUrl) ? true : useCache;
+  const shouldUseCache = useCache;
   const uniqueUrl = getUniqueImageUrl(imageUrl, index, shouldUseCache);
   
   // Для изображений из Zylalabs всегда используем directFetch=true при первой загрузке
@@ -57,7 +56,7 @@ export const getBaseSizeImageUrl = (url: string | null, useCache: boolean = true
     return url.replace(/=w\d+-h\d+/, '=w300-h300');
   }
   
-  // Для Zylalabs изображений применяем оптимизацию размера
+  // Для Zylalabs изображений применяем оптимизацию размера и всегда directFetch=true
   return getZylalabsSizeImageUrl(url, 'medium', useCache);
 };
 
@@ -91,6 +90,6 @@ export const getZylalabsSizeImageUrl = (url: string, size: 'small' | 'medium' | 
   
   if (!isZylalabsImage(url)) return url;
   
-  // Для Zylalabs всегда применяем кэширование для повышения производительности
-  return getUniqueImageUrl(url, undefined, true);
+  // Для Zylalabs всегда принудительно добавляем параметр directFetch=true для первой загрузки
+  return getProxiedImageUrl(getUniqueImageUrl(url, undefined, true), true);
 };
