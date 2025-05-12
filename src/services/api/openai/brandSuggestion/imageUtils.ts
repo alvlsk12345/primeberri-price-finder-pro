@@ -43,18 +43,16 @@ export async function findProductImage(brand: string, product: string, index: nu
       console.warn("Ошибка доступа к localStorage:", e);
     }
     
-    // Предварительное изображение для iXpand Flash Drive (для примера)
+    // Предварительные изображения для часто запрашиваемых продуктов
     if (searchQuery.toLowerCase().includes('ixpand flash drive')) {
       const preloadedUrl = "https://m.media-amazon.com/images/I/71eOcyYJmHL._AC_SL1500_.jpg";
-      
-      // Сохраняем в оба кэша
-      imageCache[cacheKey] = preloadedUrl;
-      try {
-        localStorage.setItem(cacheKey, preloadedUrl);
-      } catch (e) {
-        console.warn("Не удалось сохранить изображение в localStorage:", e);
-      }
-      
+      cacheImage(cacheKey, preloadedUrl);
+      return preloadedUrl;
+    }
+    
+    if (searchQuery.toLowerCase().includes('nokia 3310') || searchQuery.toLowerCase() === 'nokia') {
+      const preloadedUrl = "https://m.media-amazon.com/images/I/61TM6Q+9AyL._AC_SL1500_.jpg";
+      cacheImage(cacheKey, preloadedUrl);
       return preloadedUrl;
     }
     
@@ -80,15 +78,8 @@ export async function findProductImage(brand: string, product: string, index: nu
       const processedUrl = applyCorsProxy(imageUrl);
       console.log(`Найдено изображение: ${processedUrl}`);
       
-      // Сохраняем в оба кэша
-      imageCache[cacheKey] = processedUrl;
-      
-      try {
-        localStorage.setItem(cacheKey, processedUrl);
-      } catch (e) {
-        console.warn("Не удалось сохранить изображение в localStorage:", e);
-      }
-      
+      // Сохраняем в кэш
+      cacheImage(cacheKey, processedUrl);
       return processedUrl;
     } else {
       console.warn(`Изображение не найдено для ${searchQuery}, используем плейсхолдер`);
@@ -98,6 +89,18 @@ export async function findProductImage(brand: string, product: string, index: nu
     console.error("Ошибка при поиске изображения:", imageError);
     // В случае ошибки поиска изображения используем заполнитель
     return getPlaceholderImageUrl(brand || 'unknown');
+  }
+}
+
+// Вспомогательная функция для кэширования изображений
+function cacheImage(key: string, url: string): void {
+  // Сохраняем в оба кэша
+  imageCache[key] = url;
+  
+  try {
+    localStorage.setItem(key, url);
+  } catch (e) {
+    console.warn("Не удалось сохранить изображение в localStorage:", e);
   }
 }
 

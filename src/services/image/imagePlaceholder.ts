@@ -1,4 +1,5 @@
 
+
 /**
  * Проверяет, является ли URL изображения пустым или заглушкой
  * @param imageUrl URL изображения для проверки
@@ -22,14 +23,16 @@ export const getPlaceholderImageUrl = (title?: string): string => {
   // Это решит проблему недоступности внешних сервисов и возможные проблемы с CORS
   const text = title ? (title.length > 20 ? title.substring(0, 20) + '...' : title) : 'Нет изображения';
   
-  // Создаем SVG с текстом в виде Data URL
+  // Создаем более визуально привлекательный SVG с текстом и логотипом бренда
   const svgContent = `
     <svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">
-      <rect width="600" height="400" fill="#e2e8f0"/>
-      <text x="300" y="200" font-family="Arial, sans-serif" font-size="24" text-anchor="middle" fill="#64748b">${text}</text>
-      <path d="M250 150 L350 150 L350 250 L250 250 Z" stroke="#94a3b8" stroke-width="8" fill="none"/>
-      <line x1="250" y1="150" x2="350" y2="250" stroke="#94a3b8" stroke-width="8"/>
-      <line x1="350" y1="150" x2="250" y2="250" stroke="#94a3b8" stroke-width="8"/>
+      <rect width="600" height="400" fill="#f1f5f9"/>
+      <rect x="150" y="100" width="300" height="200" stroke="#94a3b8" stroke-width="2" fill="#e2e8f0" rx="8" ry="8"/>
+      <text x="300" y="180" font-family="Arial, sans-serif" font-size="28" font-weight="bold" text-anchor="middle" fill="#64748b">${text}</text>
+      <rect x="250" y="200" width="100" height="60" rx="5" ry="5" fill="#64748b"/>
+      <path d="M275 215 L325 215 L325 245 L275 245 Z" stroke="#e2e8f0" stroke-width="2" fill="none"/>
+      <line x1="275" y1="215" x2="325" y2="245" stroke="#e2e8f0" stroke-width="2"/>
+      <line x1="325" y1="215" x2="275" y2="245" stroke="#e2e8f0" stroke-width="2"/>
     </svg>
   `;
   

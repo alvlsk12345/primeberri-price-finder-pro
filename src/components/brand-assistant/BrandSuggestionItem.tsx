@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { BrandSuggestion } from "@/services/types";
 import { Button } from "@/components/ui/button";
@@ -5,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Search } from "lucide-react";
 import { findProductImage } from "@/services/api/openai/brandSuggestion/imageUtils";
 import { PlaceholderImage } from "@/components/product/image/PlaceholderImage";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface BrandSuggestionItemProps {
   suggestion: BrandSuggestion;
@@ -81,12 +83,11 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
         {/* Секция с изображением товара */}
         <div className="w-full h-40 overflow-hidden rounded-md bg-gray-50 mb-2">
           {isImageLoading ? (
-            <div className="w-full h-full flex items-center justify-center">
+            <Skeleton className="w-full h-full flex items-center justify-center">
               <div className="animate-pulse text-gray-400">
                 <span className="sr-only">Загрузка изображения...</span>
-                <div className="w-full h-full bg-gray-200 rounded-md"></div>
               </div>
-            </div>
+            </Skeleton>
           ) : isImageError || !imageUrl ? (
             <PlaceholderImage text={brand || "Нет изображения"} />
           ) : (
