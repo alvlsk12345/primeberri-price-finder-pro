@@ -1,125 +1,138 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders, CACHE_TIME } from "./config.ts";
-import { createResponse, createErrorResponse, generateRequestId, logMessage, LogLevel } from "./utils.ts";
-import { checkImageCache, saveImageToCache } from "./cache.ts";
-import { proxyImage } from "./imageLoader.ts";
+import { corsHeaders } from './config.ts';
+import { 
+  logMessage, 
+  LogLevel,
+  createResponse, 
+  createErrorResponse, 
+  getSupabaseClient,
+  generateRequestId,
+  generateCacheFileName,
+  isZylalabsUrl,
+  processZylalabsUrl,
+  getImageRequestHeaders
+} from './utils.ts';
+import { loadImageFromCache, saveImageToCache } from './cache.ts';
 
-serve(async (req) => {
-  const requestId = generateRequestId();
-  logMessage(LogLevel.INFO, `[${requestId}] Получен новый запрос: ${req.url}`, { method: req.method });
-  
-  // Обработка CORS preflight запросов
-  if (req.method === 'OPTIONS') {
-    logMessage(LogLevel.DEBUG, `[${requestId}] Обработка CORS preflight запроса`);
-    return createResponse(null, {
+// Обрабатывает запросы на проксирование изображений
+Deno.serve(async (req) => {
+  // Проверяем, что запрос использует метод GET или OPTIONS
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      headers: corsHeaders,
       status: 204,
     });
   }
+
+  // Генерируем уникальный ID запроса для отслеживания
+  const requestId = generateRequestId();
+  logMessage(LogLevel.INFO, `[${requestId}] Получен запрос на проксирование изображения`);
 
   try {
     // Получаем URL изображения из параметров запроса
     const url = new URL(req.url);
     const imageUrl = url.searchParams.get('url');
-    const bypassCache = url.searchParams.get('bypassCache') === 'true';
-    const retryAttempt = parseInt(url.searchParams.get('retryAttempt') || '0');
-
-    // Проверяем, что URL предоставлен
+    
     if (!imageUrl) {
-      logMessage(LogLevel.WARN, `[${requestId}] Запрос без URL изображения`);
-      return createErrorResponse('Не указан URL изображения в параметре запроса', 400);
+      return createErrorResponse('URL изображения не указан', 400);
     }
 
-    logMessage(LogLevel.INFO, `[${requestId}] Запрос изображения: ${imageUrl}`, { 
-      bypassCache, 
-      retryAttempt 
-    });
+    logMessage(LogLevel.INFO, `[${requestId}] Запрошено изображение: ${imageUrl}`);
     
-    // Проверяем, что URL валидный и безопасный
-    let decodedUrl;
-    try {
-      decodedUrl = decodeURIComponent(imageUrl);
-      new URL(decodedUrl); // Проверяем, что это валидный URL
-    } catch (e) {
-      logMessage(LogLevel.WARN, `[${requestId}] Невалидный URL изображения: ${imageUrl}`, { error: e.message });
-      return createErrorResponse('Невалидный URL изображения', 400);
-    }
-    
-    // Если не требуется обход кэша, проверяем наличие изображения в кэше
-    if (!bypassCache && retryAttempt === 0) {
-      const cacheResult = await checkImageCache(decodedUrl, requestId);
-      if (cacheResult.exists && cacheResult.url) {
-        logMessage(LogLevel.INFO, `[${requestId}] Возвращаем кэшированное изображение: ${cacheResult.url}`);
-        // Перенаправляем на кэшированное изображение
-        return createResponse(null, {
-          status: 302,
-          headers: {
-            'Location': cacheResult.url,
-            'Cache-Control': `public, max-age=${CACHE_TIME}`,
-          }
+    // Проверяем, является ли источник изображения от Zylalabs
+    if (isZylalabsUrl(imageUrl)) {
+      logMessage(LogLevel.INFO, `[${requestId}] Обнаружен источник Zylalabs, применяем специальную обработку`);
+      
+      // Обрабатываем URL Zylalabs для прямого доступа
+      const processedUrl = processZylalabsUrl(imageUrl);
+      
+      // Для Zylalabs пробуем прямое перенаправление сначала
+      try {
+        const imageResponse = await fetch(processedUrl, {
+          headers: getImageRequestHeaders(processedUrl)
         });
-      } else if (cacheResult.error) {
-        logMessage(LogLevel.WARN, `[${requestId}] Ошибка при проверке кэша: ${cacheResult.error}`);
-        // Продолжаем выполнение и получаем изображение через прокси
+        
+        if (imageResponse.ok) {
+          const imageData = await imageResponse.arrayBuffer();
+          const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+          
+          logMessage(LogLevel.INFO, `[${requestId}] Zylalabs изображение загружено напрямую. Размер: ${imageData.byteLength} байт`);
+          
+          // Сохраняем в кэш для будущих запросов
+          const cacheFileName = generateCacheFileName(imageUrl);
+          await saveImageToCache(cacheFileName, new Uint8Array(imageData));
+          
+          return createResponse(imageData, {
+            headers: {
+              'Content-Type': contentType,
+              'Cache-Control': 'public, max-age=86400',
+            }
+          });
+        } else {
+          logMessage(LogLevel.WARN, `[${requestId}] Не удалось загрузить Zylalabs изображение напрямую: ${imageResponse.status} ${imageResponse.statusText}`);
+        }
+      } catch (directError) {
+        logMessage(LogLevel.WARN, `[${requestId}] Ошибка при прямой загрузке Zylalabs изображения:`, directError);
       }
     }
-
-    // Получаем изображение через прокси
-    const proxyResult = await proxyImage(decodedUrl, requestId);
     
-    // Если произошла ошибка при получении изображения
-    if (!proxyResult.success) {
-      logMessage(LogLevel.ERROR, `[${requestId}] Проблема при получении изображения через прокси:`, proxyResult);
+    // Пытаемся загрузить из кэша
+    const cacheFileName = generateCacheFileName(imageUrl);
+    const cachedImage = await loadImageFromCache(cacheFileName);
+    
+    if (cachedImage) {
+      logMessage(LogLevel.INFO, `[${requestId}] Изображение найдено в кэше. Размер: ${cachedImage.byteLength} байт`);
       
-      // Для диагностики возвращаем детальную информацию о проблеме
-      return createErrorResponse(
-        'Не удалось загрузить изображение', 
-        proxyResult.status || 500,
-        {
-          status: proxyResult.status,
-          statusText: proxyResult.statusText,
-          headers: proxyResult.headers,
-          url: proxyResult.url,
-          requestId
-        }
-      );
-    }
-    
-    // Успешно получили изображение
-    // Сохраняем изображение в кэш, только если не запрошен обход кэша и не попытка повторной загрузки
-    let cachedUrl = null;
-    if (!bypassCache && retryAttempt === 0) {
-      cachedUrl = await saveImageToCache(decodedUrl, proxyResult.blob!, proxyResult.contentType!, requestId);
-    }
-    
-    // Если успешно сохранили в кэш, перенаправляем на кэшированную версию
-    if (cachedUrl && !bypassCache && retryAttempt === 0) {
-      logMessage(LogLevel.INFO, `[${requestId}] Перенаправляем на кэшированное изображение: ${cachedUrl}`);
-      return createResponse(null, {
-        status: 302,
+      return createResponse(cachedImage, {
         headers: {
-          'Location': cachedUrl,
-          'Cache-Control': `public, max-age=${CACHE_TIME}`,
+          'Content-Type': 'image/jpeg', // Предполагаем JPEG, можно улучшить определение типа
+          'Cache-Control': 'public, max-age=86400',
+          'X-Cache': 'HIT',
         }
       });
     }
     
-    // Если не удалось сохранить в кэш или запрошен обход кэша, возвращаем изображение напрямую
-    logMessage(LogLevel.INFO, `[${requestId}] Возвращаем изображение напрямую, тип: ${proxyResult.contentType}, размер: ${proxyResult.blob!.size} байт`);
-    return createResponse(proxyResult.blob!, {
+    logMessage(LogLevel.INFO, `[${requestId}] Изображение не найдено в кэше, загружаем`);
+    
+    // Загружаем изображение из источника
+    const imageResponse = await fetch(imageUrl, {
+      headers: getImageRequestHeaders(imageUrl)
+    });
+    
+    if (!imageResponse.ok) {
+      return createErrorResponse(`Не удалось загрузить изображение: ${imageResponse.status} ${imageResponse.statusText}`, 
+        imageResponse.status, 
+        { url: imageUrl }
+      );
+    }
+    
+    const contentType = imageResponse.headers.get('content-type');
+    const imageData = await imageResponse.arrayBuffer();
+    
+    // Проверяем, что полученные данные действительно изображение
+    if (!contentType?.startsWith('image/') && imageData.byteLength < 100) {
+      return createErrorResponse(`Получены некорректные данные изображения`, 400, { 
+        contentType, 
+        size: imageData.byteLength,
+        url: imageUrl
+      });
+    }
+    
+    logMessage(LogLevel.INFO, `[${requestId}] Изображение успешно загружено. Размер: ${imageData.byteLength} байт, тип: ${contentType}`);
+    
+    // Сохраняем в кэш
+    await saveImageToCache(cacheFileName, new Uint8Array(imageData));
+    
+    return createResponse(imageData, {
       headers: {
-        'Content-Type': proxyResult.contentType!,
-        'Cache-Control': `public, max-age=${bypassCache ? 0 : CACHE_TIME}`,
+        'Content-Type': contentType || 'image/jpeg',
+        'Cache-Control': 'public, max-age=86400',
+        'X-Cache': 'MISS',
       }
     });
-  } catch (outerError) {
-    logMessage(LogLevel.ERROR, `[${requestId}] Критическая ошибка в Edge Function: ${outerError.message}`, { 
-      stack: outerError.stack 
-    });
-    return createErrorResponse(
-      `Критическая ошибка в Edge Function: ${outerError.message}`,
-      500,
-      { stack: outerError.stack, requestId }
-    );
+    
+  } catch (error) {
+    logMessage(LogLevel.ERROR, `[${requestId}] Ошибка при проксировании изображения:`, error);
+    return createErrorResponse(`Ошибка при проксировании изображения: ${error.message}`, 500);
   }
 });

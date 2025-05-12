@@ -55,6 +55,29 @@ export function generateCacheFileName(url: string): string {
 }
 
 /**
+ * Проверяет, является ли URL источником из Zylalabs
+ */
+export function isZylalabsUrl(url: string): boolean {
+  return url.includes('zylalabs.com') || 
+         url.includes('api.promptapi.com') || 
+         url.includes('api.eu-central.promptapi.com');
+}
+
+/**
+ * Обрабатывает URL изображения от Zylalabs для прямого доступа
+ * Некоторые URL могут требовать дополнительной обработки
+ */
+export function processZylalabsUrl(url: string): string {
+  if (!url) return url;
+  
+  // Логируем URL для отладки
+  logMessage(LogLevel.INFO, `Обрабатываем URL Zylalabs: ${url}`);
+  
+  // Добавляем здесь особую обработку URL от Zylalabs если нужно
+  return url;
+}
+
+/**
  * Создает объект Response с заголовками CORS
  * @param body Тело ответа
  * @param options Дополнительные опции ответа
@@ -99,4 +122,25 @@ export function createErrorResponse(
  */
 export function generateRequestId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
+}
+
+/**
+ * Добавляет нужные заголовки для запросов к изображениям
+ */
+export function getImageRequestHeaders(url: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.9,ru;q=0.8',
+    'Cache-Control': 'no-cache',
+    'Pragma': 'no-cache'
+  };
+  
+  // Для Zylalabs источников добавляем дополнительные заголовки
+  if (isZylalabsUrl(url)) {
+    headers['Origin'] = 'https://zylalabs.com';
+    headers['Referer'] = 'https://zylalabs.com/';
+  }
+  
+  return headers;
 }
