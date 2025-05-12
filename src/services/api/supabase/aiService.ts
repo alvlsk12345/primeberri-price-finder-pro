@@ -102,7 +102,7 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
     
     // Устанавливаем таймаут для запроса
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Превышено время ожидания ответа от Supabase Edge Function')), 30000); // Увеличиваем таймаут до 30 секунд
+      setTimeout(() => reject(new Error('Превышено время ожидания ответа от Supabase Edge Function')), 45000); // Увеличиваем таймаут до 45 секунд
     });
 
     // Создаем основной запрос
@@ -138,21 +138,29 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
     
     if (Array.isArray(data)) {
       // Если результат уже массив
-      normalizedResults = data.map(item => ({
-        brand: item.brand || item.name || 'Неизвестный бренд',
-        product: item.product || '',
-        description: item.description || 'Описание недоступно'
-      }));
+      normalizedResults = data
+        .filter(item => item && typeof item === 'object')
+        .map(item => ({
+          brand: item.brand || item.name || 'Неизвестный бренд',
+          product: item.product || '',
+          description: item.description || 'Описание недоступно',
+          // Сохраняем оригинальные данные для совместимости
+          ...item
+        }));
       console.log('Нормализованные результаты из массива:', normalizedResults);
     } else if (data && typeof data === 'object') {
       // Проверяем наличие поля products
       if ('products' in data && Array.isArray((data as any).products)) {
         const products = (data as any).products;
-        normalizedResults = products.map((item: any) => ({
-          brand: item.brand || item.name || 'Неизвестный бренд',
-          product: item.product || '',
-          description: item.description || 'Описание недоступно'
-        }));
+        normalizedResults = products
+          .filter((item: any) => item && typeof item === 'object')
+          .map((item: any) => ({
+            brand: item.brand || item.name || 'Неизвестный бренд',
+            product: item.product || '',
+            description: item.description || 'Описание недоступно',
+            // Сохраняем оригинальные данные для совместимости
+            ...item
+          }));
         console.log('Нормализованные результаты из поля products:', normalizedResults);
       } else {
         // Если это одиночный объект с нужными полями
@@ -160,17 +168,31 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
           normalizedResults = [{
             brand: data.brand || data.name || 'Неизвестный бренд',
             product: data.product || '',
-            description: data.description || 'Описание недоступно'
+            description: data.description || 'Описание недоступно',
+            // Сохраняем оригинальные данные для совместимости
+            ...data
           }];
-          console.log('Нормализованные результаты из одиночного объекта:', normalizedResults);
+          console.log('Одиночный объект преобразован в массив:', normalizedResults);
         }
       }
     }
     
     console.log('Финальные нормализованные результаты (количество):', normalizedResults.length);
     
-    // Убедимся, что все объекты в массиве имеют нужную структуру
-    return normalizedResults.filter(item => item && (item.brand || item.product));
+    // Убедимся, что все объекты в массиве имеют нужную структуру и удаляем дубликаты
+    const uniqueBrands = new Set();
+    const uniqueResults = normalizedResults
+      .filter(item => item && (item.brand || item.product))
+      .filter(item => {
+        const key = `${item.brand || ''}_${item.product || ''}`;
+        if (uniqueBrands.has(key)) {
+          return false;
+        }
+        uniqueBrands.add(key);
+        return true;
+      });
+    
+    return uniqueResults;
   } catch (error) {
     console.error('Ошибка при получении предложений брендов через Supabase:', error);
     throw error;

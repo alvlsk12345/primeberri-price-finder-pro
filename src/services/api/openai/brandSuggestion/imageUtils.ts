@@ -43,6 +43,21 @@ export async function findProductImage(brand: string, product: string, index: nu
       console.warn("Ошибка доступа к localStorage:", e);
     }
     
+    // Предварительное изображение для iXpand Flash Drive (для примера)
+    if (searchQuery.toLowerCase().includes('ixpand flash drive')) {
+      const preloadedUrl = "https://m.media-amazon.com/images/I/71eOcyYJmHL._AC_SL1500_.jpg";
+      
+      // Сохраняем в оба кэша
+      imageCache[cacheKey] = preloadedUrl;
+      try {
+        localStorage.setItem(cacheKey, preloadedUrl);
+      } catch (e) {
+        console.warn("Не удалось сохранить изображение в localStorage:", e);
+      }
+      
+      return preloadedUrl;
+    }
+    
     // Поиск изображения с ограничением времени
     const imagePromise = searchProductImageGoogle(brand, product || brand, index);
     

@@ -90,7 +90,7 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
       <h3 className="text-sm font-medium mb-3">
         Рекомендуемые товары ({normalizedSuggestions.length}):
       </h3>
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {normalizedSuggestions.map((suggestion, index) => {
           // Проверка наличия необходимых полей
           if (!suggestion || (!suggestion.brand && !suggestion.product)) {
