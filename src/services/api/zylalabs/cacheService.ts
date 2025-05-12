@@ -1,62 +1,18 @@
 
-// Кеш успешных ответов API (улучшенный)
-const apiResponseCache: Record<string, {timestamp: number, data: any}> = {};
-const CACHE_TTL = 7200000; // TTL кеша - 2 часа (увеличено с 30 минут)
+import { CACHE_TTL, MAX_CACHE_SIZE, CacheStorage } from './cacheConfig';
+import { loadCacheFromStorage, saveCacheToStorage } from './storageService';
+import { startAutoCleaning } from './cacheCleaner';
 
-// Локальное хранилище для персистентного кэша между сессиями
-const LOCAL_STORAGE_CACHE_KEY = 'zylalabs_api_cache';
-const MAX_CACHE_SIZE = 100; // Максимальное количество элементов в кэше
-const MAX_CACHE_AGE = 86400000; // Один день в миллисекундах
+// Кэш успешных ответов API
+const apiResponseCache: CacheStorage = loadCacheFromStorage();
 
-/**
- * Инициализация кэша из localStorage при запуске
- */
-const initCacheFromStorage = () => {
-  try {
-    const storedCache = localStorage.getItem(LOCAL_STORAGE_CACHE_KEY);
-    if (storedCache) {
-      const parsedCache = JSON.parse(storedCache);
-      
-      // Проверяем и фильтруем устаревшие записи
-      const now = Date.now();
-      const filteredEntries = Object.entries(parsedCache)
-        .filter(([_, value]: [string, any]) => now - value.timestamp < MAX_CACHE_AGE);
-      
-      if (filteredEntries.length > 0) {
-        // Обновляем кэш только валидными записями
-        Object.assign(apiResponseCache, Object.fromEntries(filteredEntries));
-        console.log(`Загружено ${filteredEntries.length} кэшированных API ответов из localStorage`);
-      }
-    }
-  } catch (error) {
-    console.error('Ошибка при загрузке кэша из localStorage:', error);
-    // В случае ошибки очищаем хранилище
-    localStorage.removeItem(LOCAL_STORAGE_CACHE_KEY);
-  }
-};
+// Запускаем периодическую очистку кэша
+const cleanupIntervalId = startAutoCleaning(apiResponseCache);
 
-// Выполняем инициализацию кэша при загрузке модуля
-initCacheFromStorage();
-
-/**
- * Сохранение кэша в localStorage
- */
-const saveCacheToStorage = () => {
-  try {
-    // Фильтруем только свежие записи
-    const now = Date.now();
-    const freshEntries = Object.entries(apiResponseCache)
-      .filter(([_, value]: [string, any]) => now - value.timestamp < MAX_CACHE_AGE);
-    
-    if (freshEntries.length > 0) {
-      const cacheToSave = Object.fromEntries(freshEntries);
-      localStorage.setItem(LOCAL_STORAGE_CACHE_KEY, JSON.stringify(cacheToSave));
-      console.log(`Сохранено ${freshEntries.length} API ответов в localStorage`);
-    }
-  } catch (error) {
-    console.error('Ошибка при сохранении кэша в localStorage:', error);
-  }
-};
+// Сохраняем кэш при закрытии страницы
+window.addEventListener('beforeunload', () => {
+  saveCacheToStorage(apiResponseCache);
+});
 
 /**
  * Получение кешированного ответа API по URL
@@ -78,7 +34,7 @@ export const getCachedResponse = (url: string) => {
  * @param data Данные для кеширования
  */
 export const setCacheResponse = (url: string, data: any) => {
-  // Ограничиваем размер кеша (увеличен до 100 запросов)
+  // Ограничиваем размер кеша
   const cacheKeys = Object.keys(apiResponseCache);
   if (cacheKeys.length >= MAX_CACHE_SIZE) {
     // Удаляем самый старый элемент кеша
@@ -105,37 +61,219 @@ export const setCacheResponse = (url: string, data: any) => {
   // Сохраняем обновленный кэш в localStorage (но не при каждом обновлении)
   // Используем вероятность 20%, чтобы не вызывать сохранение слишком часто
   if (Math.random() < 0.2) {
-    saveCacheToStorage();
+    saveCacheToStorage(apiResponseCache);
   }
 };
 
 /**
- * Очистка устаревших элементов кэша
+ * Явное принудительное сохранение кэша в localStorage
  */
-export const cleanExpiredCache = () => {
-  const now = Date.now();
-  let removedCount = 0;
-  
-  Object.keys(apiResponseCache).forEach(key => {
-    if (now - apiResponseCache[key].timestamp > CACHE_TTL) {
-      delete apiResponseCache[key];
-      removedCount++;
-    }
-  });
-  
-  if (removedCount > 0) {
-    console.log(`Очищено ${removedCount} устаревших элементов кэша`);
-    // Сохраняем обновленный кэш после очистки
-    saveCacheToStorage();
-  }
-  
-  return removedCount;
+export const forceSaveCacheToStorage = () => {
+  saveCacheToStorage(apiResponseCache);
 };
 
-// Запускаем периодическую очистку кэша (каждые 10 минут)
-setInterval(cleanExpiredCache, 600000);
+/**
+ * Очистка кэша по конкретному URL
+ * @param url URL для удаления из кэша
+ * @returns true если элемент был найден и удален, иначе false
+ */
+export const invalidateCache = (url: string): boolean => {
+  if (apiResponseCache[url]) {
+    delete apiResponseCache[url];
+    console.log('Удален элемент кэша для URL:', url);
+    return true;
+  }
+  return false;
+};
 
-// Сохраняем кэш при закрытии страницы
-window.addEventListener('beforeunload', () => {
-  saveCacheToStorage();
-});
+/**
+ * Очистка всего кэша
+ */
+export const clearAllCache = (): void => {
+  Object.keys(apiResponseCache).forEach(key => {
+    delete apiResponseCache[key];
+  });
+  localStorage.removeItem('zylalabs_api_cache');
+  console.log('Весь кэш очищен');
+};
+
+// Исправление необходимой ошибки в файле euSearchService.ts
+<lov-write file_path="src/services/api/zylalabs/euSearchService.ts">
+import { getApiKey } from "./config";
+import { getPriorityEuCountries } from "../zylalabsService";
+import { generateMockSearchResults } from "../mock/mockSearchGenerator";
+import { parseApiResponse } from "./responseParser";
+
+/**
+ * Выполняет поиск по странам Европейского Союза
+ * @param query Строка поискового запроса
+ * @param page Номер страницы результатов
+ * @param signal Объект AbortSignal для отмены запросов (опционально)
+ * @returns Результаты поиска
+ */
+export const searchEuProducts = async (
+  query: string, 
+  page: number = 1,
+  signal?: AbortSignal
+): Promise<{products: any[], totalPages: number, isDemo: boolean, apiInfo: Record<string, string>}> => {
+  console.log(`Поиск товаров в ЕС для запроса: "${query}", страница: ${page}`);
+  
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    console.error('Отсутствует API ключ для поиска в ЕС');
+    const demoData = generateMockSearchResults(query, page);
+    return {
+      products: demoData.products,
+      totalPages: demoData.totalPages || 1,
+      isDemo: true,
+      apiInfo: {
+        error: 'Отсутствует API ключ',
+        source: 'Demo Data'
+      }
+    };
+  }
+  
+  // Получаем приоритетные страны ЕС
+  const euCountries = getPriorityEuCountries();
+  console.log('Поиск по странам ЕС:', euCountries);
+  
+  try {
+    // Создаем запросы для каждой страны ЕС
+    const requests = euCountries.map(country => {
+      const url = buildEuSearchUrl(query, country, page);
+      return fetchEuProducts(url, apiKey, signal);
+    });
+    
+    // Выполняем все запросы параллельно
+    const results = await Promise.allSettled(requests);
+    
+    // Собираем успешные результаты
+    const successfulResults = results
+      .filter((result): result is PromiseFulfilledResult<any> => 
+        result.status === 'fulfilled' && result.value && result.value.products)
+      .map(result => result.value);
+    
+    if (successfulResults.length === 0) {
+      console.log('Не найдено результатов в странах ЕС');
+      return {
+        products: [],
+        totalPages: 0,
+        isDemo: false,
+        apiInfo: {
+          info: 'Нет результатов в странах ЕС',
+          source: 'EU Search'
+        }
+      };
+    }
+    
+    // Объединяем все продукты из разных стран
+    let allProducts: any[] = [];
+    let maxTotalPages = 1;
+    
+    successfulResults.forEach(result => {
+      if (result.products && Array.isArray(result.products)) {
+        allProducts = [...allProducts, ...result.products];
+        if (result.totalPages > maxTotalPages) {
+          maxTotalPages = result.totalPages;
+        }
+      }
+    });
+    
+    // Удаляем дубликаты по ID
+    const uniqueProducts = removeDuplicateProducts(allProducts);
+    
+    console.log(`Найдено ${uniqueProducts.length} уникальных товаров в странах ЕС`);
+    
+    return {
+      products: uniqueProducts,
+      totalPages: maxTotalPages,
+      isDemo: false,
+      apiInfo: {
+        source: 'EU Search',
+        countries: euCountries.join(',')
+      }
+    };
+  } catch (error) {
+    console.error('Ошибка при поиске в странах ЕС:', error);
+    const demoData = generateMockSearchResults(query, page);
+    return {
+      products: demoData.products,
+      totalPages: demoData.totalPages || 1,
+      isDemo: true,
+      apiInfo: {
+        error: 'Ошибка при поиске в ЕС',
+        source: 'Demo Data'
+      }
+    };
+  }
+};
+
+/**
+ * Формирует URL для поиска товаров в конкретной стране ЕС
+ */
+const buildEuSearchUrl = (query: string, country: string, page: number): string => {
+  const params = new URLSearchParams({
+    q: query,
+    country: country,
+    page: page.toString(),
+    language: 'ru' // По умолчанию используем русский язык
+  });
+  
+  return `https://zylalabs.com/api/2033/real+time+product+search+api/1809/search+products?${params.toString()}`;
+};
+
+/**
+ * Выполняет запрос к API для получения товаров из конкретной страны ЕС
+ */
+const fetchEuProducts = async (url: string, apiKey: string, signal?: AbortSignal): Promise<any> => {
+  try {
+    // Устанавливаем таймаут в 8 секунд для запросов по странам ЕС
+    const controller = new AbortController();
+    
+    // Объединяем внешний signal с нашим локальным, если внешний передан
+    if (signal) {
+      signal.addEventListener('abort', () => controller.abort());
+    }
+    
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Accept': 'application/json'
+      },
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      return null;
+    }
+    
+    const data = await response.json();
+    // Здесь мы обеспечиваем правильное количество аргументов при вызове parseApiResponse
+    return parseApiResponse(data, {query});
+  } catch (error) {
+    console.warn(`Ошибка при запросе к ${url}:`, error);
+    return null;
+  }
+};
+
+/**
+ * Удаляет дубликаты товаров из массива по ID
+ */
+const removeDuplicateProducts = (products: any[]): any[] => {
+  const uniqueIds = new Set();
+  return products.filter(product => {
+    if (!product.id) return true; // Если у товара нет ID, оставляем его
+    
+    if (uniqueIds.has(product.id)) {
+      return false; // Это дубликат, удаляем
+    } else {
+      uniqueIds.add(product.id);
+      return true; // Это уникальный товар, оставляем
+    }
+  });
+};
