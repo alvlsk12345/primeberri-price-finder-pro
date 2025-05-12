@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { toast } from "sonner";
 import { BrandSuggestion } from '@/services/types';
@@ -25,17 +26,27 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
 
     // Показываем toast о начале поиска для лучшего UX
     if (immediate) {
+      // Создаем toast с уникальным ID
       toast.loading(`Выполняем поиск: ${suggestion.brand} ${suggestion.product}`, {
         id: 'search-in-progress',
-        duration: 3000
+        duration: 0 // Устанавливаем duration: 0, чтобы toast не исчезал автоматически
       });
     }
 
     // Вызываем функцию onSelect с правильными параметрами
     onSelect(searchQuery, immediate);
+    
+    // Показываем уведомление об успешном выборе товара
     toast.success(`Выбран товар для поиска: ${suggestion.brand} ${suggestion.product}`, {
       duration: 2000
     });
+
+    // Закрываем toast с уведомлением о загрузке после небольшой задержки
+    if (immediate) {
+      setTimeout(() => {
+        toast.dismiss('search-in-progress');
+      }, 1000);
+    }
 
     // Прокручиваем страницу к результатам поиска после выбора
     setTimeout(() => {
