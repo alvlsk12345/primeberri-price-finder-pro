@@ -1,5 +1,15 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import { ResponseOptions } from './types.ts';
+import { corsHeaders } from './config.ts';
+
+// Уровни логирования
+export enum LogLevel {
+  DEBUG = 'DEBUG',
+  INFO = 'INFO',
+  WARN = 'WARN',
+  ERROR = 'ERROR'
+}
 
 // Создаем клиент Supabase
 export const getSupabaseClient = () => {
@@ -8,6 +18,28 @@ export const getSupabaseClient = () => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
   );
 };
+
+// Расширенная система логирования
+export function logMessage(level: LogLevel, message: string, data?: any) {
+  const timestamp = new Date().toISOString();
+  const logEntry = {
+    timestamp,
+    level,
+    message,
+    data: data || null,
+  };
+  
+  // Вывод отформатированного лога
+  if (level === LogLevel.ERROR) {
+    console.error(`[${timestamp}] [${level}] ${message}`, data || '');
+  } else if (level === LogLevel.WARN) {
+    console.warn(`[${timestamp}] [${level}] ${message}`, data || '');
+  } else {
+    console.log(`[${timestamp}] [${level}] ${message}`, data || '');
+  }
+  
+  return logEntry;
+}
 
 // Функция для генерации уникального имени файла в кэше
 export function generateCacheFileName(url: string): string {
@@ -29,18 +61,9 @@ export function generateCacheFileName(url: string): string {
  */
 export function createResponse(
   body: BodyInit | null, 
-  options: { 
-    headers?: HeadersInit, 
-    status?: number,
-    statusText?: string
-  } = {}
+  options: ResponseOptions = {}
 ) {
   const { headers = {}, status = 200, statusText } = options;
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  };
 
   return new Response(body, {
     headers: { ...corsHeaders, ...headers },
@@ -57,6 +80,8 @@ export function createErrorResponse(
   status: number = 500, 
   additionalInfo: Record<string, any> = {}
 ) {
+  logMessage(LogLevel.ERROR, errorMessage, additionalInfo);
+  
   return createResponse(
     JSON.stringify({ 
       error: errorMessage,
@@ -67,4 +92,11 @@ export function createErrorResponse(
       headers: { 'Content-Type': 'application/json' }
     }
   );
+}
+
+/**
+ * Генерирует уникальный идентификатор запроса
+ */
+export function generateRequestId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
 }
