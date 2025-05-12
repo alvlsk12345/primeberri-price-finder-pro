@@ -1,61 +1,33 @@
+
 import React, { useState, useEffect } from 'react';
 import { BrandSuggestion } from '@/services/types';
 import { BrandSuggestionItem } from './BrandSuggestionItem';
 import { Skeleton } from "@/components/ui/skeleton";
-import { fetchBrandSuggestions } from '@/services/api/brandSuggestionService';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTranslation } from '@/services/translationService';
 import { toast } from "sonner";
 
 interface BrandSuggestionListProps {
-  searchDescription: string;
-  onSelectProduct: (searchQuery: string, immediate?: boolean) => void;
+  searchDescription?: string;
+  suggestions?: BrandSuggestion[];
+  onSelect: (searchQuery: string, immediate?: boolean) => void;
 }
 
 export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({ 
   searchDescription, 
-  onSelectProduct 
+  onSelect,
+  suggestions = []
 }) => {
-  const [suggestions, setSuggestions] = useState<BrandSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { t } = useTranslation();
 
-  useEffect(() => {
-    if (searchDescription) {
-      loadSuggestions(searchDescription);
-    } else {
-      setSuggestions([]);
-      setError(null);
-    }
-  }, [searchDescription, t]);
-
-  const loadSuggestions = async (description: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await fetchBrandSuggestions(description);
-      setSuggestions(data);
-    } catch (e: any) {
-      console.error("Ошибка при загрузке предложений:", e);
-      setError(t("Ошибка при загрузке предложений. Пожалуйста, попробуйте позже."));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRetry = () => {
-    if (searchDescription) {
-      loadSuggestions(searchDescription);
-    }
-  };
-
   // Функция для выбора продукта из списка
   const handleSelectProduct = (suggestion: BrandSuggestion, immediate: boolean = false) => {
     const searchQuery = `${suggestion.brand} ${suggestion.product}`;
-    onSelectProduct(searchQuery, immediate);
+    onSelect(searchQuery, immediate);
     
     toast.success(`Выбран товар для поиска: ${suggestion.brand} ${suggestion.product}`, {
       duration: 2000,
@@ -93,16 +65,6 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
             <p className="text-sm text-red-700">
               Произошла ошибка при загрузке предложений. Пожалуйста, попробуйте снова позже.
             </p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="mt-2" 
-              onClick={handleRetry}
-              disabled={isLoading}
-            >
-              {isLoading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-              Попробовать снова
-            </Button>
           </div>
         </div>
       ) : suggestions.length === 0 ? (

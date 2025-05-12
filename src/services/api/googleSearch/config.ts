@@ -18,4 +18,4 @@ export const API_CONFIG = {
 };
 
 // Кэш для хранения результатов поиска изображений
-export const imageCache: Record<string, string> = {};
+export const imageCache = new Map<string, string[]>();

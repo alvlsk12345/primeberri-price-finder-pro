@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { BrandSuggestionList } from "./BrandSuggestionList";
 import { Button } from "@/components/ui/button";
@@ -58,6 +57,7 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
     }
   }, [isAssistantEnabled, supabaseStatus]);
 
+  // Обработчик клика по кнопке поиска
   const handleGetBrandSuggestions = async () => {
     if (!productDescription.trim()) {
       toast.error("Пожалуйста, введите описание товара");
@@ -280,6 +280,7 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
 
       {isAssistantEnabled && brandSuggestions && brandSuggestions.length > 0 && (
         <BrandSuggestionList 
+          searchDescription={productDescription}
           suggestions={brandSuggestions} 
           onSelect={onSelectProduct} 
         />

@@ -1,3 +1,4 @@
+
 /**
  * Функции для поиска изображений через Google API
  */
@@ -14,7 +15,7 @@ import { testMinimalGoogleApiRequest, validateGoogleApiKey } from './validator';
 export async function searchImages(query: string): Promise<string[]> {
   try {
     // Валидируем API ключ перед запросом
-    validateGoogleApiKey(GOOGLE_API_KEY);
+    await validateGoogleApiKey();
 
     // Проверяем, есть ли изображения в кэше
     if (imageCache.has(query)) {
@@ -23,7 +24,7 @@ export async function searchImages(query: string): Promise<string[]> {
     }
 
     // Формируем URL для запроса к Google Custom Search API
-    const url = `${API_CONFIG.baseUrl}?key=${GOOGLE_API_KEY}&cx=${GOOGLE_SEARCH_ENGINE_ID}&q=${encodeURIComponent(query)}&searchType=image&num=${API_CONFIG.imageCount}`;
+    const url = `${API_CONFIG.BASE_URL}?key=${GOOGLE_API_KEY}&cx=${GOOGLE_SEARCH_ENGINE_ID}&q=${encodeURIComponent(query)}&searchType=image&num=5`;
     console.log(`Выполняется запрос к Google API: ${url}`);
 
     // Выполняем запрос к API
@@ -63,6 +64,33 @@ export async function searchImage(query: string): Promise<string | null> {
     return images.length > 0 ? images[0] : null;
   } catch (error) {
     console.error(`Ошибка при поиске одного изображения для запроса "${query}":`, error);
+    return null;
+  }
+}
+
+/**
+ * Поиск изображений продуктов Google с дополнительными параметрами
+ * @param brand Название бренда
+ * @param product Название продукта
+ * @param index Индекс изображения (для разнообразия результатов)
+ * @returns URL изображения
+ */
+export async function searchProductImageGoogle(brand: string, product: string, index: number = 0): Promise<string | null> {
+  try {
+    const query = `${brand} ${product} product image high quality`;
+    console.log(`Поиск изображения для продукта: "${query}" (индекс: ${index})`);
+    
+    const images = await searchImages(query);
+    
+    // Выбираем изображение по индексу, если доступно, иначе первое
+    if (images.length > 0) {
+      const selectedIndex = index < images.length ? index : 0;
+      return images[selectedIndex];
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`Ошибка при поиске изображения продукта Google для "${brand} ${product}":`, error);
     return null;
   }
 }

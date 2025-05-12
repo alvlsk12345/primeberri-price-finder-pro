@@ -40,3 +40,15 @@ export const translateToEnglish = async (text: string): Promise<string> => {
     return text; // В случае ошибки возвращаем исходный текст
   }
 };
+
+// Хук для использования переводов в компонентах
+export const useTranslation = () => {
+  // Простая функция перевода для использования в компонентах
+  const t = (text: string): string => {
+    // В данной реализации просто возвращаем текст как есть
+    // В будущем можно добавить словари переводов
+    return text;
+  };
+
+  return { t };
+};
