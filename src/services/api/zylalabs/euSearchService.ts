@@ -153,7 +153,8 @@ const fetchEuProducts = async (url: string, apiKey: string, signal?: AbortSignal
     }
     
     const data = await response.json();
-    return parseApiResponse(data);
+    // Здесь мы обеспечиваем правильное количество аргументов при вызове parseApiResponse
+    return parseApiResponse(data, {query});
   } catch (error) {
     console.warn(`Ошибка при запросе к ${url}:`, error);
     return null;
