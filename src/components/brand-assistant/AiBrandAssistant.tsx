@@ -3,11 +3,11 @@ import React from "react";
 import { BrandSuggestionList } from "./BrandSuggestionList";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getApiKey } from "@/services/api/openai/config";
-import { toast } from "sonner";
 import { useAiBrandAssistant } from "@/hooks/useAiBrandAssistant";
 import { ProductDescriptionForm } from "./ProductDescriptionForm";
 import { BrandAssistantError } from "./BrandAssistantError";
 import { SupabaseStatusMessage } from "./SupabaseStatusMessage";
+import { Bot } from "lucide-react"; // Импортируем иконку
 
 interface AiBrandAssistantProps {
   onSelectProduct: (product: string, performSearch: boolean) => void;
@@ -48,7 +48,8 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
             }
           }}
         />
-        <label htmlFor="enableAssistant" className="text-sm cursor-pointer">
+        <label htmlFor="enableAssistant" className="text-sm cursor-pointer flex items-center gap-1">
+          <Bot size={18} className="text-primary" /> {/* Добавляем иконку в цветах сайта */}
           Использовать AI-помощник для поиска товаров
         </label>
       </div>

@@ -8,7 +8,8 @@ import { isSupabaseConnected } from "@/services/api/supabase/client";
 import { isUsingSupabaseBackend } from "@/services/api/supabase/config";
 
 export const useAiBrandAssistant = () => {
-  const [isAssistantEnabled, setIsAssistantEnabled] = useState<boolean>(true);
+  // Изменили на false по умолчанию как запросил пользователь
+  const [isAssistantEnabled, setIsAssistantEnabled] = useState<boolean>(false);
   const [productDescription, setProductDescription] = useState<string>("");
   const [isAssistantLoading, setIsAssistantLoading] = useState<boolean>(false);
   const [brandSuggestions, setBrandSuggestions] = useState<BrandSuggestion[]>([]);

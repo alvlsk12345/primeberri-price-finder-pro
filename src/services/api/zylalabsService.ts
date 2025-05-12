@@ -1,7 +1,6 @@
 
 // Переделанная упрощенная версия - использует поиск по странам ЕС
 import { SearchParams } from "../types";
-import { toast } from "sonner";
 import { makeZylalabsApiRequest } from "./zylalabs/apiClient";
 import { parseApiResponse } from "./zylalabs/responseParser";
 import { generateMockSearchResults } from "./mock/mockSearchGenerator";
@@ -31,7 +30,6 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
     if (result === null) {
       // При полном отсутствии результатов используем демо-данные
       console.log('Не удалось получить результаты API, использование демо-данных');
-      toast.error('Не удалось получить данные от API Zylalabs', { duration: 3000 });
       
       const demoData = generateMockSearchResults(params.query, params.page);
       return {
@@ -49,7 +47,6 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
     return parseApiResponse(result, params);
   } catch (error) {
     console.error('Критическая ошибка при вызове API:', error);
-    toast.error('Произошла непредвиденная ошибка при поиске товаров', { duration: 3000 });
     
     // При любой ошибке возвращаем демо-данные
     const demoData = generateMockSearchResults(params.query, params.page);

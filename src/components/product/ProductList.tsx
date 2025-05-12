@@ -21,9 +21,10 @@ export const ProductList: React.FC<ProductListProps> = ({ products, selectedProd
   }
   
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    // Улучшаем отзывчивость сетки, добавляя больше точек перелома для лучшей поддержки разных экранов
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
       {products.map((product) => (
-        <div key={product.id} className="flex h-full">
+        <div key={product.id} className="flex h-full w-full">
           <ProductCard
             product={product}
             isSelected={selectedProduct?.id === product.id}

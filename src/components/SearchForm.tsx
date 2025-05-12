@@ -53,9 +53,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
     checkSupabaseStatus();
   }, []);
 
-  // Удалён автоматический диагностический тест API
-
-  // Функция выполнения поиска с дополнительными проверками
+  // Функция выполнения поиска с дополнительными проверками и скроллингом
   const executeSearch = () => {
     try {
       if (!searchQuery.trim()) {
@@ -67,17 +65,34 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       setHasError(false);
       setErrorMessage("");
 
-      // Дополнительное уведомление для отладки
-      toast.info('Выполняем поиск товаров', {
-        duration: 2000
+      // Добавляем всплывающее окно о поиске
+      toast.loading('Идет поиск, пожалуйста подождите', {
+        id: 'search-toast',
+        duration: 0 // Бесконечная длительность, отменим вручную при получении результатов
       });
       
       console.log('Запуск поиска с запросом:', searchQuery);
+      
+      // Выполняем поиск и затем скроллим к результатам
       handleSearch();
+      
+      // Добавляем скроллинг к результатам после небольшой паузы
+      setTimeout(() => {
+        // Ищем элемент с результатами поиска
+        const resultsElement = document.querySelector('.search-results-section');
+        if (resultsElement) {
+          resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        // Закрываем всплывающее окно о поиске
+        toast.dismiss('search-toast');
+        toast.success('Поиск завершен', { duration: 1500 });
+      }, 1000);
     } catch (error: any) {
       console.error('Ошибка при попытке поиска:', error);
       setHasError(true);
       setErrorMessage(error?.message || 'Произошла ошибка при поиске. Пожалуйста, попробуйте снова.');
+      toast.dismiss('search-toast');
       toast.error('Произошла ошибка при поиске. Подробности в консоли.');
     }
   };

@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { BrandSuggestion, BrandResponse } from "@/services/types";
 import { OpenAIRequestOptions } from "../openai/proxyUtils";
@@ -111,7 +110,7 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
         provider: 'openai',
         action: 'getBrandSuggestions',
         description,
-        count: 5 // Запрашиваем 5 результатов
+        count: 6 // Изменяем с 5 на 6 запрашиваемых результатов
       }
     });
 

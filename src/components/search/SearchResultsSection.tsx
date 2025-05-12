@@ -8,6 +8,7 @@ import { SearchResultsAlert } from "@/components/search/SearchResultsAlert";
 import { SortButtons } from "../filter/SortButtons";
 import { SortOption } from "@/services/types";
 import { Languages, Filter } from "lucide-react";
+
 export const SearchResultsSection: React.FC = () => {
   const {
     searchResults,
@@ -29,6 +30,7 @@ export const SearchResultsSection: React.FC = () => {
   useEffect(() => {
     console.log(`SearchResultsSection: Всего результатов: ${allSearchResults?.length || 0}, отфильтровано: ${searchResults?.length || 0}`);
   }, [allSearchResults, searchResults]);
+
   if (searchResults.length === 0) {
     return null;
   }
@@ -47,7 +49,8 @@ export const SearchResultsSection: React.FC = () => {
 
   // Проверяем, применяются ли фильтры
   const hasActiveFilters = filters && Object.keys(filters).filter(k => k !== 'sortBy' && filters[k] && (Array.isArray(filters[k]) ? filters[k].length > 0 : true)).length > 0;
-  return <div className="mt-6">
+
+  return <div className="mt-6 search-results-section">
       {/* Добавляем алерт для демо-режима */}
       <SearchResultsAlert currentPage={currentPage} />
       

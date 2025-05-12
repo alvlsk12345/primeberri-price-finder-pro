@@ -21,11 +21,22 @@ export function useSearchApiCall({
   
   // Функция выполнения поискового запроса к API
   const executeApiCall = async (searchParams: SearchParams) => {
-    // Устанавливаем дополнительный внешний таймаут для контроля выполнения запроса
+    // Отменяем предыдущий таймаут, если он существует
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+      setSearchTimeout(null);
+    }
+    
+    // Устанавливаем новый таймаут
     const timeout = setTimeout(() => {
-      setIsLoading(false);
-      console.log('Поиск занял слишком много времени');
-      toast.error('Поиск занял слишком много времени. Попробуйте еще раз или используйте другой запрос.', { duration: 5000 });
+      // Проверяем, всё ещё идёт ли загрузка, чтобы не показывать сообщение если данные уже получены
+      setIsLoading(prevIsLoading => {
+        if (prevIsLoading) {
+          console.log('Поиск занял слишком много времени');
+          toast.error('Поиск занял слишком много времени. Попробуйте еще раз или используйте другой запрос.', { duration: 5000 });
+        }
+        return prevIsLoading;
+      });
     }, API_TIMEOUT + 5000); // API_TIMEOUT + 5 секунд запаса
     
     setSearchTimeout(timeout);
@@ -49,14 +60,23 @@ export function useSearchApiCall({
         setApiInfo(results.apiInfo);
       }
       
+      // После получения результатов отменяем таймаут, чтобы избежать ложного сообщения
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+        setSearchTimeout(null);
+      }
+      
       return results;
     } catch (error) {
       console.error('Ошибка при выполнении API-запроса:', error);
-      throw error;
-    } finally {
-      if (searchTimeout !== null) {
-        clearTimeout(timeout);
+      
+      // Отменяем таймаут при ошибке
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+        setSearchTimeout(null);
       }
+      
+      throw error;
     }
   };
   
@@ -64,6 +84,7 @@ export function useSearchApiCall({
   const cleanupApiCall = () => {
     if (searchTimeout) {
       clearTimeout(searchTimeout);
+      setSearchTimeout(null);
     }
   };
   

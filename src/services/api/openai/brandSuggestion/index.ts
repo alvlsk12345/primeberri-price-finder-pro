@@ -50,17 +50,17 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
       return createMockBrandSuggestions(description);
     }
 
-    // Если получили меньше 3 предложений, дополняем их моками чтобы сохранить консистентность UI
-    if (suggestions.length < 3) {
-      console.warn(`Получено только ${suggestions.length} предложений. Дополняем моками до 3`);
+    // Если получили меньше 6 предложений, дополняем их моками чтобы сохранить консистентность UI
+    if (suggestions.length < 6) {
+      console.warn(`Получено только ${suggestions.length} предложений. Дополняем моками до 6`);
       const mocks = createMockBrandSuggestions(description);
-      for (let i = suggestions.length; i < 3; i++) {
+      for (let i = suggestions.length; i < 6; i++) {
         suggestions.push(mocks[i % mocks.length]);
       }
     }
 
     console.log(`Возвращаем ${suggestions.length} предложений брендов`);
-    return suggestions.slice(0, 5); // Возвращаем до 5 результатов
+    return suggestions.slice(0, 6); // Возвращаем до 6 результатов
   } catch (error) {
     console.error('Ошибка при запросе к OpenAI для брендов:', error);
     
