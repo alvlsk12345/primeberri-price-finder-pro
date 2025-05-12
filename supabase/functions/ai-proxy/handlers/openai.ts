@@ -1,117 +1,142 @@
 
-import { OpenAI } from "https://esm.sh/openai@4.24.1";
-import { Brand, BrandResponse } from "../types.ts";
+import { CORS_HEADERS } from '../config.ts';
 
-const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+// Ключ для доступа к OpenAI API
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
-// Настройка клиента OpenAI
-const openai = new OpenAI({
-  apiKey: OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true
-});
+// Настройки OpenAI API
+const OPENAI_API_URL = 'https://api.openai.com/v1';
+const DEFAULT_MODEL = 'gpt-4o-mini'; // Используем более быстрый и экономичный gpt-4o-mini
+const DEFAULT_TEMPERATURE = 0.2; // Снижаем температуру для более предсказуемых ответов
+const DEFAULT_MAX_TOKENS = 800; // Уменьшаем max_tokens для более быстрого ответа
 
-// Обработчик запросов к OpenAI API
-export const handleOpenAIRequest = async (
-  params: {
-    action: string;
-    prompt?: string;
-    description?: string;
-    count?: number;
-    options?: any;
-  }
-): Promise<any> => {
-  console.log(`Обработка OpenAI запроса: ${params.action}`, params);
-  
-  if (!OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY не установлен в переменных окружения");
-  }
+/**
+ * Генерирует предложения брендов на основе описания продукта
+ * @param description Описание продукта
+ * @param count Количество предложений для генерации
+ * @returns Массив предложений брендов
+ */
+export const generateBrandSuggestions = async (description: string, count: number = 6) => {
+  console.log(`Запрос к OpenAI с описанием: ${description}`);
 
-  switch (params.action) {
-    case "getBrandSuggestions":
-      return await getBrandSuggestions(params.description || "", params.count || 6);
-    default:
-      throw new Error(`Неизвестное действие: ${params.action}`);
+  // Оптимизированный промпт для более быстрого и точного ответа
+  const prompt = `
+Ты - помощник по поиску товаров в интернет-магазинах. На основе описания товара предложи ${count} конкретных товаров с указанием: бренда, названия, типа, подтипа и цвета.
+
+ВАЖНО: Возвращай строго массив с ${count} объектами с такой структурой:
+[
+  {
+    "brand": "Название бренда",
+    "product": "Название модели",
+    "description": "Краткое описание",
+    "type": "Тип товара",
+    "subtype": "Подтип товара", 
+    "color": "Цвет товара"
+  },
+  ...
+]
+
+ПРАВИЛА:
+- Возвращай только JSON-массив, без дополнительных комментариев
+- Описание товара должно быть максимально конкретным
+- Если описание указывает на определенный бренд, обязательно включи его
+- Включай реальные модели товаров, не выдумывай
+- Если пользователь явно указал параметры (цвет, размер и т.д.), обязательно учитывай их
+
+Описание товара: "${description}"`;
+
+  try {
+    // Более быстрый запрос с меньшим количеством токенов
+    const response = await fetch(`${OPENAI_API_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: DEFAULT_MODEL,
+        messages: [
+          {
+            role: 'system',
+            content: 'Ты - эксперт в области онлайн-шоппинга. Отвечай только в формате JSON.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: DEFAULT_TEMPERATURE,
+        max_tokens: DEFAULT_MAX_TOKENS,
+        response_format: { type: "json_object" }
+      })
+    });
+
+    const data = await response.json();
+    console.log(`OpenAI ответ получен, длина: ${data.choices?.[0]?.message?.content?.length || 0}`);
+
+    if (!response.ok) {
+      throw new Error(`OpenAI вернул ошибку: ${data.error?.message || JSON.stringify(data)}`);
+    }
+
+    const content = data.choices?.[0]?.message?.content;
+    
+    if (!content) {
+      throw new Error('Пустой ответ от OpenAI API');
+    }
+
+    let suggestions;
+    try {
+      suggestions = JSON.parse(content);
+      
+      if (Array.isArray(suggestions)) {
+        console.log(`Успешно получен массив products: ${suggestions.length}`);
+        return suggestions;
+      } else if (suggestions.products && Array.isArray(suggestions.products)) {
+        console.log(`Успешно получен массив products: ${suggestions.products.length}`);
+        return suggestions.products;
+      } else {
+        throw new Error('Ответ не содержит ожидаемого массива');
+      }
+    } catch (jsonError) {
+      console.error('Ошибка при парсинге JSON из ответа OpenAI:', jsonError);
+      console.error('Содержимое ответа:', content);
+      throw new Error('Невалидный JSON в ответе OpenAI');
+    }
+  } catch (error) {
+    console.error('Ошибка при запросе к OpenAI:', error);
+    throw error;
   }
 };
 
-// Функция для получения предложений брендов, всегда возвращает массив BrandSuggestion
-const getBrandSuggestions = async (
-  description: string,
-  count: number = 6
-): Promise<Brand[]> => {
+/**
+ * Обработчик запросов к OpenAI
+ * @param params Параметры запроса
+ * @returns Результат запроса
+ */
+export const handleOpenAIRequest = async (params: any) => {
+  if (!OPENAI_API_KEY) {
+    return { error: 'OpenAI API ключ не настроен' };
+  }
+
   try {
-    // Формируем системный промпт с более четкими инструкциями
-    const systemPrompt = `Ты - эксперт по электронным товарам и аксессуарам для мобильных устройств.
-Твоя задача - предложить конкретные товары на основе описания пользователя.
-Ответ ДОЛЖЕН содержать ТОЛЬКО JSON-массив products с объектами, где каждый объект имеет:
-1. brand - название бренда (строка)
-2. product - название модели или товара (строка)
-3. description - краткое описание товара на русском языке (1-2 предложения)
+    const { action, ...actionParams } = params;
 
-Формат: {"products": [{"brand": "...", "product": "...", "description": "..."}]}
-
-Всегда возвращай точно 6 результатов. Не нумеруй результаты.`;
-
-    console.log('Запрос к OpenAI с описанием:', description);
-    
-    // Добавляем таймаут для запроса
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-    try {
-      // Формируем запрос к OpenAI с моделью gpt-4o как указано
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o", // Используем модель gpt-4o вместо gpt-4o-mini для лучших результатов
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt,
-          },
-          {
-            role: "user",
-            content: description,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 500, // Уменьшаем количество токенов для ускорения ответа
-        response_format: { type: "json_object" }
-      });
-
-      // Очищаем таймаут
-      clearTimeout(timeoutId);
-
-      // Получаем текст ответа
-      const content = response.choices[0].message.content;
-      console.log("OpenAI ответ получен, длина:", content?.length || 0);
-
-      if (!content) {
-        console.error("Пустой ответ от OpenAI");
-        return [];
+    if (action === 'getBrandSuggestions') {
+      console.log('Обработка OpenAI запроса: getBrandSuggestions', params);
+      
+      const { description, count = 6 } = actionParams;
+      
+      if (!description) {
+        return { error: 'Не указано описание товара' };
       }
-
-      // Парсим JSON
-      try {
-        const data = JSON.parse(content) as BrandResponse;
-        
-        // Проверяем, есть ли массив products в ответе
-        if (data && data.products && Array.isArray(data.products)) {
-          console.log("Успешно получен массив products:", data.products.length);
-          return data.products; // Возвращаем массив products
-        } else {
-          console.error("Некорректный формат ответа от OpenAI:", data);
-          return [];
-        }
-      } catch (error) {
-        console.error("Ошибка при парсинге JSON:", error);
-        return [];
-      }
-    } catch (error) {
-      // Отменяем таймаут при ошибке
-      clearTimeout(timeoutId);
-      throw error;
+      
+      const suggestions = await generateBrandSuggestions(description, count);
+      return { suggestions };
+    } else {
+      return { error: `Неизвестное действие: ${action}` };
     }
   } catch (error) {
-    console.error("Ошибка при получении предложений брендов:", error);
-    return [];
+    console.error('Ошибка при обработке OpenAI запроса:', error);
+    return { error: error.message || 'Неизвестная ошибка' };
   }
 };

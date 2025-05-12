@@ -5,7 +5,7 @@ import { searchProductsViaZylalabs } from "@/services/api/zylalabsService";
 import { toast } from "sonner";
 
 // Уменьшаем время таймаута для более быстрого поиска
-const API_TIMEOUT = 20000; // 20 секунд вместо 30
+const API_TIMEOUT = 15000; // 15 секунд вместо 20
 
 type SearchApiCallProps = {
   setIsLoading: (loading: boolean) => void;
@@ -32,10 +32,10 @@ export function useSearchApiCall({
     // Явно устанавливаем загрузку в true
     setIsLoading(true);
     
-    // Показываем toast о поиске
+    // Показываем toast о поиске с более коротким временем отображения
     toast.loading('Выполняется поиск товаров...', {
       id: 'search-progress',
-      duration: API_TIMEOUT + 5000
+      duration: API_TIMEOUT + 2000 // Уменьшаем время отображения
     });
     
     // Создаем переменную для отслеживания актуального статуса загрузки
@@ -56,8 +56,18 @@ export function useSearchApiCall({
     try {
       console.log('Выполняем запрос к API с параметрами:', searchParams);
       
+      // Создаем абортируемый запрос с таймаутом
+      const abortController = new AbortController();
+      const abortTimeout = setTimeout(() => abortController.abort(), API_TIMEOUT);
+      
       // Выполняем поисковый запрос
-      const results = await searchProductsViaZylalabs(searchParams);
+      const results = await searchProductsViaZylalabs({
+        ...searchParams,
+        signal: abortController.signal
+      });
+      
+      // Очищаем таймаут для прерывания запроса
+      clearTimeout(abortTimeout);
       
       console.log('Получен ответ от API:', results);
       

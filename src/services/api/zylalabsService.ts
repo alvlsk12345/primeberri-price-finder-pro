@@ -1,10 +1,14 @@
 
-// Переделанная упрощенная версия - использует поиск по странам ЕС
+// Переделанная упрощенная версия - использует параллельные запросы к API
 import { SearchParams } from "../types";
-import { makeZylalabsApiRequest } from "./zylalabs/apiClient";
+import { makeZylalabsApiRequest, makeParallelZylalabsRequests } from "./zylalabs/apiClient";
 import { parseApiResponse } from "./zylalabs/responseParser";
 import { generateMockSearchResults } from "./mock/mockSearchGenerator";
 import { searchEuProducts } from "./zylalabs/euSearchService";
+
+// Приоритетные страны ЕС для поиска
+const EU_PRIORITY_COUNTRIES = ['de', 'fr', 'it', 'nl', 'es', 'pl', 'be'];
+const SECONDARY_COUNTRIES = ['at', 'se', 'dk', 'ie', 'pt'];
 
 /**
  * Основная функция для поиска товаров через Zylalabs API
@@ -14,17 +18,40 @@ import { searchEuProducts } from "./zylalabs/euSearchService";
 export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{products: any[], totalPages: number, isDemo: boolean, apiInfo: Record<string, string>}> => {
   console.log('searchProductsViaZylalabs: Вызов с параметрами:', params);
   try {
+    // Определяем страны для поиска
+    const searchCountries = params.countries && params.countries.length > 0 
+      ? params.countries 
+      : EU_PRIORITY_COUNTRIES;
+    
+    console.log('Выполняем параллельный поиск по странам:', searchCountries);
+    
+    // Выполняем параллельные запросы для всех стран сразу
+    const parallelResults = await makeParallelZylalabsRequests(
+      params.query, 
+      searchCountries,
+      params.page,
+      params.language || 'ru'
+    );
+    
+    // Если найдены товары через параллельные запросы, возвращаем их
+    if (parallelResults && parallelResults.data?.data?.products && parallelResults.data.data.products.length > 0) {
+      console.log('Найдены товары через параллельные запросы:', parallelResults.data.data.products.length);
+      return parseApiResponse(parallelResults, params);
+    }
+    
+    console.log('Через параллельные запросы товары не найдены, пробуем использовать существующие методы');
+    
     // Используем новый подход поиска по странам ЕС, как в HTML-примере
     const results = await searchEuProducts(params.query, params.page);
     
     // Если найдены товары, возвращаем их
     if (results.products && results.products.length > 0) {
-      console.log('Найдены товары в странах ЕС:', results.products.length);
+      console.log('Найдены товары через searchEuProducts:', results.products.length);
       return results;
     }
     
     // Если товары не найдены, используем старый метод в качестве запасного варианта
-    console.log('Товары не найдены в странах ЕС, попытка использования стандартного API запроса...');
+    console.log('Товары не найдены через searchEuProducts, пробуем стандартный API запрос...');
     const result = await makeZylalabsApiRequest(params);
     
     if (result === null) {
@@ -61,3 +88,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
     };
   }
 };
+
+// Экспортируем приоритетные страны для доступа из других модулей
+export const getPriorityEuCountries = () => EU_PRIORITY_COUNTRIES;
+export const getSecondaryEuCountries = () => SECONDARY_COUNTRIES;
