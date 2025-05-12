@@ -19,11 +19,14 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
         return result;
       }
       
-      // Если результат не массив, но имеет поле products, возвращаем его
-      if (result && typeof result === 'object' && 'products' in result) {
-        const products = (result as any).products;
-        if (Array.isArray(products)) {
-          return products;
+      // Если результат не массив, но имеет поле suggestions или products, возвращаем его
+      if (result && typeof result === 'object') {
+        if ('suggestions' in result && Array.isArray((result as any).suggestions)) {
+          return (result as any).suggestions;
+        }
+        
+        if ('products' in result && Array.isArray((result as any).products)) {
+          return (result as any).products;
         }
       }
       
@@ -54,8 +57,14 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
         description: brand.description || "Описание недоступно",
       }));
     } else if (result && typeof result === 'object') {
-      // Проверяем наличие поля products
-      if ('products' in result && Array.isArray((result as any).products)) {
+      // Проверяем наличие поля products или suggestions
+      if ('suggestions' in result && Array.isArray((result as any).suggestions)) {
+        return (result as any).suggestions.map((brand: any) => ({
+          brand: brand.brand || brand.name || "Неизвестный бренд",
+          product: brand.product || "",
+          description: brand.description || "Описание недоступно",
+        }));
+      } else if ('products' in result && Array.isArray((result as any).products)) {
         return (result as any).products.map((brand: any) => ({
           brand: brand.brand || brand.name || "Неизвестный бренд",
           product: brand.product || "",

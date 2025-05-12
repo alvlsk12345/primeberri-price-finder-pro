@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 import { BrandSuggestion, BrandResponse } from "@/services/types";
 import { OpenAIRequestOptions } from "../openai/proxyUtils";
@@ -148,9 +149,9 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
         }));
       console.log('Нормализованные результаты из массива:', normalizedResults);
     } else if (data && typeof data === 'object') {
-      // Проверяем наличие поля products
-      if ('products' in data && Array.isArray((data as any).products)) {
-        const products = (data as any).products;
+      // Проверяем наличие различных полей с массивом результатов
+      if ('products' in data && Array.isArray(data.products)) {
+        const products = data.products;
         normalizedResults = products
           .filter((item: any) => item && typeof item === 'object')
           .map((item: any) => ({
@@ -161,7 +162,22 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
             ...item
           }));
         console.log('Нормализованные результаты из поля products:', normalizedResults);
-      } else {
+      } 
+      // Добавляем проверку на поле suggestions
+      else if ('suggestions' in data && Array.isArray(data.suggestions)) {
+        const suggestions = data.suggestions;
+        normalizedResults = suggestions
+          .filter((item: any) => item && typeof item === 'object')
+          .map((item: any) => ({
+            brand: item.brand || item.name || 'Неизвестный бренд',
+            product: item.product || '',
+            description: item.description || 'Описание недоступно',
+            // Сохраняем оригинальные данные для совместимости
+            ...item
+          }));
+        console.log('Нормализованные результаты из поля suggestions:', normalizedResults);
+      }
+      else {
         // Если это одиночный объект с нужными полями
         if ('brand' in data || 'name' in data) {
           normalizedResults = [{
