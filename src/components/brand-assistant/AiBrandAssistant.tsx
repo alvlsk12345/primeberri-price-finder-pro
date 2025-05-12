@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { BrandSuggestionList } from "./BrandSuggestionList";
 import { Button } from "@/components/ui/button";
@@ -186,6 +187,12 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
     }
   };
 
+  // Обработчик выбора предложения бренда
+  const handleSuggestionSelect = (searchQuery: string, immediate: boolean) => {
+    console.log(`Выбран запрос: ${searchQuery}, немедленный поиск: ${immediate}`);
+    onSelectProduct(searchQuery, immediate);
+  };
+
   // Проверяем состояние brandSuggestions для отладки
   useEffect(() => {
     console.log('Состояние brandSuggestions обновлено:', brandSuggestions);
@@ -280,7 +287,7 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
 
       {isAssistantEnabled && brandSuggestions && brandSuggestions.length > 0 && (
         <BrandSuggestionList 
-          suggestions={suggestions}
+          suggestions={brandSuggestions}
           onSelect={(searchQuery, immediate) => handleSuggestionSelect(searchQuery, !!immediate)}
         />
       )}
