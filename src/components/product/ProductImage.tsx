@@ -7,6 +7,7 @@ import { useProductImageLoading } from './image/useProductImageLoading';
 import { detectImageSource } from './image/ImageSourceDetector';
 import { AvatarProductImage } from './image/AvatarProductImage';
 import { StandardProductImage } from './image/StandardProductImage';
+import { isGoogleThumbnail, isZylalabsImage } from '@/services/image';
 
 interface ProductImageProps {
   image: string | null;
@@ -18,8 +19,12 @@ export const ProductImage: React.FC<ProductImageProps> = ({ image, title, produc
   const [isModalOpen, setIsModalOpen] = useState(false);
   const placeholderUrl = getPlaceholderImageUrl(title);
   
-  // Используем хук для обработки загрузки изображения
-  const imageState = useProductImageLoading(image, productId);
+  // Определяем, требуется ли directFetch для проблемных источников
+  const needsDirectFetch = image ? 
+    (isZylalabsImage(image) || isGoogleThumbnail(image)) : false;
+  
+  // Используем хук для обработки загрузки изображения с учетом типа изображения
+  const imageState = useProductImageLoading(image, productId, needsDirectFetch);
   const { imageError } = imageState;
   
   // Определяем тип источника изображения

@@ -30,16 +30,17 @@ export const processProductImage = (
   const index = isIndex ? indexOrUseCache : undefined;
 
   // Проверяем, нужна ли прокси для изображения
-  const needsProxy = isZylalabsImage(imageUrl) || 
-                    isGoogleShoppingImage(imageUrl) || 
-                    isGoogleThumbnail(imageUrl);
+  const isZylalabs = isZylalabsImage(imageUrl);
+  const isGoogleShopping = isGoogleShoppingImage(imageUrl);
+  const isGoogleThumb = isGoogleThumbnail(imageUrl);
+  const needsProxy = isZylalabs || isGoogleShopping || isGoogleThumb;
   
   // Получаем URL с учетом кэширования
   const shouldUseCache = useCache;
   const uniqueUrl = getUniqueImageUrl(imageUrl, index, shouldUseCache);
   
   // Для изображений из Zylalabs и Google Thumbnails всегда используем directFetch=true при первой загрузке
-  const shouldDirectFetch = directFetch || isZylalabsImage(imageUrl) || isGoogleThumbnail(imageUrl);
+  const shouldDirectFetch = directFetch || isZylalabs || isGoogleThumb;
   
   // Применяем прокси только если нужно
   return needsProxy ? getProxiedImageUrl(uniqueUrl, shouldDirectFetch) : uniqueUrl;
@@ -91,9 +92,10 @@ export const getLargeSizeImageUrl = (url: string | null, useCache: boolean = tru
     return getProxiedImageUrl(url, true);
   }
   
-  // Для Zylalabs изображений применяем оптимизацию размера
+  // Для Zylalabs изображений всегда directFetch=true
   if (isZylalabsImage(url)) {
-    return getProxiedImageUrl(getUniqueImageUrl(url, undefined, useCache), true);
+    // Добавляем параметр для принудительной прямой загрузки
+    return getProxiedImageUrl(getUniqueImageUrl(url, undefined, useCache), true) + '&forceDirectFetch=true';
   }
   
   return url;
@@ -111,6 +113,22 @@ export const getZylalabsSizeImageUrl = (url: string | null, size: 'small' | 'med
   
   if (!isZylalabsImage(url)) return url;
   
+  // Генерируем URL с учетом параметров размера
+  const baseUrl = getUniqueImageUrl(url, undefined, useCache);
+  
   // Для Zylalabs всегда принудительно добавляем параметр directFetch=true для первой загрузки
-  return getProxiedImageUrl(getUniqueImageUrl(url, undefined, useCache), true);
+  let proxyUrl = getProxiedImageUrl(baseUrl, true);
+  
+  // Добавляем параметр размера
+  if (!proxyUrl.includes('size=')) {
+    const separator = proxyUrl.includes('?') ? '&' : '?';
+    proxyUrl += `${separator}size=${size}`;
+  }
+  
+  // Добавляем параметр forceDirectFetch для принудительной прямой загрузки
+  if (!proxyUrl.includes('forceDirectFetch=')) {
+    proxyUrl += '&forceDirectFetch=true';
+  }
+  
+  return proxyUrl;
 };

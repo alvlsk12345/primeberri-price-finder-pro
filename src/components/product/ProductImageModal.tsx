@@ -7,6 +7,7 @@ import { useImageModalSource } from './modal/useImageModalSource';
 import { ImageModalHeader } from './modal/ImageModalHeader';
 import { ImageModalContent } from './modal/ImageModalContent';
 import { getLargeSizeImageUrl } from '@/services/image/imageProcessor';
+import { getProxiedImageUrl } from '@/services/image';
 
 interface ProductImageModalProps {
   isOpen: boolean;
@@ -21,21 +22,27 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
   imageUrl,
   productTitle
 }) => {
+  // Определяем источник изображения перед оптимизацией
+  const sourceInfo = useImageModalSource(imageUrl);
+  
   // Увеличиваем размер изображения для модального окна если возможно
-  const optimizedImageUrl = imageUrl ? getLargeSizeImageUrl(imageUrl) : null;
+  // Для Zylalabs и Google Thumbnail использовать прямую загрузку (directFetch=true)
+  const optimizedImageUrl = imageUrl ? 
+    (sourceInfo.needsDirectFetch ? 
+      getProxiedImageUrl(imageUrl, true, true) : 
+      getLargeSizeImageUrl(imageUrl)) : null;
   
   // Если нет изображения, используем заглушку
   const displayedImage = optimizedImageUrl || getPlaceholderImageUrl(productTitle);
   
-  // Используем хуки для обработки загрузки и определения источника изображения
+  // Используем хуки для обработки загрузки изображения
   const loadingState = useImageModalLoading(optimizedImageUrl);
-  const sourceInfo = useImageModalSource(optimizedImageUrl);
   
   // Состояние для хранения попыток восстановления
   const [retryCount, setRetryCount] = useState(0);
   const [fallbackImage, setFallbackImage] = useState<string | null>(null);
   
-  const MAX_RETRIES = 2;
+  const MAX_RETRIES = 3; // Увеличиваем с 2 до 3
   
   // Подробное логирование открытия модального окна
   useEffect(() => {
@@ -48,6 +55,8 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
         useAvatar: sourceInfo.useAvatar,
         isGoogleImage: sourceInfo.isGoogleImage,
         isZylalabs: sourceInfo.isZylalabs,
+        isGoogleThumbnail: sourceInfo.isGoogleThumbnail,
+        needsDirectFetch: sourceInfo.needsDirectFetch
       });
     }
   }, [isOpen, imageUrl, optimizedImageUrl, displayedImage, productTitle, sourceInfo]);
@@ -59,13 +68,30 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
     // Только если окно открыто, изображение доступно и произошла ошибка
     if (isOpen && optimizedImageUrl && imageError && retryCount < MAX_RETRIES) {
       // Задержка перед повторной попыткой
+      const delay = 800 * (retryCount + 1);
       const timer = setTimeout(() => {
         console.log(`Повторная попытка загрузки изображения в модальном окне ${retryCount + 1}/${MAX_RETRIES}`);
         
-        // Добавляем уникальный параметр к URL для избежания кэширования
+        // Для Zylalabs и Google Thumbnail используем принудительную прямую загрузку
+        let newUrl: string;
+        if (sourceInfo.isZylalabs || sourceInfo.isGoogleThumbnail) {
+          newUrl = getProxiedImageUrl(imageUrl || '', true, true) + `&retry=${Date.now()}`;
+        } else {
+          // Добавляем уникальный параметр к URL для избежания кэширования
+          newUrl = `${optimizedImageUrl}?retry=${Date.now()}-${retryCount}`;
+        }
+        
         setRetryCount(prev => prev + 1);
-        setFallbackImage(`${optimizedImageUrl}?retry=${Date.now()}`);
-      }, 800 * (retryCount + 1));
+        setFallbackImage(newUrl);
+        
+        console.log('Новый URL для повторной попытки:', {
+          original: optimizedImageUrl,
+          new: newUrl,
+          retryCount: retryCount + 1,
+          isZylalabs: sourceInfo.isZylalabs,
+          isGoogleThumb: sourceInfo.isGoogleThumbnail
+        });
+      }, delay);
       
       return () => clearTimeout(timer);
     } else if (isOpen && imageError && retryCount >= MAX_RETRIES) {
@@ -73,7 +99,7 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
       console.log(`Все ${MAX_RETRIES} попытки загрузки изображения в модальном окне исчерпаны, используем заглушку`);
       setFallbackImage(getPlaceholderImageUrl(productTitle));
     }
-  }, [loadingState.imageError, retryCount, isOpen, optimizedImageUrl, productTitle]);
+  }, [loadingState.imageError, retryCount, isOpen, optimizedImageUrl, productTitle, imageUrl, sourceInfo, MAX_RETRIES]);
   
   // Итоговый URL с учетом попыток восстановления
   const finalImageUrl = fallbackImage || displayedImage;

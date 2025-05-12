@@ -1,99 +1,157 @@
 
-import { CACHE_TIME } from './config.ts';
-import { getSupabaseClient, generateCacheFileName, logMessage, LogLevel } from './utils.ts';
-import { CacheCheckResult } from './types.ts';
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import { STORAGE_CONFIG } from "./config.ts";
+import { CacheCheckResult } from "./types.ts";
+import { hashUrl } from "./utils.ts";
 
-// Имя бакета для хранения кэшированных изображений
-const BUCKET_NAME = 'product-images';
-const CACHE_PREFIX = 'cache/';
+// Создание клиента Supabase для доступа к Storage
+const supabaseAdmin = createClient(
+  Deno.env.get("SUPABASE_URL") ?? "",
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+);
 
 /**
- * Проверяет наличие изображения в кэше
- * @param url URL изображения
- * @param requestId Уникальный идентификатор запроса для логирования
- * @returns Объект с результатом проверки кэша
+ * Генерирует имя файла для кэширования на основе URL
+ * @param url URL для кэширования
+ * @returns Имя файла для кэша
  */
-export async function checkImageCache(url: string, requestId: string): Promise<CacheCheckResult> {
-  try {
-    const cacheFileName = generateCacheFileName(url);
-    const path = `${CACHE_PREFIX}${cacheFileName}`;
-    
-    logMessage(LogLevel.DEBUG, `[${requestId}] Проверка кэша для изображения: ${url}, путь: ${path}`);
-    
-    // Получаем клиент Supabase
-    const supabaseAdmin = getSupabaseClient();
-    
-    // Проверяем наличие файла в хранилище
-    const { data, error } = await supabaseAdmin
-      .storage
-      .from(BUCKET_NAME)
-      .getPublicUrl(path);
-    
-    if (error) {
-      logMessage(LogLevel.DEBUG, `[${requestId}] Кэшированное изображение не найдено: ${error.message}`);
-      return { exists: false, error: error.message };
-    }
-    
-    logMessage(LogLevel.INFO, `[${requestId}] Найдено кэшированное изображение: ${data.publicUrl}`);
-    return { exists: true, url: data.publicUrl };
-  } catch (err) {
-    logMessage(LogLevel.ERROR, `[${requestId}] Ошибка при проверке кэша изображений:`, err);
-    return { exists: false, error: err.message };
-  }
+export function getCacheFileName(url: string): string {
+  // Создаем хеш URL для использования в названии файла
+  const urlHash = hashUrl(url);
+  
+  // Берем начало URL для улучшения читаемости файла
+  let urlPrefix = encodeURIComponent(url).slice(0, 50);
+  urlPrefix = urlPrefix.replace(/%/g, '');
+  
+  return `${STORAGE_CONFIG.CACHE_PREFIX}${urlPrefix}-${urlHash}`;
 }
 
 /**
- * Загружает изображение из кэша
- * @param cacheFileName Имя файла в кэше
- * @returns ArrayBuffer с данными изображения или null
+ * Проверяет наличие изображения в кэше
+ * @param url URL оригинального изображения
+ * @returns Результат проверки кэша
  */
-export async function loadImageFromCache(cacheFileName: string): Promise<Uint8Array | null> {
+export async function checkCache(url: string): Promise<CacheCheckResult> {
   try {
-    // Получаем клиент Supabase
-    const supabaseAdmin = getSupabaseClient();
-    
-    // Загружаем файл из хранилища
-    const { data, error } = await supabaseAdmin
-      .storage
-      .from('product-images')
-      .download(`cache/${cacheFileName}`);
-    
-    if (error || !data) {
-      return null;
+    if (!url) {
+      return { exists: false, error: "No URL provided" };
     }
-    
-    // Преобразуем Blob в Uint8Array для Deno
-    return new Uint8Array(await data.arrayBuffer());
-  } catch (err) {
-    logMessage(LogLevel.ERROR, `Ошибка при загрузке изображения из кэша:`, err);
-    return null;
+
+    // Получаем имя файла для кэша
+    const fileName = getCacheFileName(url);
+
+    // Проверяем наличие файла в хранилище
+    const { data, error } = await supabaseAdmin.storage
+      .from(STORAGE_CONFIG.BUCKET_ID)
+      .getPublicUrl(fileName);
+
+    if (error) {
+      console.log("Error checking cache:", error.message);
+      return { exists: false, error: error.message };
+    }
+
+    // Если файл найден, возвращаем публичный URL
+    if (data?.publicUrl) {
+      console.log("Cache hit for:", url);
+      return { exists: true, url: data.publicUrl };
+    }
+
+    console.log("Cache miss for:", url);
+    return { exists: false };
+  } catch (error) {
+    console.error("Error in cache check:", error);
+    return { exists: false, error: error.message };
   }
 }
 
 /**
  * Сохраняет изображение в кэш
- * @param cacheFileName Имя файла в кэше
- * @param imageData Данные изображения
- * @returns true, если сохранение успешно
+ * @param url URL оригинального изображения
+ * @param imageBlob Blob изображения для сохранения
+ * @param contentType Тип контента изображения
+ * @returns URL к кэшированному изображению или null при ошибке
  */
-export async function saveImageToCache(cacheFileName: string, imageData: Uint8Array): Promise<boolean> {
+export async function saveToCache(
+  url: string,
+  imageBlob: Blob,
+  contentType: string
+): Promise<string | null> {
   try {
-    // Получаем клиент Supabase
-    const supabaseAdmin = getSupabaseClient();
-    
-    // Сохраняем файл в хранилище
-    const { error } = await supabaseAdmin
-      .storage
-      .from('product-images')
-      .upload(`cache/${cacheFileName}`, imageData, {
-        contentType: 'image/jpeg', // Предполагаем JPEG по умолчанию
-        cacheControl: `max-age=${CACHE_TIME}`,
-        upsert: true
+    if (!url || !imageBlob) {
+      return null;
+    }
+
+    // Пропускаем кэширование, если размер слишком большой
+    if (imageBlob.size > STORAGE_CONFIG.MAX_CACHE_SIZE) {
+      console.log(`Skipping cache: image too large (${imageBlob.size} bytes)`);
+      return null;
+    }
+
+    // Получаем имя файла для кэша
+    const fileName = getCacheFileName(url);
+
+    // Преобразуем Blob в ArrayBuffer для загрузки
+    const buffer = await imageBlob.arrayBuffer();
+
+    // Загружаем файл в хранилище
+    const { data, error } = await supabaseAdmin.storage
+      .from(STORAGE_CONFIG.BUCKET_ID)
+      .upload(fileName, buffer, {
+        contentType,
+        cacheControl: "public, max-age=604800", // 7 дней
+        upsert: true,
       });
-    
-    return !error;
-  } catch (err) {
-    logMessage(LogLevel.ERROR, `Ошибка при сохранении изображения в кэш:`, err);
+
+    if (error) {
+      console.error("Error caching image:", error);
+      return null;
+    }
+
+    // Получаем публичный URL для кэшированного изображения
+    const { data: urlData } = await supabaseAdmin.storage
+      .from(STORAGE_CONFIG.BUCKET_ID)
+      .getPublicUrl(fileName);
+
+    console.log("Image cached successfully:", {
+      originalUrl: url,
+      cachedUrl: urlData?.publicUrl,
+      size: imageBlob.size,
+      contentType
+    });
+
+    return urlData?.publicUrl || null;
+  } catch (error) {
+    console.error("Cache error:", error);
+    return null;
+  }
+}
+
+/**
+ * Удаляет изображение из кэша
+ * @param url URL оригинального изображения
+ * @returns true в случае успеха, false при ошибке
+ */
+export async function removeFromCache(url: string): Promise<boolean> {
+  try {
+    if (!url) return false;
+
+    // Получаем имя файла для кэша
+    const fileName = getCacheFileName(url);
+
+    // Удаляем файл из хранилища
+    const { error } = await supabaseAdmin.storage
+      .from(STORAGE_CONFIG.BUCKET_ID)
+      .remove([fileName]);
+
+    if (error) {
+      console.error("Error removing from cache:", error);
+      return false;
+    }
+
+    console.log("Image removed from cache:", url);
+    return true;
+  } catch (error) {
+    console.error("Cache removal error:", error);
     return false;
   }
 }

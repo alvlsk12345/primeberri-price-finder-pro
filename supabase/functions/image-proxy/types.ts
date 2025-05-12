@@ -21,5 +21,22 @@ export interface ProxyResult {
   statusText?: string;
   headers?: Record<string, string>;
   url?: string;
+  // Добавляем дополнительное поле для информации о кэшировании
+  cacheInfo?: {
+    cached: boolean;
+    source: string;
+  }
+}
+
+// Добавляем типы для источников изображений
+export type ImageSource = 'google' | 'zylalabs' | 'standard' | 'unknown';
+
+// Интерфейс для настроек загрузки изображений
+export interface ImageLoadOptions {
+  directFetch?: boolean;
+  bypassCache?: boolean;
+  forceProxy?: boolean;
+  headers?: Record<string, string>;
+  timeout?: number;
 }
 

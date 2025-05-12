@@ -13,6 +13,7 @@ export interface ImageModalSourceInfo {
   isZylalabs: boolean;
   isProxiedUrl: boolean;
   isGoogleThumbnail: boolean;
+  needsDirectFetch: boolean;  // Флаг для прямой загрузки, минуя кэш
 }
 
 export function useImageModalSource(imageUrl: string | null): ImageModalSourceInfo {
@@ -22,7 +23,8 @@ export function useImageModalSource(imageUrl: string | null): ImageModalSourceIn
       isGoogleImage: false,
       isZylalabs: false,
       isProxiedUrl: false,
-      isGoogleThumbnail: false
+      isGoogleThumbnail: false,
+      needsDirectFetch: false
     };
   }
   
@@ -34,6 +36,9 @@ export function useImageModalSource(imageUrl: string | null): ImageModalSourceIn
   // Проверяем, является ли URL с прокси
   const isProxiedUrlResult = isUrlWithCorsProxy(imageUrl);
   
+  // Определяем, нужен ли directFetch для некоторых проблемных источников
+  const needsDirectFetch = isZylalabs || isGoogleThumb;
+  
   // Решаем, использовать ли Avatar компонент для изображения
   const useAvatar = isGoogleImage || isZylalabs || isGoogleThumb || imageUrl.includes('encrypted-tbn');
   
@@ -42,6 +47,7 @@ export function useImageModalSource(imageUrl: string | null): ImageModalSourceIn
     isGoogleImage,
     isZylalabs,
     isProxiedUrl: isProxiedUrlResult,
-    isGoogleThumbnail: isGoogleThumb
+    isGoogleThumbnail: isGoogleThumb,
+    needsDirectFetch
   };
 }

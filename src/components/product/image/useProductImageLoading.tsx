@@ -1,6 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { markImageAsLoaded, isImageLoaded } from '@/services/image/imageCache';
+import { getProxiedImageUrl } from '@/services/image/imageProxy';
+import { isZylalabsImage, isGoogleThumbnail } from '@/services/image';
 
 export interface ImageLoadingState {
   imageLoading: boolean;
@@ -11,7 +13,8 @@ export interface ImageLoadingState {
 
 export function useProductImageLoading(
   image: string | null, 
-  productId: string
+  productId: string,
+  needsDirectFetch: boolean = false
 ): ImageLoadingState {
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
@@ -39,10 +42,13 @@ export function useProductImageLoading(
         image,
         loading: imageLoading,
         error: imageError,
-        loadAttempts
+        loadAttempts,
+        isZylalabs: isZylalabsImage(image),
+        isGoogleThumb: isGoogleThumbnail(image),
+        needsDirectFetch
       });
     }
-  }, [image, imageLoading, imageError, loadAttempts, productId]);
+  }, [image, imageLoading, imageError, loadAttempts, productId, needsDirectFetch]);
 
   // Обработчик для успешной загрузки изображения
   const handleImageLoad = () => {
@@ -66,14 +72,19 @@ export function useProductImageLoading(
     const newAttempts = loadAttempts + 1;
     setLoadAttempts(newAttempts);
     
+    // Определяем тип изображения для лучшей диагностики
+    const isZylalabsImg = image ? isZylalabsImage(image) : false;
+    const isGoogleThumbImg = image ? isGoogleThumbnail(image) : false;
+    
     console.error('Ошибка загрузки изображения для товара:', {
       productId,
       imageUrl: image,
       attempt: newAttempts,
       maxAttempts,
-      isZylalabs: image?.includes('zylalabs.com'),
+      isZylalabs: isZylalabsImg,
+      isGoogleThumb: isGoogleThumbImg,
       isProxy: image?.includes('image-proxy'),
-      directFetch: image?.includes('directFetch=true')
+      directFetch: needsDirectFetch || image?.includes('directFetch=true')
     });
     
     // Попытка повторной загрузки с параметром directFetch при первой ошибке
@@ -89,17 +100,24 @@ export function useProductImageLoading(
           // Добавляем параметр для обхода кэша
           let newSrc = image;
           
-          // Добавляем параметр timestamp для предотвращения кэширования браузером
-          const timestamp = Date.now();
-          if (image.includes('?')) {
-            newSrc = `${image}&t=${timestamp}&retryAttempt=${newAttempts}`;
+          // Для первой повторной попытки с Zylalabs или Google Thumbnail, пробуем использовать прокси
+          if (newAttempts === 1 && (isZylalabsImg || isGoogleThumbImg) && !image.includes('image-proxy')) {
+            newSrc = getProxiedImageUrl(image, true, true);
           } else {
-            newSrc = `${image}?t=${timestamp}&retryAttempt=${newAttempts}`;
-          }
-          
-          // Добавляем параметр directFetch для обхода кэша при проблемах
-          if (!newSrc.includes('directFetch=true')) {
-            newSrc += '&directFetch=true';
+            // Для остальных случаев добавляем параметр timestamp
+            const timestamp = Date.now();
+            if (image.includes('?')) {
+              newSrc = `${image}&t=${timestamp}&retryAttempt=${newAttempts}`;
+            } else {
+              newSrc = `${image}?t=${timestamp}&retryAttempt=${newAttempts}`;
+            }
+            
+            // Добавляем параметр directFetch и forceDirectFetch для обхода кэша при проблемах
+            if (isZylalabsImg || isGoogleThumbImg) {
+              if (!newSrc.includes('directFetch=true')) {
+                newSrc += '&directFetch=true&forceDirectFetch=true';
+              }
+            }
           }
           
           imgElement.src = newSrc;
@@ -107,7 +125,9 @@ export function useProductImageLoading(
           console.log(`Изображение запрошено повторно с src:`, {
             originalSrc: image,
             newSrc: newSrc,
-            delay
+            delay,
+            isZylalabs: isZylalabsImg,
+            isGoogleThumb: isGoogleThumbImg
           });
         }
       }, delay);

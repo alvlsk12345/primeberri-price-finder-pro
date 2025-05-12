@@ -1,153 +1,105 @@
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
-import { ResponseOptions } from './types.ts';
-import { corsHeaders } from './config.ts';
-
-// Уровни логирования
-export enum LogLevel {
-  DEBUG = 'DEBUG',
-  INFO = 'INFO',
-  WARN = 'WARN',
-  ERROR = 'ERROR'
+/**
+ * Декодирует URL из base64 формата
+ * @param base64Url URL в формате base64
+ * @returns Декодированный URL
+ */
+export function decodeBase64Url(base64Url: string): string {
+  try {
+    return atob(base64Url.replace(/_/g, "/").replace(/-/g, "+"));
+  } catch (error) {
+    console.error("Base64 decode error:", error);
+    return "";
+  }
 }
 
-// Создаем клиент Supabase
-export const getSupabaseClient = () => {
-  return createClient(
-    Deno.env.get('SUPABASE_URL') || '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-  );
-};
+/**
+ * Кодирует URL в base64 формат
+ * @param url URL для кодирования
+ * @returns URL в формате base64
+ */
+export function encodeBase64Url(url: string): string {
+  try {
+    return btoa(url).replace(/\//g, "_").replace(/\+/g, "-").replace(/=+$/, "");
+  } catch (error) {
+    console.error("Base64 encode error:", error);
+    return "";
+  }
+}
 
-// Расширенная система логирования
-export function logMessage(level: LogLevel, message: string, data?: any) {
-  const timestamp = new Date().toISOString();
-  const logEntry = {
-    timestamp,
-    level,
-    message,
-    data: data || null,
-  };
+/**
+ * Создает хеш для URL
+ * @param url URL для хеширования
+ * @returns Хеш URL
+ */
+export function hashUrl(url: string): string {
+  let hash = 0;
+  if (url.length === 0) return hash.toString(16);
   
-  // Вывод отформатированного лога
-  if (level === LogLevel.ERROR) {
-    console.error(`[${timestamp}] [${level}] ${message}`, data || '');
-  } else if (level === LogLevel.WARN) {
-    console.warn(`[${timestamp}] [${level}] ${message}`, data || '');
-  } else {
-    console.log(`[${timestamp}] [${level}] ${message}`, data || '');
+  for (let i = 0; i < url.length; i++) {
+    const char = url.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
   }
   
-  return logEntry;
+  return Math.abs(hash).toString(16);
 }
 
-// Функция для генерации уникального имени файла в кэше
-export function generateCacheFileName(url: string): string {
-  // Создаем хэш URL для имени файла
-  const encoder = new TextEncoder();
-  const data = encoder.encode(url);
+/**
+ * Форматирует размер файла в удобочитаемую строку
+ * @param bytes Размер в байтах
+ * @returns Форматированная строка размера
+ */
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return bytes + " bytes";
+  const kb = bytes / 1024;
+  if (kb < 1024) return kb.toFixed(1) + " KB";
+  const mb = kb / 1024;
+  if (mb < 1024) return mb.toFixed(1) + " MB";
+  const gb = mb / 1024;
+  return gb.toFixed(2) + " GB";
+}
+
+/**
+ * Определяет, является ли URL изображением по расширению или заголовку Content-Type
+ * @param url URL для проверки
+ * @param contentType Content-Type заголовок (опционально)
+ * @returns true, если URL указывает на изображение
+ */
+export function isImage(url: string, contentType?: string | null): boolean {
+  if (contentType && contentType.startsWith('image/')) {
+    return true;
+  }
   
-  // Создаем хэш и преобразуем в hex-строку
-  return Array.from(new Uint8Array(data))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('')
-    .substring(0, 32) + '.img';
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.ico', '.bmp'];
+  return imageExtensions.some(ext => url.toLowerCase().endsWith(ext));
 }
 
 /**
- * Проверяет, является ли URL источником из Zylalabs
+ * Получает расширение файла из URL или Content-Type
+ * @param url URL изображения
+ * @param contentType Content-Type заголовок
+ * @returns Расширение файла с точкой
  */
-export function isZylalabsUrl(url: string): boolean {
-  return url.includes('zylalabs.com') || 
-         url.includes('api.promptapi.com') || 
-         url.includes('api.eu-central.promptapi.com') ||
-         url.includes('zyla-api') ||
-         url.includes('zylahome');
-}
-
-/**
- * Проверяет, является ли URL источником из Google
- */
-export function isGoogleUrl(url: string): boolean {
-  return url.includes('google.com') || 
-         url.includes('googleusercontent.com') || 
-         url.includes('gstatic.com') ||
-         url.includes('ggpht.com') ||
-         url.includes('encrypted-tbn');
-}
-
-/**
- * Создает объект Response с заголовками CORS
- * @param body Тело ответа
- * @param options Дополнительные опции ответа
- */
-export function createResponse(
-  body: BodyInit | null, 
-  options: ResponseOptions = {}
-) {
-  const { headers = {}, status = 200, statusText } = options;
-
-  return new Response(body, {
-    headers: { ...corsHeaders, ...headers },
-    status,
-    statusText
-  });
-}
-
-/**
- * Возвращает объект ошибки в формате JSON
- */
-export function createErrorResponse(
-  errorMessage: string, 
-  status: number = 500, 
-  additionalInfo: Record<string, any> = {}
-) {
-  logMessage(LogLevel.ERROR, errorMessage, additionalInfo);
+export function getFileExtensionFromUrl(url: string, contentType: string | null): string {
+  // Пытаемся получить расширение из URL
+  const urlMatch = url.match(/\.([a-zA-Z0-9]+)(\?|$)/);
+  if (urlMatch) {
+    return '.' + urlMatch[1].toLowerCase();
+  }
   
-  return createResponse(
-    JSON.stringify({ 
-      error: errorMessage,
-      ...additionalInfo
-    }),
-    { 
-      status, 
-      headers: { 'Content-Type': 'application/json' }
+  // Если нет расширения, определяем по Content-Type
+  if (contentType) {
+    switch (contentType) {
+      case 'image/jpeg': return '.jpg';
+      case 'image/png': return '.png';
+      case 'image/gif': return '.gif';
+      case 'image/webp': return '.webp';
+      case 'image/svg+xml': return '.svg';
+      case 'image/bmp': return '.bmp';
     }
-  );
-}
-
-/**
- * Генерирует уникальный идентификатор запроса
- */
-export function generateRequestId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
-}
-
-/**
- * Добавляет нужные заголовки для запросов к изображениям
- */
-export function getImageRequestHeaders(url: string): Record<string, string> {
-  const headers: Record<string, string> = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-    'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.9,ru;q=0.8',
-    'Cache-Control': 'no-cache',
-    'Pragma': 'no-cache'
-  };
-  
-  // Для Zylalabs источников добавляем дополнительные заголовки
-  if (isZylalabsUrl(url)) {
-    headers['Origin'] = 'https://zylalabs.com';
-    headers['Referer'] = 'https://zylalabs.com/';
-    headers['Sec-Fetch-Dest'] = 'image';
-    headers['Sec-Fetch-Mode'] = 'cors';
-    headers['Sec-Fetch-Site'] = 'cross-site';
-  }
-  // Для Google источников добавляем специальные заголовки
-  else if (isGoogleUrl(url)) {
-    headers['Origin'] = 'https://www.google.com';
-    headers['Referer'] = 'https://www.google.com/';
   }
   
-  return headers;
+  // По умолчанию используем .jpg
+  return '.jpg';
 }
