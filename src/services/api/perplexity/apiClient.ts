@@ -6,7 +6,7 @@ const API_BASE_URL = "https://api.perplexity.ai";
 
 // Опции по умолчанию для запросов
 const DEFAULT_OPTIONS = {
-  model: "llama-3.1-sonar-small-128k-online",
+  model: "sonar",
   temperature: 0.1,
   max_tokens: 500
 };

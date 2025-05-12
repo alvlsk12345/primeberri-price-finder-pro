@@ -28,7 +28,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     console.log('Запрос к Perplexity API для брендов:', description);
     
     const result = await callPerplexityAI(prompt, {
-      model: "llama-3.1-sonar-small-128k-online",
+      model: "sonar",
       temperature: 0.1,
       max_tokens: 600
     });
