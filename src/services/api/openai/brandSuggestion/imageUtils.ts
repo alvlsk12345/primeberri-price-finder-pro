@@ -1,5 +1,5 @@
 
-import { searchProductImageGoogle } from "@/services/api/googleSearchService";
+import { searchProductImageGoogle } from "@/services/api/googleSearch";
 import { getPlaceholderImageUrl } from "@/services/imageService";
 import { applyCorsProxy } from "@/services/image/corsProxyService";
 
