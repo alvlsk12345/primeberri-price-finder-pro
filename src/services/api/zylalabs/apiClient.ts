@@ -1,10 +1,12 @@
+
 import { SearchParams } from "../../types";
 import { generateMockSearchResults } from "../mock/mockSearchGenerator";
 import { useDemoModeForced } from "../mock/mockServiceConfig";
-import { getApiKey, REQUEST_TIMEOUT } from "./config";
+import { getApiKey } from "./config";
 import { buildZylalabsUrl } from "./urlBuilder";
 import { toast } from "sonner"; 
 import { getCachedResponse, setCacheResponse } from "./cacheService";
+import { makeZylalabsCountryRequest } from "./countryRequestService";
 
 /**
  * Выполняет запрос к API Zylalabs, используя подход из рабочего HTML-примера
@@ -75,7 +77,7 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
       if (response.status === 503) {
         toast.error('Сервис Zylalabs временно недоступен. Пробуем запрос с другими параметрами.');
         console.log('Сервис недоступен (503), пробуем выполнить запрос с другими параметрами');
-        return null; // Вернем null, чтоб�� попробовать другие страны или запросы
+        return null; // Вернем null, чтобы попробовать другие страны или запросы
       }
       
       throw new Error(`API вернул ошибку ${response.status}: ${response.statusText}`);
@@ -149,162 +151,5 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
   }
 };
 
-/**
- * Выполняет параллельные запросы к API Zylalabs для нескольких стран
- * @param query Поисковый запрос
- * @param countryCodes Массив кодов стран
- * @param page Номер страницы
- * @param language Код языка
- * @param signal Объект AbortSignal для отмены запросов (опционально)
- * @returns Комбинированные результаты поиска
- */
-export const makeParallelZylalabsRequests = async (
-  query: string,
-  countryCodes: string[],
-  page: number = 1,
-  language: string = 'ru',
-  signal?: AbortSignal
-): Promise<any> => {
-  console.log(`Выполняем параллельные запросы для ${countryCodes.length} стран:`, countryCodes);
-  
-  // Создаем массив промисов запросов для каждой страны
-  const requests = countryCodes.map(countryCode => 
-    makeZylalabsCountryRequest(query, countryCode, page, language, signal)
-      .catch(error => {
-        console.warn(`Ошибка при запросе для страны ${countryCode}:`, error);
-        return null; // Возвращаем null вместо ошибки для Promise.allSettled
-      })
-  );
-  
-  // Выполняем все запросы параллельно и получаем результаты
-  const results = await Promise.allSettled(requests);
-  
-  // Обрабатываем результаты, игнорируя ошибки
-  const validResults = results
-    .filter((result): result is PromiseFulfilledResult<any> => 
-      result.status === 'fulfilled' && result.value !== null)
-    .map(result => result.value);
-  
-  console.log(`Получено ${validResults.length} успешных ответов из ${countryCodes.length} запросов`);
-  
-  // Собираем все продукты из валидных результатов
-  let allProducts: any[] = [];
-  let totalPages = 1;
-  
-  validResults.forEach(result => {
-    if (result && result.data) {
-      // Проверяем разные структуры ответа
-      if (result.data.products) {
-        allProducts = [...allProducts, ...result.data.products];
-        totalPages = Math.max(totalPages, result.data.total_pages || 1);
-      } else if (result.data.data && result.data.data.products) {
-        allProducts = [...allProducts, ...result.data.data.products];
-        totalPages = Math.max(totalPages, result.data.data.total_pages || 1);
-      }
-    }
-  });
-  
-  console.log(`Собрано ${allProducts.length} уникальных продуктов из всех запросов`);
-  
-  // Если нет результатов, возвращаем null для перехода к запасному варианту
-  if (allProducts.length === 0) {
-    return null;
-  }
-  
-  // Формируем результат в формате, совместимом с ожиданиями парсера
-  return {
-    data: {
-      data: {
-        products: allProducts,
-        total_pages: totalPages
-      },
-      status: "OK"
-    },
-    totalPages: totalPages,
-    isDemo: false
-  };
-};
-
-/**
- * Выполняет запрос к API Zylalabs для конкретной страны, как в HTML-примере
- * @param query Поисковый запрос
- * @param countryCode Код страны
- * @param page Номер страницы
- * @param language Код языка (добавлен параметр)
- * @param signal Объект AbortSignal для отмены запросов (опционально)
- * @returns Результаты поиска или null в случае ошибки
- */
-export const makeZylalabsCountryRequest = async (
-  query: string, 
-  countryCode: string, 
-  page: number = 1,
-  language: string = 'ru', // По умолчанию используем русский язык
-  signal?: AbortSignal // Добавляем опциональный параметр signal
-): Promise<any> => {
-  const apiKey = getApiKey();
-  
-  // Проверка наличия ключа API
-  if (!apiKey) {
-    console.error('Отсутствует API ключ');
-    return null;
-  }
-  
-  // Формирование URL запроса точно как в HTML-примере, но с добавлением языка
-  const params = new URLSearchParams({
-    q: query,
-    country: countryCode,
-    page: page.toString(),
-    language: language // Добавляем параметр языка
-  });
-  
-  const apiBaseUrl = "https://zylalabs.com/api/2033/real+time+product+search+api/1809/search+products";
-  const url = `${apiBaseUrl}?${params.toString()}`;
-  
-  // Проверяем кэш для данного URL
-  const cachedResponse = getCachedResponse(url);
-  if (cachedResponse) {
-    console.log(`Используем кэшированные данные для страны ${countryCode}`);
-    return cachedResponse;
-  }
-  
-  console.log(`Запрос товаров для страны ${countryCode} на языке ${language}:`, url);
-  
-  try {
-    // Устанавливаем таймаут в 10 секунд для каждого запроса по стране (было 15)
-    const controller = new AbortController();
-    
-    // Объединяем внешний signal с нашим локальным, если внешний передан
-    if (signal) {
-      signal.addEventListener('abort', () => controller.abort());
-    }
-    
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 секунд для запросов по отдельным странам
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Accept': 'application/json'
-      },
-      signal: controller.signal
-    });
-    
-    // Очищаем таймаут
-    clearTimeout(timeoutId);
-    
-    if (!response.ok) {
-      console.warn(`Ошибка API для страны ${countryCode}:`, response.status, response.statusText);
-      return null;
-    }
-    
-    const data = await response.json();
-    
-    // Кэшируем результат
-    setCacheResponse(url, data);
-    
-    return data;
-  } catch (error: any) {
-    console.warn(`Ошибка при запросе товаров для страны ${countryCode}:`, error.message);
-    return null;
-  }
-};
+// Реэкспортируем функциональность из отдельных модулей
+export { makeParallelZylalabsRequests } from './parallelRequestService';
