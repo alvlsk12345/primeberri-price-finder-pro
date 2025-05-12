@@ -1,125 +1,128 @@
-
-import React, { useEffect } from "react";
-import { BrandSuggestionItem } from "./BrandSuggestionItem";
-import { BrandSuggestion, BrandResponse } from "@/services/types";
+import React, { useState, useEffect } from 'react';
+import { BrandSuggestion } from '@/services/types';
+import { BrandSuggestionItem } from './BrandSuggestionItem';
+import { Skeleton } from "@/components/ui/skeleton";
+import { fetchBrandSuggestions } from '@/services/api/brandSuggestionService';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { RefreshCw, AlertTriangle } from 'lucide-react';
+import { useTranslation } from '@/services/translationService';
+import { toast } from "sonner";
 
 interface BrandSuggestionListProps {
-  suggestions: BrandSuggestion[] | BrandResponse;
-  onSelect: (product: string, performSearch?: boolean) => void;
+  searchDescription: string;
+  onSelectProduct: (searchQuery: string, immediate?: boolean) => void;
 }
 
 export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({ 
-  suggestions, 
-  onSelect 
+  searchDescription, 
+  onSelectProduct 
 }) => {
-  console.log("Отрисовка BrandSuggestionList с данными:", suggestions);
-  
-  // Добавляем эффект для дополнительного логирования
+  const [suggestions, setSuggestions] = useState<BrandSuggestion[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation();
+
   useEffect(() => {
-    console.log("BrandSuggestionList: получены данные", {
-      тип: typeof suggestions,
-      массив: Array.isArray(suggestions),
-      количество: Array.isArray(suggestions) ? suggestions.length : 'не массив',
-      содержимое: suggestions
-    });
-  }, [suggestions]);
-
-  // Проверка на пустой массив или отсутствие данных
-  if (!suggestions || (Array.isArray(suggestions) && suggestions.length === 0)) {
-    console.warn("BrandSuggestionList: получен пустой или неверный массив предложений", suggestions);
-    return (
-      <div className="mt-4 p-3 bg-slate-50 rounded-md border">
-        <p className="text-sm text-gray-500">Нет предложений по брендам для данного запроса.</p>
-      </div>
-    );
-  }
-
-  // Нормализация данных: преобразование различных форматов в массив BrandSuggestion
-  let normalizedSuggestions: BrandSuggestion[] = [];
-  
-  if (Array.isArray(suggestions)) {
-    // Если suggestions уже массив, проверяем каждый элемент
-    normalizedSuggestions = suggestions.filter(item => 
-      item && (item.brand || item.name || item.product)
-    ).map(item => ({
-      brand: item.brand || item.name || "Неизвестный бренд",
-      product: item.product || "",
-      description: item.description || "Описание недоступно"
-    }));
-    console.log("Данные нормализованы из массива:", normalizedSuggestions);
-  } else if (suggestions && typeof suggestions === 'object') {
-    // Проверяем наличие поля products
-    if ('products' in suggestions && Array.isArray((suggestions as BrandResponse).products)) {
-      const productsArray = (suggestions as BrandResponse).products || [];
-      normalizedSuggestions = productsArray.filter(item => 
-        item && (item.brand || item.name || item.product)
-      ).map(item => ({
-        brand: item.brand || item.name || "Неизвестный бренд",
-        product: item.product || "",
-        description: item.description || "Описание недоступно"
-      }));
-      console.log("Извлечен и нормализован массив products из объекта:", normalizedSuggestions);
+    if (searchDescription) {
+      loadSuggestions(searchDescription);
     } else {
-      // Проверяем, есть ли необходимые поля для одиночного объекта
-      if ('brand' in suggestions || 'name' in suggestions || 'product' in suggestions) {
-        // Если это одиночный объект, преобразуем его в массив
-        const item = suggestions as unknown as BrandSuggestion;
-        normalizedSuggestions = [{
-          brand: item.brand || item.name || "Неизвестный бренд",
-          product: item.product || "",
-          description: item.description || "Описание недоступно"
-        }];
-        console.log("Одиночный объект преобразован в массив:", normalizedSuggestions);
-      }
+      setSuggestions([]);
+      setError(null);
     }
-  }
-  
-  console.log("Окончательные нормализованные предложения:", normalizedSuggestions);
+  }, [searchDescription, t]);
 
-  // Если после нормализации массив пуст, показываем сообщение
-  if (normalizedSuggestions.length === 0) {
-    return (
-      <div className="mt-4 p-3 bg-slate-50 rounded-md border">
-        <p className="text-sm text-gray-500">Нет предложений по брендам для данного запроса.</p>
-      </div>
-    );
-  }
+  const loadSuggestions = async (description: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await fetchBrandSuggestions(description);
+      setSuggestions(data);
+    } catch (e: any) {
+      console.error("Ошибка при загрузке предложений:", e);
+      setError(t("Ошибка при загрузке предложений. Пожалуйста, попробуйте позже."));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRetry = () => {
+    if (searchDescription) {
+      loadSuggestions(searchDescription);
+    }
+  };
+
+  // Функция для выбора продукта из списка
+  const handleSelectProduct = (suggestion: BrandSuggestion, immediate: boolean = false) => {
+    const searchQuery = `${suggestion.brand} ${suggestion.product}`;
+    onSelectProduct(searchQuery, immediate);
+    
+    toast.success(`Выбран товар для поиска: ${suggestion.brand} ${suggestion.product}`, {
+      duration: 2000,
+    });
+  };
 
   return (
-    <div className="mt-4 p-3 bg-slate-50 rounded-md border">
-      <h3 className="text-sm font-medium mb-3">
-        Рекомендуемые товары ({normalizedSuggestions.length}):
-      </h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {normalizedSuggestions.map((suggestion, index) => {
-          // Проверка наличия необходимых полей
-          if (!suggestion || (!suggestion.brand && !suggestion.product)) {
-            console.warn(`Предложение #${index} не содержит необходимых данных:`, suggestion);
-            return null; // Не отображаем некорректные элементы
-          }
-          
-          console.log(`Отрисовка элемента #${index}:`, suggestion);
-          
-          return (
-            <BrandSuggestionItem 
-              key={index} 
-              brand={suggestion.brand}
-              product={suggestion.product}
-              description={suggestion.description}
-              onSelect={(brand, product, immediate) => {
-                // Определяем значение для поиска на основе доступных данных
-                const searchTerm = brand && product 
-                  ? `${brand} ${product}` 
-                  : (brand || product || "");
-                    
-                console.log(`Выбран бренд: ${brand}, товар: ${product}, поисковый запрос: ${searchTerm}, immediate: ${immediate}`);
-                onSelect(searchTerm, immediate);
-              }} 
-              index={index}
-            />
-          );
-        })}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">
+          {t("Рекомендованные товары")}
+        </h2>
+        {isLoading && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
       </div>
+      
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="border rounded-md overflow-hidden">
+              <Skeleton className="h-40 w-full" />
+              <div className="p-4 space-y-3">
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : error ? (
+        <div className="p-6 bg-red-50 border border-red-200 rounded-md flex items-center gap-4">
+          <AlertTriangle className="text-red-500 w-8 h-8" />
+          <div>
+            <h3 className="text-red-800 font-medium mb-1">Не удалось загрузить предложения</h3>
+            <p className="text-sm text-red-700">
+              Произошла ошибка при загрузке предложений. Пожалуйста, попробуйте снова позже.
+            </p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2" 
+              onClick={handleRetry}
+              disabled={isLoading}
+            >
+              {isLoading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              Попробовать снова
+            </Button>
+          </div>
+        </div>
+      ) : suggestions.length === 0 ? (
+        <div className="text-center py-6">
+          <p className="text-gray-500">Нет предложений по вашему запросу. Попробуйте изменить описание.</p>
+        </div>
+      ) : (
+        <ScrollArea className="h-full max-h-[500px] pr-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {suggestions.map((suggestion, index) => (
+              <BrandSuggestionItem
+                key={index}
+                suggestion={suggestion}
+                onSelect={(immediate) => handleSelectProduct(suggestion, immediate)}
+                index={index}
+              />
+            ))}
+          </div>
+        </ScrollArea>
+      )}
     </div>
   );
-}
+};

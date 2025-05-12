@@ -7,7 +7,6 @@ import { AiBrandAssistant } from './brand-assistant/AiBrandAssistant';
 import { testMinimalGoogleApiRequest } from '@/services/api/googleSearchService';
 import { SearchInput } from './search/SearchInput';
 import { SearchErrorMessage } from './search/SearchErrorMessage';
-import { DiagnosticButtons } from './search/DiagnosticButtons';
 import { useProductSelectionHandler } from './search/ProductSelectionHandler';
 import { NoResultsMessage } from './search/NoResultsMessage';
 import { isSupabaseConnected } from '@/services/api/supabase/client';
@@ -153,8 +152,6 @@ export const SearchForm: React.FC<SearchFormProps> = ({
         </div>
       )}
       
-      <DiagnosticButtons />
-
       <AiBrandAssistant onSelectProduct={handleSelectProduct} />
       
       <NoResultsMessage />

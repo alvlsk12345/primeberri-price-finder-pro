@@ -75,7 +75,7 @@ export const BrandSuggestionItem: React.FC<CombinedBrandSuggestionItemProps> = (
   // Обработчик клика по кнопке поиска
   const handleClick = () => {
     if (isSuggestionObject) {
-      props.onSelect(true); // Передаем true для immediate
+      props.onSelect(true); // Используем булево значение для immediate
     } else {
       props.onSelect(brand, product, true); // Используем третий параметр для immediate
     }

@@ -7,6 +7,8 @@ import { testMinimalGoogleApiRequest } from '@/services/api/googleSearchService'
 import { callOpenAI } from '@/services/api/openai';
 import { hasValidApiKey as hasValidOpenAIApiKey } from '@/services/api/openai';
 import { getSelectedAIProvider, getProviderDisplayName, getProviderModelName } from '@/services/api/aiProviderService';
+import { isSupabaseConnected } from '@/services/api/supabase/client';
+import { isUsingSupabaseBackend } from '@/services/api/supabase/config';
 
 export const DiagnosticButtons: React.FC = () => {
   const [isTesting, setIsTesting] = useState(false);
@@ -14,11 +16,29 @@ export const DiagnosticButtons: React.FC = () => {
   const selectedProvider = getSelectedAIProvider();
   const providerDisplayName = getProviderDisplayName(selectedProvider);
   const modelName = getProviderModelName(selectedProvider);
+  const [supabaseMode, setSupabaseMode] = useState<boolean | null>(null);
+
+  // Проверяем использование Supabase
+  React.useEffect(() => {
+    const checkSupabaseMode = async () => {
+      const isConnected = await isSupabaseConnected();
+      const isUsingBackend = await isUsingSupabaseBackend();
+      setSupabaseMode(isConnected && isUsingBackend);
+    };
+    
+    checkSupabaseMode();
+  }, []);
 
   // Тест Google API
   const testGoogleApi = async () => {
-    const result = await testMinimalGoogleApiRequest();
-    toast.info(`Тест Google API: ${result}`, { duration: 7000 });
+    try {
+      toast.loading("Тестирование Google API...");
+      const result = await testMinimalGoogleApiRequest();
+      toast.info(`Тест Google API: ${result}`, { duration: 7000 });
+    } catch (error) {
+      console.error("Ошибка при тестировании Google API:", error);
+      toast.error(`Ошибка Google API: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+    }
   };
 
   // Тест OpenAI API
@@ -36,6 +56,13 @@ export const DiagnosticButtons: React.FC = () => {
       }
       
       toast.loading("Тестирование OpenAI API...");
+
+      // Добавляем информацию о режиме соединения
+      const connectionMode = supabaseMode 
+        ? "через Supabase Edge Function" 
+        : "через прямое соединение";
+      
+      console.log(`Тестирование OpenAI API ${connectionMode}...`);
       
       const response = await callOpenAI("Ответь одним словом: Работает?", {
         temperature: 0.1,
@@ -47,7 +74,7 @@ export const DiagnosticButtons: React.FC = () => {
         console.log("Ответ от OpenAI API:", response);
         toast.success(`Тест OpenAI API успешен! Ответ: ${response}`, {
           duration: 5000,
-          description: `Используется модель: gpt-4o`
+          description: `Используется модель: gpt-4o ${connectionMode}`
         });
         setOpenAiStatus('работает');
       } else {
@@ -55,7 +82,17 @@ export const DiagnosticButtons: React.FC = () => {
       }
     } catch (error) {
       console.error("Ошибка при тестировании OpenAI API:", error);
-      toast.error(`Ошибка OpenAI API: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, {
+      
+      let errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+      
+      // Улучшаем сообщения об ошибках для удобства пользователя
+      if (supabaseMode && errorMessage.includes('Supabase')) {
+        errorMessage = "Ошибка при вызове Edge Function. Проверьте настройки Supabase и API ключи в секретах.";
+      } else if (errorMessage.includes('CORS')) {
+        errorMessage = "Ошибка CORS. Для прямых вызовов OpenAI рекомендуется использовать Supabase Edge Functions.";
+      }
+      
+      toast.error(`Ошибка OpenAI API: ${errorMessage}`, {
         duration: 5000
       });
       setOpenAiStatus('ошибка');
@@ -66,8 +103,12 @@ export const DiagnosticButtons: React.FC = () => {
 
   // Отображение информации о провайдере AI
   const showProviderInfo = () => {
+    const connectionInfo = supabaseMode !== null 
+      ? (supabaseMode ? "через Supabase Edge Function" : "прямое соединение")
+      : "проверка соединения...";
+      
     toast.info(`Активный AI провайдер: ${providerDisplayName}`, { 
-      description: `Используется модель: ${modelName}` 
+      description: `Используется модель: ${modelName} (${connectionInfo})` 
     });
   };
 

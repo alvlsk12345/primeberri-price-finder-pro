@@ -9,12 +9,14 @@ export * from './config';
 
 // Экспорт функций валидации и тестирования
 export {
-  validateGoogleApiConfig,
   validateGoogleApiKey,
-  // Явный экспорт функции testMinimalGoogleApiRequest из validator.ts,
-  // чтобы избежать конфликта с одноименной функцией из imageSearch.ts
-  testMinimalGoogleApiRequest
+  // Переименовываем функцию для экспорта, чтобы избежать конфликта
+  testMinimalGoogleApiRequest as testGoogleApiConnection
 } from './validator';
+
+// Явный экспорт необходимой функции из validator
+// для использования в imageSearch.ts
+export { testMinimalGoogleApiRequest } from './validator';
 
 // Экспорт функций поиска изображений
 export * from './imageSearch';

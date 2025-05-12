@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { PageHeader } from "@/components/PageHeader";
 import { ApiKeyForm } from "@/components/ApiKeyForm";
@@ -27,6 +26,7 @@ import {
 } from "@/services/api/supabase/config";
 import { callAIViaSupabase } from "@/services/api/supabase/aiService";
 import { AI_PROXY_EDGE_FUNCTION_GUIDE } from "@/services/api/supabase/edgeFunctionCode";
+import { DiagnosticButtons } from "@/components/search/DiagnosticButtons";
 
 const Settings = () => {
   const [apiStatus, setApiStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
@@ -299,10 +299,20 @@ const Settings = () => {
           <CardHeader>
             <CardTitle className="text-xl">Настройки API</CardTitle>
             <CardDescription>
-              Настройте API ключи для поиска товаров
+              Настройте API ключи для поиска товаров и диагностика API
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="p-4 bg-gray-50 border border-gray-200 rounded-md mb-6">
+              <h3 className="text-base font-medium mb-3">Диагностика API</h3>
+              <p className="text-sm text-gray-600 mb-3">
+                Используйте эти кнопки для проверки работоспособности различных API, 
+                необходимых для работы приложения. Результаты будут показаны во всплывающих 
+                уведомлениях.
+              </p>
+              <DiagnosticButtons />
+            </div>
+            
             <Tabs defaultValue="zylalabs">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="zylalabs">Zylalabs API</TabsTrigger>

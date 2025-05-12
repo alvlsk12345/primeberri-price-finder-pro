@@ -1,152 +1,68 @@
-
 /**
- * Поиск изображений через Google Custom Search API
+ * Функции для поиска изображений через Google API
  */
 
+// Импорт правильной функции validateGoogleApiKey
 import { API_CONFIG, GOOGLE_API_KEY, GOOGLE_SEARCH_ENGINE_ID, imageCache } from './config';
-import { validateGoogleApiConfig } from './validator';
+import { testMinimalGoogleApiRequest, validateGoogleApiKey } from './validator';
 
 /**
- * Поиск изображения продукта в Google
- * @param brand Название бренда
- * @param product Название продукта
- * @param index Индекс изображения (если нужно получить альтернативное)
- * @returns URL изображения или пустая строка в случае ошибки
+ * Поиск изображений по запросу
+ * @param query Поисковый запрос
+ * @returns Массив URL изображений
  */
-export const searchProductImageGoogle = async (
-  brand: string, 
-  product: string, 
-  index: number = 0
-): Promise<string> => {
-  if (!brand && !product) {
-    console.warn('Не указан ни бренд, ни продукт для поиска изображения');
-    return '';
-  }
-
+export async function searchImages(query: string): Promise<string[]> {
   try {
-    // Проверяем валидность конфигурации API
-    const isApiConfigValid = validateGoogleApiConfig();
-    if (!isApiConfigValid) {
-      console.error('Невалидная конфигурация Google API');
-      return '';
+    // Валидируем API ключ перед запросом
+    validateGoogleApiKey(GOOGLE_API_KEY);
+
+    // Проверяем, есть ли изображения в кэше
+    if (imageCache.has(query)) {
+      console.log(`Изображения для запроса "${query}" найдены в кэше`);
+      return imageCache.get(query) as string[];
     }
 
-    // Создаем поисковый запрос, объединяя бренд и продукт
-    const searchQuery = product 
-      ? `${brand} ${product}` 
-      : brand;
+    // Формируем URL для запроса к Google Custom Search API
+    const url = `${API_CONFIG.baseUrl}?key=${GOOGLE_API_KEY}&cx=${GOOGLE_SEARCH_ENGINE_ID}&q=${encodeURIComponent(query)}&searchType=image&num=${API_CONFIG.imageCount}`;
+    console.log(`Выполняется запрос к Google API: ${url}`);
 
-    // Используем кэш для ускорения повторных запросов
-    const cacheKey = `img_${searchQuery.toLowerCase().replace(/\s+/g, '_')}_${index}`;
-    if (imageCache[cacheKey]) {
-      console.log(`Использование кэшированного изображения для: ${searchQuery} (индекс ${index})`);
-      return imageCache[cacheKey];
+    // Выполняем запрос к API
+    const response = await fetch(url);
+
+    // Обрабатываем ответ
+    if (!response.ok) {
+      const message = `Ошибка при запросе изображений для "${query}": ${response.status} ${response.statusText}`;
+      console.error(message);
+      throw new Error(message);
     }
-    
-    console.log(`Выполняется поиск изображения для: "${searchQuery}", индекс: ${index}`);
 
-    // Создаем URL для запроса
-    const apiUrl = new URL(API_CONFIG.BASE_URL);
-    apiUrl.searchParams.append('key', GOOGLE_API_KEY);
-    apiUrl.searchParams.append('cx', GOOGLE_SEARCH_ENGINE_ID);
-    apiUrl.searchParams.append('q', searchQuery);
-    apiUrl.searchParams.append('searchType', 'image');
-    apiUrl.searchParams.append('num', '10'); // Запрашиваем 10 изображений
-    apiUrl.searchParams.append('imgSize', 'large'); // Предпочитаем большие изображения
-    apiUrl.searchParams.append('safe', 'active'); // Безопасный поиск
+    const data = await response.json();
 
-    // Добавляем поддержку повторных попыток при ошибках
-    let attempts = 0;
-    const maxAttempts = API_CONFIG.RETRY_COUNT;
-    let delayMs = API_CONFIG.RETRY_DELAY_BASE;
+    // Извлекаем URL изображений из ответа
+    const images = data.items ? data.items.map((item: any) => item.link) : [];
+    console.log(`Найдено ${images.length} изображений для запроса "${query}"`);
 
-    while (attempts < maxAttempts) {
-      try {
-        // Выполняем запрос к API
-        const response = await fetch(apiUrl.toString(), {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-          },
-        });
+    // Сохраняем изображения в кэше
+    imageCache.set(query, images);
 
-        // Проверяем успешность запроса
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error(`Ошибка API (${response.status}):`, errorData);
-          throw new Error(`API ошибка: ${response.status} ${response.statusText}`);
-        }
-
-        // Парсим ответ
-        const data = await response.json();
-        
-        // Проверяем наличие результатов
-        if (!data.items || data.items.length === 0) {
-          console.log(`Изображения не найдены для: "${searchQuery}"`);
-          return '';
-        }
-
-        // Получаем нужное изображение по индексу
-        const targetIndex = index < data.items.length ? index : 0;
-        const imageItem = data.items[targetIndex];
-        
-        if (imageItem && imageItem.link) {
-          // Кэшируем результат
-          imageCache[cacheKey] = imageItem.link;
-          console.log(`Изображение найдено и кэшировано: ${imageItem.link}`);
-          return imageItem.link;
-        }
-        
-        return '';
-      } catch (error) {
-        attempts++;
-        console.warn(`Попытка ${attempts}/${maxAttempts} поиска изображения не удалась: ${error}`);
-        
-        // Если достигнут лимит попыток, прекращаем попытки
-        if (attempts >= maxAttempts) {
-          console.error(`Исчерпаны все попытки поиска изображения для: "${searchQuery}"`);
-          return '';
-        }
-        
-        // Экспоненциальная задержка перед повторной попыткой
-        await new Promise(resolve => setTimeout(resolve, delayMs));
-        delayMs *= 2; // Увеличиваем задержку для следующей попытки
-      }
-    }
-    
-    return '';
+    return images;
   } catch (error) {
-    console.error('Ошибка при поиске изображения:', error);
-    return '';
+    console.error(`Ошибка при поиске изображений для запроса "${query}":`, error);
+    throw error;
   }
-};
+}
 
 /**
- * Тестирование минимального запроса к Google API
- * @returns Результат тестирования
+ * Поиск одного изображения по запросу
+ * @param query Поисковый запрос
+ * @returns URL первого найденного изображения или null
  */
-export const testGoogleImageSearch = async (): Promise<string> => {
+export async function searchImage(query: string): Promise<string | null> {
   try {
-    console.log('----- ТЕСТОВЫЙ ЗАПРОС ПОИСКА ИЗОБРАЖЕНИЙ GOOGLE API -----');
-    console.log(`API КЛЮЧ: "${GOOGLE_API_KEY}"`);
-    console.log(`CX ID: "${GOOGLE_SEARCH_ENGINE_ID}"`);
-    
-    if (!GOOGLE_API_KEY || !GOOGLE_SEARCH_ENGINE_ID) {
-      return 'Ошибка: Отсутствуют API ключ или ID поисковой системы';
-    }
-    
-    // Тестовый запрос для поиска изображения
-    const result = await searchProductImageGoogle('Apple', 'iPhone', 0);
-    
-    if (result) {
-      console.log(`ТЕСТОВЫЙ ПОИСК ИЗОБРАЖЕНИЯ УСПЕШЕН! Получен URL: ${result}`);
-      return 'Тестовый поиск изображения успешен! API работает корректно.';
-    } else {
-      console.log('ТЕСТОВЫЙ ПОИСК ИЗОБРАЖЕНИЯ НЕ ВЕРНУЛ РЕЗУЛЬТАТОВ');
-      return 'Запрос выполнен, но результаты не найдены. Проверьте настройки API.';
-    }
+    const images = await searchImages(query);
+    return images.length > 0 ? images[0] : null;
   } catch (error) {
-    console.error('ОШИБКА ПРИ ТЕСТОВОМ ЗАПРОСЕ ПОИСКА ИЗОБРАЖЕНИЙ:', error);
-    return `Ошибка при выполнении тестового запроса: ${error.message}`;
+    console.error(`Ошибка при поиске одного изображения для запроса "${query}":`, error);
+    return null;
   }
-};
+}

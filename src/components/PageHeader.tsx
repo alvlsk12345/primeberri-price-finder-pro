@@ -1,12 +1,13 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Settings, Home } from "lucide-react";
 
 export const PageHeader: React.FC = () => {
-  // ИСПРАВЛЕНИЕ: Устраняем проблему с вложенностью <a> внутри <a>
-  // Используем Link компоненты React Router, которые внутри использует правильную структуру DOM
+  const location = useLocation();
+  const isSettingsPage = location.pathname === '/settings';
+  
   return (
     <header className="bg-brand text-brand-foreground shadow-sm">
       <div className="container mx-auto py-4 px-4 flex items-center justify-between">
@@ -16,7 +17,11 @@ export const PageHeader: React.FC = () => {
             alt="Primeberri Logo" 
             className="h-8 w-auto"
           />
-          <span>Поиск товаров для заказа на PrimeBerri</span>
+          <span>
+            {isSettingsPage 
+              ? "Настройки PrimeBerri" 
+              : "Поиск товаров для заказа на PrimeBerri"}
+          </span>
         </Link>
         
         <div className="flex items-center gap-3">
@@ -27,7 +32,7 @@ export const PageHeader: React.FC = () => {
             </Link>
           </Button>
           
-          <Button variant="brand-outline" size="sm" asChild>
+          <Button variant={isSettingsPage ? "brand" : "brand-outline"} size="sm" asChild>
             <Link to="/settings" className="flex items-center gap-2">
               <Settings size={18} />
               <span>Настройки</span>
