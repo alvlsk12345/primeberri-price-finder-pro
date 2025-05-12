@@ -65,15 +65,15 @@ export function isZylalabsUrl(url: string): boolean {
 
 /**
  * Обрабатывает URL изображения от Zylalabs для прямого доступа
- * Некоторые URL могут требовать дополнительной обработки
+ * Возвращает исходный URL, но логирует для отладки
  */
-export function processZylalabsUrl(url: string): string {
+export function processZylalabsUrl(url: string, requestId: string): string {
   if (!url) return url;
   
   // Логируем URL для отладки
-  logMessage(LogLevel.INFO, `Обрабатываем URL Zylalabs: ${url}`);
+  logMessage(LogLevel.INFO, `[${requestId}] Обрабатываем URL Zylalabs: ${url}`);
   
-  // Добавляем здесь особую обработку URL от Zylalabs если нужно
+  // Для Zylalabs просто возвращаем исходный URL
   return url;
 }
 

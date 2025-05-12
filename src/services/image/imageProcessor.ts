@@ -91,5 +91,5 @@ export const getZylalabsSizeImageUrl = (url: string, size: 'small' | 'medium' | 
   if (!isZylalabsImage(url)) return url;
   
   // Для Zylalabs всегда принудительно добавляем параметр directFetch=true для первой загрузки
-  return getProxiedImageUrl(getUniqueImageUrl(url, undefined, true), true);
+  return getProxiedImageUrl(getUniqueImageUrl(url, undefined, useCache), true);
 };

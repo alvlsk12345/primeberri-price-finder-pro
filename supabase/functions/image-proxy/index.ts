@@ -12,7 +12,6 @@ import {
   processZylalabsUrl,
   getImageRequestHeaders
 } from './utils.ts';
-import { loadImageFromCache, saveImageToCache } from './cache.ts';
 
 // Обрабатывает запросы на проксирование изображений
 Deno.serve(async (req) => {
@@ -32,77 +31,123 @@ Deno.serve(async (req) => {
     // Получаем URL изображения из параметров запроса
     const url = new URL(req.url);
     const imageUrl = url.searchParams.get('url');
+    const bypassCache = url.searchParams.get('bypassCache') === 'true';
     
     if (!imageUrl) {
       return createErrorResponse('URL изображения не указан', 400);
     }
 
-    logMessage(LogLevel.INFO, `[${requestId}] Запрошено изображение: ${imageUrl}`);
+    logMessage(LogLevel.INFO, `[${requestId}] Запрошено изображение: ${imageUrl}, bypassCache: ${bypassCache}`);
     
     // Проверяем, является ли источник изображения от Zylalabs
-    if (isZylalabsUrl(imageUrl)) {
+    let isZylalabs = isZylalabsUrl(imageUrl);
+    if (isZylalabs) {
       logMessage(LogLevel.INFO, `[${requestId}] Обнаружен источник Zylalabs, применяем специальную обработку`);
       
-      // Обрабатываем URL Zylalabs для прямого доступа
-      const processedUrl = processZylalabsUrl(imageUrl);
-      
-      // Для Zylalabs пробуем прямое перенаправление сначала
-      try {
-        const imageResponse = await fetch(processedUrl, {
-          headers: getImageRequestHeaders(processedUrl)
-        });
-        
-        if (imageResponse.ok) {
-          const imageData = await imageResponse.arrayBuffer();
-          const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+      // Если нужно обойти кэш или это первый запрос к Zylalabs
+      if (bypassCache) {
+        try {
+          // Добавляем специальные заголовки для Zylalabs
+          const headers = getImageRequestHeaders(imageUrl);
+          logMessage(LogLevel.INFO, `[${requestId}] Загружаем изображение Zylalabs напрямую с заголовками:`, headers);
           
-          logMessage(LogLevel.INFO, `[${requestId}] Zylalabs изображение загружено напрямую. Размер: ${imageData.byteLength} байт`);
+          const imageResponse = await fetch(imageUrl, { headers });
           
-          // Сохраняем в кэш для будущих запросов
-          const cacheFileName = generateCacheFileName(imageUrl);
-          await saveImageToCache(cacheFileName, new Uint8Array(imageData));
-          
-          return createResponse(imageData, {
-            headers: {
-              'Content-Type': contentType,
-              'Cache-Control': 'public, max-age=86400',
+          if (imageResponse.ok) {
+            const imageData = await imageResponse.arrayBuffer();
+            const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+            
+            logMessage(LogLevel.INFO, `[${requestId}] Zylalabs изображение загружено напрямую. Размер: ${imageData.byteLength} байт, тип: ${contentType}`);
+            
+            // Создаем кэш-файл для будущих запросов
+            const cacheFileName = generateCacheFileName(imageUrl);
+            const supabaseAdmin = getSupabaseClient();
+            
+            try {
+              const { data, error } = await supabaseAdmin
+                .storage
+                .from('product-images')
+                .upload(`cache/${cacheFileName}`, new Uint8Array(imageData), {
+                  contentType,
+                  cacheControl: 'max-age=604800',
+                  upsert: true
+                });
+                
+              if (error) {
+                logMessage(LogLevel.WARN, `[${requestId}] Не удалось сохранить изображение в кэш:`, error);
+              } else {
+                logMessage(LogLevel.INFO, `[${requestId}] Изображение сохранено в кэш: ${data?.path}`);
+              }
+            } catch (cacheError) {
+              logMessage(LogLevel.WARN, `[${requestId}] Ошибка при сохранении изображения в кэш:`, cacheError);
             }
-          });
-        } else {
-          logMessage(LogLevel.WARN, `[${requestId}] Не удалось загрузить Zylalabs изображение напрямую: ${imageResponse.status} ${imageResponse.statusText}`);
+            
+            return createResponse(imageData, {
+              headers: {
+                'Content-Type': contentType,
+                'Cache-Control': 'public, max-age=86400',
+                'X-Cache': 'MISS',
+                'X-Source': 'Zylalabs-Direct'
+              }
+            });
+          } else {
+            logMessage(LogLevel.WARN, `[${requestId}] Не удалось загрузить Zylalabs изображение напрямую: ${imageResponse.status} ${imageResponse.statusText}`);
+          }
+        } catch (directError) {
+          logMessage(LogLevel.WARN, `[${requestId}] Ошибка при прямой загрузке Zylalabs изображения:`, directError);
         }
-      } catch (directError) {
-        logMessage(LogLevel.WARN, `[${requestId}] Ошибка при прямой загрузке Zylalabs изображения:`, directError);
       }
     }
     
-    // Пытаемся загрузить из кэша
+    // Проверяем наличие изображения в кэше Supabase Storage
     const cacheFileName = generateCacheFileName(imageUrl);
-    const cachedImage = await loadImageFromCache(cacheFileName);
+    const supabaseAdmin = getSupabaseClient();
     
-    if (cachedImage) {
-      logMessage(LogLevel.INFO, `[${requestId}] Изображение найдено в кэше. Размер: ${cachedImage.byteLength} байт`);
-      
-      return createResponse(cachedImage, {
-        headers: {
-          'Content-Type': 'image/jpeg', // Предполагаем JPEG, можно улучшить определение типа
-          'Cache-Control': 'public, max-age=86400',
-          'X-Cache': 'HIT',
+    try {
+      // Пытаемся получить изображение из хранилища
+      if (!bypassCache) {
+        logMessage(LogLevel.INFO, `[${requestId}] Проверяем кэш для изображения: ${cacheFileName}`);
+        
+        const { data, error } = await supabaseAdmin
+          .storage
+          .from('product-images')
+          .download(`cache/${cacheFileName}`);
+          
+        if (!error && data) {
+          const arrayBuffer = await data.arrayBuffer();
+          const contentType = data.type || 'image/jpeg';
+          
+          logMessage(LogLevel.INFO, `[${requestId}] Изображение найдено в кэше. Размер: ${arrayBuffer.byteLength} байт, тип: ${contentType}`);
+          
+          return createResponse(arrayBuffer, {
+            headers: {
+              'Content-Type': contentType,
+              'Cache-Control': 'public, max-age=86400',
+              'X-Cache': 'HIT'
+            }
+          });
+        } else {
+          logMessage(LogLevel.INFO, `[${requestId}] Изображение не найдено в кэше: ${error?.message || 'нет данных'}`);
         }
-      });
+      } else {
+        logMessage(LogLevel.INFO, `[${requestId}] Кэш пропущен (bypassCache=true)`);
+      }
+    } catch (cacheError) {
+      logMessage(LogLevel.WARN, `[${requestId}] Ошибка при проверке кэша:`, cacheError);
     }
     
-    logMessage(LogLevel.INFO, `[${requestId}] Изображение не найдено в кэше, загружаем`);
+    logMessage(LogLevel.INFO, `[${requestId}] Загружаем изображение из источника: ${imageUrl}`);
     
     // Загружаем изображение из источника
-    const imageResponse = await fetch(imageUrl, {
-      headers: getImageRequestHeaders(imageUrl)
-    });
+    const headers = getImageRequestHeaders(imageUrl);
+    logMessage(LogLevel.INFO, `[${requestId}] Используем заголовки для запроса:`, headers);
+    
+    const imageResponse = await fetch(imageUrl, { headers });
     
     if (!imageResponse.ok) {
       return createErrorResponse(`Не удалось загрузить изображение: ${imageResponse.status} ${imageResponse.statusText}`, 
         imageResponse.status, 
-        { url: imageUrl }
+        { url: imageUrl, requestId }
       );
     }
     
@@ -114,14 +159,32 @@ Deno.serve(async (req) => {
       return createErrorResponse(`Получены некорректные данные изображения`, 400, { 
         contentType, 
         size: imageData.byteLength,
-        url: imageUrl
+        url: imageUrl,
+        requestId
       });
     }
     
     logMessage(LogLevel.INFO, `[${requestId}] Изображение успешно загружено. Размер: ${imageData.byteLength} байт, тип: ${contentType}`);
     
     // Сохраняем в кэш
-    await saveImageToCache(cacheFileName, new Uint8Array(imageData));
+    try {
+      const { error } = await supabaseAdmin
+        .storage
+        .from('product-images')
+        .upload(`cache/${cacheFileName}`, new Uint8Array(imageData), {
+          contentType: contentType || 'image/jpeg',
+          cacheControl: 'max-age=604800',
+          upsert: true
+        });
+        
+      if (error) {
+        logMessage(LogLevel.WARN, `[${requestId}] Не удалось сохранить изображение в кэш:`, error);
+      } else {
+        logMessage(LogLevel.INFO, `[${requestId}] Изображение сохранено в кэш: ${cacheFileName}`);
+      }
+    } catch (cacheError) {
+      logMessage(LogLevel.WARN, `[${requestId}] Ошибка при сохранении изображения в кэш:`, cacheError);
+    }
     
     return createResponse(imageData, {
       headers: {

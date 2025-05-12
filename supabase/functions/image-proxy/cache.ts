@@ -43,53 +43,57 @@ export async function checkImageCache(url: string, requestId: string): Promise<C
 }
 
 /**
- * Сохраняет изображение в кэш
- * @param url URL изображения
- * @param imageBlob Blob изображения
- * @param contentType MIME-тип изображения
- * @param requestId Уникальный идентификатор запроса для логирования
- * @returns URL кэшированного изображения или null
+ * Загружает изображение из кэша
+ * @param cacheFileName Имя файла в кэше
+ * @returns ArrayBuffer с данными изображения или null
  */
-export async function saveImageToCache(
-  url: string, 
-  imageBlob: Blob, 
-  contentType: string,
-  requestId: string
-): Promise<string | null> {
+export async function loadImageFromCache(cacheFileName: string): Promise<Uint8Array | null> {
   try {
-    const cacheFileName = generateCacheFileName(url);
-    const path = `${CACHE_PREFIX}${cacheFileName}`;
+    // Получаем клиент Supabase
+    const supabaseAdmin = getSupabaseClient();
     
-    logMessage(LogLevel.DEBUG, `[${requestId}] Сохранение изображения в кэш: ${url}, путь: ${path}`);
+    // Загружаем файл из хранилища
+    const { data, error } = await supabaseAdmin
+      .storage
+      .from('product-images')
+      .download(`cache/${cacheFileName}`);
     
+    if (error || !data) {
+      return null;
+    }
+    
+    // Преобразуем Blob в Uint8Array для Deno
+    return new Uint8Array(await data.arrayBuffer());
+  } catch (err) {
+    logMessage(LogLevel.ERROR, `Ошибка при загрузке изображения из кэша:`, err);
+    return null;
+  }
+}
+
+/**
+ * Сохраняет изображение в кэш
+ * @param cacheFileName Имя файла в кэше
+ * @param imageData Данные изображения
+ * @returns true, если сохранение успешно
+ */
+export async function saveImageToCache(cacheFileName: string, imageData: Uint8Array): Promise<boolean> {
+  try {
     // Получаем клиент Supabase
     const supabaseAdmin = getSupabaseClient();
     
     // Сохраняем файл в хранилище
-    const { data, error } = await supabaseAdmin
+    const { error } = await supabaseAdmin
       .storage
-      .from(BUCKET_NAME)
-      .upload(path, imageBlob, {
-        contentType,
-        cacheControl: `public, max-age=${CACHE_TIME}`,
+      .from('product-images')
+      .upload(`cache/${cacheFileName}`, imageData, {
+        contentType: 'image/jpeg', // Предполагаем JPEG по умолчанию
+        cacheControl: `max-age=${CACHE_TIME}`,
         upsert: true
       });
     
-    if (error) {
-      logMessage(LogLevel.ERROR, `[${requestId}] Ошибка при сохранении изображения в кэш:`, error);
-      return null;
-    }
-    
-    // Получаем публичный URL сохраненного файла
-    const { data: urlData } = await supabaseAdmin
-      .storage
-      .from(BUCKET_NAME)
-      .getPublicUrl(path);
-    
-    logMessage(LogLevel.INFO, `[${requestId}] Изображение успешно сохранено в кэш: ${urlData.publicUrl}`);
-    return urlData.publicUrl;
+    return !error;
   } catch (err) {
-    logMessage(LogLevel.ERROR, `[${requestId}] Ошибка при сохранении изображения в кэш:`, err);
-    return null;
+    logMessage(LogLevel.ERROR, `Ошибка при сохранении изображения в кэш:`, err);
+    return false;
   }
 }
