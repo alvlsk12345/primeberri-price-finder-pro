@@ -154,7 +154,12 @@ const fetchEuProducts = async (url: string, apiKey: string, signal?: AbortSignal
     
     const data = await response.json();
     // Исправленный вызов parseApiResponse с корректными параметрами
-    const parsedData = parseApiResponse(data, { query, page: 1 });
+    // Извлекаем информацию о запросе из URL для передачи в parseApiResponse
+    const urlParams = new URLSearchParams(url.split('?')[1]);
+    const queryFromUrl = urlParams.get('q') || '';
+    const pageFromUrl = parseInt(urlParams.get('page') || '1', 10);
+    
+    const parsedData = parseApiResponse(data, { query: queryFromUrl, page: pageFromUrl });
     return parsedData;
   } catch (error) {
     console.warn(`Ошибка при запросе к ${url}:`, error);
