@@ -12,11 +12,12 @@ const Index = () => {
       <PageHeader />
       
       <main className="container mx-auto py-10 px-4">
+        {/* Оборачиваем всю основную часть приложения в SearchProvider */}
         <SearchProvider>
           <SearchContainer />
+          <BenefitsSection />
         </SearchProvider>
-
-        <BenefitsSection />
+        
         <PageFooter />
       </main>
     </div>
