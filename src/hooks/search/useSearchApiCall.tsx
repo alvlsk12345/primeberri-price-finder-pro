@@ -27,16 +27,16 @@ export function useSearchApiCall({
       setSearchTimeout(null);
     }
     
+    // Создаем переменную для отслеживания актуального статуса загрузки
+    let isCurrentlyLoading = true;
+    
     // Устанавливаем новый таймаут
     const timeout = setTimeout(() => {
-      // Проверяем, всё ещё идёт ли загрузка, чтобы не показывать сообщение если данные уже получены
-      setIsLoading(prevIsLoading => {
-        if (prevIsLoading) {
-          console.log('Поиск занял слишком много времени');
-          toast.error('Поиск занял слишком много времени. Попробуйте еще раз или используйте другой запрос.', { duration: 5000 });
-        }
-        return prevIsLoading;
-      });
+      // Проверяем, всё ещё идёт ли загрузка
+      if (isCurrentlyLoading) {
+        console.log('Поиск занял слишком много времени');
+        toast.error('Поиск занял слишком много времени. Попробуйте еще раз или используйте другой запрос.', { duration: 5000 });
+      }
     }, API_TIMEOUT + 5000); // API_TIMEOUT + 5 секунд запаса
     
     setSearchTimeout(timeout);
@@ -48,6 +48,9 @@ export function useSearchApiCall({
       const results = await searchProductsViaZylalabs(searchParams);
       
       console.log('Получен ответ от API:', results);
+      
+      // Отмечаем, что загрузка завершена
+      isCurrentlyLoading = false;
       
       // Проверяем, используются ли демо-данные
       if (results.isDemo) {
@@ -69,6 +72,9 @@ export function useSearchApiCall({
       return results;
     } catch (error) {
       console.error('Ошибка при выполнении API-запроса:', error);
+      
+      // Отмечаем, что загрузка завершена (с ошибкой)
+      isCurrentlyLoading = false;
       
       // Отменяем таймаут при ошибке
       if (searchTimeout) {
@@ -93,3 +99,4 @@ export function useSearchApiCall({
     cleanupApiCall
   };
 }
+
