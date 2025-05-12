@@ -23,15 +23,15 @@ export const loadCacheFromStorage = (): CacheStorage => {
       // Возвращаем только валидные записи
       const validCache = Object.fromEntries(filteredEntries);
       console.log(`Загружено ${filteredEntries.length} кэшированных API ответов из localStorage`);
-      return validCache;
+      return validCache as CacheStorage;
     }
     
-    return {};
+    return {} as CacheStorage;
   } catch (error) {
     console.error('Ошибка при загрузке кэша из localStorage:', error);
     // В случае ошибки очищаем хранилище
     localStorage.removeItem(LOCAL_STORAGE_CACHE_KEY);
-    return {};
+    return {} as CacheStorage;
   }
 };
 
@@ -55,4 +55,3 @@ export const saveCacheToStorage = (cache: CacheStorage): void => {
     console.error('Ошибка при сохранении кэша в localStorage:', error);
   }
 };
-
