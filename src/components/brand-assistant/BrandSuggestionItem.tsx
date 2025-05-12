@@ -6,22 +6,36 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Search } from "lucide-react";
 import { findProductImage } from "@/services/api/openai/brandSuggestion/imageUtils";
 import { PlaceholderImage } from '../product/image/PlaceholderImage';
+import { BrandSuggestion } from "@/services/types";
 
 interface BrandSuggestionItemProps {
   brand: string;
   product: string;
   description: string;
-  onSelect: (brand: string, product: string) => void;
+  onSelect: (brand: string, product: string, immediate?: boolean) => void;
   index: number;
 }
 
-export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
-  brand,
-  product,
-  description,
-  onSelect,
-  index
-}) => {
+// Альтернативный интерфейс с объектом suggestion
+interface BrandSuggestionItemWithObjectProps {
+  suggestion: BrandSuggestion;
+  onSelect: (immediate?: boolean) => void;
+  index: number;
+}
+
+// Объединенный тип для поддержки обоих форматов пропсов
+type CombinedBrandSuggestionItemProps = BrandSuggestionItemProps | BrandSuggestionItemWithObjectProps;
+
+export const BrandSuggestionItem: React.FC<CombinedBrandSuggestionItemProps> = (props) => {
+  // Определяем тип пропсов и извлекаем данные
+  const isSuggestionObject = 'suggestion' in props;
+  
+  // Извлекаем необходимые данные в зависимости от формата пропсов
+  const brand = isSuggestionObject ? props.suggestion.brand : props.brand;
+  const product = isSuggestionObject ? props.suggestion.product : props.product;
+  const description = isSuggestionObject ? props.suggestion.description : props.description;
+  const index = props.index;
+  
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isImageLoading, setIsImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
@@ -60,7 +74,11 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
 
   // Обработчик клика по кнопке поиска
   const handleClick = () => {
-    onSelect(brand, product);
+    if (isSuggestionObject) {
+      props.onSelect(true); // Передаем true для immediate
+    } else {
+      props.onSelect(brand, product, true); // Используем третий параметр для immediate
+    }
   };
 
   // Обработчик ошибки загрузки изображения

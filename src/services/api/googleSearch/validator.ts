@@ -6,6 +6,25 @@
 import { GOOGLE_API_KEY, GOOGLE_SEARCH_ENGINE_ID, API_CONFIG } from './config';
 
 /**
+ * Проверяет валидность конфигурации Google API
+ * @returns {boolean} Результат проверки конфигурации
+ */
+export const validateGoogleApiConfig = (): boolean => {
+  // Проверяем наличие ключей
+  if (!GOOGLE_API_KEY || GOOGLE_API_KEY.length < 10) {
+    console.error('Google API ключ не задан или некорректный');
+    return false;
+  }
+  
+  if (!GOOGLE_SEARCH_ENGINE_ID || GOOGLE_SEARCH_ENGINE_ID.length < 5) {
+    console.error('Google Search Engine ID не задан или некорректный');
+    return false;
+  }
+  
+  return true;
+};
+
+/**
  * Проверяет валидность API ключа Google через тестовый запрос
  * @returns {Promise<boolean>} Результат проверки ключа
  */

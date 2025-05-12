@@ -125,9 +125,9 @@ export const searchProductImageGoogle = async (
  * Тестирование минимального запроса к Google API
  * @returns Результат тестирования
  */
-export const testMinimalGoogleApiRequest = async (): Promise<string> => {
+export const testGoogleImageSearch = async (): Promise<string> => {
   try {
-    console.log('----- ТЕСТОВЫЙ МИНИМАЛЬНЫЙ ЗАПРОС К GOOGLE API -----');
+    console.log('----- ТЕСТОВЫЙ ЗАПРОС ПОИСКА ИЗОБРАЖЕНИЙ GOOGLE API -----');
     console.log(`API КЛЮЧ: "${GOOGLE_API_KEY}"`);
     console.log(`CX ID: "${GOOGLE_SEARCH_ENGINE_ID}"`);
     
@@ -135,38 +135,18 @@ export const testMinimalGoogleApiRequest = async (): Promise<string> => {
       return 'Ошибка: Отсутствуют API ключ или ID поисковой системы';
     }
     
-    // Минимальный тестовый запрос
-    const minimalUrl = `${API_CONFIG.BASE_URL}?key=${GOOGLE_API_KEY}&cx=${GOOGLE_SEARCH_ENGINE_ID}&q=test`;
-    console.log(`МИНИМАЛЬНЫЙ URL: ${minimalUrl}`);
+    // Тестовый запрос для поиска изображения
+    const result = await searchProductImageGoogle('Apple', 'iPhone', 0);
     
-    const response = await fetch(minimalUrl);
-    console.log(`СТАТУС ОТВЕТА: ${response.status} ${response.statusText}`);
-    
-    // Выводим заголовки для отладки
-    const headers = {};
-    response.headers.forEach((value, key) => {
-      headers[key] = value;
-    });
-    console.log(`ЗАГОЛОВКИ ОТВЕТА: ${JSON.stringify(headers, null, 2)}`);
-    
-    // Выводим краткую информацию о теле ответа
-    const data = await response.json();
-    console.log(`ТЕЛО ОТВЕТА: ${JSON.stringify(data, null, 2).substring(0, 500)}...`);
-    
-    // Проверка успешности запроса
-    if (!response.ok) {
-      return `Ошибка API: ${response.status} ${response.statusText}`;
-    }
-    
-    if (data.items && data.items.length > 0) {
-      console.log(`ТЕСТОВЫЙ ЗАПРОС УСПЕШЕН! Количество результатов: ${data.items.length}`);
-      return 'Тестовый запрос успешен! API работает корректно.';
+    if (result) {
+      console.log(`ТЕСТОВЫЙ ПОИСК ИЗОБРАЖЕНИЯ УСПЕШЕН! Получен URL: ${result}`);
+      return 'Тестовый поиск изображения успешен! API работает корректно.';
     } else {
-      console.log('ТЕСТОВЫЙ ЗАПРОС ВЫПОЛНЕН, НО ДАННЫЕ НЕ ПОЛУЧЕНЫ');
+      console.log('ТЕСТОВЫЙ ПОИСК ИЗОБРАЖЕНИЯ НЕ ВЕРНУЛ РЕЗУЛЬТАТОВ');
       return 'Запрос выполнен, но результаты не найдены. Проверьте настройки API.';
     }
   } catch (error) {
-    console.error('ОШИБКА ПРИ ТЕСТОВОМ ЗАПРОСЕ:', error);
+    console.error('ОШИБКА ПРИ ТЕСТОВОМ ЗАПРОСЕ ПОИСКА ИЗОБРАЖЕНИЙ:', error);
     return `Ошибка при выполнении тестового запроса: ${error.message}`;
   }
 };

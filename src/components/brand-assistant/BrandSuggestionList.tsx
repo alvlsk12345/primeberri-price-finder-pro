@@ -103,18 +103,16 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
           return (
             <BrandSuggestionItem 
               key={index} 
-              suggestion={suggestion} 
-              onSelect={(immediate) => {
+              brand={suggestion.brand}
+              product={suggestion.product}
+              description={suggestion.description}
+              onSelect={(brand, product, immediate) => {
                 // Определяем значение для поиска на основе доступных данных
-                const brand = suggestion.brand || "";
-                const product = suggestion.product || "";
-                    
-                // Формируем поисковый запрос с брендом и продуктом
                 const searchTerm = brand && product 
                   ? `${brand} ${product}` 
                   : (brand || product || "");
                     
-                console.log(`Выбран бренд: ${brand}, товар: ${product}, поисковый запрос: ${searchTerm}`);
+                console.log(`Выбран бренд: ${brand}, товар: ${product}, поисковый запрос: ${searchTerm}, immediate: ${immediate}`);
                 onSelect(searchTerm, immediate);
               }} 
               index={index}
@@ -124,4 +122,4 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
       </div>
     </div>
   );
-};
+}
