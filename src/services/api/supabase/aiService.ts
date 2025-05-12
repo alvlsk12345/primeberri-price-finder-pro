@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { BrandSuggestion, BrandResponse } from "@/services/types";
 import { OpenAIRequestOptions } from "../openai/proxyUtils";
@@ -33,8 +32,7 @@ export const callAIViaSupabase = async (params: {
     
     // Вызываем Edge Function для запроса к AI с таймаутом
     const { data, error } = await supabase.functions.invoke('ai-proxy', {
-      body: requestBody,
-      responseType: 'json'
+      body: requestBody
     });
     
     if (error) {
