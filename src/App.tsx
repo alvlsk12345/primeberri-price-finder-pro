@@ -5,6 +5,7 @@ import Index from './pages/Index';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 import { Toaster } from "@/components/ui/sonner";
+import { SearchProvider } from "@/contexts/SearchContext";
 
 function App() {
   // This helps maintain the component state when navigating
@@ -12,11 +13,14 @@ function App() {
   
   return (
     <>
-      <Routes location={location}>
-        <Route path="/" element={<Index />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      {/* Оборачиваем все маршруты в SearchProvider */}
+      <SearchProvider>
+        <Routes location={location}>
+          <Route path="/" element={<Index />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </SearchProvider>
       <Toaster position="bottom-right" closeButton={true} />
     </>
   );
