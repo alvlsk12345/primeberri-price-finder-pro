@@ -15,15 +15,15 @@ interface AiBrandAssistantProps {
 
 export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProduct }) => {
   const {
-    isAssistantEnabled,
-    setIsAssistantEnabled,
     productDescription,
     setProductDescription,
     brandSuggestions,
     isAssistantLoading,
-    hasError,
     errorMessage,
+    hasError,
     supabaseStatus,
+    isAssistantEnabled,
+    setIsAssistantEnabled,
     handleGetBrandSuggestions
   } = useAiBrandAssistant();
 

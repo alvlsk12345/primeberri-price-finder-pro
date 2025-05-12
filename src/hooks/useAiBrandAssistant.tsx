@@ -1,13 +1,14 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from "sonner";
-import { getBrandAssistantSuggestions } from "@/services/api/brandSuggestionService";
+import { fetchBrandSuggestions } from "@/services/api/brandSuggestionService";
 import { getApiKey } from "@/services/api/openai/config";
 import { BrandSuggestion } from "@/services/types";
 import { isSupabaseConnected } from "@/services/api/supabase/client";
 import { isUsingSupabaseBackend } from "@/services/api/supabase/config";
 
 export const useAiBrandAssistant = () => {
+  const [isAssistantEnabled, setIsAssistantEnabled] = useState<boolean>(true);
   const [productDescription, setProductDescription] = useState<string>("");
   const [isAssistantLoading, setIsAssistantLoading] = useState<boolean>(false);
   const [brandSuggestions, setBrandSuggestions] = useState<BrandSuggestion[]>([]);
@@ -35,6 +36,9 @@ export const useAiBrandAssistant = () => {
     checkSupabaseStatus();
   }, []);
 
+  // Вычисляемое свойство для проверки наличия ошибки
+  const hasError = !!errorMessage;
+
   const handleGetBrandSuggestions = async () => {
     if (!productDescription.trim()) {
       toast.error("Введите описание товара");
@@ -53,7 +57,7 @@ export const useAiBrandAssistant = () => {
         console.warn('API ключ не найден');
       }
       
-      const suggestions = await getBrandAssistantSuggestions(productDescription);
+      const suggestions = await fetchBrandSuggestions(productDescription);
       console.log('Получены предложения:', suggestions);
       
       if (suggestions && suggestions.length > 0) {
@@ -78,7 +82,10 @@ export const useAiBrandAssistant = () => {
     isAssistantLoading,
     brandSuggestions,
     errorMessage,
+    hasError,
     supabaseStatus,
+    isAssistantEnabled,
+    setIsAssistantEnabled,
     handleGetBrandSuggestions
   };
 };
