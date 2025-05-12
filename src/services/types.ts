@@ -33,6 +33,7 @@ export type SearchParams = {
   filters?: ProductFilters;
   requireGermanResults?: boolean; // Требовать результаты из немецких магазинов
   minResultCount?: number; // Минимальное количество результатов
+  signal?: AbortSignal;  // Добавляем поддержку AbortSignal для отмены запросов
 };
 
 // Тип для сортировки товаров

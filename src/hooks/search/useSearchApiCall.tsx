@@ -20,9 +20,16 @@ export function useSearchApiCall({
 }: SearchApiCallProps) {
   // Таймаут для предотвращения слишком долгого запроса
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  // AbortController для отмены запросов
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
   
   // Функция выполнения поискового запроса к API
   const executeApiCall = async (searchParams: SearchParams) => {
+    // Отменяем предыдущий запрос, если он существует
+    if (abortController) {
+      abortController.abort();
+    }
+    
     // Отменяем предыдущий таймаут, если он существует
     if (searchTimeout) {
       clearTimeout(searchTimeout);
@@ -57,13 +64,16 @@ export function useSearchApiCall({
       console.log('Выполняем запрос к API с параметрами:', searchParams);
       
       // Создаем абортируемый запрос с таймаутом
-      const abortController = new AbortController();
-      const abortTimeout = setTimeout(() => abortController.abort(), API_TIMEOUT);
+      const controller = new AbortController();
+      setAbortController(controller);
       
-      // Выполняем поисковый запрос
+      // Устанавливаем таймаут для прерывания запроса
+      const abortTimeout = setTimeout(() => controller.abort(), API_TIMEOUT);
+      
+      // Выполняем поисковый запрос с передачей signal в качестве параметра
       const results = await searchProductsViaZylalabs({
         ...searchParams,
-        signal: abortController.signal
+        signal: controller.signal
       });
       
       // Очищаем таймаут для прерывания запроса
@@ -122,11 +132,16 @@ export function useSearchApiCall({
     }
   };
   
-  // Очистка таймаутов
+  // Очистка таймаутов и отмена запросов
   const cleanupApiCall = () => {
     if (searchTimeout) {
       clearTimeout(searchTimeout);
       setSearchTimeout(null);
+    }
+    
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
     }
     
     // Скрываем toast загрузки при очистке
