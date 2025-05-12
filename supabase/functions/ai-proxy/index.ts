@@ -3,11 +3,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleOpenAIRequest } from './handlers/openai.ts';
 import { handleAbacusRequest } from './handlers/abacus.ts';
+import { handlePerplexityRequest } from './handlers/perplexity.ts';
 import { CORS_HEADERS } from './config.ts';
 
 // Для безопасного хранения ключей API
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 const ABACUS_API_KEY = Deno.env.get('ABACUS_API_KEY');
+const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
 
 // Обработчик запросов
 serve(async (req) => {
@@ -74,6 +76,15 @@ serve(async (req) => {
       }
       
       responseData = await handleAbacusRequest(params);
+    } else if (provider === 'perplexity') {
+      if (!PERPLEXITY_API_KEY) {
+        return new Response(
+          JSON.stringify({ error: 'PERPLEXITY_API_KEY не настроен в Edge Function' }),
+          { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }, status: 500 }
+        );
+      }
+      
+      responseData = await handlePerplexityRequest(params, PERPLEXITY_API_KEY);
     } else {
       // Если провайдер не поддерживается, возвращаем ошибку
       return new Response(
