@@ -80,7 +80,7 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
     }, REQUEST_TIMEOUT);
     
     try {
-      // Добавляем запрос на получение 5 результатов в описание
+      // Добавляем запрос на получение 5 рез��льтатов в описание
       const enhancedDescription = productDescription + 
         ". Пожалуйста, предложите 5 конкретных товаров с указанием бренда и модели. Описание должно быть кратким.";
       
@@ -156,7 +156,7 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
       
       setHasError(true);
       
-      // Обработка других типов ошибок
+      // Обработка других ��ипов ошибок
       if (error.message?.includes("quota")) {
         setErrorMessage("Превышен лимит запросов API. Проверьте ваш тарифный план OpenAI.");
         toast.error("Превышен лимит запросов API. Проверьте ваш тарифный план OpenAI.");
@@ -280,9 +280,8 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
 
       {isAssistantEnabled && brandSuggestions && brandSuggestions.length > 0 && (
         <BrandSuggestionList 
-          searchDescription={productDescription}
-          suggestions={brandSuggestions} 
-          onSelect={onSelectProduct} 
+          suggestions={suggestions}
+          onSelect={(searchQuery, immediate) => handleSuggestionSelect(searchQuery, !!immediate)}
         />
       )}
     </div>

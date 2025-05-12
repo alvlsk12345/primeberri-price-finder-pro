@@ -88,14 +88,14 @@ export const BrandSuggestionItem: React.FC<CombinedBrandSuggestionItemProps> = (
   };
 
   return (
-    <Card className="overflow-hidden">
-      <div className="h-40 overflow-hidden relative bg-gray-100">
+    <Card className="overflow-hidden h-full">
+      <div className="h-28 overflow-hidden relative bg-gray-100">
         {isImageLoading ? (
           <div className="flex items-center justify-center h-full w-full">
             <Skeleton className="h-full w-full absolute" />
           </div>
         ) : imageError || !imageUrl ? (
-          <PlaceholderImage size="md" brandName={brand} />
+          <PlaceholderImage size="sm" brandName={brand} />
         ) : (
           <img 
             src={imageUrl} 
@@ -106,18 +106,18 @@ export const BrandSuggestionItem: React.FC<CombinedBrandSuggestionItemProps> = (
         )}
       </div>
       
-      <CardContent className="p-4">
-        <div className="mb-2">
-          <h3 className="font-semibold text-lg">{brand}</h3>
-          <h4 className="text-sm text-muted-foreground">{product}</h4>
+      <CardContent className="p-3">
+        <div className="mb-1.5">
+          <h3 className="font-medium text-base truncate">{brand}</h3>
+          <h4 className="text-xs text-muted-foreground truncate">{product}</h4>
         </div>
-        <p className="text-sm mb-3 line-clamp-3">{description}</p>
+        <p className="text-xs mb-2 line-clamp-2 text-muted-foreground">{description}</p>
         <Button 
           onClick={handleClick}
-          className="w-full"
+          className="w-full h-8 text-xs py-0 px-2"
           variant="default"
         >
-          <Search className="mr-2 h-4 w-4" />
+          <Search className="mr-1 h-3 w-3" />
           Поиск в магазинах
         </Button>
       </CardContent>

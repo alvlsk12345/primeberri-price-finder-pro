@@ -1,18 +1,16 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { BrandSuggestion } from '@/services/types';
 import { BrandSuggestionItem } from './BrandSuggestionItem';
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from '@/components/ui/button';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useTranslation } from '@/services/translationService';
 import { toast } from "sonner";
 
 interface BrandSuggestionListProps {
   searchDescription?: string;
-  suggestions?: BrandSuggestion[];
   onSelect: (searchQuery: string, immediate?: boolean) => void;
+  suggestions?: BrandSuggestion[];
 }
 
 export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({ 
@@ -22,7 +20,6 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { t } = useTranslation();
 
   // Функция для выбора продукта из списка
   const handleSelectProduct = (suggestion: BrandSuggestion, immediate: boolean = false) => {
@@ -35,31 +32,30 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">
-          {t("Рекомендованные товары")}
+          Рекомендованные товары
         </h2>
         {isLoading && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
       </div>
       
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(3)].map((_, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          {[...Array(5)].map((_, i) => (
             <div key={i} className="border rounded-md overflow-hidden">
-              <Skeleton className="h-40 w-full" />
-              <div className="p-4 space-y-3">
-                <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-28 w-full" />
+              <div className="p-3 space-y-2">
+                <Skeleton className="h-5 w-3/4" />
                 <Skeleton className="h-4 w-1/2" />
-                <Skeleton className="h-20 w-full" />
-                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-8 w-full" />
               </div>
             </div>
           ))}
         </div>
       ) : error ? (
-        <div className="p-6 bg-red-50 border border-red-200 rounded-md flex items-center gap-4">
-          <AlertTriangle className="text-red-500 w-8 h-8" />
+        <div className="p-4 bg-red-50 border border-red-200 rounded-md flex items-center gap-3">
+          <AlertTriangle className="text-red-500 w-6 h-6" />
           <div>
             <h3 className="text-red-800 font-medium mb-1">Не удалось загрузить предложения</h3>
             <p className="text-sm text-red-700">
@@ -68,12 +64,12 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
           </div>
         </div>
       ) : suggestions.length === 0 ? (
-        <div className="text-center py-6">
+        <div className="text-center py-4">
           <p className="text-gray-500">Нет предложений по вашему запросу. Попробуйте изменить описание.</p>
         </div>
       ) : (
-        <ScrollArea className="h-full max-h-[500px] pr-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <ScrollArea className="h-full max-h-[600px] pr-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 pb-2">
             {suggestions.map((suggestion, index) => (
               <BrandSuggestionItem
                 key={index}
