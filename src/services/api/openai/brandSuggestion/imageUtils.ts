@@ -1,6 +1,6 @@
 
 import { searchProductImageGoogle } from "@/services/api/googleSearch";
-import { getPlaceholderImageUrl } from "@/services/imageService";
+import { getPlaceholderImageUrl, getBrandPlaceholderImageUrl } from "@/services/image/imagePlaceholder";
 import { applyCorsProxy } from "@/services/image/corsProxyService";
 
 // Локальное кэширование изображений
@@ -70,7 +70,7 @@ export async function findProductImage(brand: string, product: string, index: nu
       imageUrl = await Promise.race([imagePromise, timeoutPromise]) || '';
     } catch (timeoutError) {
       console.warn(`Превышено время поиска изображения для ${searchQuery}:`, timeoutError);
-      return getPlaceholderImageUrl(brand);
+      return getBrandPlaceholderImageUrl(brand);
     }
     
     if (imageUrl) {
@@ -82,13 +82,13 @@ export async function findProductImage(brand: string, product: string, index: nu
       cacheImage(cacheKey, processedUrl);
       return processedUrl;
     } else {
-      console.warn(`Изображение не найдено для ${searchQuery}, используем плейсхолдер`);
-      return getPlaceholderImageUrl(brand);
+      console.warn(`Изображение не найдено для ${searchQuery}, используем заглушку с брендом`);
+      return getBrandPlaceholderImageUrl(brand);
     }
   } catch (imageError) {
     console.error("Ошибка при поиске изображения:", imageError);
-    // В случае ошибки поиска изображения используем заполнитель
-    return getPlaceholderImageUrl(brand || 'unknown');
+    // В случае ошибки поиска изображения используем заполнитель с брендом
+    return getBrandPlaceholderImageUrl(brand || 'unknown');
   }
 }
 
