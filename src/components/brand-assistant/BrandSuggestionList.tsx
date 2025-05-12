@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
+import { toast } from "sonner";
 import { BrandSuggestion } from '@/services/types';
 import { BrandSuggestionItem } from './BrandSuggestionItem';
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw, AlertTriangle } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { toast } from "sonner";
 
 interface BrandSuggestionListProps {
   searchDescription?: string;
@@ -43,8 +44,8 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
       </div>
       
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-          {[...Array(5)].map((_, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+          {[...Array(6)].map((_, i) => (
             <div key={i} className="border rounded-md overflow-hidden">
               <Skeleton className="h-28 w-full" />
               <div className="p-3 space-y-2">
@@ -71,7 +72,7 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
         </div>
       ) : (
         <ScrollArea className="h-full max-h-[600px] pr-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 pb-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-3 pb-2">
             {suggestions.map((suggestion, index) => (
               <BrandSuggestionItem
                 key={index}

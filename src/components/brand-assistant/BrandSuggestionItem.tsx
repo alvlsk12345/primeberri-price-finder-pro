@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search } from "lucide-react";
+import { toast } from "sonner";
 import { findProductImage } from "@/services/api/openai/brandSuggestion/imageUtils";
 import { PlaceholderImage } from '../product/image/PlaceholderImage';
 import { BrandSuggestion } from "@/services/types";
@@ -74,11 +75,24 @@ export const BrandSuggestionItem: React.FC<CombinedBrandSuggestionItemProps> = (
 
   // Обработчик клика по кнопке поиска
   const handleClick = () => {
-    if (isSuggestionObject) {
-      props.onSelect(true); // Используем булево значение для immediate
-    } else {
-      props.onSelect(brand, product, true); // Используем третий параметр для immediate
-    }
+    // Показываем уведомление о начале поиска
+    toast.loading('Идет поиск, пожалуйста подождите', {
+      id: 'brand-search-toast',
+      duration: 0
+    });
+
+    setTimeout(() => {
+      if (isSuggestionObject) {
+        props.onSelect(true); // Используем булево значение для immediate
+      } else {
+        props.onSelect(brand, product, true); // Используем третий параметр для immediate
+      }
+      
+      // Закрываем уведомление о загрузке через небольшую задержку
+      setTimeout(() => {
+        toast.dismiss('brand-search-toast');
+      }, 1000);
+    }, 100);
   };
 
   // Обработчик ошибки загрузки изображения

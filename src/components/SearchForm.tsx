@@ -73,10 +73,11 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       
       console.log('Запуск поиска с запросом:', searchQuery);
       
-      // Выполняем поиск и затем скроллим к результатам
+      // Выполняем поиск
       handleSearch();
       
-      // Добавляем скроллинг к результатам после небольшой паузы
+      // Добавляем скроллинг к результатам после завершения поиска
+      // Увеличиваем время ожидания до 2.5 секунд для уверенности, что результаты загрузились
       setTimeout(() => {
         // Ищем элемент с результатами поиска
         const resultsElement = document.querySelector('.search-results-section');
@@ -87,7 +88,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
         // Закрываем всплывающее окно о поиске
         toast.dismiss('search-toast');
         toast.success('Поиск завершен', { duration: 1500 });
-      }, 1000);
+      }, 2500); // Увеличиваем задержку для гарантии загрузки результатов
     } catch (error: any) {
       console.error('Ошибка при попытке поиска:', error);
       setHasError(true);
