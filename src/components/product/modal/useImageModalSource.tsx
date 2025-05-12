@@ -37,10 +37,11 @@ export function useImageModalSource(imageUrl: string | null): ImageModalSourceIn
   const isProxiedUrlResult = isUrlWithCorsProxy(imageUrl);
   
   // Определяем, нужен ли directFetch для некоторых проблемных источников
-  // Для Zylalabs ВСЕГДА используем принудительный directFetch=true
-  const needsDirectFetch = isZylalabs || isGoogleThumb;
+  // Для Zylalabs и Google Thumbnails ВСЕГДА используем принудительный directFetch=true
+  const needsDirectFetch = isZylalabs || isGoogleThumb || imageUrl.includes('encrypted-tbn');
   
   // Решаем, использовать ли Avatar компонент для изображения
+  // Теперь включаем все миниатюры Google (encrypted-tbn)
   const useAvatar = isGoogleImage || isZylalabs || isGoogleThumb || imageUrl.includes('encrypted-tbn');
   
   return {

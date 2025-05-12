@@ -8,7 +8,7 @@ import { ImageModalStandardImage } from './ImageModalStandardImage';
 
 interface ImageModalContentProps {
   displayedImage: string;
-  productTitle: string;
+  productTitle: string | null;
   loadingState: ImageModalLoadingState;
   sourceInfo: ImageModalSourceInfo;
   retryCount: number;
@@ -23,7 +23,7 @@ export const ImageModalContent: React.FC<ImageModalContentProps> = ({
   retryCount,
   maxRetries
 }) => {
-  const { imageLoading, imageError, handleImageLoad, handleImageError } = loadingState;
+  const { imageLoading, imageError } = loadingState;
   const { useAvatar, isZylalabs } = sourceInfo;
   
   // Показываем скелетон во время загрузки
@@ -70,17 +70,15 @@ export const ImageModalContent: React.FC<ImageModalContentProps> = ({
     <div className="flex items-center justify-center w-full">
       {useAvatar ? (
         <ImageModalAvatarImage 
-          image={displayedImage} 
-          title={productTitle} 
-          onLoad={handleImageLoad}
-          onError={handleImageError}
+          displayedImage={displayedImage} 
+          productTitle={productTitle} 
+          loadingState={loadingState}
         />
       ) : (
         <ImageModalStandardImage 
-          image={displayedImage} 
-          title={productTitle} 
-          onLoad={handleImageLoad}
-          onError={handleImageError}
+          displayedImage={displayedImage} 
+          productTitle={productTitle} 
+          loadingState={loadingState}
         />
       )}
     </div>

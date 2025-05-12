@@ -67,7 +67,7 @@ export const getProxiedImageUrl = (
     const isZylalabs = url.includes('zylalabs.com') || url.includes('promptapi.com');
     const isGoogleThumb = url.includes('encrypted-tbn');
     const shouldBypassCache = directFetch || isZylalabs || isGoogleThumb;
-    const shouldForceDirectFetch = isZylalabs; // Принудительная прямая загрузка для Zylalabs
+    const shouldForceDirectFetch = isZylalabs || isGoogleThumb; // Принудительная прямая загрузка для Zylalabs и миниатюр Google
     
     // Конструируем URL к Edge Function с кэшированием изображений
     let proxyUrl = `https://juacmpkewomkducoanle.supabase.co/functions/v1/image-proxy?url=${encodedUrl}${PROXY_SUFFIX}`;
@@ -77,7 +77,7 @@ export const getProxiedImageUrl = (
       proxyUrl += '&bypassCache=true';
     }
     
-    // Добавляем параметр forceDirectFetch для Zylalabs
+    // Добавляем параметр forceDirectFetch для Zylalabs и миниатюр Google
     if (shouldForceDirectFetch) {
       proxyUrl += '&forceDirectFetch=true';
     }

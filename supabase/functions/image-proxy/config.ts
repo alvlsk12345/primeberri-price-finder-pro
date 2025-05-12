@@ -81,7 +81,7 @@ export const SPECIAL_DOMAINS = {
 export const MAX_REDIRECTS = 5;
 
 // Функция для определения типа источника изображения
-export const detectImageSource = (url: string): ImageSource => {
+export const detectImageSource = (url: string): 'zylalabs' | 'google' | 'standard' | 'unknown' => {
   if (!url) return 'unknown';
   
   // Проверяем Zylalabs домены

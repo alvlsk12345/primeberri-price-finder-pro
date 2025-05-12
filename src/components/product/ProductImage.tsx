@@ -21,10 +21,25 @@ export const ProductImage: React.FC<ProductImageProps> = ({ image, title, produc
   const [isModalOpen, setIsModalOpen] = useState(false);
   const placeholderUrl = getPlaceholderImageUrl(title);
   
+  // Оптимизируем URL изображения
+  let optimizedImageUrl = image;
+  
   // Для Zylalabs применяем специальную обработку
-  const optimizedImageUrl = image && isZylalabsImage(image) 
-    ? getOptimizedZylalabsImageUrl(image)
-    : image;
+  if (image && isZylalabsImage(image)) {
+    optimizedImageUrl = getOptimizedZylalabsImageUrl(image);
+    console.log('Применена оптимизация для Zylalabs изображения:', {
+      original: image,
+      optimized: optimizedImageUrl
+    });
+  }
+  
+  // Для Google Thumbnails также применяем специальную обработку
+  if (image && isGoogleThumbnail(image)) {
+    // Для миниатюр применяем прокси с forceDirectFetch=true
+    if (!optimizedImageUrl?.includes('forceDirectFetch=true')) {
+      console.log('Обнаружена миниатюра Google (encrypted-tbn), применяем специальную обработку');
+    }
+  }
   
   // Определяем, требуется ли directFetch для проблемных источников
   const needsDirectFetch = optimizedImageUrl ? 
@@ -48,6 +63,10 @@ export const ProductImage: React.FC<ProductImageProps> = ({ image, title, produc
       if (isZylalabsImage(optimizedImageUrl)) {
         toast.info("Загрузка изображения Zylalabs", {
           description: "Используется специальная обработка для API Zylalabs"
+        });
+      } else if (isGoogleThumbnail(optimizedImageUrl)) {
+        toast.info("Загрузка миниатюры Google", {
+          description: "Используется специальная обработка для миниатюр"
         });
       }
     } else {

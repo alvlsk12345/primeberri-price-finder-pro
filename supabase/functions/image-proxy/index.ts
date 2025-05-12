@@ -52,11 +52,17 @@ const handleImageProxyRequest = async (request: Request): Promise<Response> => {
       queryParams: Object.fromEntries(url.searchParams.entries())
     });
     
+    // Проверяем, является ли это миниатюрой Google (encrypted-tbn)
+    const isGoogleThumbnail = imageUrl?.includes('encrypted-tbn') || false;
+    
+    // Для миниатюр Google всегда используем forceDirectFetch=true
+    const shouldForceDirectFetch = forceDirectFetch || isGoogleThumbnail;
+    
     // Загружаем изображение с расширенными опциями
-    const result: ProxyResult = await loadImage(imageUrl!, bypassCache, forceDirectFetch, {
+    const result: ProxyResult = await loadImage(imageUrl!, bypassCache, shouldForceDirectFetch, {
       followRedirects: true,
       maxRedirects: 5,
-      timeout: 20000 // Увеличенный таймаут для Zylalabs API
+      timeout: isGoogleThumbnail ? 30000 : 20000 // Увеличенный таймаут для Google Thumbnails
     });
     
     // Если возникла ошибка при загрузке

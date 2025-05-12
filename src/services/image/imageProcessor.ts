@@ -39,14 +39,14 @@ export const processProductImage = (
   const shouldUseCache = useCache;
   const uniqueUrl = getUniqueImageUrl(imageUrl, index, shouldUseCache);
   
-  // Для изображений из Zylalabs всегда используем принудительную прямую загрузку
+  // Для изображений из Zylalabs и Google Thumbnails всегда используем принудительную прямую загрузку
   const shouldDirectFetch = directFetch || isZylalabs || isGoogleThumb;
   
-  // Для Zylalabs добавляем принудительную прямую загрузку
+  // Для Zylalabs и Google Thumbnails добавляем принудительную прямую загрузку
   let finalUrl = needsProxy ? getProxiedImageUrl(uniqueUrl, shouldDirectFetch) : uniqueUrl;
   
-  // Для Zylalabs добавляем дополнительный параметр forceDirectFetch=true
-  if (isZylalabs && !finalUrl.includes('forceDirectFetch=true')) {
+  // Для Zylalabs и Google Thumbnails добавляем дополнительный параметр forceDirectFetch=true
+  if ((isZylalabs || isGoogleThumb) && !finalUrl.includes('forceDirectFetch=true')) {
     finalUrl += '&forceDirectFetch=true';
   }
   
@@ -69,7 +69,7 @@ export const getBaseSizeImageUrl = (url: string | null, useCache: boolean = true
   
   // Для Google Thumbnails применяем прямую загрузку
   if (isGoogleThumbnail(url)) {
-    return getProxiedImageUrl(url, true);
+    return getProxiedImageUrl(url, true) + '&forceDirectFetch=true';
   }
   
   // Для Zylalabs изображений применяем прямую загрузку с forceDirectFetch=true
@@ -96,7 +96,7 @@ export const getLargeSizeImageUrl = (url: string | null, useCache: boolean = tru
   
   // Для Google Thumbnails применяем прямую загрузку с большим размером
   if (isGoogleThumbnail(url)) {
-    return getProxiedImageUrl(url, true);
+    return getProxiedImageUrl(url, true) + '&forceDirectFetch=true';
   }
   
   // Для Zylalabs изображений всегда принудительно forceDirectFetch=true

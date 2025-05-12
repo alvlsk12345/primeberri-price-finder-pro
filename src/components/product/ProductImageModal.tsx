@@ -31,8 +31,8 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
   const optimizedImageUrl = imageUrl ? 
     (sourceInfo.isZylalabs ? 
       getProxiedImageUrl(imageUrl, true, true) + '&forceDirectFetch=true' : 
-      sourceInfo.needsDirectFetch ? 
-        getProxiedImageUrl(imageUrl, true, true) : 
+      sourceInfo.isGoogleThumbnail ? 
+        getProxiedImageUrl(imageUrl, true, true) + '&forceDirectFetch=true' : 
         getLargeSizeImageUrl(imageUrl)) : null;
   
   // Если нет изображения, используем заглушку
@@ -69,6 +69,12 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
           duration: 2000,
           description: 'Используется прямой прокси запрос'
         });
+      } else if (sourceInfo.isGoogleThumbnail) {
+        console.log('Загрузка миниатюры Google с прямым прокси запросом');
+        toast.info('Загрузка миниатюры Google', {
+          duration: 2000, 
+          description: 'Используется прямой прокси запрос'
+        });
       }
     }
   }, [isOpen, imageUrl, optimizedImageUrl, displayedImage, productTitle, sourceInfo]);
@@ -96,7 +102,12 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
           });
         } else if (sourceInfo.isGoogleThumbnail) {
           // Для Google Thumbnails используем прямую загрузку
-          newUrl = getProxiedImageUrl(imageUrl || '', true, true) + `&retry=${Date.now()}-${retryCount}`;
+          newUrl = getProxiedImageUrl(imageUrl || '', true, true) + 
+            `&forceDirectFetch=true&retry=${Date.now()}-${retryCount}`;
+            
+          toast.info(`Повторная попытка (${retryCount + 1}/${MAX_RETRIES})`, {
+            description: 'Загрузка миниатюры Google'
+          });
         } else {
           // Добавляем уникальный параметр к URL для избежания кэширования
           newUrl = `${optimizedImageUrl}?retry=${Date.now()}-${retryCount}`;
@@ -120,10 +131,14 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
       console.log(`Все ${MAX_RETRIES} попытки загрузки изображения в модальном окне исчерпаны, используем заглушку`);
       setFallbackImage(getPlaceholderImageUrl(productTitle));
       
-      // Показываем сообщение об ошибке, если это Zylalabs
+      // Показываем сообщение об ошибке, если это Zylalabs или Google Thumbnail
       if (sourceInfo.isZylalabs) {
         toast.error(`Не удалось загрузить изображение из Zylalabs после ${MAX_RETRIES} попыток`, {
           description: 'Возможно, изображение недоступно или требует авторизации'
+        });
+      } else if (sourceInfo.isGoogleThumbnail) {
+        toast.error(`Не удалось загрузить миниатюру Google после ${MAX_RETRIES} попыток`, {
+          description: 'Возможно, изображение недоступно'
         });
       }
     }
