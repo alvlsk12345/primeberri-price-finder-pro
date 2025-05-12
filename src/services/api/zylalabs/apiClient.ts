@@ -1,4 +1,3 @@
-
 import { SearchParams } from "../../types";
 import { generateMockSearchResults } from "../mock/mockSearchGenerator";
 import { useDemoModeForced } from "../mock/mockServiceConfig";
@@ -76,7 +75,7 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
       if (response.status === 503) {
         toast.error('Сервис Zylalabs временно недоступен. Пробуем запрос с другими параметрами.');
         console.log('Сервис недоступен (503), пробуем выполнить запрос с другими параметрами');
-        return null; // Вернем null, чтобы попробовать другие страны или запросы
+        return null; // Вернем null, чтоб�� попробовать другие страны или запросы
       }
       
       throw new Error(`API вернул ошибку ${response.status}: ${response.statusText}`);
@@ -156,19 +155,21 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
  * @param countryCodes Массив кодов стран
  * @param page Номер страницы
  * @param language Код языка
+ * @param signal Объект AbortSignal для отмены запросов (опционально)
  * @returns Комбинированные результаты поиска
  */
 export const makeParallelZylalabsRequests = async (
   query: string,
   countryCodes: string[],
   page: number = 1,
-  language: string = 'ru'
+  language: string = 'ru',
+  signal?: AbortSignal
 ): Promise<any> => {
   console.log(`Выполняем параллельные запросы для ${countryCodes.length} стран:`, countryCodes);
   
   // Создаем массив промисов запросов для каждой страны
   const requests = countryCodes.map(countryCode => 
-    makeZylalabsCountryRequest(query, countryCode, page, language)
+    makeZylalabsCountryRequest(query, countryCode, page, language, signal)
       .catch(error => {
         console.warn(`Ошибка при запросе для страны ${countryCode}:`, error);
         return null; // Возвращаем null вместо ошибки для Promise.allSettled
@@ -230,13 +231,15 @@ export const makeParallelZylalabsRequests = async (
  * @param countryCode Код страны
  * @param page Номер страницы
  * @param language Код языка (добавлен параметр)
+ * @param signal Объект AbortSignal для отмены запросов (опционально)
  * @returns Результаты поиска или null в случае ошибки
  */
 export const makeZylalabsCountryRequest = async (
   query: string, 
   countryCode: string, 
   page: number = 1,
-  language: string = 'ru' // По умолчанию используем русский язык
+  language: string = 'ru', // По умолчанию используем русский язык
+  signal?: AbortSignal // Добавляем опциональный параметр signal
 ): Promise<any> => {
   const apiKey = getApiKey();
   
@@ -269,6 +272,12 @@ export const makeZylalabsCountryRequest = async (
   try {
     // Устанавливаем таймаут в 10 секунд для каждого запроса по стране (было 15)
     const controller = new AbortController();
+    
+    // Объединяем внешний signal с нашим локальным, если внешний передан
+    if (signal) {
+      signal.addEventListener('abort', () => controller.abort());
+    }
+    
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 секунд для запросов по отдельным странам
     
     const response = await fetch(url, {

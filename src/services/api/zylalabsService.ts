@@ -29,12 +29,12 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
     console.log('Выполняем параллельный поиск по странам:', searchCountries);
     
     // Выполняем параллельные запросы для всех стран сразу с учетом signal
+    // Исправляем количество аргументов (было 5, должно быть 4)
     const parallelResults = await makeParallelZylalabsRequests(
       params.query, 
       searchCountries,
       params.page,
-      params.language || 'ru',
-      signal
+      params.language || 'ru'
     );
     
     // Если найдены товары через параллельные запросы, возвращаем их
@@ -46,7 +46,8 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
     console.log('Через параллельные запросы товары не найдены, пробуем использовать существующие методы');
     
     // Используем новый подход поиска по странам ЕС, как в HTML-примере
-    const results = await searchEuProducts(params.query, params.page, signal);
+    // Исправляем количество аргументов (было 3, должно быть 2)
+    const results = await searchEuProducts(params.query, params.page);
     
     // Если найдены товары, возвращаем их
     if (results.products && results.products.length > 0) {
