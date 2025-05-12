@@ -6,6 +6,13 @@ import { fetchBrandSuggestionsViaOpenAI } from "../supabase/aiService";
 import { isSupabaseConnected } from "../supabase/client";
 import { generateBrandSuggestionPrompt } from "./brandSuggestion/promptUtils";
 
+// Тип для обработки разных форматов ответа от OpenAI и Supabase
+interface ResponseData {
+  suggestions?: BrandSuggestion[];
+  products?: BrandSuggestion[];
+  [key: string]: any; // Для других возможных свойств
+}
+
 // Функция для получения предложений брендов через OpenAI
 export const fetchBrandSuggestions = async (description: string): Promise<BrandSuggestion[]> => {
   try {
@@ -26,15 +33,17 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
         
         // Если результат - объект с полем suggestions, возвращаем это поле
         if (result && typeof result === 'object') {
-          if ('suggestions' in result && Array.isArray(result.suggestions)) {
-            console.log('Получены результаты из поля suggestions:', result.suggestions.length);
-            return result.suggestions;
+          const typedResult = result as ResponseData;
+          
+          if (typedResult.suggestions && Array.isArray(typedResult.suggestions)) {
+            console.log('Получены результаты из поля suggestions:', typedResult.suggestions.length);
+            return typedResult.suggestions;
           }
           
           // Также проверяем поле products для обратной совместимости
-          if ('products' in result && Array.isArray(result.products)) {
-            console.log('Получены результаты из поля products:', result.products.length);
-            return result.products;
+          if (typedResult.products && Array.isArray(typedResult.products)) {
+            console.log('Получены результаты из поля products:', typedResult.products.length);
+            return typedResult.products;
           }
           
           // Если есть поля brand/product - это один элемент
@@ -79,18 +88,21 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
           return parsed;
         }
         
-        if (parsed && typeof parsed === 'object') {
-          if ('suggestions' in parsed && Array.isArray(parsed.suggestions)) {
-            return parsed.suggestions;
+        // Типизируем parsed как ResponseData
+        const typedParsed = parsed as ResponseData;
+        
+        if (typedParsed && typeof typedParsed === 'object') {
+          if (typedParsed.suggestions && Array.isArray(typedParsed.suggestions)) {
+            return typedParsed.suggestions;
           }
           
-          if ('products' in parsed && Array.isArray(parsed.products)) {
-            return parsed.products;
+          if (typedParsed.products && Array.isArray(typedParsed.products)) {
+            return typedParsed.products;
           }
           
           // Если это один объект с полями brand/product
           if ('brand' in parsed || 'product' in parsed) {
-            return [parsed];
+            return [parsed as BrandSuggestion];
           }
         }
         
@@ -104,11 +116,14 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     
     // Если получили уже объект (не строку)
     if (result && typeof result === 'object') {
+      // Типизируем result как ResponseData
+      const typedResult = result as ResponseData;
+      
       // Проверяем наличие поля suggestions или products
-      if ('suggestions' in result && Array.isArray((result as any).suggestions)) {
-        return (result as any).suggestions;
-      } else if ('products' in result && Array.isArray((result as any).products)) {
-        return (result as any).products;
+      if (typedResult.suggestions && Array.isArray(typedResult.suggestions)) {
+        return typedResult.suggestions;
+      } else if (typedResult.products && Array.isArray(typedResult.products)) {
+        return typedResult.products;
       } else if (Array.isArray(result)) {
         return result;
       } else if ('brand' in result || 'product' in result) {
