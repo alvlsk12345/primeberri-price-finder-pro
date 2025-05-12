@@ -21,10 +21,10 @@ export const ProductList: React.FC<ProductListProps> = ({ products, selectedProd
   }
   
   return (
-    // Улучшаем отзывчивость сетки, исправляем плавающую вёрстку
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+    // Улучшенная отзывчивая сетка для карточек товаров
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 pb-2">
       {products.map((product) => (
-        <div key={product.id} className="flex h-full">
+        <div key={product.id} className="h-full flex">
           <ProductCard
             product={product}
             isSelected={selectedProduct?.id === product.id}

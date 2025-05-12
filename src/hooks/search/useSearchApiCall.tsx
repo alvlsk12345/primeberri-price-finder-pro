@@ -3,7 +3,9 @@ import { useState } from 'react';
 import { SearchParams } from "@/services/types";
 import { searchProductsViaZylalabs } from "@/services/api/zylalabsService";
 import { toast } from "sonner";
-import { API_TIMEOUT } from "@/services/api/mock/mockServiceConfig";
+
+// Уменьшаем время таймаута для более быстрого поиска
+const API_TIMEOUT = 20000; // 20 секунд вместо 30
 
 type SearchApiCallProps = {
   setIsLoading: (loading: boolean) => void;
@@ -27,6 +29,15 @@ export function useSearchApiCall({
       setSearchTimeout(null);
     }
     
+    // Явно устанавливаем загрузку в true
+    setIsLoading(true);
+    
+    // Показываем toast о поиске
+    toast.loading('Выполняется поиск товаров...', {
+      id: 'search-progress',
+      duration: API_TIMEOUT + 5000
+    });
+    
     // Создаем переменную для отслеживания актуального статуса загрузки
     let isCurrentlyLoading = true;
     
@@ -36,8 +47,9 @@ export function useSearchApiCall({
       if (isCurrentlyLoading) {
         console.log('Поиск занял слишком много времени');
         toast.error('Поиск занял слишком много времени. Попробуйте еще раз или используйте другой запрос.', { duration: 5000 });
+        setIsLoading(false);
       }
-    }, API_TIMEOUT + 5000); // API_TIMEOUT + 5 секунд запаса
+    }, API_TIMEOUT);
     
     setSearchTimeout(timeout);
     
@@ -51,12 +63,19 @@ export function useSearchApiCall({
       
       // Отмечаем, что загрузка завершена
       isCurrentlyLoading = false;
+      setIsLoading(false);
+      
+      // Скрываем toast загрузки
+      toast.dismiss('search-progress');
       
       // Проверяем, используются ли демо-данные
       if (results.isDemo) {
         console.log('Используются демо-данные');
         setIsUsingDemoData(true);
         setApiInfo(undefined);
+        
+        // Показываем уведомление о демо-данных
+        toast.info('Используются демонстрационные данные', { duration: 3000 });
       } else if (results.apiInfo) {
         console.log('Используются данные API, информация:', results.apiInfo);
         setIsUsingDemoData(false);
@@ -75,6 +94,13 @@ export function useSearchApiCall({
       
       // Отмечаем, что загрузка завершена (с ошибкой)
       isCurrentlyLoading = false;
+      setIsLoading(false);
+      
+      // Скрываем toast загрузки
+      toast.dismiss('search-progress');
+      
+      // Показываем toast об ошибке
+      toast.error('Произошла ошибка при поиске товаров', { duration: 3000 });
       
       // Отменяем таймаут при ошибке
       if (searchTimeout) {
@@ -92,6 +118,9 @@ export function useSearchApiCall({
       clearTimeout(searchTimeout);
       setSearchTimeout(null);
     }
+    
+    // Скрываем toast загрузки при очистке
+    toast.dismiss('search-progress');
   };
   
   return {

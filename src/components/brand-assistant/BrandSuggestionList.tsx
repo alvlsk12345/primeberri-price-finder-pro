@@ -26,12 +26,28 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
     const searchQuery = `${suggestion.brand} ${suggestion.product}`;
     console.log(`Выбираем товар для поиска: "${searchQuery}", immediate: ${immediate}`);
     
+    // Показываем toast о начале поиска для лучшего UX
+    if (immediate) {
+      toast.loading(`Выполняем поиск: ${suggestion.brand} ${suggestion.product}`, {
+        id: 'search-in-progress',
+        duration: 3000
+      });
+    }
+    
     // Вызываем функцию onSelect с правильными параметрами
     onSelect(searchQuery, immediate);
     
     toast.success(`Выбран товар для поиска: ${suggestion.brand} ${suggestion.product}`, {
       duration: 2000,
     });
+    
+    // Прокручиваем страницу к результатам поиска после выбора
+    setTimeout(() => {
+      const resultsElement = document.getElementById('search-results-section');
+      if (resultsElement && immediate) {
+        resultsElement.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 500);
   };
 
   return (

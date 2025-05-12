@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 import { BrandSuggestion } from "@/services/types";
 import { callOpenAI } from "../apiClient";
@@ -30,7 +31,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     const content = await callOpenAI(brandPrompt, {
       temperature: 0.3,
       max_tokens: 500,
-      model: "gpt-4",
+      model: "gpt-4o",
       responseFormat: "json_object"
     });
 
@@ -60,7 +61,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     }
 
     console.log(`Возвращаем ${suggestions.length} предложений брендов`);
-    return suggestions.slice(0, 6); // Возвращаем до 6 результатов
+    return suggestions.slice(0, 6); // Гарантировано возвращаем 6 результатов
   } catch (error) {
     console.error('Ошибка при запросе к OpenAI для брендов:', error);
     

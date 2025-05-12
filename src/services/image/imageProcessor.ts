@@ -1,164 +1,81 @@
 
-import { isValidImageUrl, getUniqueImageUrl } from '../imageService';
+import { isValidImageUrl } from '../imageService';
 import { 
   isZylalabsImage, 
-  isGoogleShoppingImage, 
-  isGoogleCseImage 
+  isGoogleShoppingImage
 } from './imageSourceDetector';
-import { 
-  cleanMarkdownUrl, 
-  formatImageUrl 
-} from './imageUrlFormatter';
-import {
-  needsProxying,
-  getProxiedImageUrl
-} from './imageProxy';
+import { getUniqueImageUrl } from './imageCache';
+import { getProxiedImageUrl } from './imageProxy';
 
 /**
- * Улучшенная функция для обработки изображения товара с поддержкой прокси для CORS
+ * Обрабатывает URL изображения продукта для оптимизации отображения
+ * @param imageUrl Исходный URL изображения
+ * @param useCache Использовать кэширование (по умолчанию true)
+ * @returns Оптимизированный URL изображения
  */
-export const processProductImage = (imageUrl: string | undefined, index: number): string => {
-  // Убедимся, что imageUrl - строка
-  let processedUrl = typeof imageUrl === 'string' ? imageUrl : '';
-  
-  // Если это пустая строка, ничего не делаем
-  if (!processedUrl) {
-    console.log(`Пустой URL изображения для индекса ${index}`);
-    return '';
-  }
-  
-  console.log(`----- ОБРАБОТКА ИЗОБРАЖЕНИЯ -----`);
-  console.log(`Исходный URL: "${processedUrl}"`);
-  
-  // Очищаем URL от Markdown-разметки, если она есть
-  processedUrl = cleanMarkdownUrl(processedUrl);
-  
-  // Форматируем URL изображения
-  processedUrl = processedUrl.trim();
-  console.log(`URL после удаления пробелов: "${processedUrl}"`);
-  
-  // Удаляем экранирование слешей, если они есть
-  if (processedUrl.includes('\\/')) {
-    processedUrl = processedUrl.replace(/\\\//g, '/');
-    console.log(`URL после удаления экранированных слешей: "${processedUrl}"`);
-  }
-  
-  // Удаляем кавычки из URL, если они есть
-  if (processedUrl.startsWith('"') && processedUrl.endsWith('"')) {
-    processedUrl = processedUrl.substring(1, processedUrl.length - 1);
-    console.log(`URL после удаления кавычек: "${processedUrl}"`);
+export const processProductImage = (imageUrl: string | null, useCache: boolean = true): string | null => {
+  if (!imageUrl || !isValidImageUrl(imageUrl)) {
+    return null;
   }
 
-  // Особая обработка для URL от Google (в том числе из Zylalabs API)
-  if (isGoogleShoppingImage(processedUrl)) {
-    console.log(`Обнаружен URL Google Shopping: "${processedUrl}"`);
-    processedUrl = formatImageUrl(processedUrl);
-    console.log(`Форматированный URL Google Shopping: "${processedUrl}"`);
-  }
-
-  // Особая обработка для изображений Zylalabs
-  if (isZylalabsImage(processedUrl)) {
-    console.log(`Обнаружен URL Zylalabs: "${processedUrl}"`);
-    processedUrl = formatImageUrl(processedUrl);
-    console.log(`Форматированный URL Zylalabs: "${processedUrl}"`);
-  }
+  // Проверяем, нужна ли прокси для изображения
+  const needsProxy = isZylalabsImage(imageUrl) || isGoogleShoppingImage(imageUrl);
   
-  // Для URL от Google CSE используем особую обработку
-  if (isGoogleCseImage(processedUrl)) {
-    console.log(`Обнаружен URL Google CSE: "${processedUrl}"`);
-    processedUrl = formatImageUrl(processedUrl);
-    console.log(`Форматированный URL Google CSE: "${processedUrl}"`);
-  }
+  // Получаем URL с учетом кэширования
+  const uniqueUrl = getUniqueImageUrl(imageUrl, undefined, useCache);
   
-  // Проверка на специальные форматы URL Google
-  if (processedUrl.includes('googleusercontent') || processedUrl.includes('gstatic.com') || 
-      processedUrl.includes('ggpht.com')) {
-    console.log(`Обнаружен URL Google (прочий): "${processedUrl}"`);
-    processedUrl = formatImageUrl(processedUrl);
-  }
-  
-  // Форматируем URL (добавляем протокол, обрабатываем относительные URL)
-  processedUrl = formatImageUrl(processedUrl);
-  console.log(`URL после форматирования: "${processedUrl}"`);
-  
-  // Обрабатываем особые случаи URL
-  if (processedUrl && processedUrl.includes('data:image')) {
-    console.log('Обнаружен Data URL изображения, использование без изменений');
-    return processedUrl;
-  }
-  
-  // Проверяем, валидный ли URL изображения
-  if (!isValidImageUrl(processedUrl)) {
-    console.log(`Невалидный URL изображения: "${processedUrl}"`);
-    return '';
-  }
-
-  // Проверяем, нужно ли проксирование для этого URL
-  if (needsProxying(processedUrl)) {
-    const originalUrl = processedUrl;
-    processedUrl = getProxiedImageUrl(processedUrl);
-    console.log(`URL требует проксирования для обхода CORS. Оригинальный: "${originalUrl}", Проксированный: "${processedUrl}"`);
-  }
-  
-  // Добавляем уникальный параметр к URL для избежания кэширования
-  const finalUrl = getUniqueImageUrl(processedUrl, index);
-  console.log(`Финальный URL изображения: "${finalUrl}"`);
-  
-  return finalUrl;
+  // Применяем прокси только если нужно
+  return needsProxy ? getProxiedImageUrl(uniqueUrl) : uniqueUrl;
 };
 
 /**
- * Получение URL изображения базового размера
+ * Получает URL изображения базового размера
+ * @param url Исходный URL изображения
+ * @param useCache Использовать кэширование (по умолчанию true)
+ * @returns URL изображения базового размера
  */
-export const getBaseSizeImageUrl = (url: string): string => {
-  if (!url) return '';
+export const getBaseSizeImageUrl = (url: string | null, useCache: boolean = true): string | null => {
+  if (!url) return null;
   
-  // Для Google изображений с параметрами размера (w, h)
-  if (url.includes('=w') && url.includes('-h')) {
+  // Для Google изображений заменяем размер на базовый
+  if (url.includes('googleusercontent.com') && url.includes('=w')) {
     return url.replace(/=w\d+-h\d+/, '=w300-h300');
   }
   
-  // Для изображений с параметром s (размер)
-  if (url.includes('=s')) {
-    return url.replace(/=s\d+/, '=s300');
-  }
-  
-  return url;
+  // Для Zylalabs изображений применяем оптимизацию размера
+  return getZylalabsSizeImageUrl(url, 'medium', useCache);
 };
 
 /**
- * Получение URL изображения большого размера
+ * Получает URL изображения большого размера
+ * @param url Исходный URL изображения
+ * @param useCache Использовать кэширование (по умолчанию true)
+ * @returns URL изображения большого размера
  */
-export const getLargeSizeImageUrl = (url: string): string => {
-  if (!url) return '';
+export const getLargeSizeImageUrl = (url: string | null, useCache: boolean = true): string | null => {
+  if (!url) return null;
   
-  // Для Google изображений с параметрами размера (w, h)
-  if (url.includes('=w') && url.includes('-h')) {
+  // Для Google изображений заменяем размер на больший
+  if (url.includes('googleusercontent.com') && url.includes('=w')) {
     return url.replace(/=w\d+-h\d+/, '=w800-h800');
   }
   
-  // Для изображений с параметром s (размер)
-  if (url.includes('=s')) {
-    return url.replace(/=s\d+/, '=s800');
-  }
-  
-  return url;
+  // Для Zylalabs изображений применяем оптимизацию размера
+  return getZylalabsSizeImageUrl(url, 'large', useCache);
 };
 
 /**
- * Получение URL изображения размера Zylalabs
+ * Получает URL изображения Zylalabs оптимизированного размера
+ * @param url Исходный URL изображения
+ * @param size Размер изображения (small, medium, large)
+ * @param useCache Использовать кэширование (по умолчанию true)
+ * @returns Оптимизированный URL изображения
  */
-export const getZylalabsSizeImageUrl = (url: string): string => {
+export const getZylalabsSizeImageUrl = (url: string, size: 'small' | 'medium' | 'large' = 'medium', useCache: boolean = true): string => {
   if (!url) return '';
   
-  // Размер для Zylalabs изображений
-  if (isZylalabsImage(url)) {
-    if (url.includes('=s')) {
-      return url.replace(/=s\d+/, '=s400');
-    } else {
-      return url + '=s400';
-    }
-  }
+  if (!isZylalabsImage(url)) return url;
   
-  return url;
+  // Для Zylalabs применяем стратегию кэширования
+  return getUniqueImageUrl(url, undefined, useCache);
 };
