@@ -37,6 +37,7 @@ export function useImageModalSource(imageUrl: string | null): ImageModalSourceIn
   const isProxiedUrlResult = isUrlWithCorsProxy(imageUrl);
   
   // Определяем, нужен ли directFetch для некоторых проблемных источников
+  // Для Zylalabs ВСЕГДА используем принудительный directFetch=true
   const needsDirectFetch = isZylalabs || isGoogleThumb;
   
   // Решаем, использовать ли Avatar компонент для изображения

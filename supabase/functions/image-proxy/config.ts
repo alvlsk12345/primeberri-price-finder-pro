@@ -16,7 +16,7 @@ export const PROXY_SUFFIX = '&proxied=true';
 
 // Расширенные заголовки запроса для улучшенной совместимости
 export const ENHANCED_REQUEST_HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
   'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
   'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
   'Referer': 'https://www.google.com/'
@@ -25,14 +25,17 @@ export const ENHANCED_REQUEST_HEADERS = {
 // Таймаут для запросов изображений (в миллисекундах)
 export const REQUEST_TIMEOUT = 15000;
 
-// Заголовки для запросов к Zylalabs
+// Заголовки для запросов к Zylalabs - улучшенная версия
 export const ZYLALABS_REQUEST_HEADERS = {
   ...ENHANCED_REQUEST_HEADERS,
   'Origin': 'https://zylalabs.com',
   'Referer': 'https://zylalabs.com/',
   'Sec-Fetch-Dest': 'image',
   'Sec-Fetch-Mode': 'cors',
-  'Sec-Fetch-Site': 'cross-site'
+  'Sec-Fetch-Site': 'cross-site',
+  'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,*/*',
+  'Cache-Control': 'no-cache',
+  'Pragma': 'no-cache'
 };
 
 // Заголовки для запросов к Google изображениям
@@ -67,10 +70,15 @@ export const SPECIAL_DOMAINS = {
   zylalabs: [
     'zylalabs.com',
     'promptapi.com',
+    'api.promptapi.com',
+    'api.eu-central.promptapi.com',
     'zyla-api',
     'zylahome'
   ]
 };
+
+// Максимальное количество переадресаций при загрузке изображений
+export const MAX_REDIRECTS = 5;
 
 // Функция для определения типа источника изображения
 export const detectImageSource = (url: string): ImageSource => {
@@ -104,4 +112,3 @@ export const getRequestHeadersForSource = (url: string): Record<string, string> 
   
   return ENHANCED_REQUEST_HEADERS;
 };
-

@@ -44,13 +44,15 @@ export const isGoogleImage = (url: string): boolean => {
 };
 
 /**
- * Проверяет, является ли URL изображением из Zylalabs API
+ * Проверяет, является ли URL изображением из Zylalabs API с расширенной проверкой
  */
 export const isZylalabsImage = (url: string): boolean => {
   if (!url) return false;
   
+  // Расширенная проверка для всех возможных вариантов доменов Zylalabs
   return url.includes('zylalabs.com') || 
-         url.includes('api.promptapi.com') ||
+         url.includes('promptapi.com') || 
+         url.includes('api.promptapi.com') || 
          url.includes('api.eu-central.promptapi.com') ||
          url.includes('zyla-api') || 
          url.includes('zylahome');

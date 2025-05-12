@@ -25,6 +25,12 @@ export interface ProxyResult {
   cacheInfo?: {
     cached: boolean;
     source: string;
+  };
+  // Добавляем информацию о переадресации
+  redirectInfo?: {
+    wasRedirected: boolean;
+    originalUrl?: string;
+    redirectUrl?: string;
   }
 }
 
@@ -38,5 +44,8 @@ export interface ImageLoadOptions {
   forceProxy?: boolean;
   headers?: Record<string, string>;
   timeout?: number;
+  // Добавляем опцию для отслеживания переадресаций
+  followRedirects?: boolean;
+  // Максимальное количество переадресаций
+  maxRedirects?: number;
 }
-

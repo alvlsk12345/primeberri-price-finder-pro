@@ -8,6 +8,8 @@ import { detectImageSource } from './image/ImageSourceDetector';
 import { AvatarProductImage } from './image/AvatarProductImage';
 import { StandardProductImage } from './image/StandardProductImage';
 import { isGoogleThumbnail, isZylalabsImage } from '@/services/image';
+import { getOptimizedZylalabsImageUrl } from '@/services/image/zylalabsImageProcessor';
+import { toast } from "sonner";
 
 interface ProductImageProps {
   image: string | null;
@@ -19,31 +21,42 @@ export const ProductImage: React.FC<ProductImageProps> = ({ image, title, produc
   const [isModalOpen, setIsModalOpen] = useState(false);
   const placeholderUrl = getPlaceholderImageUrl(title);
   
+  // Для Zylalabs применяем специальную обработку
+  const optimizedImageUrl = image && isZylalabsImage(image) 
+    ? getOptimizedZylalabsImageUrl(image)
+    : image;
+  
   // Определяем, требуется ли directFetch для проблемных источников
-  const needsDirectFetch = image ? 
-    (isZylalabsImage(image) || isGoogleThumbnail(image)) : false;
+  const needsDirectFetch = optimizedImageUrl ? 
+    (isZylalabsImage(optimizedImageUrl) || isGoogleThumbnail(optimizedImageUrl)) : false;
   
   // Используем хук для обработки загрузки изображения с учетом типа изображения
-  const imageState = useProductImageLoading(image, productId, needsDirectFetch);
+  const imageState = useProductImageLoading(optimizedImageUrl, productId, needsDirectFetch);
   const { imageError } = imageState;
   
   // Определяем тип источника изображения
-  const sourceInfo = detectImageSource(image);
+  const sourceInfo = detectImageSource(optimizedImageUrl);
   const { useAvatar } = sourceInfo;
   
   // Обработчик клика по изображению
   const handleImageClick = () => {
     // Открываем модальное окно, только если есть изображение и нет ошибки загрузки
-    if (image && !imageError) {
-      console.log('Открытие модального окна для изображения:', image);
+    if (optimizedImageUrl && !imageError) {
+      console.log('Открытие модального окна для изображения:', optimizedImageUrl);
       setIsModalOpen(true);
+      
+      if (isZylalabsImage(optimizedImageUrl)) {
+        toast.info("Загрузка изображения Zylalabs", {
+          description: "Используется специальная обработка для API Zylalabs"
+        });
+      }
     } else {
       console.log('Не удалось открыть модальное окно: нет изображения или ошибки загрузки');
     }
   };
 
   // Если у нас нет изображения
-  if (!image) {
+  if (!optimizedImageUrl) {
     return (
       <div className="w-full h-[150px] mb-3 flex items-center justify-center bg-gray-100">
         <div className="flex flex-col items-center justify-center">
@@ -59,7 +72,7 @@ export const ProductImage: React.FC<ProductImageProps> = ({ image, title, produc
     <>
       {useAvatar ? (
         <AvatarProductImage 
-          image={image}
+          image={optimizedImageUrl}
           title={title}
           imageState={imageState}
           sourceInfo={sourceInfo}
@@ -67,7 +80,7 @@ export const ProductImage: React.FC<ProductImageProps> = ({ image, title, produc
         />
       ) : (
         <StandardProductImage
-          image={image}
+          image={optimizedImageUrl}
           title={title}
           imageState={imageState}
           onClick={handleImageClick}
@@ -77,7 +90,7 @@ export const ProductImage: React.FC<ProductImageProps> = ({ image, title, produc
       <ProductImageModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        imageUrl={imageError ? placeholderUrl : image} 
+        imageUrl={imageError ? placeholderUrl : optimizedImageUrl} 
         productTitle={title} 
       />
     </>

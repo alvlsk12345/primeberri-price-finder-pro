@@ -13,7 +13,9 @@ const CORS_PROBLEM_DOMAINS = [
   'gstatic.com',
   'ggpht.com',
   'zylalabs.com',
-  'promptapi.com'
+  'promptapi.com',
+  'api.promptapi.com',
+  'api.eu-central.promptapi.com'
 ];
 
 /**
@@ -38,7 +40,7 @@ export const needsProxying = (url: string): boolean => {
 };
 
 /**
- * Создает URL для проксированного изображения
+ * Создает URL для проксированного изображения с улучшенными параметрами
  * @param url Оригинальный URL изображения
  * @param directFetch Флаг для прямой загрузки без кэширования
  * @param forceProxy Принудительное использование прокси даже если needsProxying возвращает false
@@ -61,10 +63,11 @@ export const getProxiedImageUrl = (
     // Кодируем URL для безопасной передачи в качестве параметра
     const encodedUrl = encodeURIComponent(url);
     
-    // Для Zylalabs изображений и Google Thumbnails всегда используем directFetch при первой загрузке
+    // Для Zylalabs изображений и Google Thumbnails всегда используем directFetch и forceDirectFetch
     const isZylalabs = url.includes('zylalabs.com') || url.includes('promptapi.com');
     const isGoogleThumb = url.includes('encrypted-tbn');
     const shouldBypassCache = directFetch || isZylalabs || isGoogleThumb;
+    const shouldForceDirectFetch = isZylalabs; // Принудительная прямая загрузка для Zylalabs
     
     // Конструируем URL к Edge Function с кэшированием изображений
     let proxyUrl = `https://juacmpkewomkducoanle.supabase.co/functions/v1/image-proxy?url=${encodedUrl}${PROXY_SUFFIX}`;
@@ -75,7 +78,7 @@ export const getProxiedImageUrl = (
     }
     
     // Добавляем параметр forceDirectFetch для Zylalabs
-    if (isZylalabs) {
+    if (shouldForceDirectFetch) {
       proxyUrl += '&forceDirectFetch=true';
     }
     

@@ -8,6 +8,7 @@ import { ImageModalHeader } from './modal/ImageModalHeader';
 import { ImageModalContent } from './modal/ImageModalContent';
 import { getLargeSizeImageUrl } from '@/services/image/imageProcessor';
 import { getProxiedImageUrl } from '@/services/image';
+import { toast } from 'sonner';
 
 interface ProductImageModalProps {
   isOpen: boolean;
@@ -26,11 +27,13 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
   const sourceInfo = useImageModalSource(imageUrl);
   
   // Увеличиваем размер изображения для модального окна если возможно
-  // Для Zylalabs и Google Thumbnail использовать прямую загрузку (directFetch=true)
+  // Для Zylalabs и Google Thumbnail используем правильную обработку
   const optimizedImageUrl = imageUrl ? 
-    (sourceInfo.needsDirectFetch ? 
-      getProxiedImageUrl(imageUrl, true, true) : 
-      getLargeSizeImageUrl(imageUrl)) : null;
+    (sourceInfo.isZylalabs ? 
+      getProxiedImageUrl(imageUrl, true, true) + '&forceDirectFetch=true' : 
+      sourceInfo.needsDirectFetch ? 
+        getProxiedImageUrl(imageUrl, true, true) : 
+        getLargeSizeImageUrl(imageUrl)) : null;
   
   // Если нет изображения, используем заглушку
   const displayedImage = optimizedImageUrl || getPlaceholderImageUrl(productTitle);
@@ -42,7 +45,7 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
   const [retryCount, setRetryCount] = useState(0);
   const [fallbackImage, setFallbackImage] = useState<string | null>(null);
   
-  const MAX_RETRIES = 3; // Увеличиваем с 2 до 3
+  const MAX_RETRIES = 3;
   
   // Подробное логирование открытия модального окна
   useEffect(() => {
@@ -58,6 +61,15 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
         isGoogleThumbnail: sourceInfo.isGoogleThumbnail,
         needsDirectFetch: sourceInfo.needsDirectFetch
       });
+      
+      // Показываем уведомление для отладки при загрузке Zylalabs изображений
+      if (sourceInfo.isZylalabs) {
+        console.log('Загрузка изображения из Zylalabs с прямым прокси запросом');
+        toast.info('Загрузка изображения Zylalabs', {
+          duration: 2000,
+          description: 'Используется прямой прокси запрос'
+        });
+      }
     }
   }, [isOpen, imageUrl, optimizedImageUrl, displayedImage, productTitle, sourceInfo]);
   
@@ -72,10 +84,19 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
       const timer = setTimeout(() => {
         console.log(`Повторная попытка загрузки изображения в модальном окне ${retryCount + 1}/${MAX_RETRIES}`);
         
-        // Для Zylalabs и Google Thumbnail используем принудительную прямую загрузку
+        // Для Zylalabs используем принудительную прямую загрузку с обходом кэша
         let newUrl: string;
-        if (sourceInfo.isZylalabs || sourceInfo.isGoogleThumbnail) {
-          newUrl = getProxiedImageUrl(imageUrl || '', true, true) + `&retry=${Date.now()}`;
+        if (sourceInfo.isZylalabs) {
+          // Особая обработка для Zylalabs - всегда используем forceDirectFetch=true
+          newUrl = getProxiedImageUrl(imageUrl || '', true, true) + 
+            `&forceDirectFetch=true&retry=${Date.now()}-${retryCount}`;
+          
+          toast.info(`Повторная попытка (${retryCount + 1}/${MAX_RETRIES})`, {
+            description: 'Загрузка изображения Zylalabs'
+          });
+        } else if (sourceInfo.isGoogleThumbnail) {
+          // Для Google Thumbnails используем прямую загрузку
+          newUrl = getProxiedImageUrl(imageUrl || '', true, true) + `&retry=${Date.now()}-${retryCount}`;
         } else {
           // Добавляем уникальный параметр к URL для избежания кэширования
           newUrl = `${optimizedImageUrl}?retry=${Date.now()}-${retryCount}`;
@@ -95,9 +116,16 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
       
       return () => clearTimeout(timer);
     } else if (isOpen && imageError && retryCount >= MAX_RETRIES) {
-      // Если все попытки исчерпаны, используем заглушку
+      // Если все попытки исчерпаны, используем заглушку и показываем сообщение
       console.log(`Все ${MAX_RETRIES} попытки загрузки изображения в модальном окне исчерпаны, используем заглушку`);
       setFallbackImage(getPlaceholderImageUrl(productTitle));
+      
+      // Показываем сообщение об ошибке, если это Zylalabs
+      if (sourceInfo.isZylalabs) {
+        toast.error(`Не удалось загрузить изображение из Zylalabs после ${MAX_RETRIES} попыток`, {
+          description: 'Возможно, изображение недоступно или требует авторизации'
+        });
+      }
     }
   }, [loadingState.imageError, retryCount, isOpen, optimizedImageUrl, productTitle, imageUrl, sourceInfo, MAX_RETRIES]);
   

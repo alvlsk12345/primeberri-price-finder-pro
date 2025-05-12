@@ -39,11 +39,18 @@ export const processProductImage = (
   const shouldUseCache = useCache;
   const uniqueUrl = getUniqueImageUrl(imageUrl, index, shouldUseCache);
   
-  // Для изображений из Zylalabs и Google Thumbnails всегда используем directFetch=true при первой загрузке
+  // Для изображений из Zylalabs всегда используем принудительную прямую загрузку
   const shouldDirectFetch = directFetch || isZylalabs || isGoogleThumb;
   
-  // Применяем прокси только если нужно
-  return needsProxy ? getProxiedImageUrl(uniqueUrl, shouldDirectFetch) : uniqueUrl;
+  // Для Zylalabs добавляем принудительную прямую загрузку
+  let finalUrl = needsProxy ? getProxiedImageUrl(uniqueUrl, shouldDirectFetch) : uniqueUrl;
+  
+  // Для Zylalabs добавляем дополнительный параметр forceDirectFetch=true
+  if (isZylalabs && !finalUrl.includes('forceDirectFetch=true')) {
+    finalUrl += '&forceDirectFetch=true';
+  }
+  
+  return finalUrl;
 };
 
 /**
@@ -65,9 +72,9 @@ export const getBaseSizeImageUrl = (url: string | null, useCache: boolean = true
     return getProxiedImageUrl(url, true);
   }
   
-  // Для Zylalabs изображений применяем оптимизацию размера и всегда directFetch=true
+  // Для Zylalabs изображений применяем прямую загрузку с forceDirectFetch=true
   if (isZylalabsImage(url)) {
-    return getProxiedImageUrl(getUniqueImageUrl(url, undefined, useCache), true);
+    return getProxiedImageUrl(getUniqueImageUrl(url, undefined, useCache), true) + '&forceDirectFetch=true';
   }
   
   return url;
@@ -92,7 +99,7 @@ export const getLargeSizeImageUrl = (url: string | null, useCache: boolean = tru
     return getProxiedImageUrl(url, true);
   }
   
-  // Для Zylalabs изображений всегда directFetch=true
+  // Для Zylalabs изображений всегда принудительно forceDirectFetch=true
   if (isZylalabsImage(url)) {
     // Добавляем параметр для принудительной прямой загрузки
     return getProxiedImageUrl(getUniqueImageUrl(url, undefined, useCache), true) + '&forceDirectFetch=true';
@@ -116,7 +123,7 @@ export const getZylalabsSizeImageUrl = (url: string | null, size: 'small' | 'med
   // Генерируем URL с учетом параметров размера
   const baseUrl = getUniqueImageUrl(url, undefined, useCache);
   
-  // Для Zylalabs всегда принудительно добавляем параметр directFetch=true для первой загрузки
+  // Для Zylalabs всегда принудительно добавляем параметр directFetch=true и forceDirectFetch=true для первой загрузки
   let proxyUrl = getProxiedImageUrl(baseUrl, true);
   
   // Добавляем параметр размера
