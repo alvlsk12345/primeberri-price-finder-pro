@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { BrandSuggestion } from "@/services/types";
 import { Button } from "@/components/ui/button";
@@ -121,7 +120,7 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
             className="h-8"
           >
             <Search size={16} className="mr-1" />
-            Найти товар
+            Поиск в магазинах
           </Button>
         </div>
       </div>
