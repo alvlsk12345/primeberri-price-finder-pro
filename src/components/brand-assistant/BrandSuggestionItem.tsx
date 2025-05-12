@@ -30,7 +30,7 @@ export const BrandSuggestionItem: React.FC<BrandSuggestionItemProps> = ({
     <div 
       className={cn(
         "p-3 rounded-md border border-gray-200 bg-white hover:bg-gray-50 transition-all",
-        "transform opacity-0 animate-in fade-in slide-in-from-bottom-2 duration-300"
+        "animate-fade-in" // Исправляем анимацию, чтобы элементы были видны
       )}
       style={{ animationDelay }}
     >

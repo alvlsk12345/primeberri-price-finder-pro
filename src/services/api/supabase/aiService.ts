@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 import { BrandSuggestion, BrandResponse } from "@/services/types";
 import { OpenAIRequestOptions } from "../openai/proxyUtils";
@@ -42,6 +43,8 @@ export const callAIViaSupabase = async (params: {
     
     if (!data) {
       console.warn('Пустой ответ от Supabase Edge Function');
+    } else {
+      console.log('Получен ответ от Supabase Edge Function:', data);
     }
     
     return data;
@@ -95,11 +98,11 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
   }
   
   try {
-    console.log('Вызов AI через Supabase Edge Function: openai');
+    console.log('Вызов AI через Supabase Edge Function: openai для получения предложений брендов');
     
     // Устанавливаем таймаут для запроса
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Превышено время ожидания ответа от Supabase Edge Function')), 20000);
+      setTimeout(() => reject(new Error('Превышено время ожидания ответа от Supabase Edge Function')), 30000); // Увеличиваем таймаут до 30 секунд
     });
 
     // Создаем основной запрос
@@ -135,27 +138,39 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
     
     if (Array.isArray(data)) {
       // Если результат уже массив
-      normalizedResults = data;
+      normalizedResults = data.map(item => ({
+        brand: item.brand || item.name || 'Неизвестный бренд',
+        product: item.product || '',
+        description: item.description || 'Описание недоступно'
+      }));
+      console.log('Нормализованные результаты из массива:', normalizedResults);
     } else if (data && typeof data === 'object') {
       // Проверяем наличие поля products
       if ('products' in data && Array.isArray((data as any).products)) {
-        normalizedResults = (data as any).products;
+        const products = (data as any).products;
+        normalizedResults = products.map((item: any) => ({
+          brand: item.brand || item.name || 'Неизвестный бренд',
+          product: item.product || '',
+          description: item.description || 'Описание недоступно'
+        }));
+        console.log('Нормализованные результаты из поля products:', normalizedResults);
       } else {
         // Если это одиночный объект с нужными полями
         if ('brand' in data || 'name' in data) {
-          normalizedResults = [data as BrandSuggestion];
+          normalizedResults = [{
+            brand: data.brand || data.name || 'Неизвестный бренд',
+            product: data.product || '',
+            description: data.description || 'Описание недоступно'
+          }];
+          console.log('Нормализованные результаты из одиночного объекта:', normalizedResults);
         }
       }
     }
     
-    console.log('Нормализованные результаты:', normalizedResults);
+    console.log('Финальные нормализованные результаты (количество):', normalizedResults.length);
     
     // Убедимся, что все объекты в массиве имеют нужную структуру
-    return normalizedResults.map(item => ({
-      brand: item.brand || item.name || 'Неизвестный бренд',
-      product: item.product || '',
-      description: item.description || 'Описание недоступно'
-    }));
+    return normalizedResults.filter(item => item && (item.brand || item.product));
   } catch (error) {
     console.error('Ошибка при получении предложений брендов через Supabase:', error);
     throw error;

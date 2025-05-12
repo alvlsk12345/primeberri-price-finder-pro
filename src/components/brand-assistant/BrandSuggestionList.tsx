@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { BrandSuggestionItem } from "./BrandSuggestionItem";
 import { BrandSuggestion, BrandResponse } from "@/services/types";
 
@@ -14,6 +14,16 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
 }) => {
   console.log("Отрисовка BrandSuggestionList с данными:", suggestions);
   
+  // Добавляем эффект для дополнительного логирования
+  useEffect(() => {
+    console.log("BrandSuggestionList: получены данные", {
+      тип: typeof suggestions,
+      массив: Array.isArray(suggestions),
+      количество: Array.isArray(suggestions) ? suggestions.length : 'не массив',
+      содержимое: suggestions
+    });
+  }, [suggestions]);
+
   // Проверка на пустой массив или отсутствие данных
   if (!suggestions || (Array.isArray(suggestions) && suggestions.length === 0)) {
     console.warn("BrandSuggestionList: получен пустой или неверный массив предложений", suggestions);
@@ -87,6 +97,8 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
             console.warn(`Предложение #${index} не содержит необходимых данных:`, suggestion);
             return null; // Не отображаем некорректные элементы
           }
+          
+          console.log(`Отрисовка элемента #${index}:`, suggestion);
           
           return (
             <BrandSuggestionItem 
