@@ -53,11 +53,28 @@ export const getProxiedImageUrl = (
 ): string => {
   if (!url) return '';
   
+  // Проверяем, является ли URL уже проксированным
+  if (isProxiedUrl(url)) {
+    // Если URL уже проксирован, но не содержит важные параметры, добавляем их
+    let updatedUrl = url;
+    
+    // Для изображений из Google Thumbnails и Zylalabs требуются специальные параметры
+    const isGoogleThumb = url.includes('encrypted-tbn');
+    const isZylalabs = url.includes('zylalabs.com') || url.includes('promptapi.com');
+    
+    if (directFetch && !url.includes('bypassCache=true')) {
+      updatedUrl += '&bypassCache=true';
+    }
+    
+    if ((isGoogleThumb || isZylalabs) && !url.includes('forceDirectFetch=true')) {
+      updatedUrl += '&forceDirectFetch=true';
+    }
+    
+    return updatedUrl;
+  }
+  
   // Проверка необходимости проксирования
   if (!forceProxy && !needsProxying(url)) return url;
-  
-  // Если URL уже проксирован, не добавляем прокси повторно
-  if (isProxiedUrl(url)) return url;
   
   try {
     // Кодируем URL для безопасной передачи в качестве параметра
@@ -83,7 +100,12 @@ export const getProxiedImageUrl = (
     }
     
     // Добавляем уникальный timestamp для предотвращения кэширования браузером
-    proxyUrl += `&t=${Date.now()}`;
+    // Для Google Thumbnails и Zylalabs всегда добавляем timestamp
+    if (isGoogleThumb || isZylalabs) {
+      proxyUrl += `&_t=${Date.now()}`;
+    } else {
+      proxyUrl += `&t=${Date.now()}`;
+    }
     
     return proxyUrl;
   } catch (error) {

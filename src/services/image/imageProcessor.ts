@@ -36,7 +36,7 @@ export const processProductImage = (
   const needsProxy = isZylalabs || isGoogleShopping || isGoogleThumb;
   
   // Получаем URL с учетом кэширования
-  const shouldUseCache = useCache;
+  const shouldUseCache = useCache && !isGoogleThumb; // Для Google Thumbnails не используем кэш
   const uniqueUrl = getUniqueImageUrl(imageUrl, index, shouldUseCache);
   
   // Для изображений из Zylalabs и Google Thumbnails всегда используем принудительную прямую загрузку
@@ -45,9 +45,14 @@ export const processProductImage = (
   // Для Zylalabs и Google Thumbnails добавляем принудительную прямую загрузку
   let finalUrl = needsProxy ? getProxiedImageUrl(uniqueUrl, shouldDirectFetch) : uniqueUrl;
   
-  // Для Zylalabs и Google Thumbnails добавляем дополнительный параметр forceDirectFetch=true
+  // Для Zylalabs и Google Thumbnails всегда добавляем дополнительный параметр forceDirectFetch=true
   if ((isZylalabs || isGoogleThumb) && !finalUrl.includes('forceDirectFetch=true')) {
     finalUrl += '&forceDirectFetch=true';
+  }
+  
+  // Добавляем уникальный timestamp для избежания кэширования браузером
+  if (isGoogleThumb && !finalUrl.includes('_t=')) {
+    finalUrl += `&_t=${Date.now()}`;
   }
   
   return finalUrl;
@@ -67,9 +72,10 @@ export const getBaseSizeImageUrl = (url: string | null, useCache: boolean = true
     return url.replace(/=w\d+-h\d+/, '=w300-h300');
   }
   
-  // Для Google Thumbnails применяем прямую загрузку
+  // Для Google Thumbnails всегда применяем прямую загрузку и обход кэша
   if (isGoogleThumbnail(url)) {
-    return getProxiedImageUrl(url, true) + '&forceDirectFetch=true';
+    const baseUrl = getProxiedImageUrl(url, true);
+    return `${baseUrl}&forceDirectFetch=true&_t=${Date.now()}`;
   }
   
   // Для Zylalabs изображений применяем прямую загрузку с forceDirectFetch=true
@@ -89,20 +95,47 @@ export const getBaseSizeImageUrl = (url: string | null, useCache: boolean = true
 export const getLargeSizeImageUrl = (url: string | null, useCache: boolean = true): string | null => {
   if (!url) return null;
   
+  // Проверяем, является ли URL уже проксированным для избежания повторного проксирования
+  const isAlreadyProxied = url.includes('juacmpkewomkducoanle.supabase.co/functions/v1/image-proxy');
+  
   // Для Google изображений заменяем размер на больший
-  if (url.includes('googleusercontent.com') && url.includes('=w')) {
+  if (!isAlreadyProxied && url.includes('googleusercontent.com') && url.includes('=w')) {
     return url.replace(/=w\d+-h\d+/, '=w800-h800');
   }
   
-  // Для Google Thumbnails применяем прямую загрузку с большим размером
+  // Для Google Thumbnails всегда применяем прямую загрузку и обход кэша
   if (isGoogleThumbnail(url)) {
-    return getProxiedImageUrl(url, true) + '&forceDirectFetch=true';
+    // Если URL уже проксированный, добавляем только нужные параметры
+    if (isAlreadyProxied) {
+      // Проверяем, есть ли уже параметр forceDirectFetch
+      if (!url.includes('forceDirectFetch=true')) {
+        return `${url}&forceDirectFetch=true&_t=${Date.now()}`;
+      } else {
+        // Если forceDirectFetch уже есть, добавляем только timestamp
+        return `${url}&_t=${Date.now()}`;
+      }
+    }
+    // Для нового URL создаем проксированную версию
+    const proxyUrl = getProxiedImageUrl(url, true);
+    return `${proxyUrl}&forceDirectFetch=true&_t=${Date.now()}`;
   }
   
   // Для Zylalabs изображений всегда принудительно forceDirectFetch=true
   if (isZylalabsImage(url)) {
+    // Если URL уже проксированный
+    if (isAlreadyProxied) {
+      if (!url.includes('forceDirectFetch=true')) {
+        return `${url}&forceDirectFetch=true`;
+      }
+      return url;
+    }
     // Добавляем параметр для принудительной прямой загрузки
     return getProxiedImageUrl(getUniqueImageUrl(url, undefined, useCache), true) + '&forceDirectFetch=true';
+  }
+  
+  // Проверяем, нужно ли добавить timestamp к существующему проксированному URL
+  if (isAlreadyProxied && url.includes('encrypted-tbn')) {
+    return `${url}&_t=${Date.now()}`;
   }
   
   return url;

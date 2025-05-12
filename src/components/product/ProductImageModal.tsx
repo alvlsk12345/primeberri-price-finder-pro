@@ -28,12 +28,32 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
   
   // Увеличиваем размер изображения для модального окна если возможно
   // Для Zylalabs и Google Thumbnail используем правильную обработку
-  const optimizedImageUrl = imageUrl ? 
-    (sourceInfo.isZylalabs ? 
-      getProxiedImageUrl(imageUrl, true, true) + '&forceDirectFetch=true' : 
-      sourceInfo.isGoogleThumbnail ? 
-        getProxiedImageUrl(imageUrl, true, true) + '&forceDirectFetch=true' : 
-        getLargeSizeImageUrl(imageUrl)) : null;
+  const optimizedImageUrl = React.useMemo(() => {
+    if (!imageUrl) return null;
+    
+    // Для Google Thumbnail и Zylalabs используем специальную обработку
+    if (sourceInfo.isGoogleThumbnail || sourceInfo.isZylalabs) {
+      // Если URL уже содержит прокси, просто добавляем параметры
+      if (imageUrl.includes('juacmpkewomkducoanle.supabase.co/functions/v1/image-proxy')) {
+        let finalUrl = imageUrl;
+        
+        // Добавляем forceDirectFetch если его нет
+        if (!finalUrl.includes('forceDirectFetch=true')) {
+          finalUrl += '&forceDirectFetch=true';
+        }
+        
+        // Добавляем timestamp для предотвращения кэширования
+        finalUrl += `&_t=${Date.now()}`;
+        return finalUrl;
+      } else {
+        // Создаем проксированный URL с нужными параметрами
+        return getProxiedImageUrl(imageUrl, true, true) + `&forceDirectFetch=true&_t=${Date.now()}`;
+      }
+    }
+    
+    // Для остальных изображений используем стандартный метод увеличения размера
+    return getLargeSizeImageUrl(imageUrl);
+  }, [imageUrl, sourceInfo]);
   
   // Если нет изображения, используем заглушку
   const displayedImage = optimizedImageUrl || getPlaceholderImageUrl(productTitle);
@@ -45,7 +65,7 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
   const [retryCount, setRetryCount] = useState(0);
   const [fallbackImage, setFallbackImage] = useState<string | null>(null);
   
-  const MAX_RETRIES = 3;
+  const MAX_RETRIES = 5; // Увеличиваем количество попыток
   
   // Подробное логирование открытия модального окна
   useEffect(() => {
@@ -62,7 +82,7 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
         needsDirectFetch: sourceInfo.needsDirectFetch
       });
       
-      // Показываем уведомление для отладки при загрузке Zylalabs изображений
+      // Показываем уведомление для отладки при загрузке специальных типов изображений
       if (sourceInfo.isZylalabs) {
         console.log('Загрузка изображения из Zylalabs с прямым прокси запросом');
         toast.info('Загрузка изображения Zylalabs', {
@@ -79,38 +99,47 @@ export const ProductImageModal: React.FC<ProductImageModalProps> = ({
     }
   }, [isOpen, imageUrl, optimizedImageUrl, displayedImage, productTitle, sourceInfo]);
   
-  // Система повторных попыток для загрузки изображения
+  // Система повторных попыток для загрузки изображения с улучшенной логикой
   useEffect(() => {
     const { imageError } = loadingState;
     
     // Только если окно открыто, изображение доступно и произошла ошибка
     if (isOpen && optimizedImageUrl && imageError && retryCount < MAX_RETRIES) {
-      // Задержка перед повторной попыткой
+      // Задержка перед повторной попыткой (увеличивается с каждой попыткой)
       const delay = 800 * (retryCount + 1);
       const timer = setTimeout(() => {
         console.log(`Повторная попытка загрузки изображения в модальном окне ${retryCount + 1}/${MAX_RETRIES}`);
         
-        // Для Zylalabs используем принудительную прямую загрузку с обходом кэша
+        // Формируем новый URL в зависимости от типа изображения
         let newUrl: string;
-        if (sourceInfo.isZylalabs) {
-          // Особая обработка для Zylalabs - всегда используем forceDirectFetch=true
-          newUrl = getProxiedImageUrl(imageUrl || '', true, true) + 
-            `&forceDirectFetch=true&retry=${Date.now()}-${retryCount}`;
+        
+        // Для Google Thumbnails и Zylalabs используем специальную стратегию
+        if (sourceInfo.isGoogleThumbnail || sourceInfo.isZylalabs) {
+          // Определяем базовый URL
+          const baseUrl = imageUrl || '';
+          const isAlreadyProxied = baseUrl.includes('juacmpkewomkducoanle.supabase.co/functions/v1/image-proxy');
           
+          if (isAlreadyProxied) {
+            // Если URL уже с прокси, добавляем только новый timestamp
+            const urlWithoutTime = baseUrl.replace(/&_t=\d+(-\d+)?/, '');
+            newUrl = `${urlWithoutTime}&forceDirectFetch=true&_t=${Date.now()}-${retryCount}`;
+          } else {
+            // Создаем новый проксированный URL
+            newUrl = getProxiedImageUrl(baseUrl, true, true) + 
+              `&forceDirectFetch=true&_t=${Date.now()}-${retryCount}`;
+          }
+          
+          const sourceType = sourceInfo.isZylalabs ? 'Zylalabs' : 'миниатюры Google';
           toast.info(`Повторная попытка (${retryCount + 1}/${MAX_RETRIES})`, {
-            description: 'Загрузка изображения Zylalabs'
-          });
-        } else if (sourceInfo.isGoogleThumbnail) {
-          // Для Google Thumbnails используем прямую загрузку
-          newUrl = getProxiedImageUrl(imageUrl || '', true, true) + 
-            `&forceDirectFetch=true&retry=${Date.now()}-${retryCount}`;
-            
-          toast.info(`Повторная попытка (${retryCount + 1}/${MAX_RETRIES})`, {
-            description: 'Загрузка миниатюры Google'
+            description: `Загрузка изображения ${sourceType}`
           });
         } else {
-          // Добавляем уникальный параметр к URL для избежания кэширования
-          newUrl = `${optimizedImageUrl}?retry=${Date.now()}-${retryCount}`;
+          // Для обычных изображений добавляем уникальный параметр к URL
+          if (optimizedImageUrl.includes('?')) {
+            newUrl = `${optimizedImageUrl}&retry=${Date.now()}-${retryCount}`;
+          } else {
+            newUrl = `${optimizedImageUrl}?retry=${Date.now()}-${retryCount}`;
+          }
         }
         
         setRetryCount(prev => prev + 1);

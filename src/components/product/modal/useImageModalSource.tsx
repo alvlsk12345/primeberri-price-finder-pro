@@ -4,7 +4,9 @@ import {
   isGoogleCseImage, 
   isGoogleShoppingImage, 
   isGoogleThumbnail,
-  isUrlWithCorsProxy 
+  isUrlWithCorsProxy,
+  isProxiedUrl,
+  getUrlParam
 } from '@/services/image';
 
 export interface ImageModalSourceInfo {
@@ -28,13 +30,34 @@ export function useImageModalSource(imageUrl: string | null): ImageModalSourceIn
     };
   }
   
-  // Проверяем источник изображения для специальной обработки
-  const isGoogleImage = isGoogleShoppingImage(imageUrl) || isGoogleCseImage(imageUrl);
-  const isZylalabs = isZylalabsImage(imageUrl);
-  const isGoogleThumb = isGoogleThumbnail(imageUrl);
+  // Начальные флаги для прямого URL
+  let isGoogleImage = isGoogleShoppingImage(imageUrl) || isGoogleCseImage(imageUrl);
+  let isZylalabs = isZylalabsImage(imageUrl);
+  let isGoogleThumb = isGoogleThumbnail(imageUrl);
   
-  // Проверяем, является ли URL с прокси
-  const isProxiedUrlResult = isUrlWithCorsProxy(imageUrl);
+  // Проверяем, является ли URL проксированным
+  const isPrxUrl = isProxiedUrl(imageUrl);
+  
+  // Если URL проксирован, проверяем оригинальный URL внутри него
+  if (isPrxUrl) {
+    try {
+      const originalUrl = getUrlParam(imageUrl, 'url');
+      if (originalUrl) {
+        // Проверяем оригинальный URL на типы источников
+        isGoogleImage = isGoogleImage || isGoogleShoppingImage(originalUrl) || isGoogleCseImage(originalUrl);
+        isZylalabs = isZylalabs || isZylalabsImage(originalUrl);
+        isGoogleThumb = isGoogleThumb || isGoogleThumbnail(originalUrl) || originalUrl.includes('encrypted-tbn');
+      }
+    } catch (e) {
+      console.error('Ошибка при анализе проксированного URL:', e);
+    }
+  }
+  
+  // Дополнительная проверка для Google Thumbnails по строке encrypted-tbn
+  if (!isGoogleThumb && imageUrl.includes('encrypted-tbn')) {
+    isGoogleThumb = true;
+    isGoogleImage = true;
+  }
   
   // Определяем, нужен ли directFetch для некоторых проблемных источников
   // Для Zylalabs и Google Thumbnails ВСЕГДА используем принудительный directFetch=true
@@ -48,7 +71,7 @@ export function useImageModalSource(imageUrl: string | null): ImageModalSourceIn
     useAvatar,
     isGoogleImage,
     isZylalabs,
-    isProxiedUrl: isProxiedUrlResult,
+    isProxiedUrl: isPrxUrl,
     isGoogleThumbnail: isGoogleThumb,
     needsDirectFetch
   };
