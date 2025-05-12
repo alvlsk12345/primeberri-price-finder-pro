@@ -78,7 +78,7 @@ const Settings = () => {
       if (useSupabaseBE && supabaseConnected) {
         // Проверяем работу через Supabase
         await callAIViaSupabase({
-          provider: selectedProvider === 'openai' ? 'openai' : selectedProvider === 'abacus' ? 'abacus' : 'perplexity',
+          provider: selectedProvider,
           prompt: selectedProvider === 'openai' ? "Скажи 'привет'" : undefined,
           endpoint: selectedProvider === 'abacus' ? 'testConnection' : undefined,
           method: 'GET'
@@ -151,7 +151,7 @@ const Settings = () => {
     }
   };
 
-  // Функция для обработки изменения провайдера
+  // Функция для обработки изменения пр��вайдера
   const handleProviderChange = (value: AIProvider) => {
     setSelectedProvider(value);
     setSelectedAIProvider(value);

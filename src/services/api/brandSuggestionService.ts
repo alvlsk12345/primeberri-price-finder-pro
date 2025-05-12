@@ -1,4 +1,3 @@
-
 import { BrandSuggestion } from "@/services/types";
 import { fetchBrandSuggestions as fetchBrandSuggestionsFromOpenAI } from "./openai";
 import { fetchBrandSuggestions as fetchBrandSuggestionsFromAbacus } from "./abacus";
