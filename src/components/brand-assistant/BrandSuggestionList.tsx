@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { BrandSuggestion } from '@/services/types';
 import { BrandSuggestionItem } from './BrandSuggestionItem';
@@ -24,6 +23,9 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
   // Функция для выбора продукта из списка
   const handleSelectProduct = (suggestion: BrandSuggestion, immediate: boolean = false) => {
     const searchQuery = `${suggestion.brand} ${suggestion.product}`;
+    console.log(`Выбираем товар для поиска: "${searchQuery}", immediate: ${immediate}`);
+    
+    // Вызываем функцию onSelect с правильными параметрами
     onSelect(searchQuery, immediate);
     
     toast.success(`Выбран товар для поиска: ${suggestion.brand} ${suggestion.product}`, {

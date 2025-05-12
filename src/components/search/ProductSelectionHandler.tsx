@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from "sonner";
 
 type ProductSelectionHandlerProps = {
@@ -10,6 +10,23 @@ export const useProductSelectionHandler = (
   setSearchQuery: (query: string) => void, 
   executeSearch: () => void
 ) => {
+  // Добавляем состояние для отслеживания необходимости поиска после обновления запроса
+  const [pendingSearch, setPendingSearch] = useState<{query: string, shouldSearch: boolean} | null>(null);
+
+  // Используем useEffect для выполнения поиска после обновления состояния
+  useEffect(() => {
+    if (pendingSearch && pendingSearch.shouldSearch) {
+      // Сбрасываем флаг перед выполнением поиска
+      setPendingSearch(null);
+      
+      // Выполняем поиск с небольшой задержкой для гарантии обновления состояния
+      setTimeout(() => {
+        console.log('Выполняем отложенный поиск после установки запроса');
+        executeSearch();
+      }, 50);
+    }
+  }, [pendingSearch, executeSearch]);
+
   // Обработчик выбора продукта из AI-помощника
   const handleSelectProduct = (product: string, performSearch: boolean = false) => {
     if (!product || typeof product !== 'string') {
@@ -19,20 +36,19 @@ export const useProductSelectionHandler = (
     }
     
     try {
+      console.log(`Товар "${product}" добавлен в поле поиска, performSearch: ${performSearch}`);
+      
       // Устанавливаем поисковый запрос
       setSearchQuery(product);
       
-      console.log(`Товар "${product}" добавлен в поле поиска`);
-      
+      // Если требуется выполнить поиск, устанавливаем состояние для отложенного поиска
       if (performSearch) {
         toast.info(`Начинаем поиск товара: ${product}`, {
           duration: 2000
         });
         
-        // Небольшая задержка для лучшего UX
-        setTimeout(() => {
-          executeSearch();
-        }, 300);
+        // Устанавливаем флаг для запуска поиска после обновления состояния
+        setPendingSearch({ query: product, shouldSearch: true });
       } else {
         toast.info(`Товар "${product}" добавлен в поле поиска`, {
           duration: 2000

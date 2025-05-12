@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { BrandSuggestionList } from "./BrandSuggestionList";
 import { Button } from "@/components/ui/button";
@@ -157,7 +156,7 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
       
       setHasError(true);
       
-      // Обработка других ��ипов ошибок
+      // Обработка других ��ипов оши��ок
       if (error.message?.includes("quota")) {
         setErrorMessage("Превышен лимит запросов API. Проверьте ваш тарифный план OpenAI.");
         toast.error("Превышен лимит запросов API. Проверьте ваш тарифный план OpenAI.");
@@ -190,6 +189,7 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
   // Обработчик выбора предложения бренда
   const handleSuggestionSelect = (searchQuery: string, immediate: boolean) => {
     console.log(`Выбран запрос: ${searchQuery}, немедленный поиск: ${immediate}`);
+    // Явно передаем оба параметра в родительский компонент
     onSelectProduct(searchQuery, immediate);
   };
 

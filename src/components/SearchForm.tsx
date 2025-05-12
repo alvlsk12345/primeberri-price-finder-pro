@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from "sonner";
 import { useDemoModeForced } from '@/services/api/mock/mockServiceConfig';
@@ -81,7 +80,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
     console.log('1. Откройте инструменты разработчика (F12 или Ctrl+Shift+I)');
     console.log('2. Перейдите на вкладку "Сеть" (Network)');
     console.log('3. Найдите запросы к googleapis.com');
-    console.log('4. Проверьте статус запроса (должен быть 200)');
+    console.log('4. Проверьте ст��тус запроса (должен быть 200)');
     console.log('5. Проверьте ответ запроса на наличие данных');
     console.log('--------------------------------------------');
   }, []);
@@ -103,6 +102,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
         duration: 2000
       });
       
+      console.log('Запуск поиска с запросом:', searchQuery);
       handleSearch();
     } catch (error: any) {
       console.error('Ошибка при попытке поиска:', error);
@@ -112,7 +112,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
     }
   };
 
-  // Используем хук для обработки выбора продуктов
+  // Используем обновленный хук для обработки выбора продуктов
   const { handleSelectProduct } = useProductSelectionHandler(setSearchQuery, executeSearch);
 
   return (
