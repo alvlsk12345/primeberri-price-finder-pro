@@ -21,8 +21,6 @@ export const StandardProductImage: React.FC<StandardProductImageProps> = ({
 }) => {
   const { imageLoading, imageError } = imageState;
   
-  // Используем loading="lazy" для изображений, чтобы 
-  // браузер загружал их только при необходимости
   return (
     <div 
       className="relative w-full h-[150px] mb-3 cursor-pointer overflow-hidden"
@@ -44,8 +42,11 @@ export const StandardProductImage: React.FC<StandardProductImageProps> = ({
           className={`object-contain w-full h-full transition-opacity duration-200 ${
             imageLoading ? 'opacity-0' : 'opacity-100'
           }`}
-          loading="lazy" // Добавляем lazy loading
+          loading="lazy"
+          decoding="async"
+          crossOrigin="anonymous"
           onError={(e) => {
+            console.error('Ошибка загрузки изображения:', image);
             e.currentTarget.style.display = 'none';
           }}
         />

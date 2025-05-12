@@ -48,3 +48,20 @@ export const markImageAsLoaded = (url: string): void => {
 export const clearImageLoadCache = (): void => {
   imageLoadCache.clear();
 };
+
+/**
+ * Получает ключ для кэша изображения на основе URL
+ * @param url URL изображения
+ * @returns Ключ для кэша
+ */
+export const getImageCacheKey = (url: string): string => {
+  // Удаляем параметры запроса для консистентного кэширования
+  let cacheKey = url;
+  const questionMarkIndex = url.indexOf('?');
+  
+  if (questionMarkIndex > 0) {
+    cacheKey = url.substring(0, questionMarkIndex);
+  }
+  
+  return cacheKey;
+};

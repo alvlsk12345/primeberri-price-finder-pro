@@ -1,6 +1,4 @@
 
-import { supabase } from '@/integrations/supabase/client';
-
 /**
  * Суффикс для определения проксированных URL, чтобы избежать повторного проксирования
  */
@@ -29,6 +27,11 @@ export const needsProxying = (url: string): boolean => {
   // Не проксируем data URLs
   if (url.startsWith('data:')) return false;
   
+  // Не проксируем изображения из Supabase Storage, которые уже кэшированы
+  if (url.includes('juacmpkewomkducoanle.supabase.co/storage/v1/object/public/product-images')) {
+    return false;
+  }
+  
   // Проверяем, содержит ли URL один из проблемных доменов
   return CORS_PROBLEM_DOMAINS.some(domain => url.includes(domain));
 };
@@ -46,9 +49,7 @@ export const getProxiedImageUrl = (url: string): string => {
     // Кодируем URL для безопасной передачи в качестве параметра
     const encodedUrl = encodeURIComponent(url);
     
-    // Используем supabase.functions.invoke для вызова Edge Function
-    // Но для прямых обращений к изображениям это не подходит,
-    // поэтому конструируем URL напрямую
+    // Конструируем URL к Edge Function с кэшированием изображений
     const proxyUrl = `https://juacmpkewomkducoanle.supabase.co/functions/v1/image-proxy?url=${encodedUrl}${PROXY_SUFFIX}`;
     
     return proxyUrl;

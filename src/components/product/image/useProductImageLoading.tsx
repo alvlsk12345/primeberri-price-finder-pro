@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { markImageAsLoaded, isImageLoaded } from '@/services/image/imageCache';
 
 export interface ImageLoadingState {
   imageLoading: boolean;
@@ -17,8 +18,15 @@ export function useProductImageLoading(
 
   // Сбрасываем состояние при изменении URL изображения
   useEffect(() => {
-    setImageLoading(true);
-    setImageError(false);
+    if (image) {
+      // Проверяем, было ли изображение уже загружено ранее
+      const alreadyLoaded = isImageLoaded(image);
+      setImageLoading(!alreadyLoaded);
+      setImageError(false);
+    } else {
+      setImageLoading(false);
+      setImageError(true);
+    }
   }, [image]);
 
   // Детальное логирование для отладки
@@ -36,6 +44,12 @@ export function useProductImageLoading(
       productId,
       imageUrl: image
     });
+    
+    // Сохраняем информацию об успешной загрузке в кэш
+    if (image) {
+      markImageAsLoaded(image);
+    }
+    
     setImageLoading(false);
     setImageError(false);
   };
