@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { toast } from "sonner";
-import { fetchBrandSuggestions } from "@/services/api/brandSuggestionService";
+import { getBrandSuggestions } from "@/services/api/brandSuggestionService";
 import { getApiKey } from "@/services/api/openai/config";
 import { BrandSuggestion } from "@/services/types";
 import { isSupabaseConnected } from "@/services/api/supabase/client";
@@ -58,7 +57,7 @@ export const useAiBrandAssistant = () => {
         console.warn('API ключ не найден');
       }
       
-      const suggestions = await fetchBrandSuggestions(productDescription);
+      const suggestions = await getBrandSuggestions(productDescription);
       console.log('Получены предложения:', suggestions);
       
       if (suggestions && suggestions.length > 0) {

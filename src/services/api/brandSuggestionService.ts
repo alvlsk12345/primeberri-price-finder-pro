@@ -10,9 +10,9 @@ import {
 } from './supabase/config';
 import { 
   fetchBrandSuggestionsViaOpenAI, 
-  fetchBrandSuggestionsViaPerplexity,
-  isSupabaseConnected 
+  fetchBrandSuggestionsViaPerplexity
 } from './supabase/aiService';
+import { isSupabaseConnected } from './supabase/client';
 
 /**
  * Получает предложения брендов на основе описания товара
