@@ -38,6 +38,8 @@ export async function handleAbacusRequest({
       fullUrl += `?${params.toString()}`;
     }
     
+    console.log(`Отправка запроса к Abacus API: ${fullUrl}`, method);
+    
     // Формируем опции для запроса
     const fetchOptions: {
       method: 'GET' | 'POST';
@@ -58,8 +60,6 @@ export async function handleAbacusRequest({
     if (method === 'POST' && Object.keys(body).length > 0) {
       fetchOptions.body = JSON.stringify(body);
     }
-    
-    console.log(`Отправка запроса к Abacus API: ${fullUrl}`, method);
     
     // Выполняем запрос к API Abacus
     const response = await fetch(fullUrl, fetchOptions);

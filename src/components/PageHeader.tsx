@@ -6,6 +6,7 @@ import { Settings, Home } from "lucide-react";
 
 export const PageHeader: React.FC = () => {
   const location = useLocation();
+  // Проверяем путь без учета хеша
   const isSettingsPage = location.pathname === '/settings';
   
   return (
