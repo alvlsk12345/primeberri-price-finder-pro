@@ -14,6 +14,20 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { InfoIcon } from 'lucide-react';
 
+// Функция для проверки, находимся ли мы на странице настроек
+const isOnSettingsPage = () => {
+  if (typeof window === 'undefined') return false;
+  
+  // Проверяем все возможные варианты URL страницы настроек
+  const pathname = window.location.pathname;
+  const hash = window.location.hash;
+  
+  return pathname === "/settings" || 
+         pathname.endsWith("/settings") || 
+         hash === "#/settings" || 
+         hash.includes("/settings");
+};
+
 type SearchFormProps = {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -34,9 +48,18 @@ export const SearchForm: React.FC<SearchFormProps> = ({
     enabled: false 
   });
   const isDemoMode = useDemoModeForced;
+  
+  // Проверяем, находимся ли мы на странице настроек
+  const inSettingsPage = isOnSettingsPage();
 
-  // Проверяем статус Supabase при загрузке
+  // Проверяем статус Supabase при загрузке, но НЕ на странице настроек
   useEffect(() => {
+    // Не выполняем проверку на странице настроек
+    if (inSettingsPage) {
+      console.log('Автоматическая проверка Supabase отключена на странице настроек');
+      return;
+    }
+    
     const checkSupabaseStatus = async () => {
       const connected = await isSupabaseConnected();
       const enabled = await isUsingSupabaseBackend();
@@ -51,7 +74,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
     };
     
     checkSupabaseStatus();
-  }, []);
+  }, [inSettingsPage]);
 
   // Функция выполнения поиска с дополнительными проверками и скроллингом
   const executeSearch = () => {
@@ -101,6 +124,25 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   // Используем обновленный хук для обработки выбора продуктов
   const { handleSelectProduct } = useProductSelectionHandler(setSearchQuery, executeSearch);
 
+  // Если мы на странице настроек, показываем упрощенный компонент без проверок соединения
+  if (inSettingsPage) {
+    return (
+      <div className="space-y-4">
+        <SearchInput
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          executeSearch={executeSearch}
+          isLoading={isLoading}
+          hasError={hasError}
+        />
+        
+        <SearchErrorMessage hasError={hasError} errorMessage={errorMessage} />
+        
+        <NoResultsMessage />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <SearchInput
@@ -113,8 +155,8 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       
       <SearchErrorMessage hasError={hasError} errorMessage={errorMessage} />
       
-      {/* Статус Supabase */}
-      {(!supabaseStatus.connected || !supabaseStatus.enabled) && (
+      {/* Статус Supabase - отображаем только если НЕ на странице настроек */}
+      {(!supabaseStatus.connected || !supabaseStatus.enabled) && !inSettingsPage && (
         <div className="bg-orange-50 border border-orange-200 rounded-md p-3 mb-4">
           <div className="flex items-start gap-2">
             <InfoIcon className="text-orange-600 mt-1 shrink-0" size={18} />

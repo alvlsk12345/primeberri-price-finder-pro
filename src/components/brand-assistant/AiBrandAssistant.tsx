@@ -52,29 +52,32 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
   // Проверяем, находимся ли мы на странице настроек
   const inSettingsPage = isOnSettingsPage();
 
+  // Если мы на странице настроек, не отображаем компонент вообще
+  if (inSettingsPage) {
+    return null;
+  }
+
   return (
     <div className="mt-3">
-      {!inSettingsPage && (
-        <div className="flex items-center gap-2">
-          <Checkbox 
-            id="enableAssistant" 
-            checked={isAssistantEnabled} 
-            onCheckedChange={(checked) => {
-              setIsAssistantEnabled(!!checked);
-              if (!checked) {
-                // Сбрасываем состояние при отключении помощника
-                setProductDescription("");
-              }
-            }}
-          />
-          <label htmlFor="enableAssistant" className="text-sm cursor-pointer flex items-center gap-1">
-            <Bot size={18} className="text-primary" />
-            Использовать AI-помощник для поиска товаров
-          </label>
-        </div>
-      )}
+      <div className="flex items-center gap-2">
+        <Checkbox 
+          id="enableAssistant" 
+          checked={isAssistantEnabled} 
+          onCheckedChange={(checked) => {
+            setIsAssistantEnabled(!!checked);
+            if (!checked) {
+              // Сбрасываем состояние при отключении помощника
+              setProductDescription("");
+            }
+          }}
+        />
+        <label htmlFor="enableAssistant" className="text-sm cursor-pointer flex items-center gap-1">
+          <Bot size={18} className="text-primary" />
+          Использовать AI-помощник для поиска товаров
+        </label>
+      </div>
 
-      {isAssistantEnabled && !inSettingsPage && (
+      {isAssistantEnabled && (
         <div className="mt-3 space-y-2">
           {/* Форма описания товара */}
           <ProductDescriptionForm 
@@ -113,7 +116,7 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
       )}
 
       {/* Список предложений брендов */}
-      {isAssistantEnabled && !inSettingsPage && brandSuggestions && brandSuggestions.length > 0 && (
+      {isAssistantEnabled && brandSuggestions && brandSuggestions.length > 0 && (
         <BrandSuggestionList 
           suggestions={brandSuggestions}
           onSelect={(searchQuery, immediate) => handleSuggestionSelect(searchQuery, !!immediate)}

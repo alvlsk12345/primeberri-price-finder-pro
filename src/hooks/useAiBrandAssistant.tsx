@@ -32,11 +32,13 @@ export const useAiBrandAssistant = () => {
   // Определяем, находимся ли мы на странице настроек
   const inSettingsPage = isOnSettingsPage();
   
-  // Устанавливаем начальное состояние без проверки соединения
-  const [supabaseStatus, setSupabaseStatus] = useState<{ connected: boolean; enabled: boolean }>({
-    connected: false,
-    enabled: false
-  });
+  // Для страницы настроек устанавливаем специальное состояние, которое не вызовет отображение предупреждений
+  // Это предотвращает отображение предупреждений о соединении на странице настроек
+  const [supabaseStatus, setSupabaseStatus] = useState<{ connected: boolean; enabled: boolean }>(
+    inSettingsPage 
+      ? { connected: true, enabled: true } // На странице настроек - считаем, что всё в порядке
+      : { connected: false, enabled: false } // На других страницах - значения по умолчанию
+  );
 
   // Функция для ручной проверки статуса Supabase - будет вызываться только по запросу
   const checkSupabaseStatus = async () => {
