@@ -1,143 +1,125 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders } from "./config.ts";
-import { loadImage } from "./imageLoader.ts";
-import { ProxyResult } from "./types.ts";
+import { corsHeaders, CACHE_TIME } from "./config.ts";
+import { createResponse, createErrorResponse, generateRequestId, logMessage, LogLevel } from "./utils.ts";
+import { checkImageCache, saveImageToCache } from "./cache.ts";
+import { proxyImage } from "./imageLoader.ts";
 
-const validateImageRequest = (url: string | null): { isValid: boolean; errorResponse?: Response } => {
-  if (!url) {
-    return {
-      isValid: false,
-      errorResponse: new Response(
-        JSON.stringify({ error: "URL параметр обязателен" }),
-        { headers: { "Content-Type": "application/json", ...corsHeaders }, status: 400 }
-      )
-    };
-  }
+serve(async (req) => {
+  const requestId = generateRequestId();
+  logMessage(LogLevel.INFO, `[${requestId}] Получен новый запрос: ${req.url}`, { method: req.method });
   
-  // Проверяем, является ли URL валидным
-  try {
-    new URL(url);
-    return { isValid: true };
-  } catch {
-    return {
-      isValid: false,
-      errorResponse: new Response(
-        JSON.stringify({ error: "Невалидный URL" }),
-        { headers: { "Content-Type": "application/json", ...corsHeaders }, status: 400 }
-      )
-    };
+  // Обработка CORS preflight запросов
+  if (req.method === 'OPTIONS') {
+    logMessage(LogLevel.DEBUG, `[${requestId}] Обработка CORS preflight запроса`);
+    return createResponse(null, {
+      status: 204,
+    });
   }
-};
 
-const handleImageProxyRequest = async (request: Request): Promise<Response> => {
   try {
-    const url = new URL(request.url);
-    const imageUrl = url.searchParams.get("url");
+    // Получаем URL изображения из параметров запроса
+    const url = new URL(req.url);
+    const imageUrl = url.searchParams.get('url');
+    const bypassCache = url.searchParams.get('bypassCache') === 'true';
+    const retryAttempt = parseInt(url.searchParams.get('retryAttempt') || '0');
+
+    // Проверяем, что URL предоставлен
+    if (!imageUrl) {
+      logMessage(LogLevel.WARN, `[${requestId}] Запрос без URL изображения`);
+      return createErrorResponse('Не указан URL изображения в параметре запроса', 400);
+    }
+
+    logMessage(LogLevel.INFO, `[${requestId}] Запрос изображения: ${imageUrl}`, { 
+      bypassCache, 
+      retryAttempt 
+    });
     
-    // Валидация параметров запроса
-    const validation = validateImageRequest(imageUrl);
-    if (!validation.isValid) {
-      return validation.errorResponse!;
+    // Проверяем, что URL валидный и безопасный
+    let decodedUrl;
+    try {
+      decodedUrl = decodeURIComponent(imageUrl);
+      new URL(decodedUrl); // Проверяем, что это валидный URL
+    } catch (e) {
+      logMessage(LogLevel.WARN, `[${requestId}] Невалидный URL изображения: ${imageUrl}`, { error: e.message });
+      return createErrorResponse('Невалидный URL изображения', 400);
     }
     
-    // Получаем дополнительные параметры
-    const bypassCache = url.searchParams.get("bypassCache") === "true";
-    const forceDirectFetch = url.searchParams.get("forceDirectFetch") === "true";
+    // Если не требуется обход кэша, проверяем наличие изображения в кэше
+    if (!bypassCache && retryAttempt === 0) {
+      const cacheResult = await checkImageCache(decodedUrl, requestId);
+      if (cacheResult.exists && cacheResult.url) {
+        logMessage(LogLevel.INFO, `[${requestId}] Возвращаем кэшированное изображение: ${cacheResult.url}`);
+        // Перенаправляем на кэшированное изображение
+        return createResponse(null, {
+          status: 302,
+          headers: {
+            'Location': cacheResult.url,
+            'Cache-Control': `public, max-age=${CACHE_TIME}`,
+          }
+        });
+      } else if (cacheResult.error) {
+        logMessage(LogLevel.WARN, `[${requestId}] Ошибка при проверке кэша: ${cacheResult.error}`);
+        // Продолжаем выполнение и получаем изображение через прокси
+      }
+    }
+
+    // Получаем изображение через прокси
+    const proxyResult = await proxyImage(decodedUrl, requestId);
     
-    console.log("Image proxy request:", {
-      imageUrl,
-      bypassCache,
-      forceDirectFetch,
-      queryParams: Object.fromEntries(url.searchParams.entries())
-    });
-    
-    // Проверяем, является ли это миниатюрой Google (encrypted-tbn)
-    const isGoogleThumbnail = imageUrl?.includes('encrypted-tbn') || false;
-    
-    // Для миниатюр Google всегда используем forceDirectFetch=true
-    const shouldForceDirectFetch = forceDirectFetch || isGoogleThumbnail;
-    
-    // Загружаем изображение с расширенными опциями
-    const result: ProxyResult = await loadImage(imageUrl!, bypassCache, shouldForceDirectFetch, {
-      followRedirects: true,
-      maxRedirects: 5,
-      timeout: isGoogleThumbnail ? 30000 : 20000 // Увеличенный таймаут для Google Thumbnails
-    });
-    
-    // Если возникла ошибка при загрузке
-    if (!result.success) {
-      console.error("Ошибка при обработке изображения:", {
-        status: result.status,
-        message: result.statusText,
-        redirectInfo: result.redirectInfo
-      });
+    // Если произошла ошибка при получении изображения
+    if (!proxyResult.success) {
+      logMessage(LogLevel.ERROR, `[${requestId}] Проблема при получении изображения через прокси:`, proxyResult);
       
-      return new Response(
-        JSON.stringify({ 
-          error: result.statusText,
-          status: result.status,
-          redirectInfo: result.redirectInfo
-        }),
-        { headers: { "Content-Type": "application/json", ...corsHeaders }, status: result.status || 500 }
+      // Для диагностики возвращаем детальную информацию о проблеме
+      return createErrorResponse(
+        'Не удалось загрузить изображение', 
+        proxyResult.status || 500,
+        {
+          status: proxyResult.status,
+          statusText: proxyResult.statusText,
+          headers: proxyResult.headers,
+          url: proxyResult.url,
+          requestId
+        }
       );
     }
     
-    // Если есть кэшированный URL в Supabase Storage
-    if (result.url) {
-      // Возвращаем перенаправление на кэшированное изображение
-      return new Response(null, {
+    // Успешно получили изображение
+    // Сохраняем изображение в кэш, только если не запрошен обход кэша и не попытка повторной загрузки
+    let cachedUrl = null;
+    if (!bypassCache && retryAttempt === 0) {
+      cachedUrl = await saveImageToCache(decodedUrl, proxyResult.blob!, proxyResult.contentType!, requestId);
+    }
+    
+    // Если успешно сохранили в кэш, перенаправляем на кэшированную версию
+    if (cachedUrl && !bypassCache && retryAttempt === 0) {
+      logMessage(LogLevel.INFO, `[${requestId}] Перенаправляем на кэшированное изображение: ${cachedUrl}`);
+      return createResponse(null, {
         status: 302,
         headers: {
-          "Location": result.url,
-          ...corsHeaders
+          'Location': cachedUrl,
+          'Cache-Control': `public, max-age=${CACHE_TIME}`,
         }
       });
     }
     
-    // Если есть blob данные, возвращаем их напрямую
-    if (result.blob && result.contentType) {
-      return new Response(result.blob, {
-        headers: {
-          "Content-Type": result.contentType,
-          "Cache-Control": "public, max-age=31536000",
-          ...corsHeaders
-        }
-      });
-    }
-    
-    // Если что-то пошло не так и у нас нет ни blob, ни URL
-    return new Response(
-      JSON.stringify({ error: "Не удалось обработать изображение" }),
-      { headers: { "Content-Type": "application/json", ...corsHeaders }, status: 500 }
-    );
-  } catch (error) {
-    console.error("Критическая ошибка в image-proxy:", error);
-    
-    return new Response(
-      JSON.stringify({ error: "Внутренняя ошибка сервера", details: error.message }),
-      { headers: { "Content-Type": "application/json", ...corsHeaders }, status: 500 }
-    );
-  }
-};
-
-// Обрабатываем все входящие запросы
-serve(async (req: Request) => {
-  // Обрабатываем CORS preflight запросы
-  if (req.method === "OPTIONS") {
-    return new Response(null, {
-      headers: corsHeaders
+    // Если не удалось сохранить в кэш или запрошен обход кэша, возвращаем изображение напрямую
+    logMessage(LogLevel.INFO, `[${requestId}] Возвращаем изображение напрямую, тип: ${proxyResult.contentType}, размер: ${proxyResult.blob!.size} байт`);
+    return createResponse(proxyResult.blob!, {
+      headers: {
+        'Content-Type': proxyResult.contentType!,
+        'Cache-Control': `public, max-age=${bypassCache ? 0 : CACHE_TIME}`,
+      }
     });
+  } catch (outerError) {
+    logMessage(LogLevel.ERROR, `[${requestId}] Критическая ошибка в Edge Function: ${outerError.message}`, { 
+      stack: outerError.stack 
+    });
+    return createErrorResponse(
+      `Критическая ошибка в Edge Function: ${outerError.message}`,
+      500,
+      { stack: outerError.stack, requestId }
+    );
   }
-  
-  // Проверяем, это запрос на проксирование изображения
-  if (req.method === "GET") {
-    return handleImageProxyRequest(req);
-  }
-  
-  // Для всех других методов возвращаем ошибку
-  return new Response(
-    JSON.stringify({ error: "Метод не поддерживается" }),
-    { headers: { "Content-Type": "application/json", ...corsHeaders }, status: 405 }
-  );
 });

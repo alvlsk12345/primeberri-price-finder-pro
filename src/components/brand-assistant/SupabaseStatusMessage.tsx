@@ -19,12 +19,12 @@ export const SupabaseStatusMessage: React.FC<SupabaseStatusProps> = ({
         {!enabled && connected ? (
           <>
             Рекомендуется включить опцию "Использовать Supabase Backend" в настройках для обхода ограничений CORS.
-            <Link to="#/settings" className="ml-1 underline font-medium">Перейти к настройкам</Link>
+            <a href="/settings" className="ml-1 underline font-medium">Перейти к настройкам</a>
           </>
         ) : (
           <>
             Для работы AI-помощника необходимо настроить подключение к Supabase или указать API ключ OpenAI в настройках.
-            <Link to="#/settings" className="ml-1 underline font-medium">Перейти к настройкам</Link>
+            <a href="/settings" className="ml-1 underline font-medium">Перейти к настройкам</a>
           </>
         )}
       </p>

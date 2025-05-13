@@ -1,83 +1,44 @@
 
-// Ключ для хранения выбранного провайдера AI в localStorage
-const AI_PROVIDER_STORAGE_KEY = 'ai_provider';
+// Константа для названия ключа в localStorage
+const AI_PROVIDER_KEY = 'selected_ai_provider';
 
-// Типы провайдеров AI, поддерживаемых приложением
-export type AIProvider = 'openai' | 'abacus' | 'perplexity';
+// Типы поддерживаемых AI провайдеров
+export type AIProvider = 'openai' | 'abacus';
 
-// Значение провайдера AI по умолчанию
-const DEFAULT_PROVIDER: AIProvider = 'openai';
+// Установка провайдера по умолчанию (OpenAI)
+export const DEFAULT_PROVIDER: AIProvider = 'openai';
 
-/**
- * Получение выбранного провайдера AI из localStorage
- * @returns Выбранный провайдер AI или провайдер по умолчанию
- */
+// Функция для получения текущего выбранного провайдера
 export const getSelectedAIProvider = (): AIProvider => {
-  try {
-    const savedProvider = localStorage.getItem(AI_PROVIDER_STORAGE_KEY);
-    
-    // Проверяем, является ли сохраненный провайдер допустимым значением
-    if (
-      savedProvider === 'openai' ||
-      savedProvider === 'abacus' ||
-      savedProvider === 'perplexity'
-    ) {
-      return savedProvider;
-    }
-    
-    // Возвращаем значение по умолчанию для недопустимых или отсутствующих значений
-    return DEFAULT_PROVIDER;
-  } catch (error) {
-    console.error('Ошибка при получении провайдера AI из localStorage:', error);
-    return DEFAULT_PROVIDER; // Возвращаем значение по умолчанию в случае ошибки
-  }
+  const provider = localStorage.getItem(AI_PROVIDER_KEY);
+  return (provider as AIProvider) || DEFAULT_PROVIDER;
 };
 
-/**
- * Установка выбранного провайдера AI в localStorage
- * @param provider Провайдер AI для сохранения
- */
+// Функция для установки провайдера
 export const setSelectedAIProvider = (provider: AIProvider): void => {
-  try {
-    localStorage.setItem(AI_PROVIDER_STORAGE_KEY, provider);
-    console.log(`Установлен провайдер AI: ${provider}`);
-  } catch (error) {
-    console.error('Ошибка при сохранении провайдера AI в localStorage:', error);
-  }
+  localStorage.setItem(AI_PROVIDER_KEY, provider);
 };
 
-/**
- * Получение отображаемого имени для провайдера AI
- * @param provider Провайдер AI
- * @returns Отображаемое имя провайдера
- */
+// Функция для получения названия провайдера для отображения
 export const getProviderDisplayName = (provider: AIProvider): string => {
   switch (provider) {
     case 'openai':
       return 'OpenAI';
     case 'abacus':
-      return 'Abacus.AI';
-    case 'perplexity':
-      return 'Perplexity';
+      return 'Abacus.ai';
     default:
-      return 'Неизвестный провайдер';
+      return 'AI Provider';
   }
 };
 
-/**
- * Получение названия модели для провайдера AI
- * @param provider Провайдер AI
- * @returns Название модели провайдера
- */
+// Функция для получения модели или версии провайдера
 export const getProviderModelName = (provider: AIProvider): string => {
   switch (provider) {
     case 'openai':
-      return 'GPT-4o';
+      return 'GPT-4o-search-preview';
     case 'abacus':
-      return 'Llama 3';
-    case 'perplexity':
-      return 'Llama 3.1 Sonar';
+      return 'Text Generation Model';
     default:
-      return 'Неизвестная модель';
+      return 'AI Model';
   }
 };

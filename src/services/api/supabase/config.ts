@@ -1,42 +1,52 @@
 
-// Ключи для localStorage
-const USE_SUPABASE_BACKEND_KEY = 'use_supabase_backend';
-const FALLBACK_ENABLED_KEY = 'fallback_enabled';
+// Ключ для сохранения настроек в localStorage
+const SUPABASE_AI_CONFIG_KEY = 'supabase_ai_config';
 
-/**
- * Проверяет, используется ли Supabase Backend
- */
+// Интерфейс для конфигурации AI через Supabase
+export interface SupabaseAIConfig {
+  useSupabaseBackend: boolean; // Использовать ли Supabase для вызовов AI API
+  fallbackToDirectCalls: boolean; // Использовать прямые вызовы API при недоступности Supabase
+}
+
+// Значения по умолчанию
+const DEFAULT_CONFIG: SupabaseAIConfig = {
+  useSupabaseBackend: true, // По умолчанию используем Supabase
+  fallbackToDirectCalls: true // По умолчанию делаем фоллбэк на прямые вызовы
+};
+
+// Получение текущей конфигурации
+export function getSupabaseAIConfig(): SupabaseAIConfig {
+  try {
+    const savedConfig = localStorage.getItem(SUPABASE_AI_CONFIG_KEY);
+    return savedConfig ? JSON.parse(savedConfig) : DEFAULT_CONFIG;
+  } catch (e) {
+    console.error('Ошибка при получении настроек Supabase AI:', e);
+    return DEFAULT_CONFIG;
+  }
+}
+
+// Сохранение конфигурации
+export function setSupabaseAIConfig(config: Partial<SupabaseAIConfig>): SupabaseAIConfig {
+  try {
+    // Объединяем текущие настройки с новыми
+    const currentConfig = getSupabaseAIConfig();
+    const newConfig = { ...currentConfig, ...config };
+    
+    // Сохраняем в localStorage
+    localStorage.setItem(SUPABASE_AI_CONFIG_KEY, JSON.stringify(newConfig));
+    return newConfig;
+  } catch (e) {
+    console.error('Ошибка при сохранении настроек Supabase AI:', e);
+    return DEFAULT_CONFIG;
+  }
+}
+
+// Проверка использования Supabase бэкенда для AI
 export function isUsingSupabaseBackend(): boolean {
-  const value = localStorage.getItem(USE_SUPABASE_BACKEND_KEY);
-  return value === 'true';
+  return getSupabaseAIConfig().useSupabaseBackend;
 }
 
-/**
- * Устанавливает использование Supabase Backend
- */
-export function setUseSupabaseBackend(value: boolean): void {
-  localStorage.setItem(USE_SUPABASE_BACKEND_KEY, value.toString());
-}
-
-/**
- * Проверяет, включен ли фоллбэк на прямые вызовы
- */
+// Проверка использования фоллбэка на прямые вызовы
 export function isFallbackEnabled(): boolean {
-  const value = localStorage.getItem(FALLBACK_ENABLED_KEY);
-  return value === 'true';
-}
-
-/**
- * Устанавливает использование фоллбэка
- */
-export function setFallbackEnabled(value: boolean): void {
-  localStorage.setItem(FALLBACK_ENABLED_KEY, value.toString());
-}
-
-/**
- * Сбрасывает настройки Supabase до значений по умолчанию
- */
-export function resetSupabaseSettings(): void {
-  localStorage.removeItem(USE_SUPABASE_BACKEND_KEY);
-  localStorage.removeItem(FALLBACK_ENABLED_KEY);
+  return getSupabaseAIConfig().fallbackToDirectCalls;
 }

@@ -8,7 +8,7 @@ import { SearchInput } from './search/SearchInput';
 import { SearchErrorMessage } from './search/SearchErrorMessage';
 import { useProductSelectionHandler } from './search/ProductSelectionHandler';
 import { NoResultsMessage } from './search/NoResultsMessage';
-import { getConnectionState, subscribeToConnectionState } from '@/services/api/supabase/connectionService';
+import { isSupabaseConnected } from '@/services/api/supabase/client';
 import { isUsingSupabaseBackend } from '@/services/api/supabase/config';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -30,33 +30,27 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [supabaseStatus, setSupabaseStatus] = useState<{ connected: boolean; enabled: boolean }>({ 
-    connected: getConnectionState().isConnected, 
-    enabled: isUsingSupabaseBackend() 
+    connected: false, 
+    enabled: false 
   });
   const isDemoMode = useDemoModeForced;
-  
-  // Подписываемся на изменения состояния соединения
+
+  // Проверяем статус Supabase при загрузке
   useEffect(() => {
-    // Получаем текущие настройки
-    const enabled = isUsingSupabaseBackend();
-    
-    // Устанавливаем начальное состояние
-    setSupabaseStatus({
-      connected: getConnectionState().isConnected,
-      enabled
-    });
-    
-    // Подписываемся на обновления состояния
-    const unsubscribe = subscribeToConnectionState((state) => {
-      setSupabaseStatus(prev => ({
-        ...prev,
-        connected: state.isConnected
-      }));
-    });
-    
-    return () => {
-      unsubscribe();
+    const checkSupabaseStatus = async () => {
+      const connected = await isSupabaseConnected();
+      const enabled = await isUsingSupabaseBackend();
+      setSupabaseStatus({ connected, enabled });
+      
+      console.log('Проверка статуса Supabase:', { connected, enabled });
+      
+      if (enabled && !connected) {
+        toast.warning('Настройки используют Supabase Backend, но он не подключен. Некоторые функции могут быть недоступны.', 
+                     { duration: 6000 });
+      }
     };
+    
+    checkSupabaseStatus();
   }, []);
 
   // Функция выполнения поиска с дополнительными проверками и скроллингом
@@ -119,8 +113,8 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       
       <SearchErrorMessage hasError={hasError} errorMessage={errorMessage} />
       
-      {/* Статус Supabase - отображаем только если проверено и есть проблемы */}
-      {((!supabaseStatus.connected || !supabaseStatus.enabled) && supabaseStatus.connected !== null) && (
+      {/* Статус Supabase */}
+      {(!supabaseStatus.connected || !supabaseStatus.enabled) && (
         <div className="bg-orange-50 border border-orange-200 rounded-md p-3 mb-4">
           <div className="flex items-start gap-2">
             <InfoIcon className="text-orange-600 mt-1 shrink-0" size={18} />
@@ -137,7 +131,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
                 Для корректной работы с OpenAI API необходимо настроить Supabase Backend.
               </p>
               <Button variant="outline" size="sm" className="mt-2 text-xs">
-                <Link to="#/settings">Перейти к настройкам</Link>
+                <Link to="/settings">Перейти к настройкам</Link>
               </Button>
             </div>
           </div>
@@ -149,4 +143,4 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       <NoResultsMessage />
     </div>
   );
-}
+};

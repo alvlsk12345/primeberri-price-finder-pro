@@ -12,10 +12,7 @@ const CORS_PROBLEM_DOMAINS = [
   'googleusercontent.com',
   'gstatic.com',
   'ggpht.com',
-  'zylalabs.com',
-  'promptapi.com',
-  'api.promptapi.com',
-  'api.eu-central.promptapi.com'
+  'zylalabs.com'
 ];
 
 /**
@@ -25,7 +22,7 @@ export const needsProxying = (url: string): boolean => {
   if (!url) return false;
   
   // Если URL уже проксирован, не проксируем повторно
-  if (isProxiedUrl(url)) return false;
+  if (url.includes(PROXY_SUFFIX)) return false;
   
   // Не проксируем data URLs
   if (url.startsWith('data:')) return false;
@@ -40,51 +37,21 @@ export const needsProxying = (url: string): boolean => {
 };
 
 /**
- * Создает URL для проксированного изображения с улучшенными параметрами
+ * Создает URL для проксированного изображения
  * @param url Оригинальный URL изображения
  * @param directFetch Флаг для прямой загрузки без кэширования
- * @param forceProxy Принудительное использование прокси даже если needsProxying возвращает false
  * @returns URL к прокси-эндпоинту с оригинальным URL в качестве параметра
  */
-export const getProxiedImageUrl = (
-  url: string, 
-  directFetch: boolean = false,
-  forceProxy: boolean = false
-): string => {
+export const getProxiedImageUrl = (url: string, directFetch: boolean = false): string => {
   if (!url) return '';
-  
-  // Проверяем, является ли URL уже проксированным
-  if (isProxiedUrl(url)) {
-    // Если URL уже проксирован, но не содержит важные параметры, добавляем их
-    let updatedUrl = url;
-    
-    // Для изображений из Google Thumbnails и Zylalabs требуются специальные параметры
-    const isGoogleThumb = url.includes('encrypted-tbn');
-    const isZylalabs = url.includes('zylalabs.com') || url.includes('promptapi.com');
-    
-    if (directFetch && !url.includes('bypassCache=true')) {
-      updatedUrl += '&bypassCache=true';
-    }
-    
-    if ((isGoogleThumb || isZylalabs) && !url.includes('forceDirectFetch=true')) {
-      updatedUrl += '&forceDirectFetch=true';
-    }
-    
-    return updatedUrl;
-  }
-  
-  // Проверка необходимости проксирования
-  if (!forceProxy && !needsProxying(url)) return url;
+  if (!needsProxying(url)) return url;
   
   try {
     // Кодируем URL для безопасной передачи в качестве параметра
     const encodedUrl = encodeURIComponent(url);
     
-    // Для Zylalabs изображений и Google Thumbnails всегда используем directFetch и forceDirectFetch
-    const isZylalabs = url.includes('zylalabs.com') || url.includes('promptapi.com');
-    const isGoogleThumb = url.includes('encrypted-tbn');
-    const shouldBypassCache = directFetch || isZylalabs || isGoogleThumb;
-    const shouldForceDirectFetch = isZylalabs || isGoogleThumb; // Принудительная прямая загрузка для Zylalabs и миниатюр Google
+    // Для Zylalabs изображений всегда используем directFetch при первой загрузке
+    const shouldBypassCache = directFetch || url.includes('zylalabs.com');
     
     // Конструируем URL к Edge Function с кэшированием изображений
     let proxyUrl = `https://juacmpkewomkducoanle.supabase.co/functions/v1/image-proxy?url=${encodedUrl}${PROXY_SUFFIX}`;
@@ -94,18 +61,8 @@ export const getProxiedImageUrl = (
       proxyUrl += '&bypassCache=true';
     }
     
-    // Добавляем параметр forceDirectFetch для Zylalabs и миниатюр Google
-    if (shouldForceDirectFetch) {
-      proxyUrl += '&forceDirectFetch=true';
-    }
-    
     // Добавляем уникальный timestamp для предотвращения кэширования браузером
-    // Для Google Thumbnails и Zylalabs всегда добавляем timestamp
-    if (isGoogleThumb || isZylalabs) {
-      proxyUrl += `&_t=${Date.now()}`;
-    } else {
-      proxyUrl += `&t=${Date.now()}`;
-    }
+    proxyUrl += `&t=${Date.now()}`;
     
     return proxyUrl;
   } catch (error) {
@@ -118,38 +75,5 @@ export const getProxiedImageUrl = (
  * Проверяет, является ли URL проксированным
  */
 export const isProxiedUrl = (url: string): boolean => {
-  return url ? url.includes(PROXY_SUFFIX) || url.includes('/functions/v1/image-proxy') : false;
-};
-
-/**
- * Извлекает оригинальный URL из проксированного URL
- */
-export const extractOriginalUrlFromProxied = (proxyUrl: string): string | null => {
-  if (!proxyUrl || !isProxiedUrl(proxyUrl)) return null;
-  
-  try {
-    const url = new URL(proxyUrl);
-    const originalUrl = url.searchParams.get('url');
-    return originalUrl ? decodeURIComponent(originalUrl).replace(PROXY_SUFFIX, '') : null;
-  } catch (error) {
-    console.error('Ошибка извлечения оригинального URL из прокси:', error);
-    return null;
-  }
-};
-
-/**
- * Извлекает параметр из URL по имени
- */
-export const getUrlParam = (url: string, paramName: string): string | null => {
-  if (!url) return null;
-  
-  try {
-    const urlObj = new URL(url);
-    return urlObj.searchParams.get(paramName);
-  } catch (error) {
-    // Для неполных URL, пытаемся найти параметр вручную
-    const regex = new RegExp(`[?&]${paramName}=([^&#]*)`, 'i');
-    const result = regex.exec(url);
-    return result ? decodeURIComponent(result[1]) : null;
-  }
+  return url ? url.includes(PROXY_SUFFIX) : false;
 };

@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { ImageOff } from "lucide-react";
 import { ImageModalLoadingState } from './useImageModalLoading';
 
 interface ImageModalStandardImageProps {

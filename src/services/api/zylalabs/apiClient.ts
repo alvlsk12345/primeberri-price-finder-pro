@@ -2,11 +2,9 @@
 import { SearchParams } from "../../types";
 import { generateMockSearchResults } from "../mock/mockSearchGenerator";
 import { useDemoModeForced } from "../mock/mockServiceConfig";
-import { getApiKey } from "./config";
+import { getApiKey, REQUEST_TIMEOUT } from "./config";
 import { buildZylalabsUrl } from "./urlBuilder";
 import { toast } from "sonner"; 
-import { getCachedResponse, setCacheResponse } from "./cacheService";
-import { makeZylalabsCountryRequest } from "./countryRequestService";
 
 /**
  * Выполняет запрос к API Zylalabs, используя подход из рабочего HTML-примера
@@ -33,22 +31,15 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
   const url = buildZylalabsUrl(params);
   console.log('Запрос к API с URL:', url);
   
-  // Проверяем кэш перед выполнением запроса
-  const cachedResponse = getCachedResponse(url);
-  if (cachedResponse) {
-    console.log('Используем кэшированные данные для запроса');
-    return cachedResponse;
-  }
-  
   try {
-    // Уменьшаем таймаут до 15 секунд для запросов к API (было 30)
+    // Увеличиваем таймаут до 30 секунд для запросов к API
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 секунд
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 секунд
     
     // Показываем уведомление о запросе
     toast.loading('Выполняется запрос к Zylalabs API...', {
       id: 'api-request',
-      duration: 15000 // Соответствует уменьшенному таймауту
+      duration: 30000 // Соответствует увеличенному таймауту
     });
     
     // Выполняем запрос с чёткими заголовками, как в HTML-примере
@@ -99,33 +90,22 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
         console.log('API вернул структуру с data.products, количество продуктов:', 
           data.data.products.length);
         
-        // Кэшируем полученные данные перед возвратом
-        const resultToCache = {
+        // Возвращаем полный ответ с метаданными
+        return {
           data: data,
           totalPages: data.data.total_pages || 1,
           isDemo: false,
           remainingCalls: remainingCalls
         };
-        
-        // Сохраняем в кэш
-        setCacheResponse(url, resultToCache);
-        
-        // Возвращаем полный ответ с метаданными
-        return resultToCache;
       } else {
         console.warn('Нестандартная структура ответа API:', Object.keys(data));
         // Пытаемся вернуть данные в любом случае для дальнейшей обработки
-        const resultToCache = {
+        return {
           data: data,
           totalPages: data.total_pages || 1,
           isDemo: false,
           remainingCalls: remainingCalls
         };
-        
-        // Сохраняем в кэш
-        setCacheResponse(url, resultToCache);
-        
-        return resultToCache;
       }
     } catch (jsonError) {
       console.error('Ошибка при парсинге JSON:', jsonError);
@@ -151,5 +131,67 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
   }
 };
 
-// Реэкспортируем функциональность из отдельных модулей
-export { makeParallelZylalabsRequests } from './parallelRequestService';
+/**
+ * Выполняет запрос к API Zylalabs для конкретной страны, как в HTML-примере
+ * @param query Поисковый запрос
+ * @param countryCode Код страны
+ * @param page Номер страницы
+ * @param language Код языка (добавлен параметр)
+ * @returns Результаты поиска или null в случае ошибки
+ */
+export const makeZylalabsCountryRequest = async (
+  query: string, 
+  countryCode: string, 
+  page: number = 1,
+  language: string = 'en' // По умолчанию используем английский язык
+): Promise<any> => {
+  const apiKey = getApiKey();
+  
+  // Проверка наличия ключа API
+  if (!apiKey) {
+    console.error('Отсутствует API ключ');
+    return null;
+  }
+  
+  // Формирование URL запроса точно как в HTML-примере, но с добавлением языка
+  const params = new URLSearchParams({
+    q: query,
+    country: countryCode,
+    page: page.toString(),
+    language: language // Добавляем параметр языка
+  });
+  
+  const apiBaseUrl = "https://zylalabs.com/api/2033/real+time+product+search+api/1809/search+products";
+  const url = `${apiBaseUrl}?${params.toString()}`;
+  
+  console.log(`Запрос товаров для страны ${countryCode} на языке ${language}:`, url);
+  
+  try {
+    // Устанавливаем таймаут в 15 секунд для каждого запроса по стране
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 секунд для запросов по отдельным странам
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Accept': 'application/json'
+      },
+      signal: controller.signal
+    });
+    
+    // Очищаем таймаут
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      console.warn(`Ошибка API для страны ${countryCode}:`, response.status, response.statusText);
+      return null;
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error: any) {
+    console.warn(`Ошибка при запросе товаров для страны ${countryCode}:`, error.message);
+    return null;
+  }
+};

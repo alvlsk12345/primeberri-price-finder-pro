@@ -8,10 +8,9 @@ import { Key, RefreshCw } from 'lucide-react';
 import { getApiKey as getZylalabsApiKey, setApiKey as setZylalabsApiKey, resetApiKey as resetZylalabsApiKey, ZYLALABS_API_KEY } from '@/services/api/zylalabs/config';
 import { getApiKey as getOpenAIApiKey, setApiKey as setOpenAIApiKey } from '@/services/api/openai/config';
 import { getApiKey as getAbacusApiKey, setApiKey as setAbacusApiKey } from '@/services/api/abacus/config';
-import { getApiKey as getPerplexityApiKey, setApiKey as setPerplexityApiKey } from '@/services/api/perplexity/config';
 
 type ApiKeyProps = {
-  keyType: 'openai' | 'zylalabs' | 'abacus' | 'perplexity';
+  keyType: 'openai' | 'zylalabs' | 'abacus';
 };
 
 export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
@@ -22,7 +21,6 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
   const localStorageKey = 
     keyType === 'openai' ? 'openai_api_key' : 
     keyType === 'abacus' ? 'abacus_api_key' : 
-    keyType === 'perplexity' ? 'perplexity_api_key' :
     'zylalabs_api_key';
     
   const defaultKey = keyType === 'zylalabs' ? ZYLALABS_API_KEY : '';
@@ -30,19 +28,16 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
   const keyTitle = 
     keyType === 'openai' ? 'OpenAI API' : 
     keyType === 'abacus' ? 'Abacus.ai API' : 
-    keyType === 'perplexity' ? 'Perplexity API' :
     'Zylalabs API';
     
   const keyPlaceholder = 
     keyType === 'openai' ? 'sk-...' : 
     keyType === 'abacus' ? 'abacus_api_key_...' : 
-    keyType === 'perplexity' ? 'pplx-...' :
     '1234|...';
     
   const keyWebsite = 
     keyType === 'openai' ? 'https://platform.openai.com/api-keys' : 
     keyType === 'abacus' ? 'https://abacus.ai/app/apiKeys' : 
-    keyType === 'perplexity' ? 'https://www.perplexity.ai/settings/api-keys' :
     'https://zylalabs.com/api/2033/real+time+product+search+api';
 
   useEffect(() => {
@@ -55,9 +50,6 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
       setApiKey(key);
     } else if (keyType === 'abacus') {
       const key = getAbacusApiKey();
-      setApiKey(key);
-    } else if (keyType === 'perplexity') {
-      const key = getPerplexityApiKey();
       setApiKey(key);
     }
   }, [keyType]);
@@ -81,9 +73,6 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
     } else if (keyType === 'abacus') {
       setAbacusApiKey(apiKey.trim());
       toast.success('API ключ Abacus.ai успешно сохранен');
-    } else if (keyType === 'perplexity') {
-      setPerplexityApiKey(apiKey.trim());
-      toast.success('API ключ Perplexity успешно сохранен');
     }
   };
 
@@ -146,9 +135,7 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
           <p className="text-xs text-gray-500">
             Ключ будет сохранен только в вашем браузере и не передается никаким третьим лицам.
             Получить ключ можно на сайте <a href={keyWebsite} target="_blank" rel="noreferrer" className="underline">
-              {keyType === 'openai' ? 'OpenAI' : 
-               keyType === 'abacus' ? 'Abacus.ai' : 
-               keyType === 'perplexity' ? 'Perplexity AI' : 'Zylalabs'}
+              {keyType === 'openai' ? 'OpenAI' : keyType === 'abacus' ? 'Abacus.ai' : 'Zylalabs'}
             </a>.
           </p>
         </div>

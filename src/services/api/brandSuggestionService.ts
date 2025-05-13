@@ -1,81 +1,69 @@
 
-import { BrandSuggestion } from '../types';
-import { fetchBrandSuggestions as fetchOpenAIBrandSuggestions } from './openai/brandSuggestion';
-import { fetchBrandSuggestions as fetchAbacusBrandSuggestions } from './abacus/brandSuggestion';
-import { fetchBrandSuggestions as fetchPerplexityBrandSuggestions } from './perplexity/brandSuggestion';
-import { getSelectedAIProvider } from './aiProviderService';
-import { 
-  isUsingSupabaseBackend, 
-  isFallbackEnabled 
-} from './supabase/config';
-import { 
-  fetchBrandSuggestionsViaOpenAI, 
-  fetchBrandSuggestionsViaPerplexity
-} from './supabase/aiService';
-import { isSupabaseConnected } from './supabase/client';
+import { BrandSuggestion } from "@/services/types";
+import { fetchBrandSuggestions as fetchBrandSuggestionsFromOpenAI } from "./openai";
+import { fetchBrandSuggestions as fetchBrandSuggestionsFromAbacus } from "./abacus";
+import { getSelectedAIProvider, AIProvider } from "./aiProviderService";
+import { toast } from "sonner";
+import { hasValidApiKey as hasValidOpenAIApiKey } from "./openai/config";
+import { hasValidApiKey as hasValidAbacusApiKey } from "./abacus/config";
+import { isUsingSupabaseBackend } from "./supabase/config";
+import { isSupabaseConnected } from "./supabase/client";
+import { fetchBrandSuggestionsViaOpenAI } from "./supabase/aiService";
 
-/**
- * Получает предложения брендов на основе описания товара
- * @param description Описание товара
- * @returns Список предложений брендов или null в случае ошибки
- */
-export const getBrandSuggestions = async (description: string): Promise<BrandSuggestion[] | null> => {
+// Основная функция получения брендов, которая выбирает подходящий провайдер
+export const fetchBrandSuggestions = async (description: string): Promise<BrandSuggestion[]> => {
+  // Получаем текущего провайдера
+  const provider = getSelectedAIProvider();
+  
   try {
-    const provider = getSelectedAIProvider();
+    console.log(`Используем ${provider} для получения предложений брендов`);
     
-    console.log(`Получение предложений брендов через провайдер: ${provider}`);
-    
-    // Проверяем, используется ли Supabase Backend
-    const useSupabase = isUsingSupabaseBackend();
+    // Проверяем, используем ли мы Supabase бэкенд
+    const useSupabase = await isUsingSupabaseBackend();
     const supabaseConnected = await isSupabaseConnected();
-    const fallbackEnabled = isFallbackEnabled();
     
-    // Логика выбора варианта вызова
+    console.log('Статус Supabase для бренд-сервиса:', {
+      используется: useSupabase,
+      подключен: supabaseConnected
+    });
+    
     if (useSupabase && supabaseConnected) {
-      console.log('Используем Supabase Backend для вызова AI');
-      
+      console.log('Использование Supabase бэкенда для получения предложений брендов');
       try {
-        if (provider === 'openai') {
-          return await fetchBrandSuggestionsViaOpenAI(description);
-        } else if (provider === 'perplexity') {
-          return await fetchBrandSuggestionsViaPerplexity(description);
-        } else {
-          // Абакус через supabase не поддерживает fetching бренд саггестов
-          // Используем прямой вызов
-          return await fetchAbacusBrandSuggestions(description);
-        }
-      } catch (error) {
-        console.error('Ошибка при вызове через Supabase:', error);
+        // Вызов AI через Supabase Edge Function
+        console.log('Вызов AI через Supabase Edge Function:', provider);
+        const result = await fetchBrandSuggestionsViaOpenAI(description);
+        console.log('Результат от Supabase:', result);
         
-        // Если включен фоллбэк и ошибка - пробуем прямой вызов
-        if (fallbackEnabled) {
-          console.log('Используем фоллбэк на прямой вызов API');
-          return await directProviderCall(provider, description);
+        // Проверка на валидность данных
+        if (!result) {
+          console.warn('Пустой ответ от Supabase Edge Function');
+          return [];
         }
-        throw error;
+        
+        return result; // Функция fetchBrandSuggestionsViaOpenAI теперь всегда возвращает BrandSuggestion[]
+      } catch (error) {
+        console.error('Ошибка при использовании Supabase для предложений брендов:', error);
+        toast.error(`Ошибка Supabase: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
+                   { duration: 3000 });
+        toast.info('Проверьте настройки Supabase в разделе "Настройки"', { duration: 5000 });
+        
+        // Возвращаем пустой массив, так как произошла ошибка
+        return [];
       }
-    } else {
-      // Прямой вызов API без Supabase
-      console.log('Используем прямой вызов API');
-      return await directProviderCall(provider, description);
+    } else if (!supabaseConnected && useSupabase) {
+      toast.warning('Supabase не подключен, но выбран для использования. Проверьте настройки.', { duration: 5000 });
+      return []; // Возвращаем пустой массив, так как Supabase не подключен
     }
+    
+    // Проверка настрок при попытке прямого вызова API
+    toast.error("Прямые запросы к OpenAI API из браузера блокируются политикой CORS. Пожалуйста, используйте Supabase Edge Function.", { duration: 6000 });
+    toast.info("Перейдите в раздел 'Настройки' и убедитесь, что 'Использовать Supabase Backend' включено", { duration: 5000 });
+    
+    // Возвращаем пустой массив, так как прямые вызовы API невозможны из-за CORS
+    return [];
   } catch (error) {
-    console.error('Ошибка при получении предложений брендов:', error);
-    return null;
-  }
-};
-
-/**
- * Вспомогательная функция для прямого вызова API нужного провайдера
- */
-const directProviderCall = async (provider: string, description: string): Promise<BrandSuggestion[]> => {
-  if (provider === 'openai') {
-    return await fetchOpenAIBrandSuggestions(description);
-  } else if (provider === 'abacus') {
-    return await fetchAbacusBrandSuggestions(description);
-  } else if (provider === 'perplexity') {
-    return await fetchPerplexityBrandSuggestions(description);
-  } else {
-    throw new Error(`Неподдерживаемый провайдер AI: ${provider}`);
+    console.error(`Ошибка при получении предложений брендов через ${provider}:`, error);
+    return []; // Возвращаем пустой массив при ошибке
   }
 };

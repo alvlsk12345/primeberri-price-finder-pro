@@ -1,18 +1,7 @@
 
-import { CACHE_TTL, MAX_CACHE_SIZE, CacheStorage } from './cacheConfig';
-import { loadCacheFromStorage, saveCacheToStorage } from './storageService';
-import { startAutoCleaning } from './cacheCleaner';
-
-// Кэш успешных ответов API
-const apiResponseCache: CacheStorage = loadCacheFromStorage();
-
-// Запускаем периодическую очистку кэша
-const cleanupIntervalId = startAutoCleaning(apiResponseCache);
-
-// Сохраняем кэш при закрытии страницы
-window.addEventListener('beforeunload', () => {
-  saveCacheToStorage(apiResponseCache);
-});
+// Кеш успешных ответов API (улучшенный)
+const apiResponseCache: Record<string, {timestamp: number, data: any}> = {};
+const CACHE_TTL = 7200000; // TTL кеша - 2 часа
 
 /**
  * Получение кешированного ответа API по URL
@@ -34,9 +23,9 @@ export const getCachedResponse = (url: string) => {
  * @param data Данные для кеширования
  */
 export const setCacheResponse = (url: string, data: any) => {
-  // Ограничиваем размер кеша
+  // Ограничиваем размер кеша (максимум 50 запросов)
   const cacheKeys = Object.keys(apiResponseCache);
-  if (cacheKeys.length >= MAX_CACHE_SIZE) {
+  if (cacheKeys.length >= 50) {
     // Удаляем самый старый элемент кеша
     let oldestKey = cacheKeys[0];
     let oldestTime = apiResponseCache[oldestKey].timestamp;
@@ -56,43 +45,5 @@ export const setCacheResponse = (url: string, data: any) => {
     timestamp: Date.now(),
     data
   };
-  console.log('Данные сохранены в кэш для URL:', url);
-  
-  // Сохраняем обновленный кэш в localStorage (но не при каждом обновлении)
-  // Используем вероятность 20%, чтобы не вызывать сохранение слишком часто
-  if (Math.random() < 0.2) {
-    saveCacheToStorage(apiResponseCache);
-  }
-};
-
-/**
- * Явное принудительное сохранение кэша в localStorage
- */
-export const forceSaveCacheToStorage = () => {
-  saveCacheToStorage(apiResponseCache);
-};
-
-/**
- * Очистка кэша по конкретному URL
- * @param url URL для удаления из кэша
- * @returns true если элемент был найден и удален, иначе false
- */
-export const invalidateCache = (url: string): boolean => {
-  if (apiResponseCache[url]) {
-    delete apiResponseCache[url];
-    console.log('Удален элемент кэша для URL:', url);
-    return true;
-  }
-  return false;
-};
-
-/**
- * Очистка всего кэша
- */
-export const clearAllCache = (): void => {
-  Object.keys(apiResponseCache).forEach(key => {
-    delete apiResponseCache[key];
-  });
-  localStorage.removeItem('zylalabs_api_cache');
-  console.log('Весь кэш очищен');
+  console.log('Данные сохранены в кеш для URL:', url);
 };

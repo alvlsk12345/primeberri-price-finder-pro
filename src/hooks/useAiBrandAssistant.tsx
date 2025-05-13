@@ -1,10 +1,10 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from "sonner";
-import { getBrandSuggestions } from "@/services/api/brandSuggestionService";
+import { fetchBrandSuggestions } from "@/services/api/brandSuggestionService";
 import { getApiKey } from "@/services/api/openai/config";
 import { BrandSuggestion } from "@/services/types";
-import { getConnectionState, subscribeToConnectionState } from "@/services/api/supabase/connectionService";
+import { isSupabaseConnected } from "@/services/api/supabase/client";
 import { isUsingSupabaseBackend } from "@/services/api/supabase/config";
 
 export const useAiBrandAssistant = () => {
@@ -15,32 +15,26 @@ export const useAiBrandAssistant = () => {
   const [brandSuggestions, setBrandSuggestions] = useState<BrandSuggestion[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [supabaseStatus, setSupabaseStatus] = useState<{ connected: boolean; enabled: boolean }>({
-    connected: getConnectionState().isConnected,
-    enabled: isUsingSupabaseBackend()
+    connected: false,
+    enabled: false
   });
-  
-  // Подписываемся на изменения состояния соединения
+
+  // Проверяем статус Supabase при загрузке
   useEffect(() => {
-    // Получаем текущие настройки
-    const enabled = isUsingSupabaseBackend();
-    
-    // Устанавливаем начальное состояние
-    setSupabaseStatus({
-      connected: getConnectionState().isConnected,
-      enabled
-    });
-    
-    // Подписываемся на обновления состояния соединения
-    const unsubscribe = subscribeToConnectionState((state) => {
-      setSupabaseStatus(prev => ({
-        ...prev,
-        connected: state.isConnected
-      }));
-    });
-    
-    return () => {
-      unsubscribe();
+    const checkSupabaseStatus = async () => {
+      try {
+        const connected = await isSupabaseConnected();
+        const enabled = await isUsingSupabaseBackend();
+        setSupabaseStatus({ connected, enabled });
+        
+        console.log('AiBrandAssistant: проверка статуса Supabase:', { connected, enabled });
+      } catch (error) {
+        console.error('Ошибка при проверке статуса Supabase:', error);
+        setSupabaseStatus({ connected: false, enabled: false });
+      }
     };
+    
+    checkSupabaseStatus();
   }, []);
 
   // Вычисляемое свойство для проверки наличия ошибки
@@ -64,7 +58,7 @@ export const useAiBrandAssistant = () => {
         console.warn('API ключ не найден');
       }
       
-      const suggestions = await getBrandSuggestions(productDescription);
+      const suggestions = await fetchBrandSuggestions(productDescription);
       console.log('Получены предложения:', suggestions);
       
       if (suggestions && suggestions.length > 0) {

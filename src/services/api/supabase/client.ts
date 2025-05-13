@@ -1,31 +1,60 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { createClient } from '@supabase/supabase-js';
 
-/**
- * Проверяет соединение с Supabase
- * @returns true если соединение установлено, иначе false
- */
-export async function isSupabaseConnected(): Promise<boolean> {
-  try {
-    // Пытаемся выполнить простой запрос для проверки соединения
-    const { data, error } = await supabase.from('_dummy_query').select('*').limit(1).maybeSingle();
-    
-    // Даже если ошибка 400 (отсутствие таблицы), мы считаем соединение установленным
-    // 400 - значит, что сервер ответил и аутентификация прошла, но таблица не существует
-    if (error) {
-      if (error.code === '42P01' || error.code.startsWith('4')) {
-        return true;
-      }
-      
-      console.warn('Ошибка при проверке соединения с Supabase:', error);
-      return false;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Ошибка при проверке соединения с Supabase:', error);
+// Создаем клиент Supabase с переменными среды
+// Эти переменные должны быть заданы после подключения Supabase к проекту
+const supabaseUrl = "https://juacmpkewomkducoanle.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1YWNtcGtld29ta2R1Y29hbmxlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY5NTUwNDQsImV4cCI6MjA2MjUzMTA0NH0.UMkGF_zp-aAI9F71bOCuGzr3zRbusECclCyQUJAdrqk";
+
+// Проверяем наличие ключей Supabase
+const hasSupabaseConfig = supabaseUrl && supabaseKey;
+
+// Создаем клиент, если есть конфигурация
+export const supabase = hasSupabaseConfig 
+  ? createClient(supabaseUrl, supabaseKey)
+  : null;
+
+// Кэш для результата проверки соединения, чтобы не проверять каждый раз
+let connectionCache: { isConnected: boolean, timestamp: number } | null = null;
+const CACHE_TTL = 60000; // 1 минута
+
+// Функция для проверки доступности Supabase
+export const isSupabaseConnected = async (): Promise<boolean> => {
+  // Если кэш валидный, используем его
+  if (connectionCache && (Date.now() - connectionCache.timestamp < CACHE_TTL)) {
+    console.log('Используем кэшированный статус подключения к Supabase:', connectionCache.isConnected);
+    return connectionCache.isConnected;
+  }
+  
+  if (!supabase) {
+    console.log('Клиент Supabase не инициализирован');
+    connectionCache = { isConnected: false, timestamp: Date.now() };
     return false;
   }
-}
+  
+  try {
+    // Простой запрос для проверки соединения - вызов функции ai-proxy
+    const { data, error } = await supabase.functions.invoke('ai-proxy', {
+      body: { testConnection: true }
+    });
+    
+    const isConnected = !error && data !== null;
+    
+    // Кэшируем результат
+    connectionCache = { isConnected, timestamp: Date.now() };
+    
+    console.log('Проверка подключения к Supabase:', isConnected ? 'Успешно' : 'Не удалось');
+    return isConnected;
+  } catch (e) {
+    console.error('Ошибка при проверке соединения с Supabase:', e);
+    connectionCache = { isConnected: false, timestamp: Date.now() };
+    return false;
+  }
+};
 
-export { supabase };
+// Функция для получения статуса подключения Supabase
+export async function checkSupabaseConnection(): Promise<boolean> {
+  // Очищаем кэш для получения свежего результата
+  connectionCache = null;
+  return isSupabaseConnected();
+}

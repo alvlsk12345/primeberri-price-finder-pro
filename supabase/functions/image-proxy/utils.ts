@@ -1,105 +1,102 @@
 
-/**
- * Декодирует URL из base64 формата
- * @param base64Url URL в формате base64
- * @returns Декодированный URL
- */
-export function decodeBase64Url(base64Url: string): string {
-  try {
-    return atob(base64Url.replace(/_/g, "/").replace(/-/g, "+"));
-  } catch (error) {
-    console.error("Base64 decode error:", error);
-    return "";
-  }
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import { ResponseOptions } from './types.ts';
+import { corsHeaders } from './config.ts';
+
+// Уровни логирования
+export enum LogLevel {
+  DEBUG = 'DEBUG',
+  INFO = 'INFO',
+  WARN = 'WARN',
+  ERROR = 'ERROR'
 }
 
-/**
- * Кодирует URL в base64 формат
- * @param url URL для кодирования
- * @returns URL в формате base64
- */
-export function encodeBase64Url(url: string): string {
-  try {
-    return btoa(url).replace(/\//g, "_").replace(/\+/g, "-").replace(/=+$/, "");
-  } catch (error) {
-    console.error("Base64 encode error:", error);
-    return "";
-  }
-}
+// Создаем клиент Supabase
+export const getSupabaseClient = () => {
+  return createClient(
+    Deno.env.get('SUPABASE_URL') || '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+  );
+};
 
-/**
- * Создает хеш для URL
- * @param url URL для хеширования
- * @returns Хеш URL
- */
-export function hashUrl(url: string): string {
-  let hash = 0;
-  if (url.length === 0) return hash.toString(16);
+// Расширенная система логирования
+export function logMessage(level: LogLevel, message: string, data?: any) {
+  const timestamp = new Date().toISOString();
+  const logEntry = {
+    timestamp,
+    level,
+    message,
+    data: data || null,
+  };
   
-  for (let i = 0; i < url.length; i++) {
-    const char = url.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
+  // Вывод отформатированного лога
+  if (level === LogLevel.ERROR) {
+    console.error(`[${timestamp}] [${level}] ${message}`, data || '');
+  } else if (level === LogLevel.WARN) {
+    console.warn(`[${timestamp}] [${level}] ${message}`, data || '');
+  } else {
+    console.log(`[${timestamp}] [${level}] ${message}`, data || '');
   }
   
-  return Math.abs(hash).toString(16);
+  return logEntry;
 }
 
-/**
- * Форматирует размер файла в удобочитаемую строку
- * @param bytes Размер в байтах
- * @returns Форматированная строка размера
- */
-export function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return bytes + " bytes";
-  const kb = bytes / 1024;
-  if (kb < 1024) return kb.toFixed(1) + " KB";
-  const mb = kb / 1024;
-  if (mb < 1024) return mb.toFixed(1) + " MB";
-  const gb = mb / 1024;
-  return gb.toFixed(2) + " GB";
-}
-
-/**
- * Определяет, является ли URL изображением по расширению или заголовку Content-Type
- * @param url URL для проверки
- * @param contentType Content-Type заголовок (опционально)
- * @returns true, если URL указывает на изображение
- */
-export function isImage(url: string, contentType?: string | null): boolean {
-  if (contentType && contentType.startsWith('image/')) {
-    return true;
-  }
+// Функция для генерации уникального имени файла в кэше
+export function generateCacheFileName(url: string): string {
+  // Создаем хэш URL для имени файла
+  const encoder = new TextEncoder();
+  const data = encoder.encode(url);
   
-  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.ico', '.bmp'];
-  return imageExtensions.some(ext => url.toLowerCase().endsWith(ext));
+  // Создаем хэш и преобразуем в hex-строку
+  return Array.from(new Uint8Array(data))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+    .substring(0, 32) + '.img';
 }
 
 /**
- * Получает расширение файла из URL или Content-Type
- * @param url URL изображения
- * @param contentType Content-Type заголовок
- * @returns Расширение файла с точкой
+ * Создает объект Response с заголовками CORS
+ * @param body Тело ответа
+ * @param options Дополнительные опции ответа
  */
-export function getFileExtensionFromUrl(url: string, contentType: string | null): string {
-  // Пытаемся получить расширение из URL
-  const urlMatch = url.match(/\.([a-zA-Z0-9]+)(\?|$)/);
-  if (urlMatch) {
-    return '.' + urlMatch[1].toLowerCase();
-  }
+export function createResponse(
+  body: BodyInit | null, 
+  options: ResponseOptions = {}
+) {
+  const { headers = {}, status = 200, statusText } = options;
+
+  return new Response(body, {
+    headers: { ...corsHeaders, ...headers },
+    status,
+    statusText
+  });
+}
+
+/**
+ * Возвращает объект ошибки в формате JSON
+ */
+export function createErrorResponse(
+  errorMessage: string, 
+  status: number = 500, 
+  additionalInfo: Record<string, any> = {}
+) {
+  logMessage(LogLevel.ERROR, errorMessage, additionalInfo);
   
-  // Если нет расширения, определяем по Content-Type
-  if (contentType) {
-    switch (contentType) {
-      case 'image/jpeg': return '.jpg';
-      case 'image/png': return '.png';
-      case 'image/gif': return '.gif';
-      case 'image/webp': return '.webp';
-      case 'image/svg+xml': return '.svg';
-      case 'image/bmp': return '.bmp';
+  return createResponse(
+    JSON.stringify({ 
+      error: errorMessage,
+      ...additionalInfo
+    }),
+    { 
+      status, 
+      headers: { 'Content-Type': 'application/json' }
     }
-  }
-  
-  // По умолчанию используем .jpg
-  return '.jpg';
+  );
+}
+
+/**
+ * Генерирует уникальный идентификатор запроса
+ */
+export function generateRequestId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
 }

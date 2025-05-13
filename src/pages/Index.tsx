@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { SearchProvider } from "@/contexts/SearchContext";
 import { SearchContainer } from "@/components/search/SearchContainer";
 import { BenefitsSection } from "@/components/BenefitsSection";
 import { PageFooter } from "@/components/PageFooter";
@@ -11,10 +12,11 @@ const Index = () => {
       <PageHeader />
       
       <main className="container mx-auto py-10 px-4">
-        {/* Убираем SearchProvider отсюда, так как он теперь находится в App.tsx */}
-        <SearchContainer />
+        <SearchProvider>
+          <SearchContainer />
+        </SearchProvider>
+
         <BenefitsSection />
-        
         <PageFooter />
       </main>
     </div>
