@@ -15,7 +15,14 @@ function App() {
       <SearchProvider>
         <Routes>
           <Route path="/" element={<Index />} />
+          {/* 
+            Специально добавляем оба варианта пути для Settings
+            чтобы они работали и с прямым URL, и после перехода по ссылке
+          */}
           <Route path="/settings" element={<Settings />} />
+          <Route path="settings" element={<Settings />} />
+          {/* Редирект для сохранения поддержки всех возможных вариаций ссылок */}
+          <Route path="/settings/*" element={<Navigate to="/settings" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </SearchProvider>

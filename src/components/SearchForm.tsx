@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { toast } from "sonner";
 import { useDemoModeForced } from '@/services/api/mock/mockServiceConfig';
 import { containsCyrillicCharacters } from '@/services/translationService';
@@ -34,23 +34,60 @@ export const SearchForm: React.FC<SearchFormProps> = ({
     enabled: false 
   });
   const isDemoMode = useDemoModeForced;
-
-  // Проверяем статус Supabase при загрузке
+  
+  // Используем ref для отслеживания монтирования
+  const isMounted = useRef(true);
+  
+  // Оптимизируем проверку статуса Supabase при загрузке
   useEffect(() => {
+    // Устанавливаем ref при монтировании
+    isMounted.current = true;
+    
     const checkSupabaseStatus = async () => {
-      const connected = await isSupabaseConnected();
-      const enabled = await isUsingSupabaseBackend();
-      setSupabaseStatus({ connected, enabled });
+      if (!isMounted.current) return;
       
-      console.log('Проверка статуса Supabase:', { connected, enabled });
-      
-      if (enabled && !connected) {
-        toast.warning('Настройки используют Supabase Backend, но он не подключен. Некоторые функции могут быть недоступны.', 
-                     { duration: 6000 });
+      try {
+        // Первая проверка с существующим кешем
+        const enabled = isUsingSupabaseBackend();
+        
+        // Если Supabase не включен, нет смысла проверять соединение
+        if (!enabled) {
+          if (isMounted.current) {
+            setSupabaseStatus({ connected: false, enabled: false });
+          }
+          return;
+        }
+        
+        // Используем кешированную проверку подключения
+        const connected = await isSupabaseConnected();
+        
+        if (!isMounted.current) return;
+        
+        setSupabaseStatus({ connected, enabled });
+        
+        console.debug('Проверка статуса Supabase:', { connected, enabled });
+        
+        if (enabled && !connected) {
+          toast.warning('Настройки используют Supabase Backend, но он не подключен. Некоторые функции могут быть недоступны.', 
+                      { duration: 6000, id: 'supabase-warning' });
+        }
+      } catch (error) {
+        if (!isMounted.current) return;
+        
+        console.error('Ошибка при проверке статуса Supabase:', error);
+        setSupabaseStatus({ connected: false, enabled: isUsingSupabaseBackend() });
       }
     };
     
-    checkSupabaseStatus();
+    // Проверяем с задержкой, чтобы не блокировать рендеринг
+    const timer = setTimeout(() => {
+      checkSupabaseStatus();
+    }, 1000);
+    
+    return () => {
+      isMounted.current = false;
+      clearTimeout(timer);
+    };
   }, []);
 
   // Функция выполнения поиска с дополнительными проверками и скроллингом
@@ -113,8 +150,8 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       
       <SearchErrorMessage hasError={hasError} errorMessage={errorMessage} />
       
-      {/* Статус Supabase */}
-      {(!supabaseStatus.connected || !supabaseStatus.enabled) && (
+      {/* Статус Supabase - отображаем только если проверено и есть проблемы */}
+      {((!supabaseStatus.connected || !supabaseStatus.enabled) && (supabaseStatus.connected !== null)) && (
         <div className="bg-orange-50 border border-orange-200 rounded-md p-3 mb-4">
           <div className="flex items-start gap-2">
             <InfoIcon className="text-orange-600 mt-1 shrink-0" size={18} />

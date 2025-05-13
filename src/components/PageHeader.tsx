@@ -6,8 +6,9 @@ import { Settings, Home } from "lucide-react";
 
 export const PageHeader: React.FC = () => {
   const location = useLocation();
-  // Проверяем путь без учета хеша
-  const isSettingsPage = location.pathname === '/settings';
+  
+  // Обновляем проверку для работы с HashRouter - проверяем полный путь
+  const isSettingsPage = location.pathname === '/settings' || location.hash === '#/settings';
   
   return (
     <header className="bg-brand text-brand-foreground shadow-sm">

@@ -17,36 +17,55 @@ export function useSupabaseConnection() {
   const [supabaseStatus, setSupabaseStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
   const [useSupabaseBE, setUseSupabaseBE] = useState<boolean>(isUsingSupabaseBackend());
   const [useFallback, setUseFallback] = useState<boolean>(isFallbackEnabled());
-
-  // Проверяем подключение к Supabase при загрузке
+  
+  // Оптимизируем: проверяем подключение только при монтировании компонента
   useEffect(() => {
+    let isMounted = true;
+    
     async function checkConnection() {
+      if (!isMounted) return;
+      
       setSupabaseStatus('checking');
       try {
-        const connected = await checkSupabaseConnection();
-        console.log('Результат проверки подключения к Supabase:', connected);
+        // Используем общую функцию проверки с оптимизированным кэшированием
+        const connected = await isSupabaseConnected();
+        
+        // Проверяем, что компонент все еще смонтирован перед обновлением состояния
+        if (!isMounted) return;
+        
+        console.debug('Результат проверки подключения к Supabase:', connected);
         setSupabaseConnected(connected);
         setSupabaseStatus(connected ? 'connected' : 'disconnected');
+        
         if (connected) {
-          toast.success('Соединение с Supabase установлено', { duration: 3000 });
+          toast.success('Соединение с Supabase установлено', { duration: 3000, id: 'supabase-connected' });
         }
       } catch (error) {
+        // Проверяем, что компонент все еще смонтирован перед обновлением состояния
+        if (!isMounted) return;
+        
         console.error('Ошибка при проверке подключения к Supabase:', error);
         setSupabaseConnected(false);
         setSupabaseStatus('disconnected');
       }
     }
     
-    checkConnection();
-  }, []);
-  
-  // Получаем настройки Supabase AI
-  useEffect(() => {
+    // Запускаем проверку с небольшой задержкой, чтобы уменьшить нагрузку при загрузке
+    const timer = setTimeout(() => {
+      checkConnection();
+    }, 500);
+    
+    // Получаем настройки с меньшей частотой обновления
     const config = getSupabaseAIConfig();
     setUseSupabaseBE(config.useSupabaseBackend);
     setUseFallback(config.fallbackToDirectCalls);
+    
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
   }, []);
-
+  
   // Функция для изменения режима работы с Supabase
   const handleSupabaseBackendChange = (checked: boolean) => {
     setUseSupabaseBE(checked);

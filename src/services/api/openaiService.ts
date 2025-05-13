@@ -1,4 +1,3 @@
 
-// Делаем реэкспорт всего из нового модуля openai
-export * from './openai';
+// Делаем реэкспорт из модуля openai
 export * from './openai/index';

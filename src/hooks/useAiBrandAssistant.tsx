@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useRef } from 'react';
 import { toast } from "sonner";
 import { getBrandSuggestions } from "@/services/api/brandSuggestionService";
 import { getApiKey } from "@/services/api/openai/config";
@@ -17,23 +18,50 @@ export const useAiBrandAssistant = () => {
     connected: false,
     enabled: false
   });
+  
+  // Используем ref для отслеживания монтирования
+  const isMounted = useRef(true);
 
-  // Проверяем статус Supabase при загрузке
+  // Проверяем статус Supabase при загрузке с оптимизацией
   useEffect(() => {
+    // Устанавливаем ref при монтировании
+    isMounted.current = true;
+    
     const checkSupabaseStatus = async () => {
-      try {
-        const connected = await isSupabaseConnected();
-        const enabled = await isUsingSupabaseBackend();
-        setSupabaseStatus({ connected, enabled });
-        
-        console.log('AiBrandAssistant: проверка статуса Supabase:', { connected, enabled });
-      } catch (error) {
-        console.error('Ошибка при проверке статуса Supabase:', error);
+      // Первая быстрая проверка настроек
+      const enabled = isUsingSupabaseBackend();
+      
+      // Если функция не включена, нет смысла проверять соединение
+      if (!enabled && isMounted.current) {
         setSupabaseStatus({ connected: false, enabled: false });
+        return;
+      }
+      
+      try {
+        // Используем оптимизированную кешированную проверку
+        const connected = await isSupabaseConnected();
+        
+        if (!isMounted.current) return;
+        
+        setSupabaseStatus({ connected, enabled });
+        console.debug('AiBrandAssistant: проверка статуса Supabase:', { connected, enabled });
+      } catch (error) {
+        if (!isMounted.current) return;
+        
+        console.error('Ошибка при проверке статуса Supabase:', error);
+        setSupabaseStatus({ connected: false, enabled });
       }
     };
     
-    checkSupabaseStatus();
+    // Добавляем задержку для снижения нагрузки
+    const timer = setTimeout(() => {
+      checkSupabaseStatus();
+    }, 1500);
+    
+    return () => {
+      isMounted.current = false;
+      clearTimeout(timer);
+    };
   }, []);
 
   // Вычисляемое свойство для проверки наличия ошибки
