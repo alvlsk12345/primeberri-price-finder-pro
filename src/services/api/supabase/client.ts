@@ -33,12 +33,22 @@ export const isSupabaseConnected = async (): Promise<boolean> => {
   }
   
   try {
-    // Простой запрос для проверки соединения - вызов функции ai-proxy
-    const { data, error } = await supabase.functions.invoke('ai-proxy', {
-      method: 'GET'
+    // Используем оба метода для проверки соединения
+    // 1. Вызов с body для проверки тестового соединения
+    const testConnection = await supabase.functions.invoke('ai-proxy', {
+      body: { testConnection: true }
     });
     
-    const isConnected = !error && data !== null;
+    // 2. Простой GET запрос как резервный метод
+    let isConnected = !testConnection.error && testConnection.data !== null;
+    
+    // Если первый метод не сработал, пробуем GET запрос
+    if (!isConnected) {
+      const getRequest = await supabase.functions.invoke('ai-proxy', {
+        method: 'GET'
+      });
+      isConnected = !getRequest.error && getRequest.data !== null;
+    }
     
     // Кэшируем результат
     connectionCache = { isConnected, timestamp: Date.now() };
