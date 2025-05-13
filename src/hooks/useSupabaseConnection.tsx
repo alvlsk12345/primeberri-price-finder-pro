@@ -16,7 +16,8 @@ import {
 export function useSupabaseConnection() {
   const [supabaseConnected, setSupabaseConnected] = useState<boolean>(getConnectionState().isConnected);
   const [supabaseStatus, setSupabaseStatus] = useState<'checking' | 'connected' | 'disconnected'>(
-    getConnectionState().status === 'unknown' ? 'checking' : getConnectionState().status
+    getConnectionState().status === 'unknown' ? 'checking' : 
+    getConnectionState().status as 'checking' | 'connected' | 'disconnected'
   );
   const [useSupabaseBE, setUseSupabaseBE] = useState<boolean>(isUsingSupabaseBackend());
   const [useFallback, setUseFallback] = useState<boolean>(isFallbackEnabled());
@@ -26,12 +27,14 @@ export function useSupabaseConnection() {
     // Получаем начальное состояние
     const initialState = getConnectionState();
     setSupabaseConnected(initialState.isConnected);
-    setSupabaseStatus(initialState.status === 'unknown' ? 'checking' : initialState.status);
+    setSupabaseStatus(initialState.status === 'unknown' ? 'checking' : 
+                     initialState.status as 'checking' | 'connected' | 'disconnected');
     
     // Подписываемся на обновления состояния
     const unsubscribe = subscribeToConnectionState((state) => {
       setSupabaseConnected(state.isConnected);
-      setSupabaseStatus(state.status === 'unknown' ? 'checking' : state.status);
+      setSupabaseStatus(state.status === 'unknown' ? 'checking' : 
+                      state.status as 'checking' | 'connected' | 'disconnected');
       
       if (state.status === 'connected' && state.isConnected) {
         toast.success('Соединение с Supabase установлено', { 

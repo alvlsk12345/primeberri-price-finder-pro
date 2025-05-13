@@ -6,3 +6,6 @@ export * from './openai/config';
 export * from './openai/searchService';
 export * from './openai/responseUtils';
 export * from './openai/proxyUtils';
+
+// Добавляем реэкспорт функций из index.ts
+export * from './openai/index';

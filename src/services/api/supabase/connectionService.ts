@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
 // Глобальное состояние соединения
-type ConnectionStatus = 'unknown' | 'checking' | 'connected' | 'disconnected';
+export type ConnectionStatus = 'unknown' | 'checking' | 'connected' | 'disconnected';
 
 interface ConnectionState {
   status: ConnectionStatus;

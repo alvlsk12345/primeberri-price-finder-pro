@@ -1,6 +1,6 @@
 
-// Делаем прямой реэкспорт из суб-модуля openai
-import * as OpenAIModule from './openai/index';
+// Реэкспортируем все необходимые функции и типы из модулей openai
+import * as OpenAIModule from './openai';
 
 // Экспортируем все функции напрямую
 export const {
