@@ -1,136 +1,129 @@
 
+// Этот файл нужно создать, так как он не существует
 import { supabase } from '@/integrations/supabase/client';
 
-// Глобальное состояние соединения
-export type ConnectionStatus = 'unknown' | 'checking' | 'connected' | 'disconnected';
+// Тип состояния соединения
+export type ConnectionStatus = 'checking' | 'connected' | 'disconnected';
 
+// Интерфейс состояния соединения
 interface ConnectionState {
-  status: ConnectionStatus;
-  lastChecked: number;
   isConnected: boolean;
+  status: ConnectionStatus;
 }
 
-// Время жизни кэша увеличено до 10 минут
-const CACHE_TTL = 600000; 
-
-// Начальное состояние
-let connectionState: ConnectionState = {
-  status: 'unknown',
-  lastChecked: 0,
-  isConnected: false
+// Начальное состояние соединения
+const initialState: ConnectionState = {
+  isConnected: false,
+  status: 'checking'
 };
 
-// Список подписчиков на изменение состояния
-type SubscriberCallback = (state: ConnectionState) => void;
-const subscribers: SubscriberCallback[] = [];
+// Текущее состояние соединения
+let connectionState = { ...initialState };
 
-// Глобальная блокировка параллельных проверок
-let isCheckingConnection = false;
+// Обработчики для подписки на изменения состояния
+const handlers: ((state: ConnectionState) => void)[] = [];
 
 /**
- * Подписаться на изменения состояния соединения
+ * Проверяет соединение с Supabase
  */
-export const subscribeToConnectionState = (callback: SubscriberCallback): () => void => {
-  subscribers.push(callback);
+export async function checkConnection(): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.from('_dummy_query').select('*').limit(1);
+    
+    // Если запрос выполнился без ошибок, считаем соединение установленным
+    const connected = !error;
+    
+    // Обновляем состояние
+    updateConnectionState({
+      isConnected: connected,
+      status: connected ? 'connected' : 'disconnected'
+    });
+    
+    return connected;
+  } catch (error) {
+    console.error('Ошибка при проверке соединения с Supabase:', error);
+    
+    // Обновляем состояние
+    updateConnectionState({
+      isConnected: false,
+      status: 'disconnected'
+    });
+    
+    return false;
+  }
+}
+
+/**
+ * Обновляет состояние соединения
+ */
+function updateConnectionState(newState: Partial<ConnectionState>): void {
+  connectionState = {
+    ...connectionState,
+    ...newState
+  };
   
-  // Сразу оповещаем о текущем состоянии
-  callback(connectionState);
+  // Уведомляем всех подписчиков
+  notifyHandlers();
+}
+
+/**
+ * Уведомляет всех обработчиков об изменении состояния
+ */
+function notifyHandlers(): void {
+  handlers.forEach(handler => {
+    try {
+      handler(connectionState);
+    } catch (error) {
+      console.error('Ошибка в обработчике состояния соединения:', error);
+    }
+  });
+}
+
+/**
+ * Подписывается на изменения состояния соединения
+ */
+export function subscribeToConnectionState(handler: (state: ConnectionState) => void): () => void {
+  handlers.push(handler);
+  
+  // Немедленно вызываем обработчик с текущим состоянием
+  handler(connectionState);
   
   // Возвращаем функцию отписки
   return () => {
-    const index = subscribers.indexOf(callback);
+    const index = handlers.indexOf(handler);
     if (index !== -1) {
-      subscribers.splice(index, 1);
+      handlers.splice(index, 1);
     }
   };
-};
+}
 
 /**
- * Обновить всех подписчиков
+ * Получает текущее состояние соединения
  */
-const notifySubscribers = () => {
-  subscribers.forEach(callback => callback(connectionState));
-};
-
-/**
- * Получить текущее состояние соединения без проверки
- */
-export const getConnectionState = (): ConnectionState => {
+export function getConnectionState(): ConnectionState {
   return { ...connectionState };
-};
+}
 
 /**
- * Проверка доступности Supabase с оптимизированным кэшированием
+ * Инициализирует сервис соединения
  */
-export const checkSupabaseConnection = async (forceCheck: boolean = false): Promise<boolean> => {
-  // Если кэш валидный и не требуется принудительная проверка, используем его
-  if (!forceCheck && 
-      connectionState.status !== 'unknown' && 
-      (Date.now() - connectionState.lastChecked < CACHE_TTL)) {
-    console.debug('Используем кэшированный статус подключения к Supabase:', connectionState.isConnected);
-    return connectionState.isConnected;
-  }
-  
-  // Если проверка уже выполняется, возвращаем текущее состояние
-  if (isCheckingConnection) {
-    console.debug('Проверка подключения уже выполняется, ожидаем завершения...');
-    return connectionState.isConnected;
-  }
-  
-  // Устанавливаем статус проверки
-  isCheckingConnection = true;
-  connectionState.status = 'checking';
-  notifySubscribers();
-  
+export async function initConnectionService(): Promise<void> {
   try {
-    console.debug('Проверка подключения к Supabase начата...');
+    // Устанавливаем статус проверки
+    updateConnectionState({ status: 'checking' });
     
-    // Проверка соединения через вызов тестовой функции
-    const testConnection = await supabase.functions.invoke('ai-proxy', {
-      body: { testConnection: true }
-    });
+    // Проверяем соединение
+    await checkConnection();
     
-    const isConnected = !testConnection.error && testConnection.data !== null;
+    // Устанавливаем интервал для периодической проверки соединения
+    setInterval(checkConnection, 60000); // Каждую минуту
+  } catch (error) {
+    console.error('Ошибка при инициализации сервиса соединения:', error);
     
     // Обновляем состояние
-    connectionState = {
-      status: isConnected ? 'connected' : 'disconnected',
-      lastChecked: Date.now(),
-      isConnected
-    };
-    
-    console.debug('Проверка подключения к Supabase завершена:', isConnected ? 'Успешно' : 'Не удалось');
-    
-    // Оповещаем подписчиков о новом состоянии
-    notifySubscribers();
-    
-    return isConnected;
-  } catch (e) {
-    console.error('Ошибка при проверке соединения с Supabase:', e);
-    
-    // Обновляем состояние при ошибке
-    connectionState = {
-      status: 'disconnected',
-      lastChecked: Date.now(),
-      isConnected: false
-    };
-    
-    // Оповещаем подписчиков
-    notifySubscribers();
-    
-    return false;
-  } finally {
-    // Сбрасываем флаг проверки
-    isCheckingConnection = false;
+    updateConnectionState({
+      isConnected: false,
+      status: 'disconnected'
+    });
   }
-};
-
-/**
- * Инициализация сервиса при загрузке приложения
- * Выполняем первую проверку с задержкой, чтобы не блокировать рендеринг
- */
-export const initConnectionService = (): void => {
-  setTimeout(() => {
-    checkSupabaseConnection();
-  }, 1500);
-};
+}

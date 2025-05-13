@@ -9,4 +9,5 @@ export interface Brand {
 
 export interface BrandResponse {
   products?: Brand[];
+  suggestions?: Brand[];
 }

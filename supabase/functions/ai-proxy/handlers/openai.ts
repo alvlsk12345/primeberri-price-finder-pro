@@ -8,18 +8,18 @@ const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 /**
  * Обработчик запросов к OpenAI API
  */
-export async function handleOpenAIRequest(params: any) {
+export async function handleOpenAIRequest(req: Request, requestData: any) {
   // Проверяем наличие API ключа
   if (!OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY не настроен');
   }
   
   // Обрабатываем разные типы запросов
-  if (params.action === 'getBrandSuggestions') {
-    return await handleBrandSuggestions(params);
-  } else if (params.prompt) {
+  if (requestData.action === 'getBrandSuggestions') {
+    return await handleBrandSuggestions(requestData);
+  } else if (requestData.prompt) {
     // Стандартный запрос к OpenAI API
-    return await callOpenAIDirectly(params.prompt, params.options);
+    return await callOpenAIDirectly(requestData.prompt, requestData.options);
   } else {
     throw new Error('Неверный формат запроса к OpenAI');
   }
@@ -96,19 +96,23 @@ async function handleBrandSuggestions(params: { description: string; count?: num
     // Проверяем, что products - это массив
     if (!Array.isArray(products)) {
       console.error('Некорректный формат ответа от OpenAI, возвращается пустой массив');
-      return { suggestions: [] };
+      return new Response(JSON.stringify({ suggestions: [] }), {
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+      });
     }
     
     console.log(`Успешно получен массив products: ${products.length}`);
     
     // Возвращаем результат в нужном формате
-    return {
+    return new Response(JSON.stringify({
       suggestions: products.map(item => ({
         brand: item.brand || item.name || 'Неизвестный бренд',
         product: item.product || '',
         description: item.description || 'Описание недоступно',
       }))
-    };
+    }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+    });
   } catch (error) {
     console.error('Ошибка при парсинге ответа от OpenAI:', error, 'Ответ:', content);
     throw new Error(`Ошибка при парсинге ответа: ${error.message}`);
@@ -158,5 +162,7 @@ async function callOpenAIDirectly(prompt: string, options: any = {}) {
   const data = await response.json();
   const content = data.choices[0]?.message?.content;
 
-  return content;
+  return new Response(JSON.stringify({ result: content }), {
+    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+  });
 }
