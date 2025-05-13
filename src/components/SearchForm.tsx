@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from "sonner";
 import { useDemoModeForced } from '@/services/api/mock/mockServiceConfig';
 import { containsCyrillicCharacters } from '@/services/translationService';
@@ -8,7 +8,7 @@ import { SearchInput } from './search/SearchInput';
 import { SearchErrorMessage } from './search/SearchErrorMessage';
 import { useProductSelectionHandler } from './search/ProductSelectionHandler';
 import { NoResultsMessage } from './search/NoResultsMessage';
-import { isSupabaseConnected } from '@/services/api/supabase/client';
+import { getConnectionState, subscribeToConnectionState } from '@/services/api/supabase/connectionService';
 import { isUsingSupabaseBackend } from '@/services/api/supabase/config';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -30,63 +30,32 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [supabaseStatus, setSupabaseStatus] = useState<{ connected: boolean; enabled: boolean }>({ 
-    connected: false, 
-    enabled: false 
+    connected: getConnectionState().isConnected, 
+    enabled: isUsingSupabaseBackend() 
   });
   const isDemoMode = useDemoModeForced;
   
-  // Используем ref для отслеживания монтирования
-  const isMounted = useRef(true);
-  
-  // Оптимизируем проверку статуса Supabase при загрузке
+  // Подписываемся на изменения состояния соединения
   useEffect(() => {
-    // Устанавливаем ref при монтировании
-    isMounted.current = true;
+    // Получаем текущие настройки
+    const enabled = isUsingSupabaseBackend();
     
-    const checkSupabaseStatus = async () => {
-      if (!isMounted.current) return;
-      
-      try {
-        // Первая проверка с существующим кешем
-        const enabled = isUsingSupabaseBackend();
-        
-        // Если Supabase не включен, нет смысла проверять соединение
-        if (!enabled) {
-          if (isMounted.current) {
-            setSupabaseStatus({ connected: false, enabled: false });
-          }
-          return;
-        }
-        
-        // Используем кешированную проверку подключения
-        const connected = await isSupabaseConnected();
-        
-        if (!isMounted.current) return;
-        
-        setSupabaseStatus({ connected, enabled });
-        
-        console.debug('Проверка статуса Supabase:', { connected, enabled });
-        
-        if (enabled && !connected) {
-          toast.warning('Настройки используют Supabase Backend, но он не подключен. Некоторые функции могут быть недоступны.', 
-                      { duration: 6000, id: 'supabase-warning' });
-        }
-      } catch (error) {
-        if (!isMounted.current) return;
-        
-        console.error('Ошибка при проверке статуса Supabase:', error);
-        setSupabaseStatus({ connected: false, enabled: isUsingSupabaseBackend() });
-      }
-    };
+    // Устанавливаем начальное состояние
+    setSupabaseStatus({
+      connected: getConnectionState().isConnected,
+      enabled
+    });
     
-    // Проверяем с задержкой, чтобы не блокировать рендеринг
-    const timer = setTimeout(() => {
-      checkSupabaseStatus();
-    }, 1000);
+    // Подписываемся на обновления состояния
+    const unsubscribe = subscribeToConnectionState((state) => {
+      setSupabaseStatus(prev => ({
+        ...prev,
+        connected: state.isConnected
+      }));
+    });
     
     return () => {
-      isMounted.current = false;
-      clearTimeout(timer);
+      unsubscribe();
     };
   }, []);
 
@@ -151,7 +120,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       <SearchErrorMessage hasError={hasError} errorMessage={errorMessage} />
       
       {/* Статус Supabase - отображаем только если проверено и есть проблемы */}
-      {((!supabaseStatus.connected || !supabaseStatus.enabled) && (supabaseStatus.connected !== null)) && (
+      {((!supabaseStatus.connected || !supabaseStatus.enabled) && supabaseStatus.connected !== null) && (
         <div className="bg-orange-50 border border-orange-200 rounded-md p-3 mb-4">
           <div className="flex items-start gap-2">
             <InfoIcon className="text-orange-600 mt-1 shrink-0" size={18} />
@@ -168,7 +137,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
                 Для корректной работы с OpenAI API необходимо настроить Supabase Backend.
               </p>
               <Button variant="outline" size="sm" className="mt-2 text-xs">
-                <Link to="/settings">Перейти к настройкам</Link>
+                <Link to="#/settings">Перейти к настройкам</Link>
               </Button>
             </div>
           </div>
@@ -180,4 +149,4 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       <NoResultsMessage />
     </div>
   );
-};
+}

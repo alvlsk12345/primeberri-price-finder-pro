@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { getBrandSuggestions } from "@/services/api/brandSuggestionService";
 import { getApiKey } from "@/services/api/openai/config";
 import { BrandSuggestion } from "@/services/types";
-import { isSupabaseConnected } from "@/services/api/supabase/client";
+import { getConnectionState, subscribeToConnectionState } from "@/services/api/supabase/connectionService";
 import { isUsingSupabaseBackend } from "@/services/api/supabase/config";
 
 export const useAiBrandAssistant = () => {
@@ -15,52 +15,31 @@ export const useAiBrandAssistant = () => {
   const [brandSuggestions, setBrandSuggestions] = useState<BrandSuggestion[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [supabaseStatus, setSupabaseStatus] = useState<{ connected: boolean; enabled: boolean }>({
-    connected: false,
-    enabled: false
+    connected: getConnectionState().isConnected,
+    enabled: isUsingSupabaseBackend()
   });
   
-  // Используем ref для отслеживания монтирования
-  const isMounted = useRef(true);
-
-  // Проверяем статус Supabase при загрузке с оптимизацией
+  // Подписываемся на изменения состояния соединения
   useEffect(() => {
-    // Устанавливаем ref при монтировании
-    isMounted.current = true;
+    // Получаем текущие настройки
+    const enabled = isUsingSupabaseBackend();
     
-    const checkSupabaseStatus = async () => {
-      // Первая быстрая проверка настроек
-      const enabled = isUsingSupabaseBackend();
-      
-      // Если функция не включена, нет смысла проверять соединение
-      if (!enabled && isMounted.current) {
-        setSupabaseStatus({ connected: false, enabled: false });
-        return;
-      }
-      
-      try {
-        // Используем оптимизированную кешированную проверку
-        const connected = await isSupabaseConnected();
-        
-        if (!isMounted.current) return;
-        
-        setSupabaseStatus({ connected, enabled });
-        console.debug('AiBrandAssistant: проверка статуса Supabase:', { connected, enabled });
-      } catch (error) {
-        if (!isMounted.current) return;
-        
-        console.error('Ошибка при проверке статуса Supabase:', error);
-        setSupabaseStatus({ connected: false, enabled });
-      }
-    };
+    // Устанавливаем начальное состояние
+    setSupabaseStatus({
+      connected: getConnectionState().isConnected,
+      enabled
+    });
     
-    // Добавляем задержку для снижения нагрузки
-    const timer = setTimeout(() => {
-      checkSupabaseStatus();
-    }, 1500);
+    // Подписываемся на обновления состояния соединения
+    const unsubscribe = subscribeToConnectionState((state) => {
+      setSupabaseStatus(prev => ({
+        ...prev,
+        connected: state.isConnected
+      }));
+    });
     
     return () => {
-      isMounted.current = false;
-      clearTimeout(timer);
+      unsubscribe();
     };
   }, []);
 

@@ -1,22 +1,13 @@
-
-import { createClient } from '@supabase/supabase-js';
-import { Database } from '@/integrations/supabase/types';
+import { supabase } from '@/integrations/supabase/client';
 import { BrandSuggestion } from '@/services/types';
 import { isUsingSupabaseBackend } from './config';
 
-const supabaseUrl = 'https://juacmpkewomkducoanle.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1YWNtcGtld29ta2R1Y29hbmxlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY5NTUwNDQsImV4cCI6MjA2MjUzMTA0NH0.UMkGF_zp-aAI9F71bOCuGzr3zRbusECclCyQUJAdrqk';
-
-console.log('Supabase URL:', supabaseUrl);
-
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
-
 // Экспортируем функции для получения URL и ключа Supabase
-export const getSupabaseURL = () => supabaseUrl;
-export const getSupabaseAnonKey = () => supabaseAnonKey;
+export const getSupabaseURL = () => "https://juacmpkewomkducoanle.supabase.co";
+export const getSupabaseAnonKey = () => "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1YWNtcGtld29ta2R1Y29hbmxlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY5NTUwNDQsImV4cCI6MjA2MjUzMTA0NH0.UMkGF_zp-aAI9F71bOCuGzr3zRbusECclCyQUJAdrqk";
 
 interface AICallParams {
-  provider: string;  // Изменяем тип с 'openai' | 'abacus' на string для поддержки 'perplexity'
+  provider: string;
   prompt?: string;
   endpoint?: string;
   method?: string;

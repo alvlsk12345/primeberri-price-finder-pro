@@ -7,8 +7,8 @@ import { Settings, Home } from "lucide-react";
 export const PageHeader: React.FC = () => {
   const location = useLocation();
   
-  // Обновляем проверку для работы с HashRouter - проверяем полный путь
-  const isSettingsPage = location.pathname === '/settings' || location.hash === '#/settings';
+  // Проверяем если это страница настроек
+  const isSettingsPage = location.pathname.includes('settings');
   
   return (
     <header className="bg-brand text-brand-foreground shadow-sm">
@@ -35,7 +35,7 @@ export const PageHeader: React.FC = () => {
           </Button>
           
           <Button variant={isSettingsPage ? "brand" : "brand-outline"} size="sm" asChild>
-            <Link to="/settings" className="flex items-center gap-2">
+            <Link to="#/settings" className="flex items-center gap-2">
               <Settings size={18} />
               <span>Настройки</span>
             </Link>

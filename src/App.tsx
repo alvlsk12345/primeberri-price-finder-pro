@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import './App.css'
 import Index from "./pages/Index";
 import Settings from "./pages/Settings";
@@ -8,21 +8,21 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
 import { SearchProvider } from "@/contexts/SearchContext";
+import { initConnectionService } from './services/api/supabase/connectionService';
 
 function App() {
+  // Инициализируем сервис проверки соединения при загрузке приложения
+  useEffect(() => {
+    initConnectionService();
+  }, []);
+
   return (
     <>
       <SearchProvider>
         <Routes>
           <Route path="/" element={<Index />} />
-          {/* 
-            Специально добавляем оба варианта пути для Settings
-            чтобы они работали и с прямым URL, и после перехода по ссылке
-          */}
           <Route path="/settings" element={<Settings />} />
           <Route path="settings" element={<Settings />} />
-          {/* Редирект для сохранения поддержки всех возможных вариаций ссылок */}
-          <Route path="/settings/*" element={<Navigate to="/settings" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </SearchProvider>

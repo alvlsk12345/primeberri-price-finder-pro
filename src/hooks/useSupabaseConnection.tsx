@@ -2,9 +2,10 @@
 import { useState, useEffect } from 'react';
 import { toast } from "sonner";
 import { 
-  isSupabaseConnected, 
-  checkSupabaseConnection 
-} from "@/services/api/supabase/client";
+  getConnectionState, 
+  checkSupabaseConnection, 
+  subscribeToConnectionState 
+} from "@/services/api/supabase/connectionService";
 import { 
   isUsingSupabaseBackend, 
   isFallbackEnabled,
@@ -13,56 +14,40 @@ import {
 } from "@/services/api/supabase/config";
 
 export function useSupabaseConnection() {
-  const [supabaseConnected, setSupabaseConnected] = useState<boolean>(false);
-  const [supabaseStatus, setSupabaseStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
+  const [supabaseConnected, setSupabaseConnected] = useState<boolean>(getConnectionState().isConnected);
+  const [supabaseStatus, setSupabaseStatus] = useState<'checking' | 'connected' | 'disconnected'>(
+    getConnectionState().status === 'unknown' ? 'checking' : getConnectionState().status
+  );
   const [useSupabaseBE, setUseSupabaseBE] = useState<boolean>(isUsingSupabaseBackend());
   const [useFallback, setUseFallback] = useState<boolean>(isFallbackEnabled());
   
-  // Оптимизируем: проверяем подключение только при монтировании компонента
+  // Подписываемся на изменения состояния соединения
   useEffect(() => {
-    let isMounted = true;
+    // Получаем начальное состояние
+    const initialState = getConnectionState();
+    setSupabaseConnected(initialState.isConnected);
+    setSupabaseStatus(initialState.status === 'unknown' ? 'checking' : initialState.status);
     
-    async function checkConnection() {
-      if (!isMounted) return;
+    // Подписываемся на обновления состояния
+    const unsubscribe = subscribeToConnectionState((state) => {
+      setSupabaseConnected(state.isConnected);
+      setSupabaseStatus(state.status === 'unknown' ? 'checking' : state.status);
       
-      setSupabaseStatus('checking');
-      try {
-        // Используем общую функцию проверки с оптимизированным кэшированием
-        const connected = await isSupabaseConnected();
-        
-        // Проверяем, что компонент все еще смонтирован перед обновлением состояния
-        if (!isMounted) return;
-        
-        console.debug('Результат проверки подключения к Supabase:', connected);
-        setSupabaseConnected(connected);
-        setSupabaseStatus(connected ? 'connected' : 'disconnected');
-        
-        if (connected) {
-          toast.success('Соединение с Supabase установлено', { duration: 3000, id: 'supabase-connected' });
-        }
-      } catch (error) {
-        // Проверяем, что компонент все еще смонтирован перед обновлением состояния
-        if (!isMounted) return;
-        
-        console.error('Ошибка при проверке подключения к Supabase:', error);
-        setSupabaseConnected(false);
-        setSupabaseStatus('disconnected');
+      if (state.status === 'connected' && state.isConnected) {
+        toast.success('Соединение с Supabase установлено', { 
+          duration: 3000, 
+          id: 'supabase-connected' 
+        });
       }
-    }
+    });
     
-    // Запускаем проверку с небольшой задержкой, чтобы уменьшить нагрузку при загрузке
-    const timer = setTimeout(() => {
-      checkConnection();
-    }, 500);
-    
-    // Получаем настройки с меньшей частотой обновления
+    // Получаем настройки
     const config = getSupabaseAIConfig();
     setUseSupabaseBE(config.useSupabaseBackend);
     setUseFallback(config.fallbackToDirectCalls);
     
     return () => {
-      isMounted = false;
-      clearTimeout(timer);
+      unsubscribe();
     };
   }, []);
   
