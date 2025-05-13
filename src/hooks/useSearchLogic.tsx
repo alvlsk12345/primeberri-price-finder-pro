@@ -10,11 +10,6 @@ export function useSearchLogic() {
   // Получаем все действия поиска из нашего кастомного хука
   const searchActions = useSearchActions(searchState);
   
-  // Эффект для отладки изменений страницы
-  useEffect(() => {
-    console.log(`Page change effect triggered: current page is ${searchState.currentPage}, change count: ${searchState.pageChangeCount}`);
-  }, [searchState.currentPage, searchState.pageChangeCount]);
-
   // Эффект для очистки
   useEffect(() => {
     return searchActions.cleanupSearch;

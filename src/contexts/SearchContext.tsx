@@ -35,11 +35,6 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Устраняем циклическую зависимость
   const searchLogic = useSearchLogic();
   
-  // Эффект для отладки изменения страницы
-  useEffect(() => {
-    console.log(`Page change effect triggered: current page is ${searchLogic.currentPage}, change count: ${searchLogic.pageChangeCount}`);
-  }, [searchLogic.currentPage, searchLogic.pageChangeCount]);
-
   // Передаем всю логику поиска в провайдер
   return <SearchContext.Provider value={searchLogic}>{children}</SearchContext.Provider>;
 };

@@ -5,7 +5,7 @@ import { ActionButtons } from "@/components/ActionButtons";
 import { useSearch } from "@/contexts/SearchContext";
 
 export const ProductDetailsSection: React.FC = () => {
-  // Используем try/catch для обработки случаев, когда контекст может быть недоступен
+  // Более безопасное использование контекста
   try {
     const { selectedProduct, searchQuery } = useSearch();
     
@@ -23,7 +23,6 @@ export const ProductDetailsSection: React.FC = () => {
       </div>
     );
   } catch (error) {
-    // Возвращаем null, если контекст недоступен
     console.log("ProductDetailsSection: SearchContext недоступен", error);
     return null;
   }
