@@ -14,28 +14,30 @@ export const useAiBrandAssistant = () => {
   const [isAssistantLoading, setIsAssistantLoading] = useState<boolean>(false);
   const [brandSuggestions, setBrandSuggestions] = useState<BrandSuggestion[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  // Сохраняем состояние, но не производим автоматическую проверку
   const [supabaseStatus, setSupabaseStatus] = useState<{ connected: boolean; enabled: boolean }>({
     connected: false,
     enabled: false
   });
 
-  // Проверяем статус Supabase при загрузке
-  useEffect(() => {
-    const checkSupabaseStatus = async () => {
-      try {
-        const connected = await isSupabaseConnected();
-        const enabled = await isUsingSupabaseBackend();
-        setSupabaseStatus({ connected, enabled });
-        
-        console.log('AiBrandAssistant: проверка статуса Supabase:', { connected, enabled });
-      } catch (error) {
-        console.error('Ошибка при проверке статуса Supabase:', error);
-        setSupabaseStatus({ connected: false, enabled: false });
-      }
-    };
-    
-    checkSupabaseStatus();
-  }, []);
+  // Удаляем автоматическую проверку статуса Supabase при загрузке
+  // Теперь статус будет проверяться только когда это необходимо
+
+  // Функция для ручной проверки статуса Supabase
+  const checkSupabaseStatus = async () => {
+    try {
+      const connected = await isSupabaseConnected();
+      const enabled = await isUsingSupabaseBackend();
+      setSupabaseStatus({ connected, enabled });
+      
+      console.log('AiBrandAssistant: проверка статуса Supabase:', { connected, enabled });
+      return { connected, enabled };
+    } catch (error) {
+      console.error('Ошибка при проверке статуса Supabase:', error);
+      setSupabaseStatus({ connected: false, enabled: false });
+      return { connected: false, enabled: false };
+    }
+  };
 
   // Вычисляемое свойство для проверки наличия ошибки
   const hasError = !!errorMessage;
@@ -85,6 +87,7 @@ export const useAiBrandAssistant = () => {
     errorMessage,
     hasError,
     supabaseStatus,
+    checkSupabaseStatus,
     isAssistantEnabled,
     setIsAssistantEnabled,
     handleGetBrandSuggestions

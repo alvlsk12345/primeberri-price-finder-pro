@@ -18,18 +18,7 @@ export const DiagnosticButtons: React.FC = () => {
   const selectedProvider = getSelectedAIProvider();
   const providerDisplayName = getProviderDisplayName(selectedProvider);
   const modelName = getProviderModelName(selectedProvider);
-  const [supabaseMode, setSupabaseMode] = useState<boolean | null>(null);
-
-  // Проверяем использование Supabase
-  React.useEffect(() => {
-    const checkSupabaseMode = async () => {
-      const isConnected = await isSupabaseConnected();
-      const isUsingBackend = await isUsingSupabaseBackend();
-      setSupabaseMode(isConnected && isUsingBackend);
-    };
-    
-    checkSupabaseMode();
-  }, []);
+  // Удаляем состояние supabaseMode и useEffect - теперь проверка будет только по требованию
 
   // Тест Google API
   const testGoogleApi = async () => {
@@ -70,8 +59,12 @@ export const DiagnosticButtons: React.FC = () => {
       
       toast.loading("Тестирование OpenAI API...");
 
-      // Добавляем информацию о режиме соединения
-      const connectionMode = supabaseMode 
+      // Для теста OpenAI проверяем текущий режим соединения
+      const isConnected = await isSupabaseConnected();
+      const isUsingBackend = await isUsingSupabaseBackend();
+
+      // Определяем режим соединения на основании проверки
+      const connectionMode = (isConnected && isUsingBackend) 
         ? "через Supabase Edge Function" 
         : "через прямое соединение";
       
@@ -99,7 +92,7 @@ export const DiagnosticButtons: React.FC = () => {
       let errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
       
       // Улучшаем сообщения об ошибках для удобства пользователя
-      if (supabaseMode && errorMessage.includes('Supabase')) {
+      if (errorMessage.includes('Supabase')) {
         errorMessage = "Ошибка при вызове Edge Function. Проверьте настройки Supabase и API ключи в секретах.";
       } else if (errorMessage.includes('CORS')) {
         errorMessage = "Ошибка CORS. Для прямых вызовов OpenAI рекомендуется использовать Supabase Edge Functions.";
@@ -115,10 +108,14 @@ export const DiagnosticButtons: React.FC = () => {
   };
 
   // Отображение информации о провайдере AI
-  const showProviderInfo = () => {
-    const connectionInfo = supabaseMode !== null 
-      ? (supabaseMode ? "через Supabase Edge Function" : "прямое соединение")
-      : "проверка соединения...";
+  const showProviderInfo = async () => {
+    // Проверяем соединение только когда это необходимо
+    const isConnected = await isSupabaseConnected();
+    const isUsingBackend = await isUsingSupabaseBackend();
+    
+    const connectionInfo = (isConnected && isUsingBackend) 
+      ? "через Supabase Edge Function" 
+      : "прямое соединение";
       
     toast.info(`Активный AI провайдер: ${providerDisplayName}`, { 
       description: `Используется модель: ${modelName} (${connectionInfo})` 

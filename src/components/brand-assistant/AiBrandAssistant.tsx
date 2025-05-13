@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { BrandSuggestionList } from "./BrandSuggestionList";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getApiKey } from "@/services/api/openai/config";
@@ -7,7 +7,7 @@ import { useAiBrandAssistant } from "@/hooks/useAiBrandAssistant";
 import { ProductDescriptionForm } from "./ProductDescriptionForm";
 import { BrandAssistantError } from "./BrandAssistantError";
 import { SupabaseStatusMessage } from "./SupabaseStatusMessage";
-import { Bot } from "lucide-react"; // Импортируем иконку
+import { Bot } from "lucide-react";
 
 interface AiBrandAssistantProps {
   onSelectProduct: (product: string, performSearch: boolean) => void;
@@ -22,10 +22,18 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
     errorMessage,
     hasError,
     supabaseStatus,
+    checkSupabaseStatus,
     isAssistantEnabled,
     setIsAssistantEnabled,
     handleGetBrandSuggestions
   } = useAiBrandAssistant();
+
+  // При необходимости проверяем статус Supabase только при включении помощника
+  useEffect(() => {
+    if (isAssistantEnabled && (!getApiKey() || !supabaseStatus.connected)) {
+      checkSupabaseStatus();
+    }
+  }, [isAssistantEnabled]);
 
   // Обработчик выбора предложения бренда
   const handleSuggestionSelect = (searchQuery: string, immediate: boolean) => {
@@ -49,7 +57,7 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
           }}
         />
         <label htmlFor="enableAssistant" className="text-sm cursor-pointer flex items-center gap-1">
-          <Bot size={18} className="text-primary" /> {/* Добавляем иконку в цветах сайта */}
+          <Bot size={18} className="text-primary" />
           Использовать AI-помощник для поиска товаров
         </label>
       </div>
@@ -78,9 +86,16 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
           
           {/* Сообщения о статусе Supabase */}
           {(!getApiKey() && !supabaseStatus.connected && isAssistantEnabled) ? (
-            <SupabaseStatusMessage connected={false} enabled={false} />
+            <SupabaseStatusMessage 
+              connected={false} 
+              enabled={false} 
+              onRequestCheck={checkSupabaseStatus}
+            />
           ) : (!supabaseStatus.enabled && supabaseStatus.connected) && (
-            <SupabaseStatusMessage connected={true} enabled={false} />
+            <SupabaseStatusMessage 
+              connected={true} 
+              enabled={false}
+            />
           )}
         </div>
       )}

@@ -14,21 +14,12 @@ export const supabase = hasSupabaseConfig
   ? createClient(supabaseUrl, supabaseKey)
   : null;
 
-// Кэш для результата проверки соединения, чтобы не проверять каждый раз
-let connectionCache: { isConnected: boolean, timestamp: number } | null = null;
-const CACHE_TTL = 60000; // 1 минута
+// Удаляем кеш, теперь проверка будет выполняться только при явном вызове
 
 // Функция для проверки доступности Supabase
 export const isSupabaseConnected = async (): Promise<boolean> => {
-  // Если кэш валидный, используем его
-  if (connectionCache && (Date.now() - connectionCache.timestamp < CACHE_TTL)) {
-    console.log('Используем кэшированный статус подключения к Supabase:', connectionCache.isConnected);
-    return connectionCache.isConnected;
-  }
-  
   if (!supabase) {
     console.log('Клиент Supabase не инициализирован');
-    connectionCache = { isConnected: false, timestamp: Date.now() };
     return false;
   }
   
@@ -40,21 +31,15 @@ export const isSupabaseConnected = async (): Promise<boolean> => {
     
     const isConnected = !error && data !== null;
     
-    // Кэшируем результат
-    connectionCache = { isConnected, timestamp: Date.now() };
-    
     console.log('Проверка подключения к Supabase:', isConnected ? 'Успешно' : 'Не удалось');
     return isConnected;
   } catch (e) {
     console.error('Ошибка при проверке соединения с Supabase:', e);
-    connectionCache = { isConnected: false, timestamp: Date.now() };
     return false;
   }
 };
 
 // Функция для получения статуса подключения Supabase
 export async function checkSupabaseConnection(): Promise<boolean> {
-  // Очищаем кэш для получения свежего результата
-  connectionCache = null;
   return isSupabaseConnected();
 }

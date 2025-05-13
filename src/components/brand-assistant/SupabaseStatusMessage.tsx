@@ -5,11 +5,13 @@ import { Link } from "react-router-dom";
 interface SupabaseStatusProps {
   connected: boolean;
   enabled: boolean;
+  onRequestCheck?: () => void; // Добавляем опциональную функцию для запроса проверки
 }
 
 export const SupabaseStatusMessage: React.FC<SupabaseStatusProps> = ({ 
   connected, 
-  enabled 
+  enabled,
+  onRequestCheck 
 }) => {
   if (connected && enabled) return null;
   
@@ -25,6 +27,14 @@ export const SupabaseStatusMessage: React.FC<SupabaseStatusProps> = ({
           <>
             Для работы AI-помощника необходимо настроить подключение к Supabase или указать API ключ OpenAI в настройках.
             <a href="/settings" className="ml-1 underline font-medium">Перейти к настройкам</a>
+            {onRequestCheck && (
+              <button 
+                onClick={onRequestCheck}
+                className="ml-2 text-xs underline font-medium"
+              >
+                Проверить соединение сейчас
+              </button>
+            )}
           </>
         )}
       </p>

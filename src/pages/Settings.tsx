@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { SearchProvider } from "@/contexts/SearchContext";
 import { PageHeader } from "@/components/PageHeader";
 import { PageFooter } from "@/components/PageFooter";
@@ -8,10 +8,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { setSupabaseAIConfig, getSupabaseAIConfig } from "@/services/api/supabase/config";
+import { checkSupabaseConnection } from "@/services/api/supabase/client";
+import { RefreshCw, Check, X } from "lucide-react";
 
 const Settings = () => {
-  const [supabaseConfig, setSupabaseConfig] = React.useState(getSupabaseAIConfig());
+  const [supabaseConfig, setSupabaseConfig] = useState(getSupabaseAIConfig());
+  const [checkingStatus, setCheckingStatus] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<null | boolean>(null);
 
   const handleSupabaseBackendChange = (checked: boolean) => {
     const newConfig = setSupabaseAIConfig({ useSupabaseBackend: checked });
@@ -21,6 +27,40 @@ const Settings = () => {
   const handleFallbackChange = (checked: boolean) => {
     const newConfig = setSupabaseAIConfig({ fallbackToDirectCalls: checked });
     setSupabaseConfig(newConfig);
+  };
+
+  // Функция для проверки соединения с Supabase
+  const handleCheckConnection = async () => {
+    setCheckingStatus(true);
+    setConnectionStatus(null);
+    
+    try {
+      toast.loading("Проверка соединения с Supabase...");
+      const isConnected = await checkSupabaseConnection();
+      
+      setConnectionStatus(isConnected);
+      
+      if (isConnected) {
+        toast.success("Соединение с Supabase успешно установлено", {
+          description: "Edge Functions доступны для использования",
+          duration: 5000
+        });
+      } else {
+        toast.error("Не удалось установить соединение с Supabase", {
+          description: "Проверьте настройки и доступность Supabase Edge Functions",
+          duration: 5000
+        });
+      }
+    } catch (error) {
+      console.error("Ошибка при проверке соединения:", error);
+      setConnectionStatus(false);
+      toast.error("Произошла ошибка при проверке соединения", {
+        description: error instanceof Error ? error.message : "Неизвестная ошибка",
+        duration: 5000
+      });
+    } finally {
+      setCheckingStatus(false);
+    }
   };
 
   return (
@@ -49,10 +89,59 @@ const Settings = () => {
               <TabsContent value="supabase">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Настройки Supabase Edge Functions</CardTitle>
-                    <CardDescription>
-                      Настройте использование Supabase Edge Functions для API запросов
-                    </CardDescription>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <CardTitle>Настройки Supabase Edge Functions</CardTitle>
+                        <CardDescription>
+                          Настройте использование Supabase Edge Functions для API запросов
+                        </CardDescription>
+                      </div>
+                      
+                      {/* Статус соединения */}
+                      <div className="flex items-center">
+                        {connectionStatus !== null && (
+                          <div 
+                            className={`mr-2 flex items-center px-3 py-1 rounded text-xs font-medium ${
+                              connectionStatus 
+                                ? "bg-green-100 text-green-800 border border-green-200" 
+                                : "bg-red-100 text-red-800 border border-red-200"
+                            }`}
+                          >
+                            {connectionStatus ? (
+                              <>
+                                <Check className="h-3 w-3 mr-1" />
+                                Подключено
+                              </>
+                            ) : (
+                              <>
+                                <X className="h-3 w-3 mr-1" />
+                                Не подключено
+                              </>
+                            )}
+                          </div>
+                        )}
+                        
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={handleCheckConnection}
+                          disabled={checkingStatus}
+                          className="text-xs flex items-center"
+                        >
+                          {checkingStatus ? (
+                            <>
+                              <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
+                              Проверка...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="mr-1 h-3 w-3" />
+                              Проверить соединение
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="flex items-center justify-between space-x-2">
