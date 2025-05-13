@@ -59,8 +59,8 @@ export const DiagnosticButtons: React.FC = () => {
       
       toast.loading("Тестирование OpenAI API...");
 
-      // Для теста OpenAI проверяем текущий режим соединения
-      const isConnected = await isSupabaseConnected();
+      // Для теста OpenAI проверяем текущий режим соединения - принудительная проверка
+      const isConnected = await isSupabaseConnected(true);
       const isUsingBackend = await isUsingSupabaseBackend();
 
       // Определяем режим соединения на основании проверки
@@ -107,10 +107,10 @@ export const DiagnosticButtons: React.FC = () => {
     }
   };
 
-  // Отображение информации о провайдере AI
+  // Отображение информации о провайдере AI - требует явного вызова проверки
   const showProviderInfo = async () => {
-    // Проверяем соединение только когда это необходимо
-    const isConnected = await isSupabaseConnected();
+    // Проверяем соединение только когда это необходимо - принудительная проверка
+    const isConnected = await isSupabaseConnected(true);
     const isUsingBackend = await isUsingSupabaseBackend();
     
     const connectionInfo = (isConnected && isUsingBackend) 

@@ -10,6 +10,13 @@ import { isUsingSupabaseBackend } from "./supabase/config";
 import { isSupabaseConnected } from "./supabase/client";
 import { fetchBrandSuggestionsViaOpenAI } from "./supabase/aiService";
 
+// Храним результат последней проверки соединения
+let lastConnectionCheck = {
+  timestamp: 0,
+  isConnected: false,
+  isUsingBackend: false
+};
+
 // Основная функция получения брендов, которая выбирает подходящий провайдер
 export const fetchBrandSuggestions = async (description: string): Promise<BrandSuggestion[]> => {
   // Получаем текущего провайдера
@@ -18,9 +25,35 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
   try {
     console.log(`Используем ${provider} для получения предложений брендов`);
     
-    // Проверяем, используем ли мы Supabase бэкенд
-    const useSupabase = await isUsingSupabaseBackend();
-    const supabaseConnected = await isSupabaseConnected();
+    // Проверяем, находимся ли мы на странице настроек
+    const isSettingsPage = window.location.pathname === "/settings";
+    if (isSettingsPage) {
+      console.log('Не выполняем запросы API на странице настроек');
+      return []; // Возвращаем пустой массив на странице настроек
+    }
+
+    // Проверяем, используем ли мы Supabase бэкенд - без автоматической проверки соединения
+    let useSupabase = await isUsingSupabaseBackend();
+    let supabaseConnected = false;
+    
+    // Используем кешированные значения или делаем новую проверку, если прошло более 5 минут
+    const currentTime = Date.now();
+    const cacheExpiration = 5 * 60 * 1000; // 5 минут в миллисекундах
+    
+    if (currentTime - lastConnectionCheck.timestamp < cacheExpiration) {
+      // Используем кешированные значения
+      supabaseConnected = lastConnectionCheck.isConnected;
+      console.log('Используем кешированное значение статуса Supabase:', supabaseConnected);
+    } else {
+      // Делаем новую проверку, если кеш устарел
+      supabaseConnected = await isSupabaseConnected(true); // явное требование проверки
+      lastConnectionCheck = {
+        timestamp: currentTime,
+        isConnected: supabaseConnected,
+        isUsingBackend: useSupabase
+      };
+      console.log('Обновлен статус соединения с Supabase:', supabaseConnected);
+    }
     
     console.log('Статус Supabase для бренд-сервиса:', {
       используется: useSupabase,

@@ -29,13 +29,14 @@ const Settings = () => {
     setSupabaseConfig(newConfig);
   };
 
-  // Функция для проверки соединения с Supabase
+  // Функция для проверки соединения с Supabase - ТОЛЬКО ПО НАЖАТИЮ КНОПКИ
   const handleCheckConnection = async () => {
     setCheckingStatus(true);
     setConnectionStatus(null);
     
     try {
       toast.loading("Проверка соединения с Supabase...");
+      // Явное требование проверки соединения
       const isConnected = await checkSupabaseConnection();
       
       setConnectionStatus(isConnected);

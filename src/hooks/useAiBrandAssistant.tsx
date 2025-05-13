@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { toast } from "sonner";
 import { fetchBrandSuggestions } from "@/services/api/brandSuggestionService";
 import { getApiKey } from "@/services/api/openai/config";
@@ -14,24 +14,29 @@ export const useAiBrandAssistant = () => {
   const [isAssistantLoading, setIsAssistantLoading] = useState<boolean>(false);
   const [brandSuggestions, setBrandSuggestions] = useState<BrandSuggestion[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>("");
-  // Сохраняем состояние, но не производим автоматическую проверку
+  // Сохраняем состояние, но не выполняем автоматическую проверку
   const [supabaseStatus, setSupabaseStatus] = useState<{ connected: boolean; enabled: boolean }>({
     connected: false,
     enabled: false
   });
 
-  // Удаляем автоматическую проверку статуса Supabase при загрузке
-  // Теперь статус будет проверяться только когда это необходимо
-
-  // Функция для ручной проверки статуса Supabase
+  // Функция для ручной проверки статуса Supabase - будет вызываться только по запросу
   const checkSupabaseStatus = async () => {
     try {
-      const connected = await isSupabaseConnected();
+      // Проверяем, находимся ли мы на странице настроек
+      const isSettingsPage = window.location.pathname === "/settings";
+      if (isSettingsPage) {
+        console.log('Автоматическая проверка Supabase отключена на странице настроек');
+        return supabaseStatus; // Возвращаем текущее состояние без проверки
+      }
+
+      const connected = await isSupabaseConnected(true); // Явно запрашиваем проверку
       const enabled = await isUsingSupabaseBackend();
-      setSupabaseStatus({ connected, enabled });
+      const newStatus = { connected, enabled };
+      setSupabaseStatus(newStatus);
       
-      console.log('AiBrandAssistant: проверка статуса Supabase:', { connected, enabled });
-      return { connected, enabled };
+      console.log('AiBrandAssistant: проверка статуса Supabase:', newStatus);
+      return newStatus;
     } catch (error) {
       console.error('Ошибка при проверке статуса Supabase:', error);
       setSupabaseStatus({ connected: false, enabled: false });

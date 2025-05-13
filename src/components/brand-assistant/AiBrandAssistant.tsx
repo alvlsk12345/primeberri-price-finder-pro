@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import { BrandSuggestionList } from "./BrandSuggestionList";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getApiKey } from "@/services/api/openai/config";
@@ -28,12 +28,8 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
     handleGetBrandSuggestions
   } = useAiBrandAssistant();
 
-  // При необходимости проверяем статус Supabase только при включении помощника
-  useEffect(() => {
-    if (isAssistantEnabled && (!getApiKey() || !supabaseStatus.connected)) {
-      checkSupabaseStatus();
-    }
-  }, [isAssistantEnabled]);
+  // Проверка статуса Supabase будет происходить только при запросе пользователя
+  // Удаляем useEffect для автоматической проверки
 
   // Обработчик выбора предложения бренда
   const handleSuggestionSelect = (searchQuery: string, immediate: boolean) => {
