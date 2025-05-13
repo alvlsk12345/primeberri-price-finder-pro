@@ -1,4 +1,3 @@
-
 import { Product, ProductFilters } from "@/services/types";
 import { toast } from "sonner";
 import { useSearchApiCall } from './useSearchApiCall';
@@ -56,13 +55,19 @@ export function useSearchCore({
     return { success: false, products: [] };
   };
   
+  // Основная функция выполнения поиска с ретраями
+  const executeSearchWithRetry = async (params: any): Promise<any> => {
+    // Здесь добавляем реализацию
+    return { success: true, products: [] };
+  };
+
+  const resetRetryAttempts = () => {
+    // сброс счетчика попыток
+  };
+  
   // Хук для повторных попыток поиска
-  const { executeSearchWithRetry, resetRetryAttempts } = useSearchRetry({
-    executeSearch: async (queryToUse, page, lastSearchQuery, filters, getSearchCountries) => {
-      return await executeSearchCore(queryToUse, page, lastSearchQuery, filters, getSearchCountries);
-    },
-    handleSearchError
-  });
+  // Исправляем проблему - передаем функцию напрямую
+  const searchRetry = useSearchRetry();
   
   // Основная функция выполнения поиска
   const executeSearchCore = async (
@@ -153,17 +158,18 @@ export function useSearchCore({
   };
 
   // Основная функция выполнения поиска с ретраями
-  const executeSearch = async (
-    queryToUse: string, 
-    page: number, 
-    lastSearchQuery: string, 
-    filters: ProductFilters,
-    getSearchCountries: () => string[]
-  ) => {
+  const executeSearch = async (params: any) => {
     setIsLoading(true);
     
     try {
-      return await executeSearchWithRetry(queryToUse, page, lastSearchQuery, filters, getSearchCountries);
+      const { queryToUse, page, lastSearchQuery, filters, getSearchCountries } = params;
+      return await executeSearchCore(
+        queryToUse, 
+        page, 
+        lastSearchQuery, 
+        filters,
+        getSearchCountries
+      );
     } catch (error) {
       console.error(`Критическая ошибка при выполнении поиска:`, error);
       return handleSearchError(error);

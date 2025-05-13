@@ -1,4 +1,6 @@
 
+import { supabase } from "@/integrations/supabase/client";
+
 // Добавляем функцию для проверки соединения с Supabase
 export const checkSupabaseConnection = async (logOutput: boolean = true): Promise<boolean> => {
   try {
@@ -28,3 +30,11 @@ export const checkSupabaseConnection = async (logOutput: boolean = true): Promis
     return false;
   }
 };
+
+// Добавляем функцию isSupabaseConnected, которую будем использовать в других модулях
+export const isSupabaseConnected = async (logOutput: boolean = false): Promise<boolean> => {
+  return await checkSupabaseConnection(logOutput);
+};
+
+// Реэкспортируем supabase от integrations для использования в aiService
+export { supabase } from "@/integrations/supabase/client";

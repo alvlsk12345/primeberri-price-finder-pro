@@ -1,4 +1,3 @@
-
 import { useRef } from 'react';
 import { Product, ProductFilters } from "@/services/types";
 import { useSearchExecutionActions } from './search/useSearchExecutionActions';
@@ -105,6 +104,14 @@ export function useSearchActions(props: SearchStateProps) {
     setSelectedProduct
   });
   
+  // Адаптируем интерфейс handleSearch для совместимости с требуемым API
+  const adaptedHandleSearch = async (page: number, forceNewSearch?: boolean) => {
+    return handleSearch({ 
+      forcePage: page, 
+      forceRefresh: forceNewSearch 
+    });
+  };
+  
   // Адаптируем взаимодействие между новым форматом handleSearch и старым интерфейсом для пагинации
   const { handlePageChange } = usePaginationActions({
     currentPage,
@@ -112,7 +119,7 @@ export function useSearchActions(props: SearchStateProps) {
     pageChangeCount,
     setPageChangeCount,
     setCurrentPage,
-    handlePageChange: (page) => handleSearch({ forcePage: page })
+    onPageChange: (page: number) => handleSearch({ forcePage: page })
   });
   
   const { handleFilterChange } = useFilterActions({
@@ -124,7 +131,7 @@ export function useSearchActions(props: SearchStateProps) {
   });
 
   return {
-    handleSearch,
+    handleSearch: adaptedHandleSearch,
     handleProductSelect,
     handlePageChange,
     handleFilterChange,

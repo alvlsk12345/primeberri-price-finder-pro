@@ -1,4 +1,3 @@
-
 import { useRef } from 'react';
 import { Product, ProductFilters, SearchParams } from "@/services/types";
 import { useSearchExecutor } from "./useSearchExecutor";
@@ -174,17 +173,25 @@ export function useSearchExecutionActions(props: SearchExecutionProps) {
       }
       
       // Выполняем поиск
-      const searchResponse = await executeSearch(searchParams);
+      const searchResponse = await executeSearch({
+        queryToUse: translatedQuery || queryToUse,
+        page: forcePage !== undefined ? forcePage : currentPage,
+        lastSearchQuery,
+        filters,
+        getSearchCountries
+      });
       
       // Проверяем, что запрос все еще актуален
       if (currentRequest !== searchRequestCountRef.current) {
         // Более новый запрос уже в обработке, игнорируем результаты
         return;
       }
-      
+
       // Обрабатываем результаты
-      const filteredResults = applyFiltersAndSorting(searchResponse.results || [], filters);
-      setSearchResults(filteredResults);
+      if (searchResponse && searchResponse.products) {
+        const filteredResults = applyFiltersAndSorting(searchResponse.products || [], filters);
+        setSearchResults(filteredResults);
+      }
       
       // Сохраняем последний успешный запрос
       setLastSearchQuery(queryToUse);

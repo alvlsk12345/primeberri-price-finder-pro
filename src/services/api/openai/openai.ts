@@ -1,25 +1,15 @@
 
-// Модуль OpenAI для реэкспорта всех необходимых функций
+// Экспортируем всё из подмодулей
+export * from './config';
+export * from './apiClient';
+export * from './proxyUtils';
+export * from './responseUtils';
 
-import { fetchBrandSuggestions } from './brandSuggestion';
-import { getApiKey, setApiKey } from './config';
-import { fetchFromOpenAI } from './searchService';
-import * as apiClient from './apiClient';
-import * as proxyUtils from './proxyUtils';
-import * as responseUtils from './responseUtils';
+// Экспортируем brandSuggestion
+export { fetchBrandSuggestions } from './brandSuggestion';
 
-// Реэкспортируем все необходимые компоненты
-export {
-  // Основные функциональные модули
-  fetchBrandSuggestions,
-  fetchFromOpenAI as searchService,
-  
-  // Конфигурация
-  getApiKey,
-  setApiKey,
-  
-  // Утилиты и клиенты
-  apiClient,
-  proxyUtils,
-  responseUtils
-};
+// Экспортируем основной метод для вызова OpenAI API
+export { callOpenAI } from './apiClient';
+
+// Экспортируем сервис поиска
+export { searchWithOpenAI } from './searchService';

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RotateCw, ExternalLink } from "lucide-react";
@@ -27,7 +26,7 @@ export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({ currentP
   
   // Функция для повторной попытки поиска
   const handleRetry = () => {
-    handleSearch(currentPage, true); // Принудительно выполняем новый поиск
+    handleSearch(currentPage); // Исправляем вызов, передавая только один аргумент
   };
 
   return (
