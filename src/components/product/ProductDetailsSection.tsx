@@ -7,7 +7,7 @@ import { useSearch } from "@/contexts/SearchContext";
 export const ProductDetailsSection: React.FC = () => {
   // Используем try/catch для обработки случаев, когда контекст может быть недоступен
   try {
-    const { selectedProduct } = useSearch();
+    const { selectedProduct, searchQuery } = useSearch();
     
     if (!selectedProduct) {
       return null;
@@ -18,7 +18,7 @@ export const ProductDetailsSection: React.FC = () => {
         <h2 className="text-xl font-bold mb-4">Детали выбранного товара</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <CostCalculator product={selectedProduct} />
-          <ActionButtons product={selectedProduct} />
+          <ActionButtons selectedProduct={selectedProduct} searchQuery={searchQuery} />
         </div>
       </div>
     );
