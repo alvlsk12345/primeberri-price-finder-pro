@@ -24,6 +24,7 @@ export function useSupabaseConnection() {
       setSupabaseStatus('checking');
       try {
         const connected = await checkSupabaseConnection();
+        console.log('Результат проверки подключения к Supabase:', connected);
         setSupabaseConnected(connected);
         setSupabaseStatus(connected ? 'connected' : 'disconnected');
         if (connected) {

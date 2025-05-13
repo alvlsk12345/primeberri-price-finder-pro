@@ -33,27 +33,32 @@ export const isSupabaseConnected = async (): Promise<boolean> => {
   }
   
   try {
+    console.log('Проверка подключения к Supabase начата...');
+    
     // Используем оба метода для проверки соединения
     // 1. Вызов с body для проверки тестового соединения
     const testConnection = await supabase.functions.invoke('ai-proxy', {
       body: { testConnection: true }
     });
+    console.log('Результат проверки POST запросом:', testConnection);
     
     // 2. Простой GET запрос как резервный метод
     let isConnected = !testConnection.error && testConnection.data !== null;
     
     // Если первый метод не сработал, пробуем GET запрос
     if (!isConnected) {
+      console.log('POST запрос не удался, пробуем GET...');
       const getRequest = await supabase.functions.invoke('ai-proxy', {
         method: 'GET'
       });
+      console.log('Результат проверки GET запросом:', getRequest);
       isConnected = !getRequest.error && getRequest.data !== null;
     }
     
     // Кэшируем результат
     connectionCache = { isConnected, timestamp: Date.now() };
     
-    console.log('Проверка подключения к Supabase:', isConnected ? 'Успешно' : 'Не удалось');
+    console.log('Проверка подключения к Supabase завершена:', isConnected ? 'Успешно' : 'Не удалось');
     return isConnected;
   } catch (e) {
     console.error('Ошибка при проверке соединения с Supabase:', e);
@@ -66,5 +71,6 @@ export const isSupabaseConnected = async (): Promise<boolean> => {
 export async function checkSupabaseConnection(): Promise<boolean> {
   // Очищаем кэш для получения свежего результата
   connectionCache = null;
+  console.log('Принудительная проверка подключения к Supabase...');
   return isSupabaseConnected();
 }

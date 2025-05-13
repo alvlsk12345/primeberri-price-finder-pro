@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { PageHeader } from "@/components/PageHeader";
-import { SearchProvider } from "@/contexts/SearchContext";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import { SupabaseSettings } from "@/components/settings/SupabaseSettings";
@@ -11,8 +10,7 @@ import { useSupabaseConnection } from "@/hooks/useSupabaseConnection";
 import { useApiConnection } from "@/hooks/useApiConnection";
 import { Link } from 'react-router-dom';
 
-// Создаем обертку для компонента Settings
-const SettingsContent: React.FC = () => {
+const Settings: React.FC = () => {
   // Получаем данные о состоянии Supabase
   const supabaseConnection = useSupabaseConnection();
   
@@ -74,15 +72,6 @@ const SettingsContent: React.FC = () => {
         />
       </main>
     </div>
-  );
-};
-
-// Обертка компонента в SearchProvider
-const Settings = () => {
-  return (
-    <SearchProvider>
-      <SettingsContent />
-    </SearchProvider>
   );
 };
 

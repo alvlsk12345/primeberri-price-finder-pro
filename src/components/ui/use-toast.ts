@@ -1,5 +1,5 @@
 
-import { useToast } from "@/hooks/use-toast";
+// Реэкспорт компонентов тостов
+import { toast, useToast } from "@/hooks/use-toast";
 
-export { useToast };
-export { toast } from "@/hooks/use-toast";
+export { toast, useToast };

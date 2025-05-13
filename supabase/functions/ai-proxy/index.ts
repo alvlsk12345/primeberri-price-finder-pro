@@ -1,75 +1,69 @@
 
+// Вы можете изменить этот код, но не удаляйте и не изменяйте первую строку
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { CORS_HEADERS } from "./config.ts";
 import { handleOpenAIRequest } from "./handlers/openai.ts";
 import { handleAbacusRequest } from "./handlers/abacus.ts";
 import { handlePerplexityRequest } from "./handlers/perplexity.ts";
-import { CORS_HEADERS } from "./config.ts";
 
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-const ABACUS_API_KEY = Deno.env.get('ABACUS_API_KEY');
-const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
-
+// Хендлер для Edge Function
 serve(async (req) => {
-  // CORS preflight handler
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: CORS_HEADERS });
+  // Обработка CORS preflight запросов
+  if (req.method === "OPTIONS") {
+    return new Response(null, { 
+      status: 204, 
+      headers: CORS_HEADERS 
+    });
   }
 
-  // Проверка соединения с Edge Function
-  if (req.method === 'GET') {
-    console.log("Выполняется проверка соединения Edge Function");
-    return new Response(
-      JSON.stringify({ status: 'ok', message: 'Edge Function is running' }),
-      { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
-    );
+  // Для GET запросов возвращаем тестовый ответ для проверки доступности
+  if (req.method === "GET") {
+    return new Response(JSON.stringify({ status: "ok", message: "AI Proxy функция работает" }), {
+      status: 200,
+      headers: { ...CORS_HEADERS, "Content-Type": "application/json" }
+    });
   }
 
-  // Основная обработка запросов
   try {
-    const body = await req.json();
+    // Для всех других запросов, пробуем получить тело запроса
+    let requestData;
+    const contentType = req.headers.get("content-type") || "";
     
     // Проверка на тестовое соединение
-    if (body.testConnection === true) {
-      console.log("Получен запрос на проверку соединения");
-      return new Response(
-        JSON.stringify({ status: 'ok', message: 'Connection successful' }),
-        { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
-      );
-    }
-    
-    const { provider, prompt, endpoint, method, data } = body;
-    
-    // Проверяем наличие провайдера
-    if (!provider) {
-      console.log("Ошибка: provider не указан в запросе:", body);
-      throw new Error("Provider is required");
+    if (contentType.includes("application/json")) {
+      const body = await req.json();
+      if (body.testConnection === true) {
+        return new Response(JSON.stringify({ status: "ok", message: "Тестовое соединение успешно" }), {
+          status: 200,
+          headers: { ...CORS_HEADERS, "Content-Type": "application/json" }
+        });
+      }
+      requestData = body;
+    } else {
+      requestData = {};
     }
 
-    // Маршрутизация запроса к соответствующему обработчику
-    if (provider === 'openai') {
-      return await handleOpenAIRequest({ prompt, options: data }, OPENAI_API_KEY);
-    } else if (provider === 'abacus') {
-      return await handleAbacusRequest({ endpoint, method, data }, ABACUS_API_KEY);
-    } else if (provider === 'perplexity') {
-      // Передаем запрос в обработчик Perplexity
-      return await handlePerplexityRequest({ 
-        prompt, 
-        options: data,
-        action: data?.action,
-        response_format: data?.response_format,
-        description: data?.description
-      }, PERPLEXITY_API_KEY);
-    } else {
-      throw new Error(`Unsupported provider: ${provider}`);
+    // Определение типа запроса и перенаправление на соответствующий обработчик
+    const provider = requestData.provider || "openai";
+    
+    switch(provider) {
+      case "openai":
+        return await handleOpenAIRequest(req, requestData);
+      case "abacus":
+        return await handleAbacusRequest(req, requestData);
+      case "perplexity":
+        return await handlePerplexityRequest(req, requestData);
+      default:
+        throw new Error(`Неизвестный провайдер: ${provider}`);
     }
   } catch (error) {
-    console.error("Ошибка в Edge Function:", error);
-    return new Response(
-      JSON.stringify({ error: error.message || 'Internal Server Error' }),
-      { 
-        status: 500, 
-        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } 
-      }
-    );
+    console.error("Ошибка в AI-proxy функции:", error);
+    return new Response(JSON.stringify({ 
+      error: error.message || "Внутренняя ошибка сервера",
+      status: "error" 
+    }), {
+      status: 500,
+      headers: { ...CORS_HEADERS, "Content-Type": "application/json" }
+    });
   }
 });
