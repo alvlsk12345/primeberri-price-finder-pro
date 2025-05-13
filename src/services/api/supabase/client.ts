@@ -35,7 +35,7 @@ export const isSupabaseConnected = async (): Promise<boolean> => {
   try {
     // Простой запрос для проверки соединения - вызов функции ai-proxy
     const { data, error } = await supabase.functions.invoke('ai-proxy', {
-      body: { testConnection: true }
+      method: 'GET'
     });
     
     const isConnected = !error && data !== null;

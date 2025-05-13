@@ -26,7 +26,24 @@ serve(async (req) => {
 
   // Основная обработка запросов
   try {
-    const { provider, prompt, endpoint, method, data } = await req.json();
+    const body = await req.json();
+    
+    // Проверка на тестовое соединение
+    if (body.testConnection === true) {
+      console.log("Получен запрос на проверку соединения");
+      return new Response(
+        JSON.stringify({ status: 'ok', message: 'Connection successful' }),
+        { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+      );
+    }
+    
+    const { provider, prompt, endpoint, method, data } = body;
+    
+    // Проверяем наличие провайдера
+    if (!provider) {
+      console.log("Ошибка: provider не указан в запросе:", body);
+      throw new Error("Provider is required");
+    }
 
     // Маршрутизация запроса к соответствующему обработчику
     if (provider === 'openai') {
