@@ -55,6 +55,28 @@ export const SearchForm: React.FC<SearchFormProps> = ({
 
   // Устанавливаем атрибут data-path в body при загрузке компонента
   useEffect(() => {
+    // Избегаем проверки статуса Supabase на странице настроек
+    if (!inSettingsPage) {
+      // Проверяем статус Supabase, но без логов для уменьшения шума
+      const checkSupabaseStatus = async () => {
+        try {
+          const connected = await isSupabaseConnected(false); // Передаем false, чтобы не логировать
+          const enabled = await isUsingSupabaseBackend();
+          setSupabaseStatus({ connected, enabled });
+          
+          // Убираем всплывающее предупреждение, оставляем только индикацию на странице
+          if (enabled && !connected) {
+            // Не показываем toast, только устанавливаем состояние
+          }
+        } catch (error) {
+          // Подавляем ошибки, только устанавливаем состояние
+          setSupabaseStatus({ connected: false, enabled: false });
+        }
+      };
+      
+      checkSupabaseStatus();
+    }
+    
     if (inSettingsPage) {
       document.body.setAttribute('data-path', '/settings');
     }
@@ -63,27 +85,6 @@ export const SearchForm: React.FC<SearchFormProps> = ({
         document.body.removeAttribute('data-path');
       }
     };
-  }, [inSettingsPage]);
-
-  // Проверяем статус Supabase при загрузке, но НЕ на странице настроек
-  useEffect(() => {
-    // Не выполняем проверку на странице настроек
-    if (inSettingsPage) {
-      return;
-    }
-    
-    const checkSupabaseStatus = async () => {
-      const connected = await isSupabaseConnected();
-      const enabled = await isUsingSupabaseBackend();
-      setSupabaseStatus({ connected, enabled });
-      
-      if (enabled && !connected) {
-        toast.warning('Настройки используют Supabase Backend, но он не подключен. Некоторые функции могут быть недоступны.', 
-                     { duration: 6000 });
-      }
-    };
-    
-    checkSupabaseStatus();
   }, [inSettingsPage]);
 
   // Функция выполнения поиска с дополнительными проверками и скроллингом

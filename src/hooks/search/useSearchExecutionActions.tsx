@@ -1,6 +1,26 @@
-import { ProductFilters } from "@/services/types";
-import { useSearchExecutor } from './useSearchExecutor';
-import { useSearchCache } from './useSearchCache';
+
+import { useRef } from 'react';
+import { Product, ProductFilters, SearchParams } from "@/services/types";
+import { useSearchExecutor } from "./useSearchExecutor";
+import { useSearchQueryTranslator } from './useSearchQueryTranslator';
+import { useSearchFilterProcessor } from './useSearchFilterProcessor';
+import { useSearchErrorHandler } from './useSearchErrorHandler';
+import { useSearchRetry } from './useSearchRetry';
+
+// Функция для проверки, находимся ли мы на странице настроек
+const isOnSettingsPage = () => {
+  if (typeof window === 'undefined') return false;
+  
+  // Проверяем все возможные варианты URL страницы настроек
+  const pathname = window.location.pathname;
+  const hash = window.location.hash;
+  
+  return pathname === "/settings" || 
+         pathname.endsWith("/settings") || 
+         hash === "#/settings" || 
+         hash.includes("/settings") ||
+         document.body.getAttribute('data-path') === '/settings';
+};
 
 type SearchExecutionProps = {
   searchQuery: string;
@@ -8,16 +28,16 @@ type SearchExecutionProps = {
   setLastSearchQuery: (query: string) => void;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
-  searchResults: any[];
-  setSearchResults: (results: any[]) => void;
-  allSearchResults: any[];
-  setAllSearchResults: (results: any[]) => void;
-  cachedResults: {[page: number]: any[]};
-  setCachedResults: (results: {[page: number]: any[]}) => void;
+  searchResults: Product[];
+  setSearchResults: (results: Product[]) => void;
+  allSearchResults: Product[];
+  setAllSearchResults: (results: Product[]) => void;
+  cachedResults: {[page: number]: Product[]};
+  setCachedResults: (results: {[page: number]: Product[]}) => void;
   currentPage: number;
   setCurrentPage: (page: number) => void;
-  totalPages: number; // Добавляем totalPages в props
-  setTotalPages: (pages: number) => void; // Явно добавляем setTotalPages
+  totalPages: number;
+  setTotalPages: (pages: number) => void;
   filters: ProductFilters;
   setOriginalQuery: (query: string) => void;
   setHasSearched: (searched: boolean) => void;
@@ -26,153 +46,170 @@ type SearchExecutionProps = {
   getSearchCountries: () => string[];
 };
 
-export function useSearchExecutionActions({
-  searchQuery,
-  lastSearchQuery,
-  setLastSearchQuery,
-  isLoading,
-  setIsLoading,
-  searchResults,
-  setSearchResults,
-  allSearchResults,
-  setAllSearchResults,
-  cachedResults,
-  setCachedResults,
-  currentPage,
-  setCurrentPage,
-  totalPages, // Добавляем totalPages
-  setTotalPages, // Добавляем setTotalPages
-  filters,
-  setOriginalQuery,
-  setHasSearched,
-  setIsUsingDemoData,
-  setApiInfo,
-  getSearchCountries
-}: SearchExecutionProps) {
+export function useSearchExecutionActions(props: SearchExecutionProps) {
+  const { 
+    searchQuery, 
+    lastSearchQuery,
+    setLastSearchQuery,
+    isLoading,
+    setIsLoading,
+    searchResults,
+    setSearchResults,
+    allSearchResults,
+    setAllSearchResults,
+    cachedResults,
+    setCachedResults,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    setTotalPages,
+    filters,
+    setOriginalQuery,
+    setHasSearched,
+    setIsUsingDemoData,
+    setApiInfo,
+    getSearchCountries
+  } = props;
+
+  // Проверяем, находимся ли мы на странице настроек
+  const inSettingsPage = isOnSettingsPage();
   
-  // Используем наши рефакторинговые хуки, теперь с правильной передачей setTotalPages
+  // Используем хуки для разных аспектов поиска
+  const { translateQuery } = useSearchQueryTranslator();
+  const { processSearchResults } = useSearchFilterProcessor();
+  const { handleSearchError } = useSearchErrorHandler({
+    setIsLoading,
+    setSearchResults: (results: Product[]) => {
+      if (!inSettingsPage) {
+        setSearchResults(results);
+      }
+    }
+  });
+  
+  // Используем исполнитель поиска
   const { executeSearch, cleanupSearch } = useSearchExecutor({
     isLoading,
     setIsLoading,
     setSearchResults,
     setAllSearchResults,
     cachedResults,
-    setCachedResults, 
+    setCachedResults,
     setCurrentPage,
-    setTotalPages, // Передаем реальную функцию, а не пустышку
+    setTotalPages,
     setHasSearched,
     setIsUsingDemoData,
-    setApiInfo
+    setApiInfo,
   });
   
-  const { getCachedResults, handleSearchFailure } = useSearchCache({
-    cachedResults,
-    setSearchResults,
-    setCurrentPage
-  });
-
-  // Основная функция поиска с улучшенной логикой работы с клиентской пагинацией
-  const handleSearch = async (page: number = 1, forceNewSearch: boolean = false) => {
-    console.log(`handleSearch вызван: страница ${page}, forceNewSearch: ${forceNewSearch}, текущая страница: ${currentPage}, totalPages: ${totalPages}`);
-    
-    // Проверяем, есть ли запрос для поиска
-    if (!searchQuery && !lastSearchQuery) {
-      console.log('Пожалуйста, введите запрос для поиска товара');
-      return;
-    }
-
-    // Используем текущий поисковый запрос или последний успешный
-    const queryToUse = searchQuery || lastSearchQuery;
-    
-    // ВАЖНОЕ ИЗМЕНЕНИЕ: если это не новый поиск, а только смена страницы
-    // и у нас уже есть все результаты - используем клиентскую пагинацию без запросов
-    const isSameQuery = queryToUse === lastSearchQuery;
-    const hasAllResults = allSearchResults && allSearchResults.length > 0;
-    
-    if (isSameQuery && hasAllResults && !forceNewSearch) {
-      console.log(`Смена страницы на ${page} без повторного запроса - используем клиентскую пагинацию`);
-      
-      // Пересчитываем totalPages на основе allSearchResults перед сменой страницы
-      if (allSearchResults.length > 0) {
-        const itemsPerPage = 12;
-        const calculatedPages = Math.ceil(allSearchResults.length / itemsPerPage);
-        console.log(`Пересчитываем страницы: ${calculatedPages} (из ${allSearchResults.length} элементов)`);
-        
-        // Убеждаемся, что totalPages обновлен корректно
-        if (calculatedPages !== totalPages) {
-          console.log(`Корректируем общее число страниц с ${totalPages} на ${calculatedPages}`);
-          setTotalPages(calculatedPages);
-        }
-        
-        // Проверяем валидность запрашиваемой страницы
-        if (page > calculatedPages) {
-          console.log(`Запрошена страница ${page}, но максимум доступно ${calculatedPages}`);
-          page = calculatedPages;
-        }
-      }
-      
-      // Просто меняем страницу без новых запросов
-      setCurrentPage(page);
+  // Используем механизм повторной попытки
+  const { retrySearch, resetRetryCount } = useSearchRetry();
+  
+  // Отслеживаем количество запросов к API
+  const searchRequestCountRef = useRef<number>(0);
+  
+  // Основная функция для выполнения поиска
+  const handleSearch = async (options?: { 
+    forcePage?: number; 
+    forceRefresh?: boolean;
+    initialSearch?: boolean;
+    customQuery?: string;
+  }) => {
+    // На странице настроек не выполняем реальный поиск
+    if (inSettingsPage) {
       return;
     }
     
-    // Если это новый поиск или принудительный поиск, продолжаем обычный процесс
+    const {
+      forcePage,
+      forceRefresh = false,
+      initialSearch = false,
+      customQuery
+    } = options || {};
     
-    // Устанавливаем текущую страни��у перед выполнением поиска
-    if (page !== currentPage) {
-      console.log(`Устанавливаем новую текущую страницу: ${page}`);
-      setCurrentPage(page);
-    }
+    // Используем пользовательский запрос, если он предоставлен, иначе текущий
+    const queryToUse = customQuery !== undefined ? customQuery : searchQuery;
     
-    // Расширенная проверка кеша с более детальной диагностикой
-    console.log(`Проверка кеша для запроса "${queryToUse}", страница ${page}, forceNewSearch: ${forceNewSearch}`);
-    
-    // Если не принудительный поиск, проверяем кеш
-    const cachedResultsForQuery = !forceNewSearch ? getCachedResults(queryToUse, lastSearchQuery, page) : null;
-    
-    if (cachedResultsForQuery) {
-      console.log(`Используем кэшированные результаты для страницы ${page}, количество: ${cachedResultsForQuery.length}`);
-      setSearchResults(cachedResultsForQuery);
-      return;
-    }
-    
-    // Сохраняем оригинальный запрос (для отображения пользователю)
-    setOriginalQuery(queryToUse);
-    
-    // Если это новый поисковый запрос, сбрасываем кеш
-    if (!isSameQuery || forceNewSearch) {
-      console.log(`Новый запрос или принудительный поиск. Очищаем кэш.`);
-      setLastSearchQuery(queryToUse);
-      // Сбрасываем кеш результатов для нового запроса
-      setCachedResults({});
-    }
+    // Если запрос пустой и это не начальный поиск - отменяем
+    if (!queryToUse.trim() && !initialSearch) return;
     
     try {
-      // Подготавливаем UI к поиску
+      // Проверяем, изменился ли запрос
+      const queryChanged = queryToUse !== lastSearchQuery;
+      
+      // Устанавливаем флаг загрузки
       setIsLoading(true);
       
-      // Выполняем поиск с четким указанием страницы
-      console.log(`Выполняем поиск для запроса "${queryToUse}", страница: ${page}`);
-      const result = await executeSearch(
-        queryToUse,
-        page,
-        lastSearchQuery,
-        filters,
-        getSearchCountries
-      );
-      
-      // После успешного поиска, проверяем состояние и логируем результат включая totalPages
-      console.log(`Поиск завершен. Текущая страница: ${currentPage}, запрошенная: ${page}, успех: ${result.success}, totalPages: ${totalPages}`);
-      
-      // Если поиск был неудачным, пытаемся использовать кешированные результаты
-      if (!result.success) {
-        console.log(`Поиск не удался. Проверяем кэш.`);
-        handleSearchFailure(page);
+      // Если запрос не изменился и нет принудительного обновления - используем кеш
+      if (!queryChanged && !forceRefresh) {
+        const targetPage = forcePage !== undefined ? forcePage : currentPage;
+        
+        // Проверяем наличие результатов в кеше для текущей страницы
+        if (cachedResults[targetPage] && cachedResults[targetPage].length > 0) {
+          // Используем кешированные результаты
+          setSearchResults(cachedResults[targetPage]);
+          setIsLoading(false);
+          return;
+        }
       }
+      
+      // Если запрос изменился - сбрасываем счетчик повторных попыток
+      if (queryChanged) {
+        resetRetryCount();
+      }
+      
+      // Увеличиваем счетчик запросов
+      searchRequestCountRef.current += 1;
+      const currentRequest = searchRequestCountRef.current;
+      
+      // Сохраняем оригинальный запрос
+      setOriginalQuery(queryToUse);
+      
+      // Переводим запрос при необходимости
+      const translatedQuery = await translateQuery(queryToUse);
+      
+      // Параметры поиска
+      const searchParams: SearchParams = {
+        query: translatedQuery || queryToUse,
+        page: forcePage !== undefined ? forcePage : currentPage,
+        country: 'any',
+      };
+      
+      // Если есть страны в фильтрах - используем их
+      const availableCountries = getSearchCountries();
+      if (filters.countries && filters.countries.length > 0 && availableCountries.includes(filters.countries[0])) {
+        searchParams.country = filters.countries[0].toLowerCase();
+      }
+      
+      // Выполняем поиск
+      const searchResponse = await executeSearch(searchParams);
+      
+      // Проверяем, что запрос все еще актуален
+      if (currentRequest !== searchRequestCountRef.current) {
+        // Более новый запрос уже в обработке, игнорируем результаты
+        return;
+      }
+      
+      // Обрабатываем результаты
+      processSearchResults({
+        results: searchResponse.results || [],
+        query: queryToUse,
+        page: forcePage !== undefined ? forcePage : currentPage,
+        totalPages: searchResponse.totalPages || 1
+      });
+      
+      // Сохраняем последний успешный запрос
+      setLastSearchQuery(queryToUse);
+      
     } catch (error) {
-      console.error(`Ошибка при выполнении поиска:`, error);
-      handleSearchFailure(page);
+      // Обрабатываем ошибки поиска
+      const shouldRetry = handleSearchError(error);
+      
+      if (shouldRetry) {
+        // Пробуем повторить запрос
+        return retrySearch(() => handleSearch(options));
+      }
     } finally {
+      // Завершаем загрузку
       setIsLoading(false);
     }
   };
