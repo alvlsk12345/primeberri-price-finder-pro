@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { PageHeader } from "@/components/PageHeader";
 import { ApiKeyForm } from "@/components/ApiKeyForm";
@@ -30,9 +31,10 @@ import { callAIViaSupabase } from "@/services/api/supabase/aiService";
 import { AI_PROXY_EDGE_FUNCTION_GUIDE } from "@/services/api/supabase/edgeFunctionCode";
 import { DiagnosticButtons } from "@/components/search/DiagnosticButtons";
 import { ApiUsageInfo } from "@/components/search/ApiUsageInfo";
-import { useSearch } from "@/contexts/SearchContext";
+import { SearchProvider } from "@/contexts/SearchContext";
 
-const Settings = () => {
+// Создаем обертку для компонента Settings
+const SettingsContent: React.FC = () => {
   const [apiStatus, setApiStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [proxyInfo, setProxyInfo] = useState<string>("Прямое соединение (без прокси)");
   const [selectedProvider, setSelectedProvider] = useState<AIProvider>(getSelectedAIProvider());
@@ -40,7 +42,9 @@ const Settings = () => {
   const [supabaseStatus, setSupabaseStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
   const [useSupabaseBE, setUseSupabaseBE] = useState<boolean>(isUsingSupabaseBackend());
   const [useFallback, setUseFallback] = useState<boolean>(isFallbackEnabled());
-  const { apiInfo } = useSearch();
+  
+  // Имитация apiInfo для компонента без необходимости useSearch
+  const apiInfo = {} as Record<string, string>;
 
   // Проверяем подключение к Supabase при загрузке
   useEffect(() => {
@@ -568,6 +572,15 @@ const Settings = () => {
         </Card>
       </main>
     </div>
+  );
+};
+
+// Обертка компонента в SearchProvider
+const Settings = () => {
+  return (
+    <SearchProvider>
+      <SettingsContent />
+    </SearchProvider>
   );
 };
 
