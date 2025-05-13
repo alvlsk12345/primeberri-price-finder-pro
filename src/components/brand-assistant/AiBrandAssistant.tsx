@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { BrandSuggestionList } from "./BrandSuggestionList";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getApiKey } from "@/services/api/openai/config";
@@ -8,6 +8,20 @@ import { ProductDescriptionForm } from "./ProductDescriptionForm";
 import { BrandAssistantError } from "./BrandAssistantError";
 import { SupabaseStatusMessage } from "./SupabaseStatusMessage";
 import { Bot } from "lucide-react";
+
+// Функция для проверки, находимся ли мы на странице настроек
+const isOnSettingsPage = () => {
+  if (typeof window === 'undefined') return false;
+  
+  // Проверяем все возможные варианты URL страницы настроек
+  const pathname = window.location.pathname;
+  const hash = window.location.hash;
+  
+  return pathname === "/settings" || 
+         pathname.endsWith("/settings") || 
+         hash === "#/settings" || 
+         hash.includes("/settings");
+};
 
 interface AiBrandAssistantProps {
   onSelectProduct: (product: string, performSearch: boolean) => void;
@@ -28,9 +42,6 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
     handleGetBrandSuggestions
   } = useAiBrandAssistant();
 
-  // Проверка статуса Supabase будет происходить только при запросе пользователя
-  // Удаляем useEffect для автоматической проверки
-
   // Обработчик выбора предложения бренда
   const handleSuggestionSelect = (searchQuery: string, immediate: boolean) => {
     console.log(`Выбран запрос: ${searchQuery}, немедленный поиск: ${immediate}`);
@@ -38,27 +49,32 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
     onSelectProduct(searchQuery, immediate);
   };
 
+  // Проверяем, находимся ли мы на странице настроек
+  const inSettingsPage = isOnSettingsPage();
+
   return (
     <div className="mt-3">
-      <div className="flex items-center gap-2">
-        <Checkbox 
-          id="enableAssistant" 
-          checked={isAssistantEnabled} 
-          onCheckedChange={(checked) => {
-            setIsAssistantEnabled(!!checked);
-            if (!checked) {
-              // Сбрасываем состояние при отключении помощника
-              setProductDescription("");
-            }
-          }}
-        />
-        <label htmlFor="enableAssistant" className="text-sm cursor-pointer flex items-center gap-1">
-          <Bot size={18} className="text-primary" />
-          Использовать AI-помощник для поиска товаров
-        </label>
-      </div>
+      {!inSettingsPage && (
+        <div className="flex items-center gap-2">
+          <Checkbox 
+            id="enableAssistant" 
+            checked={isAssistantEnabled} 
+            onCheckedChange={(checked) => {
+              setIsAssistantEnabled(!!checked);
+              if (!checked) {
+                // Сбрасываем состояние при отключении помощника
+                setProductDescription("");
+              }
+            }}
+          />
+          <label htmlFor="enableAssistant" className="text-sm cursor-pointer flex items-center gap-1">
+            <Bot size={18} className="text-primary" />
+            Использовать AI-помощник для поиска товаров
+          </label>
+        </div>
+      )}
 
-      {isAssistantEnabled && (
+      {isAssistantEnabled && !inSettingsPage && (
         <div className="mt-3 space-y-2">
           {/* Форма описания товара */}
           <ProductDescriptionForm 
@@ -97,7 +113,7 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
       )}
 
       {/* Список предложений брендов */}
-      {isAssistantEnabled && brandSuggestions && brandSuggestions.length > 0 && (
+      {isAssistantEnabled && !inSettingsPage && brandSuggestions && brandSuggestions.length > 0 && (
         <BrandSuggestionList 
           suggestions={brandSuggestions}
           onSelect={(searchQuery, immediate) => handleSuggestionSelect(searchQuery, !!immediate)}

@@ -10,6 +10,20 @@ import { getSelectedAIProvider, getProviderDisplayName, getProviderModelName } f
 import { isSupabaseConnected } from '@/services/api/supabase/client';
 import { isUsingSupabaseBackend } from '@/services/api/supabase/config';
 
+// Функция для проверки, находимся ли мы на странице настроек
+const isOnSettingsPage = () => {
+  if (typeof window === 'undefined') return false;
+  
+  // Проверяем все возможные варианты URL страницы настроек
+  const pathname = window.location.pathname;
+  const hash = window.location.hash;
+  
+  return pathname === "/settings" || 
+         pathname.endsWith("/settings") || 
+         hash === "#/settings" || 
+         hash.includes("/settings");
+};
+
 export const DiagnosticButtons: React.FC = () => {
   const [isTesting, setIsTesting] = useState(false);
   const [isTestingGoogle, setIsTestingGoogle] = useState(false);
@@ -18,8 +32,10 @@ export const DiagnosticButtons: React.FC = () => {
   const selectedProvider = getSelectedAIProvider();
   const providerDisplayName = getProviderDisplayName(selectedProvider);
   const modelName = getProviderModelName(selectedProvider);
-  // Удаляем состояние supabaseMode и useEffect - теперь проверка будет только по требованию
-
+  
+  // Проверяем, находимся ли мы на странице настроек
+  const inSettingsPage = isOnSettingsPage();
+  
   // Тест Google API
   const testGoogleApi = async () => {
     try {
@@ -121,6 +137,11 @@ export const DiagnosticButtons: React.FC = () => {
       description: `Используется модель: ${modelName} (${connectionInfo})` 
     });
   };
+
+  // Не рендерим компонент на странице настроек
+  if (inSettingsPage) {
+    return null;
+  }
 
   return (
     <div className="pt-3 flex flex-wrap gap-2">

@@ -20,11 +20,24 @@ let connectionCache = {
   isConnected: false
 };
 
+// Функция для проверки, находимся ли мы на странице настроек
+const isOnSettingsPage = () => {
+  if (typeof window === 'undefined') return false;
+  
+  // Проверяем все возможные варианты URL страницы настроек
+  const pathname = window.location.pathname;
+  const hash = window.location.hash;
+  
+  return pathname === "/settings" || 
+         pathname.endsWith("/settings") || 
+         hash === "#/settings" || 
+         hash.includes("/settings");
+};
+
 // Функция для проверки доступности Supabase
 export const isSupabaseConnected = async (forceCheck = false): Promise<boolean> => {
-  // Проверяем, находимся ли мы на странице настроек и не требуется ли принудительная проверка
-  const isSettingsPage = window.location.pathname === "/settings";
-  if (isSettingsPage && !forceCheck) {
+  // Никогда не запускаем проверки на странице настроек, если это не явный запрос пользователя
+  if (isOnSettingsPage() && !forceCheck) {
     console.log('Автоматическая проверка Supabase отключена на странице настроек');
     return connectionCache.isConnected; // Возвращаем кешированное значение без проверки
   }

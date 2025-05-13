@@ -17,6 +17,20 @@ let lastConnectionCheck = {
   isUsingBackend: false
 };
 
+// Функция для проверки, находимся ли мы на странице настроек
+const isOnSettingsPage = () => {
+  if (typeof window === 'undefined') return false;
+  
+  // Проверяем все возможные варианты URL страницы настроек
+  const pathname = window.location.pathname;
+  const hash = window.location.hash;
+  
+  return pathname === "/settings" || 
+         pathname.endsWith("/settings") || 
+         hash === "#/settings" || 
+         hash.includes("/settings");
+};
+
 // Основная функция получения брендов, которая выбирает подходящий провайдер
 export const fetchBrandSuggestions = async (description: string): Promise<BrandSuggestion[]> => {
   // Получаем текущего провайдера
@@ -26,8 +40,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     console.log(`Используем ${provider} для получения предложений брендов`);
     
     // Проверяем, находимся ли мы на странице настроек
-    const isSettingsPage = window.location.pathname === "/settings";
-    if (isSettingsPage) {
+    if (isOnSettingsPage()) {
       console.log('Не выполняем запросы API на странице настроек');
       return []; // Возвращаем пустой массив на странице настроек
     }
@@ -46,7 +59,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
       console.log('Используем кешированное значение статуса Supabase:', supabaseConnected);
     } else {
       // Делаем новую проверку, если кеш устарел
-      supabaseConnected = await isSupabaseConnected(true); // явное требование проверки
+      supabaseConnected = await isSupabaseConnected(false); // НЕ делаем принудительную проверку
       lastConnectionCheck = {
         timestamp: currentTime,
         isConnected: supabaseConnected,

@@ -7,6 +7,20 @@ import { BrandSuggestion } from "@/services/types";
 import { isSupabaseConnected } from "@/services/api/supabase/client";
 import { isUsingSupabaseBackend } from "@/services/api/supabase/config";
 
+// Функция для проверки, находимся ли мы на странице настроек
+const isOnSettingsPage = () => {
+  if (typeof window === 'undefined') return false;
+  
+  // Проверяем все возможные варианты URL страницы настроек
+  const pathname = window.location.pathname;
+  const hash = window.location.hash;
+  
+  return pathname === "/settings" || 
+         pathname.endsWith("/settings") || 
+         hash === "#/settings" || 
+         hash.includes("/settings");
+};
+
 export const useAiBrandAssistant = () => {
   // Изменили на false по умолчанию как запросил пользователь
   const [isAssistantEnabled, setIsAssistantEnabled] = useState<boolean>(false);
@@ -14,7 +28,11 @@ export const useAiBrandAssistant = () => {
   const [isAssistantLoading, setIsAssistantLoading] = useState<boolean>(false);
   const [brandSuggestions, setBrandSuggestions] = useState<BrandSuggestion[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>("");
-  // Сохраняем состояние, но не выполняем автоматическую проверку
+  
+  // Определяем, находимся ли мы на странице настроек
+  const inSettingsPage = isOnSettingsPage();
+  
+  // Устанавливаем начальное состояние без проверки соединения
   const [supabaseStatus, setSupabaseStatus] = useState<{ connected: boolean; enabled: boolean }>({
     connected: false,
     enabled: false
@@ -22,14 +40,13 @@ export const useAiBrandAssistant = () => {
 
   // Функция для ручной проверки статуса Supabase - будет вызываться только по запросу
   const checkSupabaseStatus = async () => {
-    try {
-      // Проверяем, находимся ли мы на странице настроек
-      const isSettingsPage = window.location.pathname === "/settings";
-      if (isSettingsPage) {
-        console.log('Автоматическая проверка Supabase отключена на странице настроек');
-        return supabaseStatus; // Возвращаем текущее состояние без проверки
-      }
+    // Если мы на странице настроек, не проверяем статус автоматически
+    if (inSettingsPage) {
+      console.log('Автоматическая проверка Supabase отключена на странице настроек');
+      return supabaseStatus; // Возвращаем текущее состояние без проверки
+    }
 
+    try {
       const connected = await isSupabaseConnected(true); // Явно запрашиваем проверку
       const enabled = await isUsingSupabaseBackend();
       const newStatus = { connected, enabled };
@@ -63,6 +80,13 @@ export const useAiBrandAssistant = () => {
       // Проверка наличия ключа API для внешних сервисов
       if (!getApiKey()) {
         console.warn('API ключ не найден');
+      }
+      
+      // Если мы на странице настроек, не выполняем запрос
+      if (inSettingsPage) {
+        console.log('Не выполняем запросы на странице настроек');
+        setIsAssistantLoading(false);
+        return;
       }
       
       const suggestions = await fetchBrandSuggestions(productDescription);
