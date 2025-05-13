@@ -25,7 +25,8 @@ const isOnSettingsPage = () => {
   return pathname === "/settings" || 
          pathname.endsWith("/settings") || 
          hash === "#/settings" || 
-         hash.includes("/settings");
+         hash.includes("/settings") ||
+         document.body.getAttribute('data-path') === '/settings';
 };
 
 type SearchFormProps = {
@@ -52,11 +53,22 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   // Проверяем, находимся ли мы на странице настроек
   const inSettingsPage = isOnSettingsPage();
 
+  // Устанавливаем атрибут data-path в body при загрузке компонента
+  useEffect(() => {
+    if (inSettingsPage) {
+      document.body.setAttribute('data-path', '/settings');
+    }
+    return () => {
+      if (inSettingsPage) {
+        document.body.removeAttribute('data-path');
+      }
+    };
+  }, [inSettingsPage]);
+
   // Проверяем статус Supabase при загрузке, но НЕ на странице настроек
   useEffect(() => {
     // Не выполняем проверку на странице настроек
     if (inSettingsPage) {
-      console.log('Автоматическая проверка Supabase отключена на странице настроек');
       return;
     }
     
@@ -64,8 +76,6 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       const connected = await isSupabaseConnected();
       const enabled = await isUsingSupabaseBackend();
       setSupabaseStatus({ connected, enabled });
-      
-      console.log('Проверка статуса Supabase:', { connected, enabled });
       
       if (enabled && !connected) {
         toast.warning('Настройки используют Supabase Backend, но он не подключен. Некоторые функции могут быть недоступны.', 
@@ -93,8 +103,6 @@ export const SearchForm: React.FC<SearchFormProps> = ({
         id: 'search-toast',
         duration: 0 // Бесконечная длительность, отменим вручную при получении результатов
       });
-      
-      console.log('Запуск поиска с запросом:', searchQuery);
       
       // Выполняем поиск
       handleSearch();

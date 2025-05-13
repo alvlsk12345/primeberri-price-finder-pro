@@ -18,7 +18,8 @@ const isOnSettingsPage = () => {
   return pathname === "/settings" || 
          pathname.endsWith("/settings") || 
          hash === "#/settings" || 
-         hash.includes("/settings");
+         hash.includes("/settings") ||
+         document.body.getAttribute('data-path') === '/settings';
 };
 
 export const useAiBrandAssistant = () => {
@@ -44,7 +45,6 @@ export const useAiBrandAssistant = () => {
   const checkSupabaseStatus = async () => {
     // Если мы на странице настроек, не проверяем статус автоматически
     if (inSettingsPage) {
-      console.log('Автоматическая проверка Supabase отключена на странице настроек');
       return supabaseStatus; // Возвращаем текущее состояние без проверки
     }
 
@@ -53,11 +53,8 @@ export const useAiBrandAssistant = () => {
       const enabled = await isUsingSupabaseBackend();
       const newStatus = { connected, enabled };
       setSupabaseStatus(newStatus);
-      
-      console.log('AiBrandAssistant: проверка статуса Supabase:', newStatus);
       return newStatus;
     } catch (error) {
-      console.error('Ошибка при проверке статуса Supabase:', error);
       setSupabaseStatus({ connected: false, enabled: false });
       return { connected: false, enabled: false };
     }
@@ -77,22 +74,13 @@ export const useAiBrandAssistant = () => {
     setBrandSuggestions([]);
     
     try {
-      console.log(`Запрос бренд-помощнику: "${productDescription}"`);
-      
-      // Проверка наличия ключа API для внешних сервисов
-      if (!getApiKey()) {
-        console.warn('API ключ не найден');
-      }
-      
       // Если мы на странице настроек, не выполняем запрос
       if (inSettingsPage) {
-        console.log('Не выполняем запросы на странице настроек');
         setIsAssistantLoading(false);
         return;
       }
       
       const suggestions = await fetchBrandSuggestions(productDescription);
-      console.log('Получены предложения:', suggestions);
       
       if (suggestions && suggestions.length > 0) {
         setBrandSuggestions(suggestions);
@@ -102,7 +90,6 @@ export const useAiBrandAssistant = () => {
         toast.error("Не удалось получить предложения");
       }
     } catch (error: any) {
-      console.error('Ошибка при получении предложений:', error);
       setErrorMessage(error?.message || "Произошла ошибка при обработке запроса. Пожалуйста, попробуйте позже.");
       toast.error("Ошибка при получении предложений");
     } finally {

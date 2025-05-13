@@ -16,10 +16,14 @@ const isOnSettingsPage = () => {
   const pathname = window.location.pathname;
   const hash = window.location.hash;
   
+  // Также проверяем атрибут data-path в body для более надежного определения
+  const dataPath = document.body.getAttribute('data-path');
+  
   return pathname === "/settings" || 
          pathname.endsWith("/settings") || 
          hash === "#/settings" || 
-         hash.includes("/settings");
+         hash.includes("/settings") ||
+         dataPath === '/settings';
 };
 
 export const SupabaseStatusMessage: React.FC<SupabaseStatusProps> = ({ 

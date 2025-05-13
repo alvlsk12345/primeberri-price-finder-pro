@@ -17,10 +17,14 @@ const isOnSettingsPage = () => {
   const pathname = window.location.pathname;
   const hash = window.location.hash;
   
+  // Также проверяем атрибут data-path в body для более надежного определения
+  const dataPath = document.body.getAttribute('data-path');
+  
   return pathname === "/settings" || 
          pathname.endsWith("/settings") || 
          hash === "#/settings" || 
-         hash.includes("/settings");
+         hash.includes("/settings") ||
+         dataPath === '/settings';
 };
 
 interface AiBrandAssistantProps {
@@ -44,7 +48,6 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
 
   // Обработчик выбора предложения бренда
   const handleSuggestionSelect = (searchQuery: string, immediate: boolean) => {
-    console.log(`Выбран запрос: ${searchQuery}, немедленный поиск: ${immediate}`);
     // Явно передаем оба параметра в родительский компонент
     onSelectProduct(searchQuery, immediate);
   };

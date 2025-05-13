@@ -38,7 +38,7 @@ const isOnSettingsPage = () => {
 export const isSupabaseConnected = async (forceCheck = false): Promise<boolean> => {
   // Никогда не запускаем проверки на странице настроек, если это не явный запрос пользователя
   if (isOnSettingsPage() && !forceCheck) {
-    console.log('Автоматическая проверка Supabase отключена на странице настроек');
+    // Удаляем лишний вывод в консоль
     return connectionCache.isConnected; // Возвращаем кешированное значение без проверки
   }
 
@@ -46,13 +46,13 @@ export const isSupabaseConnected = async (forceCheck = false): Promise<boolean> 
   const currentTime = Date.now();
   const cacheExpiration = 5 * 60 * 1000; // 5 минут в миллисекундах
   if (!forceCheck && currentTime - connectionCache.lastCheck < cacheExpiration) {
-    console.log('Используем кешированный результат проверки соединения с Supabase:', connectionCache.isConnected);
+    // Удаляем лишний вывод в консоль
     return connectionCache.isConnected;
   }
 
   // Если нет клиента Supabase, сразу возвращаем false
   if (!supabase) {
-    console.log('Клиент Supabase не инициализирован');
+    // Удаляем лишний вывод в консоль
     connectionCache = { lastCheck: currentTime, isConnected: false };
     return false;
   }
@@ -71,10 +71,10 @@ export const isSupabaseConnected = async (forceCheck = false): Promise<boolean> 
       isConnected: isConnected
     };
     
-    console.log('Проверка подключения к Supabase:', isConnected ? 'Успешно' : 'Не удалось');
+    // Убираем лишний вывод в консоль
     return isConnected;
   } catch (e) {
-    console.error('Ошибка при проверке соединения с Supabase:', e);
+    // Убираем лишний вывод в консоль
     connectionCache = { lastCheck: currentTime, isConnected: false };
     return false;
   }

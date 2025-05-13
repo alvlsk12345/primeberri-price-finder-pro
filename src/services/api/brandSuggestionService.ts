@@ -28,7 +28,8 @@ const isOnSettingsPage = () => {
   return pathname === "/settings" || 
          pathname.endsWith("/settings") || 
          hash === "#/settings" || 
-         hash.includes("/settings");
+         hash.includes("/settings") ||
+         document.body.getAttribute('data-path') === '/settings';
 };
 
 // Основная функция получения брендов, которая выбирает подходящий провайдер
@@ -37,11 +38,8 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
   const provider = getSelectedAIProvider();
   
   try {
-    console.log(`Используем ${provider} для получения предложений брендов`);
-    
     // Проверяем, находимся ли мы на странице настроек
     if (isOnSettingsPage()) {
-      console.log('Не выполняем запросы API на странице настроек');
       return []; // Возвращаем пустой массив на странице настроек
     }
 
@@ -56,7 +54,6 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     if (currentTime - lastConnectionCheck.timestamp < cacheExpiration) {
       // Используем кешированные значения
       supabaseConnected = lastConnectionCheck.isConnected;
-      console.log('Используем кешированное значение статуса Supabase:', supabaseConnected);
     } else {
       // Делаем новую проверку, если кеш устарел
       supabaseConnected = await isSupabaseConnected(false); // НЕ делаем принудительную проверку
@@ -65,31 +62,20 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
         isConnected: supabaseConnected,
         isUsingBackend: useSupabase
       };
-      console.log('Обновлен статус соединения с Supabase:', supabaseConnected);
     }
     
-    console.log('Статус Supabase для бренд-сервиса:', {
-      используется: useSupabase,
-      подключен: supabaseConnected
-    });
-    
     if (useSupabase && supabaseConnected) {
-      console.log('Использование Supabase бэкенда для получения предложений брендов');
       try {
         // Вызов AI через Supabase Edge Function
-        console.log('Вызов AI через Supabase Edge Function:', provider);
         const result = await fetchBrandSuggestionsViaOpenAI(description);
-        console.log('Результат от Supabase:', result);
         
         // Проверка на валидность данных
         if (!result) {
-          console.warn('Пустой ответ от Supabase Edge Function');
           return [];
         }
         
         return result; // Функция fetchBrandSuggestionsViaOpenAI теперь всегда возвращает BrandSuggestion[]
       } catch (error) {
-        console.error('Ошибка при использовании Supabase для предложений брендов:', error);
         toast.error(`Ошибка Supabase: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
                    { duration: 3000 });
         toast.info('Проверьте настройки Supabase в разделе "Настройки"', { duration: 5000 });
@@ -109,7 +95,6 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     // Возвращаем пустой массив, так как прямые вызовы API невозможны из-за CORS
     return [];
   } catch (error) {
-    console.error(`Ошибка при получении предложений брендов через ${provider}:`, error);
     return []; // Возвращаем пустой массив при ошибке
   }
 };
