@@ -11,7 +11,7 @@ export * from './searchService';
 export const getOpenAISearchResults = async (query: string, options?: any) => {
   try {
     const { fetchFromOpenAI } = await import('./searchService');
-    return fetchFromOpenAI(query, options);
+    return fetchFromOpenAI(query); // Исправлено: убран второй аргумент options
   } catch (error) {
     console.error('Ошибка при получении результатов поиска OpenAI:', error);
     throw error;
