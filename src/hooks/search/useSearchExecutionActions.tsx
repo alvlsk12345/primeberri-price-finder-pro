@@ -75,16 +75,9 @@ export function useSearchExecutionActions(props: SearchExecutionProps) {
   const inSettingsPage = isOnSettingsPage();
   
   // Используем хуки для разных аспектов поиска
-  const { translateQuery } = useSearchQueryTranslator();
-  const { processSearchResults } = useSearchFilterProcessor();
-  const { handleSearchError } = useSearchErrorHandler({
-    setIsLoading,
-    setSearchResults: (results: Product[]) => {
-      if (!inSettingsPage) {
-        setSearchResults(results);
-      }
-    }
-  });
+  const { translateQueryIfNeeded } = useSearchQueryTranslator();
+  const { applyFiltersAndSorting } = useSearchFilterProcessor();
+  const { handleSearchError } = useSearchErrorHandler();
   
   // Используем исполнитель поиска
   const { executeSearch, cleanupSearch } = useSearchExecutor({
@@ -102,7 +95,7 @@ export function useSearchExecutionActions(props: SearchExecutionProps) {
   });
   
   // Используем механизм повторной попытки
-  const { retrySearch, resetRetryCount } = useSearchRetry();
+  const { executeSearchWithRetry, resetRetryAttempts } = useSearchRetry();
   
   // Отслеживаем количество запросов к API
   const searchRequestCountRef = useRef<number>(0);
@@ -154,7 +147,7 @@ export function useSearchExecutionActions(props: SearchExecutionProps) {
       
       // Если запрос изменился - сбрасываем счетчик повторных попыток
       if (queryChanged) {
-        resetRetryCount();
+        resetRetryAttempts();
       }
       
       // Увеличиваем счетчик запросов
@@ -165,19 +158,19 @@ export function useSearchExecutionActions(props: SearchExecutionProps) {
       setOriginalQuery(queryToUse);
       
       // Переводим запрос при необходимости
-      const translatedQuery = await translateQuery(queryToUse);
+      const translationResult = await translateQueryIfNeeded(queryToUse);
+      const translatedQuery = translationResult.translatedQuery;
       
       // Параметры поиска
       const searchParams: SearchParams = {
         query: translatedQuery || queryToUse,
         page: forcePage !== undefined ? forcePage : currentPage,
-        country: 'any',
       };
       
       // Если есть страны в фильтрах - используем их
       const availableCountries = getSearchCountries();
       if (filters.countries && filters.countries.length > 0 && availableCountries.includes(filters.countries[0])) {
-        searchParams.country = filters.countries[0].toLowerCase();
+        searchParams.countries = [filters.countries[0].toLowerCase()];
       }
       
       // Выполняем поиск
@@ -190,12 +183,8 @@ export function useSearchExecutionActions(props: SearchExecutionProps) {
       }
       
       // Обрабатываем результаты
-      processSearchResults({
-        results: searchResponse.results || [],
-        query: queryToUse,
-        page: forcePage !== undefined ? forcePage : currentPage,
-        totalPages: searchResponse.totalPages || 1
-      });
+      const filteredResults = applyFiltersAndSorting(searchResponse.results || [], filters);
+      setSearchResults(filteredResults);
       
       // Сохраняем последний успешный запрос
       setLastSearchQuery(queryToUse);
@@ -206,7 +195,22 @@ export function useSearchExecutionActions(props: SearchExecutionProps) {
       
       if (shouldRetry) {
         // Пробуем повторить запрос
-        return retrySearch(() => handleSearch(options));
+        const retryParams = await executeSearchWithRetry(
+          queryToUse, 
+          forcePage !== undefined ? forcePage : currentPage,
+          lastSearchQuery,
+          filters,
+          getSearchCountries
+        );
+        
+        if (retryParams) {
+          // Если получены параметры для повторного запроса, выполняем его
+          return handleSearch({
+            forcePage: retryParams.page,
+            customQuery: retryParams.queryToUse,
+            forceRefresh: true
+          });
+        }
       }
     } finally {
       // Завершаем загрузку

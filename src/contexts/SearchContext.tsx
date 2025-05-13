@@ -21,7 +21,7 @@ type SearchContextType = {
   hasSearched: boolean;
   isUsingDemoData: boolean;
   apiInfo?: Record<string, string>;
-  handleSearch: (page?: number, forceNewSearch?: boolean) => Promise<void>;
+  handleSearch: (options?: { forcePage?: number; forceRefresh?: boolean; initialSearch?: boolean; customQuery?: string; }) => Promise<void>;
   handleProductSelect: (product: Product) => void;
   handlePageChange: (page: number) => void;
   handleFilterChange: (newFilters: ProductFilters) => void;

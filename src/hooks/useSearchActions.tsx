@@ -91,8 +91,8 @@ export function useSearchActions(props: SearchStateProps) {
     setCachedResults,
     currentPage,
     setCurrentPage,
-    totalPages, // Добавляем totalPages
-    setTotalPages, // Добавляем setTotalPages
+    totalPages,
+    setTotalPages,
     filters,
     setOriginalQuery,
     setHasSearched,
@@ -105,19 +105,20 @@ export function useSearchActions(props: SearchStateProps) {
     setSelectedProduct
   });
   
+  // Адаптируем взаимодействие между новым форматом handleSearch и старым интерфейсом для пагинации
   const { handlePageChange } = usePaginationActions({
     currentPage,
-    totalPages, // Передаем актуальное количество страниц
+    totalPages,
     pageChangeCount,
     setPageChangeCount,
     setCurrentPage,
-    handleSearch
+    handlePageChange: (page) => handleSearch({ forcePage: page })
   });
   
   const { handleFilterChange } = useFilterActions({
     allResults: allSearchResults,
     setFilters,
-    handleSearch,
+    handleSearch: () => handleSearch({ forceRefresh: true }),
     filters,
     setSearchResults
   });
