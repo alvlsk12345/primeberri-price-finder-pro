@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { callOpenAI } from "@/services/api/openai/apiClient";
 import { getApiKey as getOpenAIApiKey } from "@/services/api/openai/config";
 import { callAbacusAI } from "@/services/api/abacus/apiClient";
@@ -8,32 +8,24 @@ import { callPerplexityAI } from "@/services/api/perplexity/apiClient";
 import { getApiKey as getPerplexityApiKey } from "@/services/api/perplexity/config";
 import { callAIViaSupabase } from "@/services/api/supabase/aiService";
 import { toast } from "sonner";
-import { AIProvider } from "@/services/api/aiProviderService";
+import { AIProvider, getSelectedAIProvider } from "@/services/api/aiProviderService";
 
 export function useApiConnection() {
   const [apiStatus, setApiStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [proxyInfo, setProxyInfo] = useState<string>("Прямое соединение (без прокси)");
+  const [selectedProvider, setSelectedProvider] = useState<AIProvider>(getSelectedAIProvider());
+
+  // Функция для обработки изменения провайдера
+  const handleProviderChange = (value: AIProvider) => {
+    setSelectedProvider(value);
+    setApiStatus('idle'); // Сбрасываем статус API при смене провайдера
+  };
 
   // Функция для тестирования подключения к API
-  const testApiConnection = async (selectedProvider: AIProvider, useSupabaseBE: boolean, supabaseConnected: boolean) => {
+  const testApiConnection = async () => {
     setApiStatus('testing');
     
     try {
-      if (useSupabaseBE && supabaseConnected) {
-        // Проверяем работу через Supabase
-        await callAIViaSupabase({
-          provider: selectedProvider,
-          prompt: selectedProvider === 'openai' ? "Скажи 'привет'" : undefined,
-          endpoint: selectedProvider === 'abacus' ? 'testConnection' : undefined,
-          method: 'GET'
-        });
-        
-        setApiStatus('success');
-        toast.success(`Проверка API ${selectedProvider.toUpperCase()} через Supabase успешна!`);
-        return;
-      }
-      
-      // Если Supabase не используется или недоступен, проверяем прямое соединение
       if (selectedProvider === 'openai') {
         // Проверяем наличие API ключа OpenAI
         const apiKey = getOpenAIApiKey();
@@ -98,6 +90,8 @@ export function useApiConnection() {
   return {
     apiStatus,
     proxyInfo,
+    selectedProvider,
+    handleProviderChange,
     testApiConnection,
     setApiStatus
   };
