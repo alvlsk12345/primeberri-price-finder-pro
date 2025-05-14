@@ -14,7 +14,7 @@ import { useSupabaseConnection } from "@/hooks/settings/useSupabaseConnection";
 
 // Компонент для содержимого настроек, чтобы изолировать его от основного компонента Settings
 const SettingsContent = () => {
-  console.log('[Settings] Рендер компонента SettingsContent');
+  console.log('[SettingsContent] === НАЧАЛО рендера компонента SettingsContent ===');
   
   // Используем кастомные хуки, которые уже имеют встроенную обработку ошибок
   // Эти хуки будут загружать данные с задержкой для предотвращения ранних ошибок
@@ -184,62 +184,88 @@ const Settings = () => {
   }, [isLocalStorageAvailable]);
 
   console.log(`[Settings] Перед рендерингом, isReady=${isReady}, hasError=${hasError}`);
+  console.log('%c[Settings] === ПЕРЕД РЕНДЕРОМ ErrorBoundary + СОДЕРЖИМОГО ===', 'color: blue; font-weight: bold;');
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-brand/30 to-brand/10 settings-page">
-      <PageHeader />
-      
-      <main className="container mx-auto py-10 px-4">
-        {hasError ? (
-          <div className="p-6 bg-red-50 rounded-md text-red-600 max-w-4xl mx-auto">
-            <h3 className="text-lg font-medium mb-2">Произошла ошибка на странице настроек</h3>
-            <p>{errorMessage || 'Не удалось загрузить страницу настроек. Пожалуйста, обновите страницу или вернитесь на главную.'}</p>
-            <div className="mt-4 flex space-x-4">
-              <button 
-                onClick={() => window.location.reload()} 
-                className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md"
-              >
-                Обновить страницу
-              </button>
-              <button 
-                onClick={() => window.location.hash = '#/'} 
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md"
-              >
-                На главную
-              </button>
-            </div>
-          </div>
-        ) : isReady ? (
-          <ErrorBoundary fallback={<div className="p-6 bg-red-50 rounded-md text-red-600 max-w-4xl mx-auto">
-            <h3 className="text-lg font-medium mb-2">Не удалось загрузить страницу настроек</h3>
-            <p>Произошла ошибка при загрузке настроек. Пожалуйста, обновите страницу или вернитесь на главную.</p>
-            <div className="mt-4 flex space-x-4">
-              <button 
-                onClick={() => window.location.reload()} 
-                className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md"
-              >
-                Обновить страницу
-              </button>
-              <button 
-                onClick={() => window.location.hash = '#/'} 
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md"
-              >
-                На главную
-              </button>
-            </div>
-          </div>}>
-            <SettingsContent />
-          </ErrorBoundary>
-        ) : (
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
-          </div>
-        )}
+  // Компонент рендеринга с защитой ErrorBoundary
+  try {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-brand/30 to-brand/10 settings-page">
+        <PageHeader />
         
-        <PageFooter />
-      </main>
-    </div>
-  );
+        <main className="container mx-auto py-10 px-4">
+          {hasError ? (
+            <div className="p-6 bg-red-50 rounded-md text-red-600 max-w-4xl mx-auto">
+              <h3 className="text-lg font-medium mb-2">Произошла ошибка на странице настроек</h3>
+              <p>{errorMessage || 'Не удалось загрузить страницу настроек. Пожалуйста, обновите страницу или вернитесь на главную.'}</p>
+              <div className="mt-4 flex space-x-4">
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md"
+                >
+                  Обновить страницу
+                </button>
+                <button 
+                  onClick={() => window.location.hash = '#/'} 
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md"
+                >
+                  На главную
+                </button>
+              </div>
+            </div>
+          ) : isReady ? (
+            <ErrorBoundary fallback={<div className="p-6 bg-red-50 rounded-md text-red-600 max-w-4xl mx-auto">
+              <h3 className="text-lg font-medium mb-2">Не удалось загрузить страницу настроек</h3>
+              <p>Произошла ошибка при загрузке настроек. Пожалуйста, обновите страницу или вернитесь на главную.</p>
+              <div className="mt-4 flex space-x-4">
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md"
+                >
+                  Обновить страницу
+                </button>
+                <button 
+                  onClick={() => window.location.hash = '#/'} 
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md"
+                >
+                  На главную
+                </button>
+              </div>
+            </div>}>
+              <SettingsContent />
+            </ErrorBoundary>
+          ) : (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+            </div>
+          )}
+          
+          <PageFooter />
+        </main>
+      </div>
+    );
+  } catch (e) {
+    console.error('%c[Settings] КРИТИЧЕСКАЯ ОШИБКА РЕНДЕРИНГА Settings (внешний try-catch):', 'color: red; font-size: 16px;', e);
+    return (
+      <div className="p-6 bg-red-50 rounded-md text-red-600 max-w-4xl mx-auto">
+        <h3 className="text-lg font-medium mb-2">Критическая ошибка рендеринга страницы настроек</h3>
+        <p>Произошла неожиданная ошибка. Пожалуйста, обновите страницу или вернитесь на главную.</p>
+        <div className="mt-4 flex space-x-4">
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md"
+          >
+            Обновить страницу
+          </button>
+          <button 
+            onClick={() => window.location.hash = '#/'} 
+            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md"
+          >
+            На главную
+          </button>
+        </div>
+      </div>
+    );
+  }
 };
 
 export default Settings;
