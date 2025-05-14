@@ -1,3 +1,4 @@
+
 import { Product, ProductFilters } from "@/services/types";
 import { toast } from "sonner";
 import { useSearchApiCall } from './useSearchApiCall';
@@ -50,30 +51,25 @@ export function useSearchCore({
   
   // Основная функция выполнения поиска с ретраями
   const executeSearchCore = async (
-    queryToUse: string, 
-    page: number, 
-    lastSearchQuery: string, 
-    filters: ProductFilters,
-    getSearchCountries: () => string[]
+    params: any
   ) => {
-    console.log(`executeSearchCore: запрос "${queryToUse}", страница ${page}`);
+    const { query, page, originalQuery = '', filters = {}, countries = [] } = params;
+    
+    console.log(`executeSearchCore: запрос "${query}", страница ${page}`);
     
     // Устанавливаем текущую страницу
     setCurrentPage(page);
     
-    // Используем оригинальный запрос без перевода для совместимости с примером
-    const searchText = queryToUse;
-    
     // Получаем страны для поиска, гарантируем включение Германии
-    let searchCountries = getSearchCountries();
+    let searchCountries = countries;
     if (!searchCountries.includes('de')) {
       searchCountries = ['de', ...searchCountries];
     }
     
     // Создаём параметры поиска на основе примера
     const searchParams = {
-      query: searchText,
-      originalQuery: queryToUse,
+      query: query,
+      originalQuery: originalQuery || query,
       page: page,
       language: 'ru',  // Устанавливаем русский язык для получения описаний на русском
       countries: searchCountries,
@@ -141,14 +137,7 @@ export function useSearchCore({
     setIsLoading(true);
     
     try {
-      const { queryToUse, page, lastSearchQuery, filters, getSearchCountries } = params;
-      return await executeSearchCore(
-        queryToUse, 
-        page, 
-        lastSearchQuery, 
-        filters,
-        getSearchCountries
-      );
+      return await executeSearchCore(params);
     } catch (error) {
       console.error(`Критическая ошибка при выполнении поиска:`, error);
       return handleSearchError(error);

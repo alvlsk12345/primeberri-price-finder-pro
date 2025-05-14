@@ -52,13 +52,13 @@ export function useSearchExecutor({
   });
   
   // Обертка для executeSearch с дополнительными проверками
-  const safeExecuteSearch = async (searchParams: SearchParams, forceNewSearch: boolean = false) => {
+  const safeExecuteSearch = async (searchParams: any) => {
     if (inSettingsPage) {
       console.log('Попытка выполнить поиск на странице настроек - отменено');
       return [];
     }
     
-    return await executeSearch(searchParams, forceNewSearch);
+    return await executeSearch(searchParams);
   };
   
   // Обертка для cleanupSearch с дополнительными проверками

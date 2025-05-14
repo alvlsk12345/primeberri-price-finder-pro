@@ -150,21 +150,9 @@ export function useSearchExecutionActions(props: SearchExecutionProps) {
       const translationResult = await translateQueryIfNeeded(queryToUse);
       const translatedQuery = translationResult.translatedQuery;
       
-      // Параметры поиска
-      const searchParams: SearchParams = {
-        query: translatedQuery || queryToUse,
-        page: forcePage !== undefined ? forcePage : currentPage,
-      };
-      
-      // Если есть страны в фильтрах - используем их
-      const availableCountries = getSearchCountries();
-      if (filters.countries && filters.countries.length > 0 && availableCountries.includes(filters.countries[0])) {
-        searchParams.countries = [filters.countries[0].toLowerCase()];
-      }
-      
-      // Выполняем поиск
+      // Выполняем поиск с правильными параметрами в формате SearchParams
       const searchResponse = await executeSearch({
-        queryToUse: translatedQuery || queryToUse,
+        query: translatedQuery || queryToUse,
         page: forcePage !== undefined ? forcePage : currentPage,
         lastSearchQuery,
         filters,
@@ -178,8 +166,11 @@ export function useSearchExecutionActions(props: SearchExecutionProps) {
       }
 
       // Обрабатываем результаты
-      if (searchResponse && searchResponse.products) {
+      if (searchResponse && typeof searchResponse === 'object' && 'products' in searchResponse) {
         const filteredResults = applyFiltersAndSorting(searchResponse.products || [], filters);
+        setSearchResults(filteredResults);
+      } else if (Array.isArray(searchResponse)) {
+        const filteredResults = applyFiltersAndSorting(searchResponse, filters);
         setSearchResults(filteredResults);
       }
       
