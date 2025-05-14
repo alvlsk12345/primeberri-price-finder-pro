@@ -1,63 +1,53 @@
 
-import React from "react";
-import { Link } from "react-router-dom";
-import { isOnSettingsPage, getRouteInfo } from '@/utils/navigation';
+import React from 'react';
+import { toast } from "sonner";
+import { Button } from '@/components/ui/button';
+import { InfoIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-interface SupabaseStatusProps {
+type SupabaseStatusMessageProps = {
   connected: boolean;
   enabled: boolean;
-  onRequestCheck?: () => void; // Функция для запроса проверки
-}
+  onRequestCheck: () => Promise<void>;
+};
 
-export const SupabaseStatusMessage: React.FC<SupabaseStatusProps> = ({ 
-  connected, 
+export const SupabaseStatusMessage: React.FC<SupabaseStatusMessageProps> = ({
+  connected,
   enabled,
-  onRequestCheck 
+  onRequestCheck
 }) => {
-  console.log(`[SupabaseStatusMessage] Рендер с параметрами: connected=${connected}, enabled=${enabled}`);
-  
-  // Используем централизованную функцию для проверки страницы настроек
-  const routeInfo = getRouteInfo();
-  const inSettingsPage = routeInfo.isSettings;
-  
-  console.log(`[SupabaseStatusMessage] routeInfo = ${JSON.stringify(routeInfo)}, inSettingsPage = ${inSettingsPage}`);
-  
-  // Если мы на странице настроек, вообще не отображаем компонент
-  if (inSettingsPage) {
-    console.log('[SupabaseStatusMessage] На странице настроек, возвращаем null');
+  // Если не включено или отключено - не показываем сообщение
+  if (!enabled) {
     return null;
   }
-  
-  // Если соединение установлено и бекенд включен, тоже ничего не отображаем
-  if (connected && enabled) {
-    console.log('[SupabaseStatusMessage] Соединение установлено и бекенд включен, возвращаем null');
-    return null;
-  }
-  
-  console.log('[SupabaseStatusMessage] Отображаем сообщение о состоянии подключения');
+
   return (
-    <div className={`p-3 ${!connected ? "bg-amber-50 border border-amber-200" : "bg-blue-50 border border-blue-200"} rounded-md mt-3`}>
-      <p className={`text-sm ${!connected ? "text-amber-700" : "text-blue-700"}`}>
-        {!enabled && connected ? (
-          <>
-            Рекомендуется включить опцию "Использовать Supabase Backend" в настройках для обхода ограничений CORS.
-            <Link to="/settings" className="ml-1 underline font-medium">Перейти к настройкам</Link>
-          </>
-        ) : (
-          <>
-            Для работы AI-помощника необходимо настроить подключение к Supabase или указать API ключ OpenAI в настройках.
-            <Link to="/settings" className="ml-1 underline font-medium">Перейти к настройкам</Link>
-            {onRequestCheck && (
-              <button 
+    <div className="mt-2 text-sm">
+      {!connected && (
+        <div className="flex items-start space-x-2 p-2 bg-amber-50 text-amber-900 border border-amber-200 rounded-md">
+          <InfoIcon className="h-5 w-5 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p>
+              Соединение с Supabase не установлено. Некоторые функции могут быть недоступны.
+            </p>
+            <div className="mt-2 flex gap-2">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="text-xs"
                 onClick={onRequestCheck}
-                className="ml-2 text-xs underline font-medium"
               >
-                Проверить соединение сейчас
-              </button>
-            )}
-          </>
-        )}
-      </p>
+                Проверить соединение
+              </Button>
+              <Link to="/settings">
+                <Button size="sm" variant="link" className="text-xs px-0">
+                  Перейти в настройки
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

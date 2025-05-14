@@ -2,19 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from "sonner";
 import { useDemoModeForced } from '@/services/api/mock/mockServiceConfig';
-import { containsCyrillicCharacters } from '@/services/translationService';
-import { AiBrandAssistant } from './brand-assistant/AiBrandAssistant';
 import { SearchInput } from './search/SearchInput';
 import { SearchErrorMessage } from './search/SearchErrorMessage';
 import { useProductSelectionHandler } from './search/ProductSelectionHandler';
 import { NoResultsMessage } from './search/NoResultsMessage';
 import { isSupabaseConnected, checkSupabaseConnection } from '@/services/api/supabase/client';
 import { isUsingSupabaseBackend } from '@/services/api/supabase/config';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { InfoIcon } from 'lucide-react';
-import { isOnSettingsPage, getRouteInfo } from '@/utils/navigation';
+import { AiBrandAssistant } from './brand-assistant/AiBrandAssistant';
 import { SupabaseStatusMessage } from './brand-assistant/SupabaseStatusMessage';
+import { getRouteInfo } from '@/utils/navigation';
 
 type SearchFormProps = {
   searchQuery: string;
@@ -36,7 +32,6 @@ export const SearchForm: React.FC<SearchFormProps> = ({
     connected: false, 
     enabled: false 
   });
-  const isDemoMode = useDemoModeForced;
   
   // Проверяем, находимся ли мы на странице настроек, используя центральную функцию
   const routeInfo = getRouteInfo();
