@@ -106,6 +106,9 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
       }
       
       if (success) {
+        // Сбрасываем локальное состояние поля ввода
+        setApiKey('');
+        
         // Принудительно загружаем ключ снова после небольшой задержки
         setTimeout(() => {
           loadApiKey();
@@ -126,19 +129,30 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
   const handleClearKey = () => {
     try {
       setIsResetting(true);
+      let success = false;
       
       if (keyType === 'zylalabs') {
-        resetZylalabsApiKey();
+        success = resetZylalabsApiKey();
       } else if (keyType === 'openai') {
-        resetOpenAIApiKey();
+        success = resetOpenAIApiKey();
       } else if (keyType === 'abacus') {
-        resetAbacusApiKey();
+        success = resetAbacusApiKey();
       }
       
-      // Очищаем поле ввода и обновляем состояние
-      setApiKey('');
-      setIsResetting(false);
-      toast.success(`API ключ ${keyTitle} успешно удален`);
+      if (success) {
+        // Очищаем поле ввода
+        setApiKey('');
+        
+        // Принудительно перезагружаем данные
+        setTimeout(() => {
+          loadApiKey();
+          setIsResetting(false);
+          toast.success(`API ключ ${keyTitle} успешно удален`);
+        }, 300);
+      } else {
+        setIsResetting(false);
+        toast.error(`Не удалось удалить API ключ ${keyTitle}`);
+      }
     } catch (error) {
       console.error(`Ошибка при очистке ключа ${keyType}:`, error);
       setIsResetting(false);
