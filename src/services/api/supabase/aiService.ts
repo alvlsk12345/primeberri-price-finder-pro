@@ -1,7 +1,7 @@
-
-import { supabaseClient } from "./client";
+import { SearchResult, BrandSuggestion } from "@/services/types";
+import { supabase } from "@/integrations/supabase/client";
+import { generateMockSearchResults } from "../mock/mockSearchGenerator";
 import { toast } from "sonner";
-import { BrandSuggestion } from "@/services/types";
 
 /**
  * Получает предложения брендов через OpenAI используя Supabase Edge Function
@@ -10,7 +10,7 @@ import { BrandSuggestion } from "@/services/types";
 export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promise<BrandSuggestion[]> => {
   try {
     // Отправляем запрос к Supabase Edge Function
-    const { data, error } = await supabaseClient.functions.invoke('ai-proxy', {
+    const { data, error } = await supabase.functions.invoke('ai-proxy', {
       body: {
         provider: 'openai',
         endpoint: 'completions',
@@ -77,7 +77,7 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
 export const searchViaPerplexity = async (action: string, method: 'GET' | 'POST' = 'POST', body: any = {}): Promise<any> => {
   try {
     // Отправляем запрос к Supabase Edge Function
-    const { data, error } = await supabaseClient.functions.invoke('ai-proxy', {
+    const { data, error } = await supabase.functions.invoke('ai-proxy', {
       body: {
         provider: 'perplexity',
         endpoint: action,

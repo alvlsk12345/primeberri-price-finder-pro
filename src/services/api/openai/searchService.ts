@@ -1,73 +1,47 @@
-
-import { toast } from "sonner";
+import { hasValidApiKey } from "./config";
 import { callOpenAI } from "./apiClient";
-import { createMockProductsFromQuery } from "./responseUtils";
-import { isUsingSupabaseBackend, isFallbackEnabled } from "../supabase/config";
-import { searchViaOpenAI } from "../supabase/aiService";
-import { isSupabaseConnected } from "../supabase/client";
+import { generateMockSearchResults } from "../mock/mockSearchGenerator";
+import { SearchResult } from "@/services/types";
+import { isUsingSupabase } from "../supabase/config";
+import { isSupabaseConnected, supabase } from "@/integrations/supabase/client";
 
-// Специфичная функция для общего использования OpenAI API для поиска товаров
-export const fetchFromOpenAI = async (query: string): Promise<any> => {
-  try {
-    // Проверяем, используем ли мы Supabase бэкенд
-    if (isUsingSupabaseBackend() && isSupabaseConnected()) {
-      console.log('Использование Supabase для поиска товаров через OpenAI');
-      try {
-        // Используем Supabase Edge Function для вызова OpenAI
-        return await searchViaOpenAI(query);
-      } catch (error) {
-        console.error('Ошибка при использовании Supabase для поиска товаров:', error);
-        
-        // Если включен фоллбэк, продолжаем с прямым вызовом
-        if (isFallbackEnabled()) {
-          toast.info('Переключение на прямой вызов API OpenAI...', { duration: 2000 });
-        } else {
-          throw error;
-        }
+// Функция для поиска товаров через OpenAI
+export const fetchFromOpenAI = async (query: string): Promise<SearchResult> => {
+  // Проверяем, используем ли мы Supabase backend
+  const useSupabase = await isUsingSupabase();
+  const supabaseConnected = await isSupabaseConnected();
+  
+  console.log('Статус Supabase для поиска:', {
+    используется: useSupabase,
+    подключен: supabaseConnected
+  });
+  
+  if (useSupabase && supabaseConnected) {
+    console.log('Использование Supabase Edge Function для поиска');
+    try {
+      // Вызываем Edge Function
+      const { data, error } = await supabase.functions.invoke('search-products', {
+        body: { query }
+      });
+      
+      if (error) {
+        console.error("Ошибка при вызове Edge Function:", error);
+        throw new Error(`Ошибка при вызове Supabase Edge Function: ${error.message}`);
       }
+      
+      console.log('Результат от Edge Function:', data);
+      return data as SearchResult;
+    } catch (supabaseError: any) {
+      console.error("Ошибка при использовании Supabase Edge Function:", supabaseError);
+      throw new Error(`Ошибка при использовании Supabase: ${supabaseError.message}`);
     }
-
-    // Улучшенный промпт для обработки сложных запросов
-    const promptTemplate = `
-Ты — AI-ассистент для поиска товаров в интернете (Zalando, Amazon, Ozon, Wildberries и другие магазины). На основе пользовательского запроса сгенерируй список из 3 карточек товаров в формате JSON.
-
-ВАЖНО: Твой ответ должен быть МАССИВОМ из 3 объектов товаров в формате JSON. Даже если найден только один товар, верни его как массив из одного элемента.
-
-Для каждого товара укажи:
-- "title": Название товара,
-- "subtitle": Краткое описание (1 слово, например: "Классика", "Новинка", "Хит"),
-- "price": Цена с валютой (например: "101,95 €" или "85.99 $"),
-- "image": Прямая ссылка на изображение товара,
-- "link": Ссылка на карточку товара в магазине,
-- "rating": Оценка по 5-балльной шкале (например: 4.8),
-- "source": Название магазина (например: "Zalando.nl" или "Amazon.com")
-
-ОЧЕНЬ ВАЖНО:
-- Внимательно анализируй запрос пользователя: учитывай указанный пол, цвет, категорию товара, диапазон цен.
-- Если указан ценовой диапазон, подбирай товары в указанном диапазоне цен.
-- Изображение обязательно должно соответствовать товару и всем параметрам запроса.
-- Все ссылки на изображения должны быть прямыми и вести на картинки формата jpg, png, webp.
-- Отвечай ТОЛЬКО в формате массива JSON без пояснений и комментариев.
-- Не придумывай данные. Показывай только реальные товары, которые можно найти в интернете.
-- Если товары не найдены — верни пустой массив: []
-- ВАЖНО: Твой ответ не должен содержать обрамляющие символы markdown или обозначения формата (\`\`\`json, \`\`\`, или любые другие форматирующие символы). Верни только массив JSON.
-- ВСЕГДА возвращай результат как массив объектов, даже если найден только один товар.
-
-Пользовательский запрос: "${query}"
-`;
-
-    return callOpenAI(promptTemplate, {
-      responseFormat: "json_object",
-      temperature: 0.2,
-      max_tokens: 1000
-    });
-  } catch (error) {
-    console.error('Ошибка при запросе к OpenAI:', error);
-    
-    // Возвращаем демо-данные в случае ошибки
-    toast.warning("Не удалось получить данные от OpenAI API. Используем демо-данные.", { duration: 3000 });
-    
-    // Создаем шаблонные товары на основе запроса
-    return createMockProductsFromQuery(query);
+  } else {
+    console.warn('Прямой вызов OpenAI API из браузера не рекомендуется из-за CORS.');
+    console.warn('Включите "Использовать Supabase Backend" в настройках для использования Edge Functions.');
+    throw new Error('Прямой вызов OpenAI API из браузера не рекомендуется. Используйте Supabase Edge Functions.');
   }
+  
+  // Если Supabase не используется или не подключен, возвращаем моковые данные
+  console.log('Использование моковых данных для поиска');
+  return generateMockSearchResults(query);
 };

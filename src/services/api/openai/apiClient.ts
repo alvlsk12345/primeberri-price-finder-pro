@@ -1,8 +1,10 @@
-import { toast } from "sonner";
-import { getApiKey } from "./config";
-import { processApiResponse } from "./responseUtils";
-import { isUsingSupabaseBackend } from "../supabase/config";
-import { isSupabaseConnected } from "../supabase/client";
+import { Configuration, OpenAIApi } from "openai";
+import { hasValidApiKey, getApiKey } from "./config";
+import { SearchResult } from "@/services/types";
+import { mapSearchResultData } from "../mock/mockSearchGenerator";
+import { generateDynamicProducts } from "../mock/dynamicProductGenerator";
+import { isUsingSupabase } from "../supabase/config";
+import { isSupabaseConnected, supabase } from "@/integrations/supabase/client";
 import { searchViaOpenAI } from "../supabase/aiService";
 import { MAX_RETRY_ATTEMPTS, createNetworkErrorHandler, OpenAIRequestOptions } from "./proxyUtils";
 
@@ -12,7 +14,7 @@ export const callOpenAI = async (prompt: string, options: OpenAIRequestOptions =
   const handleNetworkError = createNetworkErrorHandler(callOpenAI);
 
   // Проверяем, используем ли мы Supabase бэкенд и подключен ли он
-  const isSupabaseEnabled = await isUsingSupabaseBackend();
+  const isSupabaseEnabled = await isUsingSupabase();
   const isSupabaseReady = await isSupabaseConnected();
 
   console.log(`Состояние Supabase для запросов OpenAI: Включен - ${isSupabaseEnabled}, Подключен - ${isSupabaseReady}`);

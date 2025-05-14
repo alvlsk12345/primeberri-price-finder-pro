@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from "sonner";
 import {
@@ -112,11 +111,14 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType }) => {
       let success = false;
       
       if (keyType === 'zylalabs') {
-        success = resetApiKeyZylalabs();
+        resetApiKeyZylalabs();
+        success = true;
       } else if (keyType === 'openai') {
-        success = resetApiKeyOpenAI();
+        resetApiKeyOpenAI();
+        success = true;
       } else if (keyType === 'abacus') {
-        success = resetApiKeyAbacus();
+        resetApiKeyAbacus();
+        success = true;
       } else {
         console.warn(`Неизвестный тип ключа: ${keyType}`);
         return false;
@@ -147,11 +149,14 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType }) => {
       let success = false;
       
       if (keyType === 'zylalabs') {
-        success = resetApiKeyZylalabs();
+        resetApiKeyZylalabs();
+        success = true;
       } else if (keyType === 'openai') {
-        success = resetApiKeyOpenAI();
+        resetApiKeyOpenAI();
+        success = true;
       } else if (keyType === 'abacus') {
-        success = resetApiKeyAbacus();
+        resetApiKeyAbacus();
+        success = true;
       } else {
         console.warn(`Неизвестный тип ключа: ${keyType}`);
         return false;
