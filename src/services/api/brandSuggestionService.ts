@@ -1,7 +1,7 @@
 
 import { BrandSuggestion } from "@/services/types";
 import { fetchBrandSuggestions as fetchBrandSuggestionsFromOpenAI } from "./openai/brandSuggestion";
-import { fetchBrandSuggestions as fetchBrandSuggestionsFromPerplexity } from "./abacus";
+import { fetchBrandSuggestions as fetchBrandSuggestionsFromPerplexity } from "./abacus/brandSuggestion";
 import { getSelectedAIProvider, AIProvider } from "./aiProviderService";
 import { toast } from "sonner";
 import { hasValidApiKey as hasValidOpenAIApiKey } from "./openai/config";

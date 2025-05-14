@@ -1,10 +1,9 @@
-
 import { toast } from "sonner";
 import { getApiKey, API_BASE_URL } from "./config";
 import { isUsingSupabaseBackend } from "../supabase/config";
 import { searchViaPerplexity } from "../supabase/aiService";
 import { isSupabaseConnected } from "../supabase/client";
-import { BrandSuggestion } from "@/services/types";
+import { BrandSuggestion, SearchParams } from "@/services/types";
 
 // Базовая функция для использования Perplexity API с обработкой ошибок
 export const callPerplexityAI = async (
@@ -16,11 +15,12 @@ export const callPerplexityAI = async (
   } = {}
 ): Promise<any> => {
   // Проверяем, используем ли мы Supabase бэкенд
-  if (isUsingSupabaseBackend() && isSupabaseConnected()) {
+  if (isUsingSupabaseBackend() && await isSupabaseConnected()) {
     console.log(`Использование Supabase для вызова Perplexity API: ${action}`);
     try {
       // Используем Supabase Edge Function для вызова Perplexity
-      return await searchViaPerplexity(action, method, requestData);
+      const searchParams = { query: action } as SearchParams;
+      return await searchViaPerplexity(searchParams, method, requestData);
     } catch (error) {
       console.error('Ошибка при использовании Supabase для Perplexity:', error);
       toast.error(`Ошибка Supabase для Perplexity: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, { duration: 3000 });

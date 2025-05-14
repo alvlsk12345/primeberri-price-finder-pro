@@ -1,14 +1,14 @@
 
 import { SearchParams, SearchResult } from "../../types";
 import { toast } from "@/components/ui/use-toast";
-import { isUsingSupabase } from "../supabase/config";
-import { isSupabaseConnected } from "@/integrations/supabase/client";
+import { isUsingSupabaseBackend } from "../supabase/config";
+import { isSupabaseConnected } from "../supabase/client";
 import { searchViaOpenAI } from "../supabase/aiService";
 
 export const fetchFromOpenAI = async (params: SearchParams): Promise<SearchResult> => {
   try {
     // Проверка на использование Supabase
-    if (isUsingSupabase && await isSupabaseConnected()) {
+    if (isUsingSupabaseBackend() && await isSupabaseConnected()) {
       // Логика для работы с Supabase
       // ...
     }
