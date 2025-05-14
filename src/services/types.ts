@@ -18,6 +18,15 @@ export interface Product {
   specifications?: Record<string, string>;
   _numericPrice?: number;
   _sourceData?: any;
+  
+  // Добавляем отсутствующие свойства, которые используются в коде
+  availability?: string;
+  subtitle?: string;
+}
+
+// Карта магазинов для сервиса URL
+export interface StoreMap {
+  [storeName: string]: string;
 }
 
 // Интерфейс для фильтров товаров
