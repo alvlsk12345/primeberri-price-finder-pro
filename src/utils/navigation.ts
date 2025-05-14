@@ -53,29 +53,34 @@ export const getRouteInfo = (): {
   const rawPath = window.location.pathname;
   const dataPath = document.body.getAttribute('data-path');
   
-  // Проверка hash (для HashRouter)
+  // Первый приоритет - данные из хеша (для HashRouter)
   if (window.location.hash) {
     if (window.location.hash.startsWith('#/')) {
       path = window.location.hash.substring(2); // Убираем '#/'
     }
-  } else {
-    // Проверка pathname (для BrowserRouter или прямого URL)
-    path = window.location.pathname;
-    if (path.startsWith('/')) {
-      path = path.substring(1); // Стандартизируем формат пути
-    }
-  }
-  
-  // Проверка атрибута data-path если все еще нет информации
-  if (!path && dataPath) {
+  } 
+  // Второй приоритет - проверка атрибута data-path
+  else if (dataPath) {
     path = dataPath;
     if (path.startsWith('/')) {
       path = path.substring(1);
     }
   }
+  // Последний приоритет - pathname (для BrowserRouter или прямого URL)
+  else {
+    path = window.location.pathname;
+    if (path.startsWith('/')) {
+      path = path.substring(1);
+    }
+  }
   
-  // Определяем конкретный маршрут
-  const isSettings = path === 'settings';
+  // Для страницы настроек делаем дополнительные проверки
+  const isSettingsInHash = rawHash === '#/settings';
+  const isSettingsInDataPath = dataPath === '/settings';
+  const hasSettingsClass = document.body.classList.contains('settings-page');
+  
+  // Определяем конкретный маршрут с учетом всех факторов
+  const isSettings = path === 'settings' || isSettingsInHash || isSettingsInDataPath || hasSettingsClass;
   const isIndex = !path || path === '' || path === 'index';
   
   return {

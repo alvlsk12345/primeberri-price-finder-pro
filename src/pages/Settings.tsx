@@ -18,33 +18,51 @@ import { getRouteInfo } from '@/utils/navigation';
 const Settings = () => {
   console.log('[Settings] Рендер компонента Settings');
   
-  const [supabaseConfig, setSupabaseConfig] = useState(getSupabaseAIConfig());
-  const [checkingStatus, setCheckingStatus] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<null | boolean>(null);
-
-  // Используем useEffect для установки атрибута data-path в body
-  // Это поможет другим компонентам определять текущий маршрут
+  // Устанавливаем атрибут data-path в body при монтировании компонента
+  // Делаем это до любых других операций
   useEffect(() => {
     console.log('[Settings] useEffect - устанавливаем data-path /settings');
     document.body.setAttribute('data-path', '/settings');
     document.body.classList.add('settings-page');
     
-    // Перед креплением компонента Settings, очищаем кеш состояния подключения
-    clearConnectionCache();
+    // Используем setTimeout, чтобы дать время на установку атрибута
+    // перед очисткой кеша соединения
+    const timeoutId = setTimeout(() => {
+      console.log('[Settings] Отложенная очистка кеша состояния подключения');
+      clearConnectionCache();
+    }, 100);
     
     return () => {
       console.log('[Settings] useEffect - удаляем data-path при размонтировании');
       document.body.removeAttribute('data-path');
       document.body.classList.remove('settings-page');
+      clearTimeout(timeoutId);
     };
   }, []);
   
+  // Безопасно получаем конфигурацию
+  const [supabaseConfig, setSupabaseConfig] = useState(() => {
+    console.log('[Settings] Инициализация состояния supabaseConfig');
+    try {
+      return getSupabaseAIConfig();
+    } catch (error) {
+      console.error('[Settings] Ошибка при получении конфигурации:', error);
+      return {
+        useSupabaseBackend: true,
+        fallbackToDirectCalls: true
+      };
+    }
+  });
+  
+  const [checkingStatus, setCheckingStatus] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<null | boolean>(null);
+
   // Дополнительный эффект для проверки и логирования текущего маршрута
   useEffect(() => {
     const routeInfo = getRouteInfo();
     console.log(`[Settings] Текущий маршрут после монтирования: ${JSON.stringify(routeInfo)}`);
     
-    // Проверка каждые 500 мс, чтобы убедиться, что маршрут корректно определяется
+    // Дополнительная защита от перенаправления - проверяем раз в секунду
     const intervalId = setInterval(() => {
       const currentRouteInfo = getRouteInfo();
       if (!currentRouteInfo.isSettings) {
@@ -53,7 +71,7 @@ const Settings = () => {
         document.body.setAttribute('data-path', '/settings');
         document.body.classList.add('settings-page');
       }
-    }, 500);
+    }, 1000);
     
     // Очистка интервала при размонтировании
     return () => {
@@ -62,28 +80,55 @@ const Settings = () => {
   }, []);
 
   const handleSupabaseBackendChange = (checked: boolean) => {
-    const newConfig = setSupabaseAIConfig({ useSupabaseBackend: checked });
-    setSupabaseConfig(newConfig);
+    try {
+      const newConfig = setSupabaseAIConfig({ useSupabaseBackend: checked });
+      setSupabaseConfig(newConfig);
+    } catch (error) {
+      console.error('[Settings] Ошибка при изменении настройки useSupabaseBackend:', error);
+      toast.error('Не удалось сохранить настройки, попробуйте еще раз');
+    }
   };
 
   const handleFallbackChange = (checked: boolean) => {
-    const newConfig = setSupabaseAIConfig({ fallbackToDirectCalls: checked });
-    setSupabaseConfig(newConfig);
+    try {
+      const newConfig = setSupabaseAIConfig({ fallbackToDirectCalls: checked });
+      setSupabaseConfig(newConfig);
+    } catch (error) {
+      console.error('[Settings] Ошибка при изменении настройки fallbackToDirectCalls:', error);
+      toast.error('Не удалось сохранить настройки, попробуйте еще раз');
+    }
   };
 
   // Функция для проверки соединения с Supabase - ТОЛЬКО ПО НАЖАТИЮ КНОПКИ
   const handleCheckConnection = async () => {
+    // Проверяем, что это действительно страница настроек
+    const routeInfo = getRouteInfo();
+    if (!routeInfo.isSettings) {
+      console.warn('[Settings] handleCheckConnection: отменено, так как это не страница настроек');
+      return;
+    }
+    
     setCheckingStatus(true);
     setConnectionStatus(null);
     
     try {
-      toast.loading("Проверка соединения с Supabase...");
+      toast.loading("Проверка соединения с Supabase...", {
+        id: 'check-connection-toast'
+      });
       
       // Очищаем кеш состояния подключения перед проверкой
       clearConnectionCache();
       
       // Явное требование проверки соединения с принудительным обновлением кеша
       const isConnected = await checkSupabaseConnection(true);
+      
+      // Повторно проверяем, что мы все еще на странице настроек
+      const currentRouteInfo = getRouteInfo();
+      if (!currentRouteInfo.isSettings) {
+        console.warn('[Settings] handleCheckConnection: отменено обновление UI, так как маршрут изменился');
+        toast.dismiss('check-connection-toast');
+        return;
+      }
       
       setConnectionStatus(isConnected);
       
@@ -100,13 +145,26 @@ const Settings = () => {
       }
     } catch (error) {
       console.error("[Settings] Ошибка при проверке соединения:", error);
+      
+      // Повторно проверяем маршрут
+      const currentRouteInfo = getRouteInfo();
+      if (!currentRouteInfo.isSettings) {
+        toast.dismiss('check-connection-toast');
+        return;
+      }
+      
       setConnectionStatus(false);
       toast.error("Произошла ошибка при проверке соединения", {
         description: error instanceof Error ? error.message : "Неизвестная ошибка",
         duration: 5000
       });
     } finally {
-      setCheckingStatus(false);
+      // Проверяем маршрут перед обновлением состояния
+      const finalRouteInfo = getRouteInfo();
+      if (finalRouteInfo.isSettings) {
+        setCheckingStatus(false);
+      }
+      toast.dismiss('check-connection-toast');
     }
   };
 

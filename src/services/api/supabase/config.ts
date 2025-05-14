@@ -18,9 +18,49 @@ const DEFAULT_CONFIG: SupabaseAIConfig = {
 export function getSupabaseAIConfig(): SupabaseAIConfig {
   try {
     const savedConfig = localStorage.getItem(SUPABASE_AI_CONFIG_KEY);
-    return savedConfig ? JSON.parse(savedConfig) : DEFAULT_CONFIG;
+    if (savedConfig) {
+      console.log('[SupabaseConfig] Найдены сохраненные настройки:', savedConfig);
+      try {
+        const parsed = JSON.parse(savedConfig);
+        console.log('[SupabaseConfig] Настройки успешно распарсены:', parsed);
+        
+        // Проверяем валидность конфигурации
+        if (typeof parsed !== 'object' || parsed === null) {
+          throw new Error('Некорректный формат конфигурации');
+        }
+        
+        // Убедимся, что все необходимые поля существуют
+        const validConfig: SupabaseAIConfig = {
+          useSupabaseBackend: typeof parsed.useSupabaseBackend === 'boolean' 
+            ? parsed.useSupabaseBackend 
+            : DEFAULT_CONFIG.useSupabaseBackend,
+          fallbackToDirectCalls: typeof parsed.fallbackToDirectCalls === 'boolean'
+            ? parsed.fallbackToDirectCalls
+            : DEFAULT_CONFIG.fallbackToDirectCalls
+        };
+        
+        return validConfig;
+      } catch (parseError) {
+        console.error('[SupabaseConfig] Ошибка при парсинге настроек:', parseError);
+        console.warn('[SupabaseConfig] Удаление некорректных данных из localStorage');
+        localStorage.removeItem(SUPABASE_AI_CONFIG_KEY);
+        return DEFAULT_CONFIG;
+      }
+    }
+    
+    console.log('[SupabaseConfig] Сохраненные настройки не найдены, используются дефолтные.');
+    return DEFAULT_CONFIG;
   } catch (e) {
-    console.error('Ошибка при получении настроек Supabase AI:', e);
+    console.error('[SupabaseConfig] КРИТИЧЕСКАЯ ОШИБКА при получении настроек Supabase AI:', e);
+    console.warn('[SupabaseConfig] Возвращены дефолтные настройки из-за ошибки.');
+    
+    // Пытаемся очистить потенциально проблемные данные
+    try {
+      localStorage.removeItem(SUPABASE_AI_CONFIG_KEY);
+    } catch (clearError) {
+      console.error('[SupabaseConfig] Не удалось очистить localStorage:', clearError);
+    }
+    
     return DEFAULT_CONFIG;
   }
 }
@@ -33,10 +73,12 @@ export function setSupabaseAIConfig(config: Partial<SupabaseAIConfig>): Supabase
     const newConfig = { ...currentConfig, ...config };
     
     // Сохраняем в localStorage
-    localStorage.setItem(SUPABASE_AI_CONFIG_KEY, JSON.stringify(newConfig));
+    const jsonString = JSON.stringify(newConfig);
+    localStorage.setItem(SUPABASE_AI_CONFIG_KEY, jsonString);
+    console.log('[SupabaseConfig] Настройки успешно сохранены:', newConfig);
     return newConfig;
   } catch (e) {
-    console.error('Ошибка при сохранении настроек Supabase AI:', e);
+    console.error('[SupabaseConfig] Ошибка при сохранении настроек Supabase AI:', e);
     return DEFAULT_CONFIG;
   }
 }
