@@ -5,8 +5,14 @@ import { SearchFormSection } from "@/components/search/SearchFormSection";
 import { SearchResultsSection } from "@/components/search/SearchResultsSection";
 import { NoResultsMessage } from "@/components/search/NoResultsMessage";
 import { ProductDetailsSection } from "@/components/product/ProductDetailsSection";
+import { isOnSettingsPage } from "@/utils/navigation";
 
 export const SearchContainer: React.FC = () => {
+  // Проверка, находимся ли мы на странице настроек
+  const inSettingsPage = isOnSettingsPage();
+  
+  console.log(`[SearchContainer] Рендер SearchContainer, inSettingsPage=${inSettingsPage}`);
+  
   return (
     <Card className="max-w-4xl mx-auto shadow-md border-brand/20">
       <CardHeader className="text-center bg-brand/10 rounded-t-md">
@@ -21,7 +27,7 @@ export const SearchContainer: React.FC = () => {
       <CardContent className="p-6">
         <div className="flex flex-col gap-6">
           <SearchFormSection />
-          <NoResultsMessage />
+          {!inSettingsPage && <NoResultsMessage />}
           <SearchResultsSection />
           <ProductDetailsSection />
         </div>
