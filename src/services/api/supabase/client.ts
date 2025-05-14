@@ -1,5 +1,4 @@
 
-
 import { supabase as integrationSupabase } from '@/integrations/supabase/client';
 import { getRouteInfo } from '@/utils/navigation';
 

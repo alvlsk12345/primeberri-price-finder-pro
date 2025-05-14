@@ -14,7 +14,12 @@ export const useSettingsPageEffect = () => {
     // перед очисткой кеша соединения
     const timeoutId = setTimeout(() => {
       console.log('[Settings] Отложенная очистка кеша состояния подключения');
-      clearConnectionCache();
+      try {
+        clearConnectionCache();
+        console.log('[Settings] Кеш состояния подключения успешно очищен');
+      } catch (error) {
+        console.error('[Settings] Ошибка при очистке кеша состояния подключения:', error);
+      }
     }, 100);
     
     return () => {

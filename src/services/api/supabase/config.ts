@@ -17,7 +17,9 @@ const DEFAULT_CONFIG: SupabaseAIConfig = {
 // Получение текущей конфигурации
 export function getSupabaseAIConfig(): SupabaseAIConfig {
   try {
+    console.log('[SupabaseConfig] Начало выполнения getSupabaseAIConfig');
     const savedConfig = localStorage.getItem(SUPABASE_AI_CONFIG_KEY);
+    
     if (savedConfig) {
       console.log('[SupabaseConfig] Найдены сохраненные настройки:', savedConfig);
       try {
@@ -26,7 +28,9 @@ export function getSupabaseAIConfig(): SupabaseAIConfig {
         
         // Проверяем валидность конфигурации
         if (typeof parsed !== 'object' || parsed === null) {
-          throw new Error('Некорректный формат конфигурации');
+          console.warn('[SupabaseConfig] Некорректный формат конфигурации: не объект');
+          localStorage.removeItem(SUPABASE_AI_CONFIG_KEY);
+          return DEFAULT_CONFIG;
         }
         
         // Убедимся, что все необходимые поля существуют
@@ -39,6 +43,7 @@ export function getSupabaseAIConfig(): SupabaseAIConfig {
             : DEFAULT_CONFIG.fallbackToDirectCalls
         };
         
+        console.log('[SupabaseConfig] Возвращаем валидную конфигурацию:', validConfig);
         return validConfig;
       } catch (parseError) {
         console.error('[SupabaseConfig] Ошибка при парсинге настроек:', parseError);
@@ -57,6 +62,7 @@ export function getSupabaseAIConfig(): SupabaseAIConfig {
     // Пытаемся очистить потенциально проблемные данные
     try {
       localStorage.removeItem(SUPABASE_AI_CONFIG_KEY);
+      console.log('[SupabaseConfig] Локальное хранилище очищено от поврежденных данных');
     } catch (clearError) {
       console.error('[SupabaseConfig] Не удалось очистить localStorage:', clearError);
     }
