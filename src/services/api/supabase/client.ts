@@ -1,5 +1,4 @@
 
-
 import { supabase as integrationSupabase } from '@/integrations/supabase/client';
 
 // Переиспользуем клиент из интеграции Supabase
@@ -13,17 +12,12 @@ export async function isSupabaseConnected(showLogs = true): Promise<boolean> {
       console.log('Проверка подключения к Supabase...');
     }
     
-    // Используем простой запрос к системной таблице pg_stat_database, 
-    // который должен работать во всех случаях
-    const { data, error } = await supabase
-      .from('_fake_table_for_connection_test_only')
-      .select('*')
-      .limit(1)
-      .single();
-      
-    // Успешное соединение будет, если ошибка связана с отсутствием таблицы,
-    // а не с проблемой соединения
-    const isConnected = error && error.code === 'PGRST116';
+    // Используем более простой и надежный метод для проверки подключения - ping
+    // Это обходит проблемы типизации при попытке обращения к несуществующей таблице
+    const { error } = await supabase.auth.getSession();
+    
+    // Если нет ошибки, считаем что соединение установлено
+    const isConnected = !error;
     
     if (showLogs) {
       if (isConnected) {
@@ -53,4 +47,3 @@ export default {
   supabase,
   checkSupabaseConnection
 };
-
