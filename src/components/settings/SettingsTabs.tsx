@@ -3,6 +3,7 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiKeysTab } from "@/components/settings/tabs/ApiKeysTab";
 import { SupabaseTab } from "@/components/settings/tabs/SupabaseTab";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export const SettingsTabs: React.FC = () => {
   return (
@@ -13,11 +14,19 @@ export const SettingsTabs: React.FC = () => {
       </TabsList>
       
       <TabsContent value="api-keys" className="space-y-4">
-        <ApiKeysTab />
+        <ErrorBoundary fallback={<div className="p-4 bg-red-50 rounded-md text-red-600">
+          Произошла ошибка при загрузке вкладки API ключей. Пожалуйста, обновите страницу.
+        </div>}>
+          <ApiKeysTab />
+        </ErrorBoundary>
       </TabsContent>
       
       <TabsContent value="supabase">
-        <SupabaseTab />
+        <ErrorBoundary fallback={<div className="p-4 bg-red-50 rounded-md text-red-600">
+          Произошла ошибка при загрузке вкладки настроек Supabase. Пожалуйста, обновите страницу.
+        </div>}>
+          <SupabaseTab />
+        </ErrorBoundary>
       </TabsContent>
     </Tabs>
   );
