@@ -13,6 +13,7 @@ import { ApiKeyFormError } from './ApiKeyFormError';
 import { getApiKey as getZylalabsApiKey, setApiKey as setZylalabsApiKey, resetApiKey as resetZylalabsApiKey, ZYLALABS_API_KEY } from '@/services/api/zylalabs/config';
 import { getApiKey as getOpenAIApiKey, setApiKey as setOpenAIApiKey } from '@/services/api/openai/config';
 import { getApiKey as getAbacusApiKey, setApiKey as setAbacusApiKey } from '@/services/api/abacus/config';
+import { getApiKey as getAnthropicApiKey, setApiKey as setAnthropicApiKey } from '@/services/api/anthropic/config';
 
 // Интерфейс для пропсов компонента ApiKeyForm
 export interface ApiKeyFormProps {
@@ -24,16 +25,19 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType }) => {
   const keyTitle = 
     keyType === 'openai' ? 'OpenAI API' : 
     keyType === 'abacus' ? 'Abacus.ai API' : 
+    keyType === 'anthropic' ? 'Anthropic API' :
     'Zylalabs API';
     
   const keyPlaceholder = 
     keyType === 'openai' ? 'sk-...' : 
     keyType === 'abacus' ? 'abacus_api_key_...' : 
+    keyType === 'anthropic' ? 'sk-ant-...' :
     '1234|...';
     
   const keyWebsite = 
     keyType === 'openai' ? 'https://platform.openai.com/api-keys' : 
     keyType === 'abacus' ? 'https://abacus.ai/app/apiKeys' : 
+    keyType === 'anthropic' ? 'https://console.anthropic.com/keys' :
     'https://zylalabs.com/api/2033/real+time+product+search+api';
 
   // Функции для получения, сохранения и сброса ключей
@@ -44,6 +48,8 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType }) => {
       return getOpenAIApiKey();
     } else if (keyType === 'abacus') {
       return getAbacusApiKey();
+    } else if (keyType === 'anthropic') {
+      return getAnthropicApiKey();
     }
     return '';
   };
@@ -65,6 +71,10 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType }) => {
     } else if (keyType === 'abacus') {
       setAbacusApiKey(key);
       toast.success('API ключ Abacus.ai успешно сохранен');
+      return true;
+    } else if (keyType === 'anthropic') {
+      setAnthropicApiKey(key);
+      toast.success('API ключ Anthropic успешно сохранен');
       return true;
     }
     return false;
@@ -114,6 +124,7 @@ export const SafeApiKeyForm: React.FC<ApiKeyFormProps> = (props) => {
   const keyTitle = 
     props.keyType === 'openai' ? 'OpenAI API' : 
     props.keyType === 'abacus' ? 'Abacus.ai API' : 
+    props.keyType === 'anthropic' ? 'Anthropic API' :
     'Zylalabs API';
 
   return (

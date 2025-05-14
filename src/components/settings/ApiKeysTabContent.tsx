@@ -32,6 +32,15 @@ export const ApiKeysTabContent: React.FC = () => {
       }>
         <SafeApiKeyForm keyType="abacus" />
       </ErrorBoundary>
+      
+      <ErrorBoundary fallback={
+        <div className="p-4 bg-red-50 rounded-md text-red-600">
+          <h3 className="font-medium mb-2">Ошибка при загрузке формы ключа Anthropic</h3>
+          <p>Причиной может быть проблема с доступом к локальному хранилищу.</p>
+        </div>
+      }>
+        <SafeApiKeyForm keyType="anthropic" />
+      </ErrorBoundary>
     </div>
   );
 };

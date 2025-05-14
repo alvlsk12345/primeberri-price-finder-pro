@@ -1,11 +1,11 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-// Типы API ключей
-export type ApiKeyType = 'openai' | 'zylalabs' | 'abacus';
+// Типы API ключей - добавляем новый тип "anthropic"
+export type ApiKeyType = 'openai' | 'zylalabs' | 'abacus' | 'anthropic';
 
-// Интерфейс контекста API ключа
-export interface ApiKeyContextValue {
+// Контекст для хранения состояния API ключа
+export interface ApiKeyContextType {
   apiKey: string;
   setApiKey: (key: string) => void;
   isVisible: boolean;
@@ -19,13 +19,11 @@ export interface ApiKeyContextValue {
   keyTitle: string;
   keyPlaceholder: string;
   keyWebsite: string;
+  getKey: () => string;
 }
 
-// Создаем контекст
-const ApiKeyContext = createContext<ApiKeyContextValue | undefined>(undefined);
-
-// Параметры провайдера
-interface ApiKeyProviderProps {
+// Пропсы для провайдера контекста API ключа
+export interface ApiKeyProviderProps {
   children: React.ReactNode;
   keyType: ApiKeyType;
   getKey: () => string;
@@ -36,6 +34,23 @@ interface ApiKeyProviderProps {
   keyPlaceholder: string;
   keyWebsite: string;
 }
+
+// Создание контекста API ключа с дефолтными значениями
+const ApiKeyContext = createContext<ApiKeyContextType>({
+  apiKey: '',
+  setApiKey: () => {},
+  isVisible: false,
+  toggleVisibility: () => {},
+  error: null,
+  setError: () => {},
+  isLoading: true,
+  setIsLoading: () => {},
+  saveKey: () => {},
+  keyTitle: '',
+  keyPlaceholder: '',
+  keyWebsite: '',
+  getKey: () => '',
+});
 
 // Провайдер контекста API ключа
 export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({
@@ -54,45 +69,41 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Загрузка ключа при инициализации
+  // Загрузка API ключа при монтировании компонента
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      try {
-        setIsLoading(true);
-        const key = getKey();
-        setApiKey(key);
-        setError(null);
-        setIsLoading(false);
-      } catch (err) {
-        console.error(`[ApiKeyContext] Ошибка при получении ${keyType} ключа:`, err);
-        setError(`Не удалось получить ${keyTitle} ключ. Проверьте консоль для деталей.`);
-        setIsLoading(false);
-      }
-    }, 300);
-    
-    return () => clearTimeout(timeoutId);
-  }, [keyType, keyTitle, getKey]);
+    try {
+      console.log(`[ApiKeyContext] Загрузка ${keyType} API ключа`);
+      const storedKey = getKey();
+      setApiKey(storedKey || defaultKey);
+      setError(null);
+    } catch (err) {
+      console.error(`[ApiKeyContext] Ошибка при загрузке ${keyType} API ключа:`, err);
+      setError('Не удалось загрузить API ключ');
+      setApiKey(defaultKey);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [keyType, getKey, defaultKey]);
 
-  // Переключение видимости ключа
-  const toggleVisibility = () => {
-    setIsVisible(!isVisible);
-  };
+  // Переключение видимости API ключа
+  const toggleVisibility = () => setIsVisible(!isVisible);
 
-  // Сохранение ключа
+  // Сохранение API ключа
   const handleSaveKey = () => {
     try {
-      if (!apiKey.trim()) {
-        setError('Пожалуйста, введите API ключ');
-        return;
-      }
-
-      const result = saveKey(apiKey.trim());
-      if (result !== false) {
+      console.log(`[ApiKeyContext] Сохранение ${keyType} API ключа`);
+      const result = saveKey(apiKey);
+      
+      if (result === false) {
+        // Если функция saveKey возвращает false, значит сохранение не удалось
+        setError('Не удалось сохранить API ключ');
+      } else {
+        // Успешное сохранение
         setError(null);
       }
     } catch (err) {
-      console.error(`[ApiKeyContext] Ошибка при сохранении ${keyType} ключа:`, err);
-      setError(`Ошибка при сохранении ключа ${keyTitle}. Попробуйте еще раз.`);
+      console.error(`[ApiKeyContext] Ошибка при сохранении ${keyType} API ключа:`, err);
+      setError('Произошла ошибка при сохранении API ключа');
     }
   };
 
@@ -112,6 +123,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({
         keyTitle,
         keyPlaceholder,
         keyWebsite,
+        getKey
       }}
     >
       {children}
@@ -120,9 +132,9 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({
 };
 
 // Хук для использования контекста API ключа
-export const useApiKey = (): ApiKeyContextValue => {
+export const useApiKey = () => {
   const context = useContext(ApiKeyContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useApiKey должен использоваться внутри ApiKeyProvider');
   }
   return context;
