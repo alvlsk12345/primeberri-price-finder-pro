@@ -10,23 +10,13 @@ export const useSettingsPageEffect = () => {
     document.body.setAttribute('data-path', '/settings');
     document.body.classList.add('settings-page');
     
-    // Используем setTimeout, чтобы дать время на установку атрибута
-    // перед очисткой кеша соединения
-    const timeoutId = setTimeout(() => {
-      console.log('[Settings] Отложенная очистка кеша состояния подключения');
-      try {
-        clearConnectionCache();
-        console.log('[Settings] Кеш состояния подключения успешно очищен');
-      } catch (error) {
-        console.error('[Settings] Ошибка при очистке кеша состояния подключения:', error);
-      }
-    }, 100);
+    // Удаляем setTimeout для предотвращения очистки кеша в ранней фазе монтирования
+    // Это предотвращает нестабильную работу при проверке маршрута
     
     return () => {
       console.log('[Settings] useEffect - удаляем data-path при размонтировании');
       document.body.removeAttribute('data-path');
       document.body.classList.remove('settings-page');
-      clearTimeout(timeoutId);
     };
   }, []);
 
@@ -36,6 +26,7 @@ export const useSettingsPageEffect = () => {
     console.log(`[Settings] Текущий маршрут после монтирования: ${JSON.stringify(routeInfo)}`);
     
     // Дополнительная защита от перенаправления - проверяем раз в секунду
+    // Но НЕ очищаем кеш соединения здесь
     const intervalId = setInterval(() => {
       const currentRouteInfo = getRouteInfo();
       if (!currentRouteInfo.isSettings) {

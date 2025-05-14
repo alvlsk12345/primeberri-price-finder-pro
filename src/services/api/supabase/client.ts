@@ -124,8 +124,17 @@ export function checkSupabaseConnection(forceCheck = false) {
 
 /**
  * Удаляет кешированный результат проверки соединения
+ * Добавлена защита от запуска на странице настроек
  */
 export function clearConnectionCache() {
+  // Защитный механизм: проверяем, что мы не на странице настроек
+  const routeInfo = getRouteInfo();
+  
+  if (routeInfo.isSettings) {
+    console.log('[supabase/client] Попытка очистки кеша на странице настроек игнорируется для предотвращения перенаправления');
+    return; // Предотвращаем очистку кеша на странице настроек
+  }
+  
   connectionState.isConnected = null;
   connectionState.timestamp = 0;
   console.log('[supabase/client] Кеш проверки соединения очищен');

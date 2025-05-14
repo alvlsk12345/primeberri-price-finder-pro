@@ -53,7 +53,33 @@ export const getRouteInfo = (): {
   const rawPath = window.location.pathname;
   const dataPath = document.body.getAttribute('data-path');
   
-  // Первый приоритет - данные из хеша (для HashRouter)
+  // Обновленная логика определения маршрута с приоритетом на хеш (для HashRouter)
+  
+  // Первый и самый высокий приоритет для страницы настроек - прямая проверка на '#/settings'
+  if (rawHash === '#/settings') {
+    return {
+      path: 'settings',
+      isSettings: true,
+      isIndex: false,
+      rawHash,
+      rawPath,
+      dataPath
+    };
+  }
+  
+  // Проверка атрибутов data- для страницы настроек, которые устанавливаются компонентом Settings
+  if (dataPath === '/settings' || document.body.classList.contains('settings-page')) {
+    return {
+      path: 'settings',
+      isSettings: true,
+      isIndex: false,
+      rawHash,
+      rawPath,
+      dataPath
+    };
+  }
+  
+  // Общий алгоритм определения пути для других страниц
   if (window.location.hash) {
     if (window.location.hash.startsWith('#/')) {
       path = window.location.hash.substring(2); // Убираем '#/'
@@ -74,13 +100,8 @@ export const getRouteInfo = (): {
     }
   }
   
-  // Для страницы настроек делаем дополнительные проверки
-  const isSettingsInHash = rawHash === '#/settings';
-  const isSettingsInDataPath = dataPath === '/settings';
-  const hasSettingsClass = document.body.classList.contains('settings-page');
-  
   // Определяем конкретный маршрут с учетом всех факторов
-  const isSettings = path === 'settings' || isSettingsInHash || isSettingsInDataPath || hasSettingsClass;
+  const isSettings = path === 'settings';
   const isIndex = !path || path === '' || path === 'index';
   
   return {

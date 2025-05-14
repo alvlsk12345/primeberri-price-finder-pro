@@ -14,7 +14,7 @@ const DEFAULT_CONFIG: SupabaseAIConfig = {
   fallbackToDirectCalls: true // По умолчанию делаем фоллбэк на прямые вызовы
 };
 
-// Получение текущей конфигурации
+// Получение текущей конфигурации с улучшенной обработкой ошибок
 export function getSupabaseAIConfig(): SupabaseAIConfig {
   try {
     console.log('[SupabaseConfig] Начало выполнения getSupabaseAIConfig');
