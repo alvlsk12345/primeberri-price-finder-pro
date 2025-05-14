@@ -3,10 +3,10 @@ import { useSearchQueryState } from './search/useSearchQueryState';
 import { usePaginationState } from './search/usePaginationState';
 import { useResultsState } from './search/useResultsState';
 import { useFiltersState } from './search/useFiltersState';
-import { isOnSettingsPage, getRouteInfo } from '@/utils/navigation';
+import { isOnSettingsPage, getRouteInfo, getNormalizedRouteForLogging } from '@/utils/navigation';
 
 export function useSearchState() {
-  console.log('[useSearchState] Инициализация хука useSearchState');
+  console.log(`[useSearchState] Инициализация хука useSearchState, текущий маршрут: ${getNormalizedRouteForLogging()}`);
   
   // Получаем информацию о маршруте
   const routeInfo = getRouteInfo();

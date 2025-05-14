@@ -2,10 +2,10 @@
 import { useEffect } from 'react';
 import { useSearchState } from './useSearchState';
 import { useSearchActions } from './useSearchActions';
-import { isOnSettingsPage, getRouteInfo } from '@/utils/navigation';
+import { isOnSettingsPage, getRouteInfo, getNormalizedRouteForLogging } from '@/utils/navigation';
 
 export function useSearchLogic() {
-  console.log('[useSearchLogic] Инициализация хука useSearchLogic');
+  console.log(`[useSearchLogic] Инициализация хука useSearchLogic, текущий маршрут: ${getNormalizedRouteForLogging()}`);
   
   // Получаем все состояния поиска из нашего кастомного хука
   const searchState = useSearchState();
@@ -21,7 +21,7 @@ export function useSearchLogic() {
   
   // Эффект для очистки - выполняем только если не на странице настроек
   useEffect(() => {
-    console.log(`[useSearchLogic] useEffect выполняется, inSettingsPage = ${inSettingsPage}`);
+    console.log(`[useSearchLogic] useEffect выполняется, inSettingsPage = ${inSettingsPage}, маршрут: ${getNormalizedRouteForLogging()}`);
     
     // Защита от выполнения эффекта на странице настроек
     if (inSettingsPage) {

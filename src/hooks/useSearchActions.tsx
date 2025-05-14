@@ -1,9 +1,11 @@
+
 import { useRef } from 'react';
 import { Product, ProductFilters } from "@/services/types";
 import { useSearchExecutionActions } from './search/useSearchExecutionActions';
 import { useProductSelectionActions } from './search/useProductSelectionActions';
 import { usePaginationActions } from './search/usePaginationActions';
 import { useFilterActions } from './search/useFilterActions';
+import { getRouteInfo, getNormalizedRouteForLogging } from '@/utils/navigation';
 
 // Типы для пропсов управления состоянием
 type SearchStateProps = {
@@ -41,6 +43,11 @@ type SearchStateProps = {
 };
 
 export function useSearchActions(props: SearchStateProps) {
+  // Проверяем текущий маршрут для дополнительной защиты
+  const routeInfo = getRouteInfo();
+  
+  console.log(`[useSearchActions] Инициализация хука, текущий маршрут: ${getNormalizedRouteForLogging()}`);
+  
   const {
     searchQuery,
     setSearchQuery,
@@ -106,6 +113,13 @@ export function useSearchActions(props: SearchStateProps) {
   
   // Адаптируем интерфейс handleSearch для совместимости с требуемым API
   const adaptedHandleSearch = async (page: number, forceNewSearch?: boolean) => {
+    // Дополнительная проверка перед выполнением поиска
+    const currentRouteInfo = getRouteInfo();
+    if (currentRouteInfo.isSettings) {
+      console.log(`[useSearchActions] Попытка выполнить поиск на странице настроек - отменено. Маршрут: ${getNormalizedRouteForLogging()}`);
+      return;
+    }
+    
     return handleSearch({ 
       forcePage: page, 
       forceRefresh: forceNewSearch 
@@ -120,13 +134,31 @@ export function useSearchActions(props: SearchStateProps) {
     setPageChangeCount,
     setCurrentPage,
     // Используем правильный интерфейс для передачи параметра
-    handleSearch: (page: number) => handleSearch({ forcePage: page })
+    handleSearch: (page: number) => {
+      // Дополнительная проверка перед выполнением поиска
+      const currentRouteInfo = getRouteInfo();
+      if (currentRouteInfo.isSettings) {
+        console.log(`[useSearchActions] Попытка сменить страницу на странице настроек - отменено. Маршрут: ${getNormalizedRouteForLogging()}`);
+        return Promise.resolve();
+      }
+      
+      return handleSearch({ forcePage: page });
+    }
   });
   
   const { handleFilterChange } = useFilterActions({
     allResults: allSearchResults,
     setFilters,
-    handleSearch: () => handleSearch({ forceRefresh: true }),
+    handleSearch: () => {
+      // Дополнительная проверка перед выполнением поиска
+      const currentRouteInfo = getRouteInfo();
+      if (currentRouteInfo.isSettings) {
+        console.log(`[useSearchActions] Попытка изменить фильтры на странице настроек - отменено. Маршрут: ${getNormalizedRouteForLogging()}`);
+        return Promise.resolve();
+      }
+      
+      return handleSearch({ forceRefresh: true });
+    },
     filters,
     setSearchResults
   });

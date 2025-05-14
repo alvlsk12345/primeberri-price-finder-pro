@@ -2,7 +2,7 @@
 import { useRef } from 'react';
 import { Product, ProductFilters, SearchParams } from "@/services/types";
 import { useSearchCore } from './useSearchCore';
-import { isOnSettingsPage } from '@/utils/navigation';
+import { isOnSettingsPage, getRouteInfo, getNormalizedRouteForLogging } from '@/utils/navigation';
 
 type SearchExecutorProps = {
   isLoading: boolean;
@@ -32,7 +32,11 @@ export function useSearchExecutor({
   setApiInfo,
 }: SearchExecutorProps) {
   // Проверка на страницу настроек для предотвращения выполнения поиска
-  const inSettingsPage = isOnSettingsPage();
+  const routeInfo = getRouteInfo();
+  const inSettingsPage = routeInfo.isSettings;
+  
+  // Дополнительное логирование
+  console.log(`[useSearchExecutor] Инициализация, текущий маршрут: ${getNormalizedRouteForLogging()}, inSettingsPage=${inSettingsPage}`);
   
   // Сохраняем предыдущие результаты для восстановления при ошибке
   const lastSuccessfulResultsRef = useRef<Product[]>([]);
@@ -53,21 +57,31 @@ export function useSearchExecutor({
   
   // Обертка для executeSearch с дополнительными проверками
   const safeExecuteSearch = async (searchParams: any) => {
-    if (inSettingsPage) {
-      console.log('Попытка выполнить поиск на странице настроек - отменено');
+    // Повторная проверка перед выполнением поиска
+    const currentRouteInfo = getRouteInfo();
+    const currentInSettingsPage = currentRouteInfo.isSettings;
+    
+    if (currentInSettingsPage) {
+      console.log(`[useSearchExecutor] Попытка выполнить поиск на странице настроек - отменено. Маршрут: ${getNormalizedRouteForLogging()}`);
       return [];
     }
     
+    console.log(`[useSearchExecutor] Выполняем поиск, текущий маршрут: ${getNormalizedRouteForLogging()}`);
     return await executeSearch(searchParams);
   };
   
   // Обертка для cleanupSearch с дополнительными проверками
   const safeCleanupSearch = () => {
-    if (inSettingsPage) {
-      console.log('Попытка очистить поиск на странице настроек - отменено');
+    // Повторная проверка перед очисткой
+    const currentRouteInfo = getRouteInfo();
+    const currentInSettingsPage = currentRouteInfo.isSettings;
+    
+    if (currentInSettingsPage) {
+      console.log(`[useSearchExecutor] Попытка очистить поиск на странице настроек - отменено. Маршрут: ${getNormalizedRouteForLogging()}`);
       return;
     }
     
+    console.log(`[useSearchExecutor] Очищаем поиск, текущий маршрут: ${getNormalizedRouteForLogging()}`);
     cleanupSearch();
   };
 

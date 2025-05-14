@@ -1,17 +1,29 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSearch } from "@/contexts/SearchContext";
-import { isOnSettingsPage } from "@/utils/navigation";
+import { isOnSettingsPage, getRouteInfo, getNormalizedRouteForLogging } from "@/utils/navigation";
 
 export const NoResultsMessage: React.FC = () => {
+  // Добавляем расширенное логирование для отладки
+  useEffect(() => {
+    console.log(`[NoResultsMessage] Монтируем NoResultsMessage, текущий маршрут: ${getNormalizedRouteForLogging()}`);
+    
+    return () => {
+      console.log('[NoResultsMessage] Размонтируем NoResultsMessage');
+    };
+  }, []);
+  
   // Проверяем, находимся ли мы на странице настроек
-  if (isOnSettingsPage()) {
+  const routeInfo = getRouteInfo();
+  if (routeInfo.isSettings) {
     console.log('[NoResultsMessage] Компонент на странице настроек - не отображаем');
     return null;
   }
 
   try {
+    console.log('[NoResultsMessage] Пытаемся использовать useSearch()');
     const { hasSearched, searchResults, isLoading } = useSearch();
+    console.log('[NoResultsMessage] useSearch выполнен успешно');
 
     if (!hasSearched || searchResults.length > 0 || isLoading) {
       return null;

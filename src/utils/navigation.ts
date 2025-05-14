@@ -1,36 +1,23 @@
 
 /**
- * Функция для проверки, находится ли пользователь на странице настроек
+ * Функции для определения текущего маршрута и страницы настроек
  * Централизованная утилита для использования во всем приложении
  */
+
+/**
+ * Функция для проверки, находится ли пользователь на странице настроек
+ */
 export const isOnSettingsPage = (): boolean => {
-  console.log(`[navigation] Вызов isOnSettingsPage(). location.hash="${window.location.hash}", pathname="${window.location.pathname}", data-path="${document.body.getAttribute('data-path')}"`);
+  console.log(`[navigation.ts -> isOnSettingsPage] ENTER. hash: "${window.location.hash}", pathname: "${window.location.pathname}", data-path: "${document.body.getAttribute('data-path')}"`);
   
   if (typeof window === 'undefined') return false;
   
-  // Проверка для HashRouter (основной способ маршрутизации в приложении)
-  const hash = window.location.hash;
-  if (hash === '#/settings' || hash.startsWith('#/settings?')) {
-    console.log('[navigation] isOnSettingsPage(): true (по hash)');
-    return true;
-  }
-
-  // Дополнительные проверки для совместимости
-  const pathname = window.location.pathname;
-  if (pathname === "/settings") {
-    console.log('[navigation] isOnSettingsPage(): true (по pathname)');
-    return true;
-  }
-
-  // Проверка атрибута data-path на body (самый надежный способ)
-  const dataPath = document.body.getAttribute('data-path');
-  if (dataPath === '/settings') {
-    console.log('[navigation] isOnSettingsPage(): true (по data-path)');
-    return true;
-  }
-
-  console.log('[navigation] isOnSettingsPage(): false (ни одно условие не сработало)');
-  return false;
+  // Получаем полную информацию о маршруте для более надежного определения
+  const routeInfo = getRouteInfo();
+  const result = routeInfo.isSettings;
+  
+  console.log(`[navigation.ts -> isOnSettingsPage] EXIT. Result: ${result}`);
+  return result;
 };
 
 /**
@@ -57,8 +44,14 @@ export const getRouteInfo = (): {
   path: string;
   isSettings: boolean;
   isIndex: boolean;
+  rawHash: string;
+  rawPath: string;
+  dataPath: string | null;
 } => {
   let path = '';
+  const rawHash = window.location.hash;
+  const rawPath = window.location.pathname;
+  const dataPath = document.body.getAttribute('data-path');
   
   // Проверка hash (для HashRouter)
   if (window.location.hash) {
@@ -74,8 +67,8 @@ export const getRouteInfo = (): {
   }
   
   // Проверка атрибута data-path если все еще нет информации
-  if (!path && document.body.getAttribute('data-path')) {
-    path = document.body.getAttribute('data-path')!;
+  if (!path && dataPath) {
+    path = dataPath;
     if (path.startsWith('/')) {
       path = path.substring(1);
     }
@@ -88,6 +81,19 @@ export const getRouteInfo = (): {
   return {
     path,
     isSettings,
-    isIndex
+    isIndex,
+    rawHash,
+    rawPath,
+    dataPath
   };
+};
+
+/**
+ * Функция для нормализации маршрута для отображения в логах
+ * @returns Нормализованное представление текущего маршрута
+ */
+export const getNormalizedRouteForLogging = (): string => {
+  const { path, isIndex, isSettings, rawHash, rawPath, dataPath } = getRouteInfo();
+  
+  return `route=${path} (isIndex=${isIndex}, isSettings=${isSettings}, hash=${rawHash}, path=${rawPath}, dataPath=${dataPath || 'null'})`;
 };

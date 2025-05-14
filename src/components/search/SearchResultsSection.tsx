@@ -8,16 +8,29 @@ import { SearchResultsAlert } from "@/components/search/SearchResultsAlert";
 import { SortButtons } from "../filter/SortButtons";
 import { SortOption } from "@/services/types";
 import { Languages, Filter } from "lucide-react";
-import { isOnSettingsPage } from "@/utils/navigation";
+import { isOnSettingsPage, getRouteInfo, getNormalizedRouteForLogging } from "@/utils/navigation";
 
 export const SearchResultsSection: React.FC = () => {
+  // Добавляем расширенное логирование для отладки
+  useEffect(() => {
+    console.log(`[SearchResultsSection] Монтируем SearchResultsSection, текущий маршрут: ${getNormalizedRouteForLogging()}`);
+    
+    return () => {
+      console.log('[SearchResultsSection] Размонтируем SearchResultsSection');
+    };
+  }, []);
+  
+  // Проверяем наличие флага data-path для определения текущей страницы
+  const routeInfo = getRouteInfo();
+  
   // Проверяем, находимся ли мы на странице настроек
-  if (isOnSettingsPage()) {
+  if (routeInfo.isSettings) {
     console.log('[SearchResultsSection] Компонент на странице настроек - не отображаем');
     return null;
   }
 
   try {
+    console.log('[SearchResultsSection] Пытаемся использовать useSearch()');
     const {
       searchResults,
       selectedProduct,
@@ -33,13 +46,14 @@ export const SearchResultsSection: React.FC = () => {
       lastSearchQuery,
       allSearchResults
     } = useSearch();
+    console.log('[SearchResultsSection] useSearch выполнен успешно');
 
     // Логируем информацию о количестве результатов для отладки
     useEffect(() => {
       console.log(`SearchResultsSection: Всего результатов: ${allSearchResults?.length || 0}, отфильтровано: ${searchResults?.length || 0}`);
     }, [allSearchResults, searchResults]);
 
-    if (searchResults.length === 0) {
+    if (!searchResults || searchResults.length === 0) {
       return null;
     }
 
