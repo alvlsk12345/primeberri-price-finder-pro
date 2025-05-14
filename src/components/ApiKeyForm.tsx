@@ -119,10 +119,13 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
         setIsResetting(false);
         toast.error(`Не удалось сбросить API ключ ${keyTitle}`);
       }
+      
+      return success;
     } catch (error) {
       console.error(`Ошибка при сбросе ключа ${keyType}:`, error);
       setIsResetting(false);
       toast.error(`Ошибка при сбросе ключа ${keyTitle}`, { duration: 3000 });
+      return false;
     }
   };
 
@@ -153,10 +156,13 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
         setIsResetting(false);
         toast.error(`Не удалось удалить API ключ ${keyTitle}`);
       }
+      
+      return success;
     } catch (error) {
       console.error(`Ошибка при очистке ключа ${keyType}:`, error);
       setIsResetting(false);
       toast.error(`Ошибка при очистке ключа ${keyTitle}`, { duration: 3000 });
+      return false;
     }
   };
 
