@@ -9,7 +9,7 @@ import { getRouteInfo } from '@/utils/navigation';
 
 // Отключаем SearchProvider на странице настроек, чтобы избежать автоматических проверок
 const Settings = () => {
-  console.log('[Settings] Рендер компонента Settings');
+  console.log('[Settings] Рендер компонента Settings - улучшенная версия');
   
   // Используем хук для эффектов страницы настроек
   useSettingsPageEffect();
