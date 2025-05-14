@@ -27,9 +27,13 @@ export const SearchContainer: React.FC = () => {
       <CardContent className="p-6">
         <div className="flex flex-col gap-6">
           <SearchFormSection />
-          {!inSettingsPage && <NoResultsMessage />}
-          <SearchResultsSection />
-          <ProductDetailsSection />
+          {!inSettingsPage && (
+            <>
+              <NoResultsMessage />
+              <SearchResultsSection />
+              <ProductDetailsSection />
+            </>
+          )}
         </div>
       </CardContent>
     </Card>

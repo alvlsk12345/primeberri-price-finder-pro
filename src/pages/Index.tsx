@@ -7,6 +7,7 @@ import { PageFooter } from "@/components/PageFooter";
 import { PageHeader } from "@/components/PageHeader";
 
 const Index = () => {
+  console.log('[Index] Рендер компонента Index');
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand/30 to-brand/10">
       <PageHeader />
