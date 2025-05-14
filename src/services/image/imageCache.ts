@@ -1,170 +1,67 @@
 
 /**
- * Система кэширования и управления изображениями на клиенте
- * с улучшенным механизмом обработки Zylalabs API
- */
-
-// Ключ для локального хранения информации о загруженных изображениях
-const LOADED_IMAGES_KEY = 'loaded_images_cache';
-
-// Время жизни кэша для изображений (24 часа)
-const CACHE_TTL = 24 * 60 * 60 * 1000;
-
-// Интерфейс для хранения метаданных загруженного изображения
-interface ImageCacheEntry {
-  url: string;
-  loadedAt: number;
-}
-
-/**
- * Загружает информацию о ранее загруженных изображениях из localStorage
- */
-function getLoadedImagesCache(): Record<string, ImageCacheEntry> {
-  try {
-    const cacheData = localStorage.getItem(LOADED_IMAGES_KEY);
-    const cache = cacheData ? JSON.parse(cacheData) : {};
-    
-    // Очищаем устаревшие записи
-    const now = Date.now();
-    const cleanedCache: Record<string, ImageCacheEntry> = {};
-    
-    for (const [key, entry] of Object.entries(cache)) {
-      // Проверяем, что запись является объектом с необходимыми полями
-      if (typeof entry === 'object' && entry && 'loadedAt' in entry) {
-        const typedEntry = entry as ImageCacheEntry;
-        if (now - typedEntry.loadedAt < CACHE_TTL) {
-          cleanedCache[key] = typedEntry;
-        }
-      }
-    }
-    
-    // Сохраняем очищенный кэш
-    if (Object.keys(cache).length !== Object.keys(cleanedCache).length) {
-      localStorage.setItem(LOADED_IMAGES_KEY, JSON.stringify(cleanedCache));
-    }
-    
-    return cleanedCache;
-  } catch (e) {
-    console.error('Ошибка при загрузке кэша изображений:', e);
-    return {};
-  }
-}
-
-/**
- * Сохраняет информацию о загруженном изображении в localStorage
+ * Добавляет уникальный параметр к URL изображения для предотвращения кэширования
  * @param url URL изображения
+ * @param index Индекс изображения (для дополнительной уникальности)
+ * @param useCache Если true, не добавляет параметр для управления кэшированием
+ * @returns URL с добавленным параметром предотвращения кэширования
  */
-export function markImageAsLoaded(url: string): void {
-  try {
-    const cache = getLoadedImagesCache();
-    
-    // Нормализуем URL для использования в качестве ключа
-    const normalizedUrl = getNormalizedUrlForCache(url);
-    
-    // Сохраняем информацию о загрузке
-    cache[normalizedUrl] = {
-      url,
-      loadedAt: Date.now()
-    };
-    
-    localStorage.setItem(LOADED_IMAGES_KEY, JSON.stringify(cache));
-  } catch (e) {
-    console.error('Ошибка при сохранении информации о загруженном изображении:', e);
-  }
-}
+export const getUniqueImageUrl = (url: string, index?: number, useCache: boolean = true): string => {
+  if (!url) return '';
+  
+  // Не добавляем параметры к data URL
+  if (url.startsWith('data:')) return url;
+  
+  // Если указано использовать кэширование, возвращаем URL как есть
+  if (useCache) return url;
+  
+  // Добавляем параметр для предотвращения кэширования только если не используем кэш
+  const separator = url.includes('?') ? '&' : '?';
+  const cacheParam = `nocache=${Date.now()}${index !== undefined ? `-${index}` : ''}`;
+  
+  return `${url}${separator}${cacheParam}`;
+};
+
+// Кэш загруженных изображений на стороне клиента
+const imageLoadCache = new Map<string, boolean>();
 
 /**
- * Проверяет, было ли изображение успешно загружено ранее
- * @param url URL изображения для проверки
+ * Проверяет, было ли изображение уже успешно загружено
+ * @param url URL изображения
  * @returns true, если изображение было успешно загружено ранее
  */
-export function isImageLoaded(url: string): boolean {
-  try {
-    if (!url) return false;
-    
-    const cache = getLoadedImagesCache();
-    const normalizedUrl = getNormalizedUrlForCache(url);
-    
-    return normalizedUrl in cache;
-  } catch (e) {
-    console.error('Ошибка при проверке кэша изображений:', e);
-    return false;
-  }
-}
+export const isImageLoaded = (url: string): boolean => {
+  return imageLoadCache.has(url);
+};
 
 /**
- * Получает нормализованный URL для использования в кэше
- * @param url Исходный URL
- * @returns Нормализованный URL
- */
-function getNormalizedUrlForCache(url: string): string {
-  if (!url) return '';
-  
-  // Убираем параметры запроса для Zylalabs изображений, которые могут меняться
-  if (url.includes('zylalabs.com') || 
-      url.includes('zyla-api') || 
-      url.includes('zylahome') ||
-      url.includes('encik.blob.core.windows.net') ||
-      url.includes('zdatastore') || 
-      url.includes('zyla-pd')) {
-    const urlObj = new URL(url);
-    // Удаляем параметры времени и повторных попыток
-    urlObj.searchParams.delete('t');
-    urlObj.searchParams.delete('retry');
-    urlObj.searchParams.delete('retryAttempt');
-    return urlObj.toString();
-  }
-  
-  // Для других URL - просто удаляем временные метки
-  if (url.includes('?')) {
-    const baseUrl = url.split('?')[0];
-    const params = new URLSearchParams(url.split('?')[1]);
-    params.delete('t');
-    params.delete('retry');
-    params.delete('retryAttempt');
-    
-    const remainingParams = params.toString();
-    return remainingParams ? `${baseUrl}?${remainingParams}` : baseUrl;
-  }
-  
-  return url;
-}
-
-/**
- * Добавляет уникальность к URL изображения для предотвращения кэширования
+ * Отмечает изображение как успешно загруженное
  * @param url URL изображения
- * @param index Индекс изображения
- * @param useCache Использовать ли кэш
- * @returns URL с добавленным параметром уникальности
  */
-export function getUniqueImageUrl(
-  url: string, 
-  index?: number, 
-  useCache: boolean = true
-): string {
-  if (!url) return '';
+export const markImageAsLoaded = (url: string): void => {
+  imageLoadCache.set(url, true);
+};
+
+/**
+ * Очищает кэш загруженных изображений
+ */
+export const clearImageLoadCache = (): void => {
+  imageLoadCache.clear();
+};
+
+/**
+ * Получает ключ для кэша изображения на основе URL
+ * @param url URL изображения
+ * @returns Ключ для кэша
+ */
+export const getImageCacheKey = (url: string): string => {
+  // Удаляем параметры запроса для консистентного кэширования
+  let cacheKey = url;
+  const questionMarkIndex = url.indexOf('?');
   
-  // Если используется кэширование и изображение уже загружено - не модифицируем URL
-  if (useCache && isImageLoaded(url)) {
-    return url;
+  if (questionMarkIndex > 0) {
+    cacheKey = url.substring(0, questionMarkIndex);
   }
   
-  // Определяем, является ли URL из Zylalabs API
-  const isZylalabs = url.includes('zylalabs.com') || 
-                    url.includes('zyla-api') || 
-                    url.includes('zylahome') ||
-                    url.includes('encik.blob.core.windows.net') ||
-                    url.includes('zdatastore') || 
-                    url.includes('zyla-pd');
-  
-  // Добавляем параметр уникальности
-  const separator = url.includes('?') ? '&' : '?';
-  const uniqueSuffix = index !== undefined ? `index=${index}` : `t=${Date.now()}`;
-  
-  // Для Zylalabs всегда добавляем временную метку
-  if (isZylalabs) {
-    return `${url}${separator}t=${Date.now()}`;
-  }
-  
-  return `${url}${separator}${uniqueSuffix}`;
-}
+  return cacheKey;
+};

@@ -1,63 +1,76 @@
 
-import { useState, useCallback } from 'react';
+import { useRef } from 'react';
+import { Product } from "@/services/types";
 import { toast } from "sonner";
 
-export type UseSearchRetryProps = {
-  maxRetries?: number;
-  retryDelay?: number;
+const MAX_RETRY_ATTEMPTS = 2;
+
+type SearchRetryProps = {
+  executeSearch: (
+    queryToUse: string, 
+    page: number, 
+    lastSearchQuery: string, 
+    filters: any,
+    getSearchCountries: () => string[]
+  ) => Promise<any>;
+  handleSearchError: (error: any) => {success: boolean, products: Product[], recovered?: boolean};
 };
 
-export function useSearchRetry(props: UseSearchRetryProps = {}) {
-  const { maxRetries = 3, retryDelay = 1000 } = props;
-  const [retryCount, setRetryCount] = useState(0);
+export function useSearchRetry({
+  executeSearch,
+  handleSearchError
+}: SearchRetryProps) {
+  // Счетчик попыток повторных запросов
+  const retryAttemptsRef = useRef<number>(0);
   
-  // Сброс счетчика попыток
-  const resetRetryAttempts = useCallback(() => {
-    setRetryCount(0);
-  }, []);
-  
-  // Функция для повторного выполнения запроса с задержкой
-  const executeSearchWithRetry = useCallback(async (
-    queryToUse: string,
-    page: number,
-    lastSearchQuery: string,
+  // Функция выполнения поиска с автоматическими повторными попытками
+  const executeSearchWithRetry = async (
+    queryToUse: string, 
+    page: number, 
+    lastSearchQuery: string, 
     filters: any,
     getSearchCountries: () => string[]
   ) => {
-    if (retryCount < maxRetries) {
-      // Увеличиваем счетчик попыток
-      setRetryCount(prev => prev + 1);
-      
-      // Показываем уведомление о повторной попытке
-      const currentAttempt = retryCount + 1;
-      toast.info(`Повторная попытка поиска (${currentAttempt}/${maxRetries})...`, {
-        duration: retryDelay,
-        id: 'retry-toast'
-      });
-      
-      // Ждем указанное время перед повторной попыткой
-      await new Promise(resolve => setTimeout(resolve, retryDelay));
-      
-      // Информируем о повторной попытке и выполняем запрос
-      console.log(`Выполняем повторную попытку ${currentAttempt}/${maxRetries} для запроса: ${queryToUse}`);
-      
-      return {
+    try {
+      // Выполняем поиск с четким указанием страницы
+      console.log(`Выполняем поиск для запроса "${queryToUse}", страница: ${page}`);
+      return await executeSearch(
         queryToUse,
         page,
         lastSearchQuery,
         filters,
         getSearchCountries
-      };
-    } else {
-      console.error(`Превышено максимальное количество попыток (${maxRetries}) для запроса: ${queryToUse}`);
-      toast.error(`Не удалось выполнить поиск после ${maxRetries} попыток`, {
-        description: "Попробуйте изменить запрос или повторите позже",
-        duration: 5000
-      });
-      return null;
+      );
+    } catch (error) {
+      // Повтор запроса при ошибке сети или таймауте
+      if (retryAttemptsRef.current < MAX_RETRY_ATTEMPTS) {
+        retryAttemptsRef.current++;
+        console.log(`Ошибка при поиске. Повторная попытка ${retryAttemptsRef.current} из ${MAX_RETRY_ATTEMPTS}`);
+        toast.info(`Повторный запрос (попытка ${retryAttemptsRef.current})...`, { duration: 2000 });
+        
+        // Задержка перед повторной попыткой
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        try {
+          // Рекурсивный вызов для повторной попытки
+          return await executeSearchWithRetry(queryToUse, page, lastSearchQuery, filters, getSearchCountries);
+        } catch (retryError) {
+          console.error('Повторная попытка не удалась:', retryError);
+          return handleSearchError(retryError);
+        }
+      } else {
+        // Исчерпаны все попытки
+        retryAttemptsRef.current = 0;
+        return handleSearchError(error);
+      }
     }
-  }, [retryCount, maxRetries, retryDelay]);
-  
+  };
+
+  // Сброс счетчика попыток
+  const resetRetryAttempts = () => {
+    retryAttemptsRef.current = 0;
+  };
+
   return {
     executeSearchWithRetry,
     resetRetryAttempts

@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import { useSearchApiCall } from './useSearchApiCall';
 import { useSearchRetry } from './useSearchRetry'; 
 import { useSearchFilterProcessor } from './useSearchFilterProcessor';
-import { useSearchErrorHandler } from './useSearchErrorHandler';
 
 type SearchCoreProps = {
   setIsLoading: (loading: boolean) => void;
@@ -17,6 +16,7 @@ type SearchCoreProps = {
   setHasSearched: (searched: boolean) => void;
   setIsUsingDemoData: (usingDemo: boolean) => void;
   setApiInfo: (info: Record<string, string> | undefined) => void;
+  lastSuccessfulResultsRef: React.MutableRefObject<Product[]>;
 };
 
 export function useSearchCore({
@@ -30,6 +30,7 @@ export function useSearchCore({
   setHasSearched,
   setIsUsingDemoData,
   setApiInfo,
+  lastSuccessfulResultsRef,
 }: SearchCoreProps) {
   
   // Используем хуки
@@ -40,36 +41,55 @@ export function useSearchCore({
   });
   
   const { applyFiltersAndSorting } = useSearchFilterProcessor();
-  
-  // Используем обновленный хук для обработки ошибок
-  const { handleSearchError, saveSuccessfulResults, lastSuccessfulResultsRef } = useSearchErrorHandler({
-    setSearchResults
-  });
 
-  // Хук для повторных попыток поиска - корректно создаем экземпляр
-  const { executeSearchWithRetry, resetRetryAttempts } = useSearchRetry();
-  
-  // Основная функция выполнения поиска с ретраями
-  const executeSearchCore = async (
-    params: any
-  ) => {
-    const { query, page, originalQuery = '', filters = {}, countries = [] } = params;
+  // Обработчик ошибок поиска
+  const handleSearchError = (error: any): { success: boolean, products: Product[], recovered?: boolean } => {
+    console.error('Ошибка поиска:', error);
     
-    console.log(`executeSearchCore: запрос "${query}", страница ${page}`);
+    if (lastSuccessfulResultsRef.current.length > 0) {
+      // В случае ошибки возвращаем последние успешные результаты
+      console.log('Произошла ошибка при поиске, возвращаем предыдущие результаты');
+      setSearchResults(lastSuccessfulResultsRef.current);
+      return { success: true, products: lastSuccessfulResultsRef.current, recovered: true };
+    }
+    
+    return { success: false, products: [] };
+  };
+  
+  // Хук для повторных попыток поиска
+  const { executeSearchWithRetry, resetRetryAttempts } = useSearchRetry({
+    executeSearch: async (queryToUse, page, lastSearchQuery, filters, getSearchCountries) => {
+      return await executeSearchCore(queryToUse, page, lastSearchQuery, filters, getSearchCountries);
+    },
+    handleSearchError
+  });
+  
+  // Основная функция выполнения поиска
+  const executeSearchCore = async (
+    queryToUse: string, 
+    page: number, 
+    lastSearchQuery: string, 
+    filters: ProductFilters,
+    getSearchCountries: () => string[]
+  ) => {
+    console.log(`executeSearchCore: запрос "${queryToUse}", страница ${page}`);
     
     // Устанавливаем текущую страницу
     setCurrentPage(page);
     
+    // Используем оригинальный запрос без перевода для совместимости с примером
+    const searchText = queryToUse;
+    
     // Получаем страны для поиска, гарантируем включение Германии
-    let searchCountries = countries;
+    let searchCountries = getSearchCountries();
     if (!searchCountries.includes('de')) {
       searchCountries = ['de', ...searchCountries];
     }
     
     // Создаём параметры поиска на основе примера
     const searchParams = {
-      query: query,
-      originalQuery: originalQuery || query,
+      query: searchText,
+      originalQuery: queryToUse,
       page: page,
       language: 'ru',  // Устанавливаем русский язык для получения описаний на русском
       countries: searchCountries,
@@ -115,7 +135,7 @@ export function useSearchCore({
     // Сохраняем найденные товары
     if (sortedProducts.length > 0) {
       setSearchResults(sortedProducts);
-      saveSuccessfulResults(sortedProducts);
+      lastSuccessfulResultsRef.current = sortedProducts;
       
       // Обновляем кэш
       const newCache = { ...cachedResults };
@@ -132,12 +152,18 @@ export function useSearchCore({
     }
   };
 
-  // Основная функция выполнения поиска
-  const executeSearch = async (params: any) => {
+  // Основная функция выполнения поиска с ретраями
+  const executeSearch = async (
+    queryToUse: string, 
+    page: number, 
+    lastSearchQuery: string, 
+    filters: ProductFilters,
+    getSearchCountries: () => string[]
+  ) => {
     setIsLoading(true);
     
     try {
-      return await executeSearchCore(params);
+      return await executeSearchWithRetry(queryToUse, page, lastSearchQuery, filters, getSearchCountries);
     } catch (error) {
       console.error(`Критическая ошибка при выполнении поиска:`, error);
       return handleSearchError(error);

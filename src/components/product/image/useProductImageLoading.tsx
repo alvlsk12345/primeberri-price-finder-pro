@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { markImageAsLoaded, isImageLoaded } from '@/services/image/imageCache';
-import { isZylalabsImage } from '@/services/image/imageSourceDetector';
 
 export interface ImageLoadingState {
   imageLoading: boolean;
@@ -17,22 +16,7 @@ export function useProductImageLoading(
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [loadAttempts, setLoadAttempts] = useState(0);
-  const [isZylalabsImg, setIsZylalabsImg] = useState(false);
-  const maxAttempts = 4; // Используем 4 попытки загрузки
-  
-  // Определяем тип изображения при монтировании
-  useEffect(() => {
-    if (image) {
-      const isZyla = isZylalabsImage(image);
-      setIsZylalabsImg(isZyla);
-      
-      // Логируем информацию о типе изображения
-      console.log(`Информация об изображении для товара ${productId}:`, {
-        isZylalabsImage: isZyla,
-        image: image.substring(0, 100) // Только начало URL для краткости лога
-      });
-    }
-  }, [image, productId]);
+  const maxAttempts = 4; // Увеличиваем с 2 до 4
 
   // Сбрасываем состояние при изменении URL изображения
   useEffect(() => {
@@ -48,41 +32,23 @@ export function useProductImageLoading(
     }
   }, [image]);
 
-  // Предзагрузка изображения (особенно для Zylalabs)
+  // Детальное логирование для отладки
   useEffect(() => {
-    if (image && isZylalabsImg) {
-      // Создаем скрытый элемент изображения для предзагрузки
-      const preloadImg = new Image();
-      
-      // Устанавливаем обработчики событий
-      preloadImg.onload = () => {
-        console.log(`Предзагрузка изображения Zylalabs успешна: ${image.substring(0, 50)}...`);
-        markImageAsLoaded(image);
-        setImageLoading(false);
-        setImageError(false);
-      };
-      
-      preloadImg.onerror = () => {
-        console.error(`Ошибка предзагрузки изображения Zylalabs: ${image.substring(0, 50)}...`);
-      };
-      
-      // Начинаем загрузку
-      preloadImg.src = image;
-      
-      // Очистка при размонтировании
-      return () => {
-        preloadImg.onload = null;
-        preloadImg.onerror = null;
-      };
+    if (image) {
+      console.log(`Инициализация изображения для товара ${productId}:`, {
+        image,
+        loading: imageLoading,
+        error: imageError,
+        loadAttempts
+      });
     }
-  }, [image, isZylalabsImg]);
+  }, [image, imageLoading, imageError, loadAttempts, productId]);
 
   // Обработчик для успешной загрузки изображения
   const handleImageLoad = () => {
     console.log('Изображение успешно загружено:', {
       productId,
-      isZylalabs: isZylalabsImg,
-      imageUrl: image?.substring(0, 50),
+      imageUrl: image,
       attempts: loadAttempts + 1
     });
     
@@ -102,16 +68,53 @@ export function useProductImageLoading(
     
     console.error('Ошибка загрузки изображения для товара:', {
       productId,
-      imageUrl: image?.substring(0, 50),
+      imageUrl: image,
       attempt: newAttempts,
       maxAttempts,
-      isZylalabs: isZylalabsImg
+      isZylalabs: image?.includes('zylalabs.com'),
+      isProxy: image?.includes('image-proxy'),
+      directFetch: image?.includes('directFetch=true')
     });
     
-    // Не запускаем автоматическую повторную загрузку здесь 
-    // Вместо этого обработка перенесена в компоненты AvatarProductImage/StandardProductImage
-    setImageLoading(false);
-    setImageError(true);
+    // Попытка повторной загрузки с параметром directFetch при первой ошибке
+    if (newAttempts < maxAttempts && image) {
+      console.log(`Попытка повторной загрузки изображения (${newAttempts}/${maxAttempts})`, image);
+      
+      // Устанавливаем экспоненциальную задержку между попытками
+      const delay = Math.min(300 * Math.pow(2, newAttempts - 1), 3000);
+      
+      setTimeout(() => {
+        const imgElement = document.querySelector(`img[src="${image}"]`) as HTMLImageElement;
+        if (imgElement) {
+          // Добавляем параметр для обхода кэша
+          let newSrc = image;
+          
+          // Добавляем параметр timestamp для предотвращения кэширования браузером
+          const timestamp = Date.now();
+          if (image.includes('?')) {
+            newSrc = `${image}&t=${timestamp}&retryAttempt=${newAttempts}`;
+          } else {
+            newSrc = `${image}?t=${timestamp}&retryAttempt=${newAttempts}`;
+          }
+          
+          // Добавляем параметр directFetch для обхода кэша при проблемах
+          if (!newSrc.includes('directFetch=true')) {
+            newSrc += '&directFetch=true';
+          }
+          
+          imgElement.src = newSrc;
+          
+          console.log(`Изображение запрошено повторно с src:`, {
+            originalSrc: image,
+            newSrc: newSrc,
+            delay
+          });
+        }
+      }, delay);
+    } else {
+      setImageLoading(false);
+      setImageError(true);
+    }
   };
 
   return {

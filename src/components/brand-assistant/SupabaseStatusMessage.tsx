@@ -1,53 +1,33 @@
 
-import React from 'react';
-import { toast } from "sonner";
-import { Button } from '@/components/ui/button';
-import { InfoIcon } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React from "react";
+import { Link } from "react-router-dom";
 
-type SupabaseStatusMessageProps = {
+interface SupabaseStatusProps {
   connected: boolean;
   enabled: boolean;
-  onRequestCheck: () => Promise<void>;
-};
+}
 
-export const SupabaseStatusMessage: React.FC<SupabaseStatusMessageProps> = ({
-  connected,
-  enabled,
-  onRequestCheck
+export const SupabaseStatusMessage: React.FC<SupabaseStatusProps> = ({ 
+  connected, 
+  enabled 
 }) => {
-  // Если не включено или отключено - не показываем сообщение
-  if (!enabled) {
-    return null;
-  }
-
+  if (connected && enabled) return null;
+  
   return (
-    <div className="mt-2 text-sm">
-      {!connected && (
-        <div className="flex items-start space-x-2 p-2 bg-amber-50 text-amber-900 border border-amber-200 rounded-md">
-          <InfoIcon className="h-5 w-5 mt-0.5 flex-shrink-0" />
-          <div className="flex-1">
-            <p>
-              Соединение с Supabase не установлено. Некоторые функции могут быть недоступны.
-            </p>
-            <div className="mt-2 flex gap-2">
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="text-xs"
-                onClick={onRequestCheck}
-              >
-                Проверить соединение
-              </Button>
-              <Link to="/settings">
-                <Button size="sm" variant="link" className="text-xs px-0">
-                  Перейти в настройки
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
+    <div className={`p-3 ${!connected ? "bg-amber-50 border border-amber-200" : "bg-blue-50 border border-blue-200"} rounded-md mt-3`}>
+      <p className={`text-sm ${!connected ? "text-amber-700" : "text-blue-700"}`}>
+        {!enabled && connected ? (
+          <>
+            Рекомендуется включить опцию "Использовать Supabase Backend" в настройках для обхода ограничений CORS.
+            <a href="/settings" className="ml-1 underline font-medium">Перейти к настройкам</a>
+          </>
+        ) : (
+          <>
+            Для работы AI-помощника необходимо настроить подключение к Supabase или указать API ключ OpenAI в настройках.
+            <a href="/settings" className="ml-1 underline font-medium">Перейти к настройкам</a>
+          </>
+        )}
+      </p>
     </div>
   );
 };

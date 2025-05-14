@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface BrandSuggestionListProps {
   searchDescription?: string;
-  onSelect?: (searchQuery: string, immediate?: boolean) => void;
+  onSelect: (searchQuery: string, immediate?: boolean) => void;
   suggestions?: BrandSuggestion[];
 }
 
@@ -23,8 +23,6 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
 
   // Функция для выбора продукта из списка
   const handleSelectProduct = (suggestion: BrandSuggestion, immediate: boolean = false) => {
-    if (!onSelect) return;
-    
     const searchQuery = `${suggestion.brand} ${suggestion.product}`;
     console.log(`Выбираем товар для поиска: "${searchQuery}", immediate: ${immediate}`);
     

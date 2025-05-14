@@ -7,34 +7,16 @@ import { Search } from "lucide-react";
 interface ProductDescriptionFormProps {
   productDescription: string;
   setProductDescription: (description: string) => void;
-  isAssistantLoading?: boolean;
-  isLoading?: boolean;
-  handleGetBrandSuggestions?: () => void;
-  onSubmit?: () => void;
-  imageChoices?: any;
+  isAssistantLoading: boolean;
+  handleGetBrandSuggestions: () => void;
 }
 
 export const ProductDescriptionForm: React.FC<ProductDescriptionFormProps> = ({
   productDescription,
   setProductDescription,
-  isLoading = false,
-  isAssistantLoading = false,
-  handleGetBrandSuggestions,
-  onSubmit,
-  imageChoices
+  isAssistantLoading,
+  handleGetBrandSuggestions
 }) => {
-  // Обрабатываем нажатие на кнопку, используя первую доступную функцию
-  const handleSubmit = () => {
-    if (onSubmit) {
-      onSubmit();
-    } else if (handleGetBrandSuggestions) {
-      handleGetBrandSuggestions();
-    }
-  };
-  
-  // Определяем, показывать ли индикатор загрузки
-  const showLoading = isLoading || isAssistantLoading;
-  
   return (
     <div className="space-y-2">
       <Textarea
@@ -50,10 +32,10 @@ export const ProductDescriptionForm: React.FC<ProductDescriptionFormProps> = ({
         <Button
           variant="brand"
           size="sm"
-          onClick={handleSubmit}
-          disabled={!productDescription.trim() || showLoading}
+          onClick={handleGetBrandSuggestions}
+          disabled={!productDescription.trim() || isAssistantLoading}
         >
-          {showLoading ? (
+          {isAssistantLoading ? (
             <>
               <div className="animate-spin w-4 h-4 border-2 border-brand-foreground border-t-transparent rounded-full mr-2" />
               <span>Поиск товаров...</span>

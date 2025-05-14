@@ -11,8 +11,8 @@ const CORS_PROBLEM_DOMAINS = [
   'encrypted-tbn',
   'googleusercontent.com',
   'gstatic.com',
-  'ggpht.com'
-  // Удалено 'zylalabs.com' из списка проблемных доменов - загружаем напрямую
+  'ggpht.com',
+  'zylalabs.com'
 ];
 
 /**
@@ -29,16 +29,6 @@ export const needsProxying = (url: string): boolean => {
   
   // Не проксируем изображения из Supabase Storage, которые уже кэшированы
   if (url.includes('juacmpkewomkducoanle.supabase.co/storage/v1/object/public/product-images')) {
-    return false;
-  }
-  
-  // Не проксируем изображения Zylalabs - загружаем напрямую
-  if (url.includes('zylalabs.com') || 
-      url.includes('zyla-api') || 
-      url.includes('zylahome') ||
-      url.includes('encik.blob.core.windows.net') ||
-      url.includes('zdatastore') || 
-      url.includes('zyla-pd')) {
     return false;
   }
   
@@ -60,11 +50,14 @@ export const getProxiedImageUrl = (url: string, directFetch: boolean = false): s
     // Кодируем URL для безопасной передачи в качестве параметра
     const encodedUrl = encodeURIComponent(url);
     
+    // Для Zylalabs изображений всегда используем directFetch при первой загрузке
+    const shouldBypassCache = directFetch || url.includes('zylalabs.com');
+    
     // Конструируем URL к Edge Function с кэшированием изображений
     let proxyUrl = `https://juacmpkewomkducoanle.supabase.co/functions/v1/image-proxy?url=${encodedUrl}${PROXY_SUFFIX}`;
     
     // Добавляем параметр для обхода кэша, если запрошено
-    if (directFetch) {
+    if (shouldBypassCache) {
       proxyUrl += '&bypassCache=true';
     }
     

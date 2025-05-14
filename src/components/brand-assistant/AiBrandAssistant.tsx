@@ -1,137 +1,96 @@
 
-import React, { useState, useEffect } from 'react';
-import { ProductDescriptionForm } from './ProductDescriptionForm';
-import { BrandSuggestionList } from './BrandSuggestionList';
-import { BrandAssistantError } from './BrandAssistantError';
-import { SupabaseStatusMessage } from './SupabaseStatusMessage';
-import { Button } from '@/components/ui/button';
-import { useAiBrandAssistant } from '@/hooks/useAiBrandAssistant';
-import { isSupabaseConnected } from '@/services/api/supabase/client';
-import { isUsingSupabaseBackend } from '@/services/api/supabase/config';
+import React from "react";
+import { BrandSuggestionList } from "./BrandSuggestionList";
+import { Checkbox } from "@/components/ui/checkbox";
+import { getApiKey } from "@/services/api/openai/config";
+import { useAiBrandAssistant } from "@/hooks/useAiBrandAssistant";
+import { ProductDescriptionForm } from "./ProductDescriptionForm";
+import { BrandAssistantError } from "./BrandAssistantError";
+import { SupabaseStatusMessage } from "./SupabaseStatusMessage";
+import { Bot } from "lucide-react"; // Импортируем иконку
 
 interface AiBrandAssistantProps {
-  onSelectProduct?: (productName: string) => void;
+  onSelectProduct: (product: string, performSearch: boolean) => void;
 }
 
 export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProduct }) => {
   const {
-    isLoading, 
-    error, 
-    brandSuggestions,
     productDescription,
     setProductDescription,
-    handleGetBrandSuggestions,
-    resetBrandSuggestions,
-    imageChoices,
+    brandSuggestions,
+    isAssistantLoading,
     errorMessage,
-    isAssistantLoading
+    hasError,
+    supabaseStatus,
+    isAssistantEnabled,
+    setIsAssistantEnabled,
+    handleGetBrandSuggestions
   } = useAiBrandAssistant();
 
-  // Состояние для отслеживания подключения к Supabase
-  const [supabaseStatus, setSupabaseStatus] = useState({
-    connected: true,
-    enabled: false
-  });
-  
-  // Эффект для проверки состояния и настроек Supabase при монтировании
-  useEffect(() => {
-    const checkSupabaseStatus = async () => {
-      try {
-        console.log('[AiBrandAssistant] Проверка состояния Supabase');
-        const enabled = isUsingSupabaseBackend();
-        
-        // Только если включено использование Supabase проверяем соединение
-        let connected = true;
-        if (enabled) {
-          connected = await isSupabaseConnected(false);
-        }
-        
-        setSupabaseStatus({
-          connected,
-          enabled
-        });
-        
-        console.log(`[AiBrandAssistant] Статус Supabase: connected=${connected}, enabled=${enabled}`);
-      } catch (error) {
-        console.error('[AiBrandAssistant] Ошибка при проверке статуса Supabase:', error);
-      }
-    };
-    
-    checkSupabaseStatus();
-  }, []);
-
-  // Обработчик для ручной проверки соединения
-  const handleCheckConnection = async (): Promise<void> => {
-    try {
-      console.log('[AiBrandAssistant] Запрос на проверку соединения с Supabase');
-      const enabled = isUsingSupabaseBackend();
-      let connected = true;
-      
-      if (enabled) {
-        connected = await isSupabaseConnected(true, true);
-      }
-      
-      setSupabaseStatus({
-        connected,
-        enabled
-      });
-      
-      console.log(`[AiBrandAssistant] Новый статус соединения: ${connected}`);
-    } catch (error) {
-      console.error('[AiBrandAssistant] Ошибка при проверке соединения:', error);
-      setSupabaseStatus(prev => ({
-        ...prev,
-        connected: false
-      }));
-    }
+  // Обработчик выбора предложения бренда
+  const handleSuggestionSelect = (searchQuery: string, immediate: boolean) => {
+    console.log(`Выбран запрос: ${searchQuery}, немедленный поиск: ${immediate}`);
+    // Явно передаем оба параметра в родительский компонент
+    onSelectProduct(searchQuery, immediate);
   };
 
-  // Функция для обработки выбора продукта
-  const handleSelectProduct = (searchQuery: string, immediate?: boolean) => {
-    if (onSelectProduct) {
-      onSelectProduct(searchQuery);
-    }
-  };
-  
   return (
-    <div className="mb-6 relative">
-      {/* Сообщение о статусе подключения к Supabase */}
-      <SupabaseStatusMessage 
-        connected={supabaseStatus.connected} 
-        enabled={supabaseStatus.enabled}
-        onRequestCheck={handleCheckConnection}
-      />
-      
-      {/* Форма описания продукта */}
-      <ProductDescriptionForm
-        productDescription={productDescription}
-        setProductDescription={setProductDescription}
-        handleGetBrandSuggestions={handleGetBrandSuggestions}
-        isAssistantLoading={isAssistantLoading}
-        imageChoices={imageChoices}
-      />
-      
-      {/* Отображение ошибок */}
-      {errorMessage && <BrandAssistantError errorMessage={errorMessage} />}
-      
-      {/* Список предложений брендов */}
-      {brandSuggestions.length > 0 && (
-        <div className="mt-4">
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-lg font-medium">Возможные похожие бренды:</h2>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={resetBrandSuggestions}
-            >
-              Очистить результаты
-            </Button>
-          </div>
-          <BrandSuggestionList 
-            suggestions={brandSuggestions} 
-            onSelect={handleSelectProduct}
+    <div className="mt-3">
+      <div className="flex items-center gap-2">
+        <Checkbox 
+          id="enableAssistant" 
+          checked={isAssistantEnabled} 
+          onCheckedChange={(checked) => {
+            setIsAssistantEnabled(!!checked);
+            if (!checked) {
+              // Сбрасываем состояние при отключении помощника
+              setProductDescription("");
+            }
+          }}
+        />
+        <label htmlFor="enableAssistant" className="text-sm cursor-pointer flex items-center gap-1">
+          <Bot size={18} className="text-primary" /> {/* Добавляем иконку в цветах сайта */}
+          Использовать AI-помощник для поиска товаров
+        </label>
+      </div>
+
+      {isAssistantEnabled && (
+        <div className="mt-3 space-y-2">
+          {/* Форма описания товара */}
+          <ProductDescriptionForm 
+            productDescription={productDescription}
+            setProductDescription={setProductDescription}
+            isAssistantLoading={isAssistantLoading} 
+            handleGetBrandSuggestions={handleGetBrandSuggestions} 
           />
+          
+          {/* Сообщение об ошибке */}
+          {hasError && errorMessage && (
+            <BrandAssistantError errorMessage={errorMessage} />
+          )}
+          
+          {/* Сообщение о пустых результатах */}
+          {brandSuggestions.length === 0 && !isAssistantLoading && !hasError && (getApiKey() || supabaseStatus.connected) && (
+            <div className="mt-2 text-sm text-gray-500 text-center">
+              <p>Введите описание товара и нажмите "Найти подходящие товары"</p>
+            </div>
+          )}
+          
+          {/* Сообщения о статусе Supabase */}
+          {(!getApiKey() && !supabaseStatus.connected && isAssistantEnabled) ? (
+            <SupabaseStatusMessage connected={false} enabled={false} />
+          ) : (!supabaseStatus.enabled && supabaseStatus.connected) && (
+            <SupabaseStatusMessage connected={true} enabled={false} />
+          )}
         </div>
+      )}
+
+      {/* Список предложений брендов */}
+      {isAssistantEnabled && brandSuggestions && brandSuggestions.length > 0 && (
+        <BrandSuggestionList 
+          suggestions={brandSuggestions}
+          onSelect={(searchQuery, immediate) => handleSuggestionSelect(searchQuery, !!immediate)}
+        />
       )}
     </div>
   );

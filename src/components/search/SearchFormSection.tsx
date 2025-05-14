@@ -10,7 +10,7 @@ export const SearchFormSection: React.FC = () => {
     <SearchForm 
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
-      handleSearch={() => handleSearch(1)}
+      handleSearch={() => handleSearch(1, true)}
       isLoading={isLoading}
     />
   );

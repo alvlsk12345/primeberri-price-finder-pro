@@ -27,7 +27,7 @@ export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({ currentP
   
   // Функция для повторной попытки поиска
   const handleRetry = () => {
-    handleSearch(currentPage); 
+    handleSearch(currentPage, true); // Принудительно выполняем новый поиск
   };
 
   return (

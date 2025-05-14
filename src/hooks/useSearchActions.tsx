@@ -5,7 +5,6 @@ import { useSearchExecutionActions } from './search/useSearchExecutionActions';
 import { useProductSelectionActions } from './search/useProductSelectionActions';
 import { usePaginationActions } from './search/usePaginationActions';
 import { useFilterActions } from './search/useFilterActions';
-import { getRouteInfo, getNormalizedRouteForLogging } from '@/utils/navigation';
 
 // Типы для пропсов управления состоянием
 type SearchStateProps = {
@@ -15,8 +14,8 @@ type SearchStateProps = {
   setIsLoading: (loading: boolean) => void;
   searchResults: Product[];
   setSearchResults: (results: Product[]) => void;
-  allSearchResults: Product[]; 
-  setAllSearchResults: (results: Product[]) => void;
+  allSearchResults: Product[]; // Добавляем все результаты
+  setAllSearchResults: (results: Product[]) => void; // Добавляем установку всех результатов
   cachedResults: {[page: number]: Product[]};
   setCachedResults: (results: {[page: number]: Product[]}) => void;
   selectedProduct: Product | null;
@@ -43,11 +42,6 @@ type SearchStateProps = {
 };
 
 export function useSearchActions(props: SearchStateProps) {
-  // Проверяем текущий маршрут для дополнительной защиты
-  const routeInfo = getRouteInfo();
-  
-  console.log(`[useSearchActions] Инициализация хука, текущий маршрут: ${getNormalizedRouteForLogging()}`);
-  
   const {
     searchQuery,
     setSearchQuery,
@@ -97,8 +91,8 @@ export function useSearchActions(props: SearchStateProps) {
     setCachedResults,
     currentPage,
     setCurrentPage,
-    totalPages,
-    setTotalPages,
+    totalPages, // Добавляем totalPages
+    setTotalPages, // Добавляем setTotalPages
     filters,
     setOriginalQuery,
     setHasSearched,
@@ -111,74 +105,25 @@ export function useSearchActions(props: SearchStateProps) {
     setSelectedProduct
   });
   
-  // Адаптируем интерфейс handleSearch для совместимости с требуемым API
-  const adaptedHandleSearch = async (page: number, forceNewSearch?: boolean) => {
-    // Дополнительная проверка перед выполнением поиска
-    const currentRouteInfo = getRouteInfo();
-    if (currentRouteInfo.isSettings) {
-      console.log(`[useSearchActions] Попытка выполнить поиск на странице настроек - отменено. Маршрут: ${getNormalizedRouteForLogging()}`);
-      return;
-    }
-    
-    return handleSearch({ 
-      forcePage: page, 
-      forceRefresh: forceNewSearch 
-    });
-  };
-  
-  // Адаптируем взаимодействие между новым форматом handleSearch и старым интерфейсом для пагинации
   const { handlePageChange } = usePaginationActions({
     currentPage,
-    totalPages,
+    totalPages, // Передаем актуальное количество страниц
     pageChangeCount,
     setPageChangeCount,
     setCurrentPage,
-    // Используем правильный интерфейс для передачи параметра
-    handleSearch: (page: number) => {
-      // Дополнительная проверка перед выполнением поиска
-      const currentRouteInfo = getRouteInfo();
-      if (currentRouteInfo.isSettings) {
-        console.log(`[useSearchActions] Попытка сменить страницу на странице настроек - отменено. Маршрут: ${getNormalizedRouteForLogging()}`);
-        return Promise.resolve();
-      }
-      
-      return handleSearch({ forcePage: page });
-    }
+    handleSearch
   });
   
-  const { handleFilterChange: filterChange, handleMultipleFiltersChange } = useFilterActions({
+  const { handleFilterChange } = useFilterActions({
     allResults: allSearchResults,
     setFilters,
-    handleSearch: (page, forceNewSearch) => {
-      // Дополнительная проверка перед выполнением поиска
-      const currentRouteInfo = getRouteInfo();
-      if (currentRouteInfo.isSettings) {
-        console.log(`[useSearchActions] Попытка изменить фильтры на странице настроек - отменено. Маршрут: ${getNormalizedRouteForLogging()}`);
-        return Promise.resolve();
-      }
-      
-      return adaptedHandleSearch(page, forceNewSearch);
-    },
+    handleSearch,
     filters,
     setSearchResults
   });
-  
-  // Адаптируем handleFilterChange для поддержки двух разных сигнатур:
-  // 1. handleFilterChange(filterName: string, value: any) - изменение одного фильтра
-  // 2. handleFilterChange(newFilters: ProductFilters) - изменение нескольких фильтров сразу
-  const handleFilterChange = (filterNameOrFilters: string | ProductFilters, value?: any) => {
-    // Если первый аргумент - строка, то вызываем filterChange с двумя аргументами
-    if (typeof filterNameOrFilters === 'string') {
-      return filterChange(filterNameOrFilters, value);
-    } 
-    // Иначе считаем, что передан объект фильтров целиком
-    else {
-      return handleMultipleFiltersChange(filterNameOrFilters);
-    }
-  };
 
   return {
-    handleSearch: adaptedHandleSearch,
+    handleSearch,
     handleProductSelect,
     handlePageChange,
     handleFilterChange,

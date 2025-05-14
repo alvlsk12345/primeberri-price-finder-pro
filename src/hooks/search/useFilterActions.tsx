@@ -36,37 +36,9 @@ export function useFilterActions({
     return false;
   };
   
-  // Метод для обновления одного фильтра по имени
-  const handleFilterChange = useCallback((filterName: string, value: any) => {
-    console.log(`Изменение фильтра: ${filterName} = `, value);
-    
-    // Обновляем фильтры
-    const newFilters = { 
-      ...filters,
-      [filterName]: value 
-    };
-    
-    console.log('Новые фильтры:', newFilters);
-    
-    // Устанавливаем новые фильтры
-    setFilters(newFilters);
-    
-    // Проверяем, нужно ли выполнять новый поиск или достаточно локальной фильтрации
-    if (requiresNewSearch(newFilters, filters)) {
-      console.log('Фильтры изменились, требующие нового поиска API');
-      // Сбрасываем на первую страницу при изменении фильтров и запускаем новый поиск
-      handleSearch(1, true);
-    } else if (allResults && allResults.length > 0) {
-      console.log('Применяем фильтры локально без нового запроса API');
-      // Применяем фильтры локально к имеющимся результатам
-      const filteredResults = applyFiltersLocally(allResults, newFilters);
-      setSearchResults(filteredResults);
-    }
-  }, [allResults, filters, setFilters, handleSearch, setSearchResults, applyFiltersLocally]);
-  
-  // Метод для обновления нескольких фильтров сразу
-  const handleMultipleFiltersChange = useCallback((newFilters: ProductFilters) => {
-    console.log('Применение множественных фильтров:', newFilters);
+  // Модифицированный обработчик изменения фильтров - применяет фильтры локально
+  const handleFilterChange = useCallback((newFilters: ProductFilters) => {
+    console.log('Применение фильтров:', newFilters);
     
     // Устанавливаем новые фильтры
     setFilters(newFilters);
@@ -85,7 +57,6 @@ export function useFilterActions({
   }, [allResults, filters, setFilters, handleSearch, setSearchResults, applyFiltersLocally]);
   
   return {
-    handleFilterChange,
-    handleMultipleFiltersChange
+    handleFilterChange
   };
 }

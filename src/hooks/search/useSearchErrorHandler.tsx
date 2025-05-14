@@ -1,44 +1,38 @@
 
-import { useRef } from 'react';
 import { Product } from "@/services/types";
+import { toast } from "sonner";
 
 type SearchErrorHandlerProps = {
+  lastSuccessfulResults: React.MutableRefObject<Product[]>;
   setSearchResults: (results: Product[]) => void;
 };
 
 export function useSearchErrorHandler({
-  setSearchResults
+  lastSuccessfulResults,
+  setSearchResults,
 }: SearchErrorHandlerProps) {
-  // Сохраняем последние успешные результаты
-  const lastSuccessfulResultsRef = useRef<Product[]>([]);
-
-  // Функция для сохранения успешных результатов
-  const saveSuccessfulResults = (results: Product[]) => {
-    lastSuccessfulResultsRef.current = results;
-  };
-
-  // Функция для обработки ошибок поиска
-  const handleSearchError = (error: any) => {
-    console.error('Ошибка при выполнении поиска:', error);
+  
+  // Функция обработки ошибок поиска
+  const handleSearchError = (error: any): { success: boolean, products: Product[], recovered?: boolean } => {
+    console.error('Ошибка поиска:', error);
     
-    // Если есть сохраненные результаты, используем их
-    if (lastSuccessfulResultsRef.current.length > 0) {
-      console.log(`Восстанавливаем ${lastSuccessfulResultsRef.current.length} предыдущих результатов`);
-      setSearchResults(lastSuccessfulResultsRef.current);
-      return { 
-        success: true, 
-        products: lastSuccessfulResultsRef.current, 
-        recovered: true 
-      };
+    if (lastSuccessfulResults.current.length > 0) {
+      // В случае ошибки возвращаем последние успешные результаты
+      console.log('Произошла ошибка при поиске, возвращаем предыдущие результаты');
+      setSearchResults(lastSuccessfulResults.current);
+      return { success: true, products: lastSuccessfulResults.current, recovered: true };
     }
     
-    // В противном случае возвращаем пустой массив
-    return { success: false, products: [], recovered: false };
+    return { success: false, products: [] };
   };
-
+  
+  // Функция для отображения сообщений об ошибках пользователю
+  const showErrorMessage = (message: string) => {
+    toast.error(message, { duration: 4000 });
+  };
+  
   return {
     handleSearchError,
-    saveSuccessfulResults,
-    lastSuccessfulResultsRef
+    showErrorMessage
   };
 }
