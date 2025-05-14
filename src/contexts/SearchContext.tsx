@@ -93,7 +93,7 @@ const defaultSearchContext: SearchContextType = {
     sources: [],
     rating: 0,
     sortBy: "relevance",
-    country: 'US',
+    countries: ['US'], // Здесь исправляем country на countries
   },
   setFilters: () => {},
   
