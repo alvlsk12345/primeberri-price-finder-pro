@@ -1,12 +1,14 @@
+
 import { toast } from "sonner";
 import { getApiKey, API_BASE_URL } from "./config";
 import { isUsingSupabaseBackend } from "../supabase/config";
-import { searchViaAbacus } from "../supabase/aiService";
+import { searchViaPerplexity } from "../supabase/aiService";
 import { isSupabaseConnected } from "../supabase/client";
+import { BrandSuggestion } from "@/services/types";
 
-// Базовая функция для использования Abacus.ai API с обработкой ошибок (без CORS-прокси)
-export const callAbacusAI = async (
-  endpoint: string, 
+// Базовая функция для использования Perplexity API с обработкой ошибок
+export const callPerplexityAI = async (
+  action: string,
   method: 'GET' | 'POST' = 'POST',
   requestData: Record<string, any> = {},
   options: {
@@ -15,16 +17,15 @@ export const callAbacusAI = async (
 ): Promise<any> => {
   // Проверяем, используем ли мы Supabase бэкенд
   if (isUsingSupabaseBackend() && isSupabaseConnected()) {
-    console.log(`Использование Supabase для вызова Abacus.ai API: ${endpoint}`);
+    console.log(`Использование Supabase для вызова Perplexity API: ${action}`);
     try {
-      // Используем Supabase Edge Function для вызова Abacus.ai
-      // Исправляем передачу параметров - правильно передаем метод как второй аргумент, а данные как третий
-      return await searchViaAbacus(endpoint, method, requestData);
+      // Используем Supabase Edge Function для вызова Perplexity
+      return await searchViaPerplexity(action, method, requestData);
     } catch (error) {
-      console.error('Ошибка при использовании Supabase для Abacus.ai:', error);
-      toast.error(`Ошибка Supabase для Abacus.ai: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, { duration: 3000 });
+      console.error('Ошибка при использовании Supabase для Perplexity:', error);
+      toast.error(`Ошибка Supabase для Perplexity: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, { duration: 3000 });
       // Продолжаем с прямым вызовом API как запасной вариант
-      toast.info('Используем прямой вызов API Abacus.ai как запасной вариант', { duration: 2000 });
+      toast.info('Используем прямой вызов API Perplexity как запасной вариант', { duration: 2000 });
     }
   }
 
@@ -34,23 +35,14 @@ export const callAbacusAI = async (
     
     // Проверка на корректность ключа API
     if (!apiKey) {
-      toast.error("API ключ Abacus.ai не установлен. Пожалуйста, добавьте свой ключ в настройках");
-      throw new Error("API ключ Abacus.ai не установлен");
+      toast.error("API ключ Perplexity не установлен. Пожалуйста, добавьте свой ключ в настройках");
+      throw new Error("API ключ Perplexity не установлен");
     }
 
-    console.log(`Отправляем запрос к Abacus.ai API...`);
+    console.log(`Отправляем запрос к Perplexity API...`);
     
-    // Формируем полный URL эндпоинта
-    let fullUrl = `${API_BASE_URL}/${endpoint}`;
-    
-    // Для GET-запросов добавляем параметры в URL
-    if (method === 'GET' && Object.keys(requestData).length > 0) {
-      const params = new URLSearchParams();
-      Object.entries(requestData).forEach(([key, value]) => {
-        params.append(key, String(value));
-      });
-      fullUrl += `?${params.toString()}`;
-    }
+    // Формируем эндпоинт в зависимости от действия
+    let endpoint = 'chat/completions';
     
     // Вводим таймаут для запроса
     const controller = new AbortController();
@@ -61,6 +53,7 @@ export const callAbacusAI = async (
       method,
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'Authorization': `Bearer ${apiKey}`
       },
       signal: controller.signal
@@ -71,43 +64,43 @@ export const callAbacusAI = async (
       fetchOptions.body = JSON.stringify(requestData);
     }
 
-    // Выполняем прямой запрос к API без CORS прокси
-    const response = await fetch(fullUrl, fetchOptions);
+    // Выполняем прямой запрос к API
+    const response = await fetch(`${API_BASE_URL}/${endpoint}`, fetchOptions);
 
     // Очищаем таймаут
     clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: { message: "Не удалось прочитать ответ" } }));
-      const errorMessage = errorData.error || errorData.errorType || 'Неизвестная ошибка';
+      const errorMessage = errorData.error || errorData.message || 'Неизвестная ошибка';
       
-      console.error('Ошибка от API Abacus.ai:', errorMessage);
+      console.error('Ошибка от API Perplexity:', errorMessage);
       
-      toast.error(`Ошибка Abacus.ai API: ${errorMessage}`, { duration: 5000 });
-      throw new Error(`Ошибка Abacus.ai API: ${errorMessage}`);
+      toast.error(`Ошибка Perplexity API: ${errorMessage}`, { duration: 5000 });
+      throw new Error(`Ошибка Perplexity API: ${errorMessage}`);
     }
 
     const responseData = await response.json();
-    console.log('Получен ответ от Abacus.ai:', responseData);
+    console.log('Получен ответ от Perplexity:', responseData);
     
-    // Проверяем успешность запроса по полю success в ответе
-    if (responseData && responseData.success === false) {
+    // Проверяем успешность запроса
+    if (responseData && responseData.error) {
       throw new Error(responseData.error || "Неизвестная ошибка API");
     }
     
     // Возвращаем результат запроса
-    return responseData.result || responseData;
+    return responseData;
 
   } catch (error: any) {
-    console.error('Ошибка при запросе к Abacus.ai:', error);
+    console.error('Ошибка при запросе к Perplexity:', error);
     
     // Проверяем, является ли ошибка таймаутом или сетевой ошибкой
     if (error.name === 'AbortError') {
-      toast.error('Превышено время ожидания ответа от Abacus.ai API', { duration: 5000 });
-      throw new Error('Превышено время ожидания ответа от Abacus.ai API');
+      toast.error('Превышено время ожидания ответа от Perplexity API', { duration: 5000 });
+      throw new Error('Превышено время ожидания ответа от Perplexity API');
     } else if (error.message.includes('Failed to fetch')) {
-      toast.error('Ошибка сети при подключении к Abacus.ai API. Проверьте подключение к интернету.', { duration: 5000 });
-      throw new Error('Ошибка сети при подключении к Abacus.ai API');
+      toast.error('Ошибка сети при подключении к Perplexity API. Проверьте подключение к интернету.', { duration: 5000 });
+      throw new Error('Ошибка сети при подключении к Perplexity API');
     }
     
     // Если это критическая ошибка, пробрасываем ошибку дальше
@@ -115,42 +108,83 @@ export const callAbacusAI = async (
   }
 };
 
-// Функция для поиска товаров через Abacus.ai API
+// Функция для получения предложений брендов через Perplexity API
 export const searchProductsViaAbacus = async (query: string, options: any = {}): Promise<any> => {
   try {
-    // Предполагаем, что у Abacus.ai есть API для поиска продуктов
-    const searchData = {
-      query,
-      ...options
+    // Системный промпт для формата JSON
+    const systemPrompt = `Ты - эксперт по электронным товарам и аксессуарам для мобильных устройств.
+Твоя задача - предложить конкретные товары на основе описания пользователя.
+Ответ ДОЛЖЕН содержать ТОЛЬКО JSON-массив products с объектами, где каждый объект имеет:
+1. brand - название бренда (строка)
+2. product - название модели или товара (строка)
+3. description - краткое описание товара на русском языке (1-2 предложения)
+
+Формат: {"products": [{"brand": "...", "product": "...", "description": "..."}]}
+
+Всегда возвращай точно 6 результатов. Не нумеруй результаты.`;
+    
+    // Формируем данные для запроса
+    const requestData = {
+      model: "llama-3-sonar-large-32k-chat",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: query }
+      ],
+      temperature: 0.7,
+      max_tokens: 1000,
+      response_format: { type: "json_object" }
     };
     
     // Вызываем API для поиска товаров
-    // Примечание: нужно заменить 'searchProducts' на реальный эндпоинт Abacus.ai API
-    const result = await callAbacusAI('searchProducts', 'POST', searchData);
+    const result = await callPerplexityAI('getBrandSuggestions', 'POST', requestData);
     
-    return result;
+    // Извлекаем содержимое ответа
+    const content = result.choices?.[0]?.message?.content;
+    
+    if (!content) {
+      console.error("Пустой ответ от Perplexity API");
+      return [];
+    }
+    
+    try {
+      const data = JSON.parse(content);
+      if (data && data.products && Array.isArray(data.products)) {
+        console.log("Успешно получен массив products от Perplexity:", data.products.length);
+        return data;
+      } else {
+        console.error("Некорректный формат JSON от Perplexity или отсутствует массив 'products':", data);
+        return { products: [] };
+      }
+    } catch (parseError) {
+      console.error("Ошибка при парсинге JSON от Perplexity:", parseError);
+      return { products: [] };
+    }
+    
   } catch (error) {
-    console.error('Ошибка при поиске товаров через Abacus.ai:', error);
+    console.error('Ошибка при поиске товаров через Perplexity:', error);
     throw error;
   }
 };
 
-// Функция для генерации текста через Abacus.ai API
+// Функция для генерации текста через Perplexity API
 export const generateTextViaAbacus = async (prompt: string, options: any = {}): Promise<string> => {
   try {
     const data = {
-      prompt,
-      ...options
+      model: "llama-3-sonar-large-32k-chat",
+      messages: [
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 1000
     };
     
     // Вызываем API для генерации текста
-    // Примечание: нужно заменить 'textGeneration' на реальный эндпоинт Abacus.ai API
-    const result = await callAbacusAI('textGeneration', 'POST', data);
+    const result = await callPerplexityAI('generateText', 'POST', data);
     
-    // Предполагаем, что результат содержит поле text с сгенерированным текстом
-    return result.text || result.generated_text || JSON.stringify(result);
+    // Предполагаем, что результат содержит поле с сгенерированным текстом
+    return result.choices?.[0]?.message?.content || '';
   } catch (error) {
-    console.error('Ошибка при генерации текста через Abacus.ai:', error);
+    console.error('Ошибка при генерации текста через Perplexity:', error);
     throw error;
   }
 };

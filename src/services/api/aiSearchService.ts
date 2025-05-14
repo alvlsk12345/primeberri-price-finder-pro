@@ -25,8 +25,8 @@ export const searchProductsViaSelectedAI = async (query: string): Promise<any> =
     if (selectedProvider === 'openai') {
       console.log('Использование OpenAI для поиска товаров');
       return await fetchFromOpenAI(query);
-    } else if (selectedProvider === 'abacus') {
-      console.log('Использование Abacus.ai для поиска товаров');
+    } else if (selectedProvider === 'perplexity') {
+      console.log('Использование Perplexity для поиска товаров');
       return await searchProductsViaAbacus(query);
     } else {
       // Если провайдер неизвестен, используем OpenAI по умолчанию
@@ -39,7 +39,7 @@ export const searchProductsViaSelectedAI = async (query: string): Promise<any> =
     
     // Если основной провайдер не доступен, пробуем использовать другой
     if (selectedProvider === 'openai') {
-      toast.info('Пробуем выполнить поиск через Abacus.ai...', { duration: 2000 });
+      toast.info('Пробуем выполнить поиск через Perplexity...', { duration: 2000 });
       try {
         return await searchProductsViaAbacus(query);
       } catch (fallbackError) {

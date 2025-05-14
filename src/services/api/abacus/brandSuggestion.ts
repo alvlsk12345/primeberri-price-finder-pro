@@ -1,85 +1,71 @@
 
 import { BrandSuggestion } from "@/services/types";
-import { callAbacusAI } from "./apiClient";
+import { callPerplexityAI } from "./apiClient";
 import { toast } from "sonner";
 
 /**
- * Функция для получения предложений по брендам через Abacus API
+ * Функция для получения предложений по брендам через Perplexity API
  * @param description Описание запроса
  * @returns Массив предложений брендов
  */
 export const fetchBrandSuggestions = async (description: string): Promise<BrandSuggestion[]> => {
   try {
-    // Формируем запрос к Abacus API для получения брендов
-    const searchData = {
-      prompt: `Предложи 5 брендов, которые соответствуют следующему описанию и верни их в формате JSON: ${description}`,
-      options: {
-        temperature: 0.7,
-        maxTokens: 500,
-        format: 'json'
-      }
+    // Системный промпт для формата JSON
+    const systemPrompt = `Ты - эксперт по электронным товарам и аксессуарам для мобильных устройств.
+Твоя задача - предложить конкретные товары на основе описания пользователя.
+Ответ ДОЛЖЕН содержать ТОЛЬКО JSON-массив products с объектами, где каждый объект имеет:
+1. brand - название бренда (строка)
+2. product - название модели или товара (строка)
+3. description - краткое описание товара на русском языке (1-2 предложения)
+
+Формат: {"products": [{"brand": "...", "product": "...", "description": "..."}]}
+
+Всегда возвращай точно 6 результатов. Не нумеруй результаты.`;
+    
+    console.log('Отправляем запрос к Perplexity API для получения предложений брендов');
+
+    // Формируем данные для запроса
+    const requestData = {
+      model: "llama-3-sonar-large-32k-chat",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: description }
+      ],
+      temperature: 0.7,
+      max_tokens: 1000,
+      response_format: { type: "json_object" }
     };
     
-    console.log('Отправляем запрос к Abacus AI для получения предложений брендов');
-
-    // В реальном проекте этот эндпоинт нужно заменить на актуальный эндпоинт Abacus API
-    const result = await callAbacusAI('textGeneration', 'POST', searchData);
+    // Вызываем API для получения брендов
+    const result = await callPerplexityAI('getBrandSuggestions', 'POST', requestData);
     
-    if (!result || !result.text) {
-      console.warn('Пустой ответ от Abacus API');
+    // Извлекаем содержимое ответа
+    const content = result.choices?.[0]?.message?.content;
+    
+    if (!content) {
+      console.warn('Пустой ответ от Perplexity API');
       return [];
     }
     
     // Пытаемся распарсить ответ как JSON
     try {
-      let parsedResults;
+      const data = JSON.parse(content);
       
-      // Если результат уже является объектом
-      if (typeof result.text === 'object') {
-        parsedResults = result.text;
+      if (data && data.products && Array.isArray(data.products)) {
+        console.log("Успешно получен массив products от Perplexity:", data.products.length);
+        return data.products as BrandSuggestion[];
       } else {
-        // Иначе пытаемся распарсить как JSON строку
-        parsedResults = JSON.parse(result.text);
+        console.error("Некорректный формат JSON от Perplexity или отсутствует массив 'products':", data);
+        return [];
       }
-      
-      // Нормализуем результаты в формат BrandSuggestion[]
-      const suggestions: BrandSuggestion[] = [];
-      
-      if (Array.isArray(parsedResults)) {
-        // Если результат - массив объектов
-        for (const item of parsedResults) {
-          if (item && (item.brand || item.name)) {
-            suggestions.push({
-              brand: item.brand || item.name,
-              product: item.product || '',
-              description: item.description || 'Описание недоступно',
-              ...item
-            });
-          }
-        }
-      } else if (parsedResults.products && Array.isArray(parsedResults.products)) {
-        // Если результат имеет поле products с массивом объектов
-        for (const item of parsedResults.products) {
-          if (item && (item.brand || item.name)) {
-            suggestions.push({
-              brand: item.brand || item.name,
-              product: item.product || '',
-              description: item.description || 'Описание недоступно',
-              ...item
-            });
-          }
-        }
-      }
-      
-      return suggestions;
     } catch (parseError) {
-      console.error('Ошибка при парсинге ответа от Abacus API:', parseError);
-      console.log('Сырой ответ от API:', result.text);
+      console.error('Ошибка при парсинге ответа от Perplexity API:', parseError);
+      console.log('Сырой ответ от API:', content);
       return [];
     }
   } catch (error) {
-    console.error('Ошибка при запросе к Abacus API для получения брендов:', error);
-    toast.error('Ошибка при получении предложений брендов через Abacus API', { duration: 3000 });
+    console.error('Ошибка при запросе к Perplexity API для получения брендов:', error);
+    toast.error('Ошибка при получении предложений брендов через Perplexity API', { duration: 3000 });
     return [];
   }
 };

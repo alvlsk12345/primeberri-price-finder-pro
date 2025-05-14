@@ -7,7 +7,7 @@ import { CORS_HEADERS } from './config.ts';
 
 // Для безопасного хранения ключей API
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-const ABACUS_API_KEY = Deno.env.get('ABACUS_API_KEY');
+const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
 
 // Обработчик запросов
 serve(async (req) => {
@@ -64,16 +64,17 @@ serve(async (req) => {
         );
       }
       
-      responseData = await handleOpenAIRequest(params);
-    } else if (provider === 'abacus') {
-      if (!ABACUS_API_KEY) {
+      responseData = await handleOpenAIRequest(params, OPENAI_API_KEY);
+    } else if (provider === 'abacus' || provider === 'perplexity') {
+      if (!PERPLEXITY_API_KEY) {
         return new Response(
-          JSON.stringify({ error: 'ABACUS_API_KEY не настроен в Edge Function' }),
+          JSON.stringify({ error: 'PERPLEXITY_API_KEY не настроен в Edge Function' }),
           { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }, status: 500 }
         );
       }
       
-      responseData = await handleAbacusRequest(params);
+      // Используем обработчик Abacus для совместимости
+      responseData = await handleAbacusRequest(params, PERPLEXITY_API_KEY);
     } else {
       // Если провайдер не поддерживается, возвращаем ошибку
       return new Response(
@@ -83,10 +84,7 @@ serve(async (req) => {
     }
     
     // Возвращаем результат с CORS заголовками
-    return new Response(
-      JSON.stringify(responseData),
-      { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
-    );
+    return responseData;
   } catch (error) {
     // Обработка ошибок
     console.error('Edge Function Error:', error);

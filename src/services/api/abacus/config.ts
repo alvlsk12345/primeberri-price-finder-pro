@@ -1,13 +1,13 @@
 
 // Константа для названия ключа в localStorage
-const ABACUS_API_KEY_STORAGE = 'abacus_api_key';
+const PERPLEXITY_API_KEY_STORAGE = 'perplexity_api_key';
 
 // Функция для получения API ключа из localStorage
 export const getApiKey = (): string => {
   try {
-    return localStorage.getItem(ABACUS_API_KEY_STORAGE) || '';
+    return localStorage.getItem(PERPLEXITY_API_KEY_STORAGE) || '';
   } catch (error) {
-    console.error('Ошибка при получении API ключа Abacus:', error);
+    console.error('Ошибка при получении API ключа Perplexity:', error);
     return '';
   }
 };
@@ -15,22 +15,22 @@ export const getApiKey = (): string => {
 // Функция для сохранения API ключа в localStorage
 export const setApiKey = (key: string): void => {
   try {
-    localStorage.setItem(ABACUS_API_KEY_STORAGE, key);
-    console.log('API ключ Abacus успешно сохранен');
+    localStorage.setItem(PERPLEXITY_API_KEY_STORAGE, key);
+    console.log('API ключ Perplexity успешно сохранен');
   } catch (error) {
-    console.error('Ошибка при сохранении API ключа Abacus:', error);
+    console.error('Ошибка при сохранении API ключа Perplexity:', error);
   }
 };
 
-// Функция для сброса API ключа Abacus
+// Функция для сброса API ключа Perplexity
 export const resetApiKey = (): boolean => {
   try {
-    console.log('Выполняется сброс API ключа Abacus...');
-    localStorage.removeItem(ABACUS_API_KEY_STORAGE);
-    console.log('API ключ Abacus успешно удален');
+    console.log('Выполняется сброс API ключа Perplexity...');
+    localStorage.removeItem(PERPLEXITY_API_KEY_STORAGE);
+    console.log('API ключ Perplexity успешно удален');
     return true;
   } catch (error) {
-    console.error('Ошибка при сбросе API ключа Abacus:', error);
+    console.error('Ошибка при сбросе API ключа Perplexity:', error);
     return false;
   }
 };
@@ -41,5 +41,5 @@ export const hasValidApiKey = (): boolean => {
   return key !== '' && key.length > 10;
 };
 
-// Базовый URL API Abacus.ai
-export const API_BASE_URL = 'https://api.abacus.ai/api/v0';
+// Базовый URL API Perplexity
+export const API_BASE_URL = 'https://api.perplexity.ai';

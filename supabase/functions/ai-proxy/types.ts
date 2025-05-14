@@ -10,3 +10,10 @@ export interface Brand {
 export interface BrandResponse {
   products?: Brand[];
 }
+
+// Интерфейс для предложений бренда
+export interface BrandSuggestion {
+  brand: string;
+  product: string;
+  description: string;
+}
