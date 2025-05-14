@@ -60,14 +60,25 @@ export const getRouteInfo = (): {
   rawPath: string;
   dataPath: string | null;
   hasSettingsClass: boolean;
+  hash: string | null; // Добавляем новое поле для хранения хэша для удобства проверки
 } => {
+  console.log('[navigation.ts -> getRouteInfo] ENTER. Определение маршрута');
   const rawHash = window.location.hash;
   const rawPath = window.location.pathname;
   const dataPath = document.body.getAttribute('data-path');
   const hasSettingsClass = hasSettingsPageClass();
   
+  console.log(`[navigation.ts -> getRouteInfo] Параметры: hash="${rawHash}", path="${rawPath}", dataPath="${dataPath}", hasSettingsClass=${hasSettingsClass}`);
+  
+  let hash = null;
+  if (rawHash && rawHash.startsWith('#/')) {
+    hash = rawHash.substring(2); // Без '#/'
+    console.log(`[navigation.ts -> getRouteInfo] Извлечен хэш: "${hash}"`);
+  }
+  
   // Самый точный и высокоприоритетный способ определения - проверка класса settings-page
   if (hasSettingsClass) {
+    console.log('[navigation.ts -> getRouteInfo] Определено по классу settings-page: страница настроек');
     return {
       path: SETTINGS_ROUTE,
       isSettings: true,
@@ -75,12 +86,14 @@ export const getRouteInfo = (): {
       rawHash,
       rawPath,
       dataPath,
-      hasSettingsClass
+      hasSettingsClass,
+      hash
     };
   }
   
   // Второй приоритет - прямая проверка хеша для страницы настроек
   if (rawHash === '#/settings') {
+    console.log('[navigation.ts -> getRouteInfo] Определено по хэшу #/settings: страница настроек');
     return {
       path: SETTINGS_ROUTE,
       isSettings: true,
@@ -88,12 +101,14 @@ export const getRouteInfo = (): {
       rawHash,
       rawPath,
       dataPath,
-      hasSettingsClass
+      hasSettingsClass,
+      hash
     };
   }
   
   // Третий приоритет - проверка атрибута data-path
   if (dataPath === '/settings') {
+    console.log('[navigation.ts -> getRouteInfo] Определено по data-path=/settings: страница настроек');
     return {
       path: SETTINGS_ROUTE,
       isSettings: true,
@@ -101,7 +116,8 @@ export const getRouteInfo = (): {
       rawHash,
       rawPath,
       dataPath,
-      hasSettingsClass
+      hasSettingsClass,
+      hash
     };
   }
   
@@ -109,8 +125,9 @@ export const getRouteInfo = (): {
   let path = '';
   
   // Первый приоритет - хеш для HashRouter
-  if (rawHash && rawHash.startsWith('#/')) {
-    path = rawHash.substring(2); // Убираем '#/'
+  if (hash) {
+    path = hash;
+    console.log(`[navigation.ts -> getRouteInfo] Определен путь из хэша: "${path}"`);
   } 
   // Второй приоритет - атрибут data-path
   else if (dataPath) {
@@ -118,6 +135,7 @@ export const getRouteInfo = (): {
     if (path.startsWith('/')) {
       path = path.substring(1);
     }
+    console.log(`[navigation.ts -> getRouteInfo] Определен путь из data-path: "${path}"`);
   }
   // Последний приоритет - pathname
   else {
@@ -125,11 +143,14 @@ export const getRouteInfo = (): {
     if (path.startsWith('/')) {
       path = path.substring(1);
     }
+    console.log(`[navigation.ts -> getRouteInfo] Определен путь из pathname: "${path}"`);
   }
   
   // Определяем тип маршрута
   const isSettings = path === SETTINGS_ROUTE;
   const isIndex = !path || path === '' || path === 'index';
+  
+  console.log(`[navigation.ts -> getRouteInfo] EXIT. path="${path}", isSettings=${isSettings}, isIndex=${isIndex}`);
   
   return {
     path,
@@ -138,7 +159,8 @@ export const getRouteInfo = (): {
     rawHash,
     rawPath,
     dataPath,
-    hasSettingsClass
+    hasSettingsClass,
+    hash
   };
 };
 

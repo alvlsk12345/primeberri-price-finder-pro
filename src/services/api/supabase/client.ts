@@ -24,7 +24,7 @@ const CACHE_TTL = 10 * 1000;
 const MIN_CLEAR_INTERVAL = 3000;
 
 // Минимальное время после навигации, когда разрешена очистка кеша
-const NAVIGATION_COOLDOWN = 1500;
+const NAVIGATION_COOLDOWN = 2500; // Увеличиваем время запрета очистки после навигации
 
 /**
  * Проверяет, находимся ли мы в процессе навигации
@@ -36,6 +36,8 @@ function isNavigating(): boolean {
   // Если с момента последнего события навигации прошло меньше NAVIGATION_COOLDOWN,
   // считаем, что мы всё ещё в процессе навигации
   if (now - connectionState.lastNavigationEvent < NAVIGATION_COOLDOWN) {
+    console.log('[supabase/client] Все еще в периоде остывания после навигации:', 
+                now - connectionState.lastNavigationEvent, 'мс назад');
     return true;
   }
   
@@ -43,9 +45,45 @@ function isNavigating(): boolean {
 }
 
 /**
+ * Проверяет, находимся ли мы на странице настроек
+ * Используем несколько методов для определения, с высоким приоритетом проверки класса
+ */
+function isOnSettingsPage(): boolean {
+  // Наивысший приоритет - проверка класса settings-page
+  if (document.body.classList.contains('settings-page')) {
+    console.log('[supabase/client] На странице настроек (определено по классу body)');
+    return true;
+  }
+  
+  // Хеш-проверка (для HashRouter)
+  if (window.location.hash === '#/settings') {
+    console.log('[supabase/client] На странице настроек (определено по хешу)');
+    return true;
+  }
+  
+  // Проверка через data-path атрибут
+  if (document.body.getAttribute('data-path') === '/settings') {
+    console.log('[supabase/client] На странице настроек (определено по data-path)');
+    return true;
+  }
+  
+  const routeInfo = getRouteInfo();
+  const result = routeInfo.isSettings;
+  
+  if (result) {
+    console.log('[supabase/client] На странице настроек (определено через getRouteInfo)');
+  } else {
+    console.log('[supabase/client] Не на странице настроек');
+  }
+  
+  return result;
+}
+
+/**
  * Отмечает начало навигации
  */
 function startNavigation() {
+  console.log('[supabase/client] Зарегистрировано начало навигации');
   connectionState.navigationInProgress = true;
   connectionState.lastNavigationEvent = Date.now();
   console.log('[supabase/client] Началась навигация, очистка кеша заблокирована');
@@ -55,6 +93,7 @@ function startNavigation() {
  * Отмечает завершение навигации
  */
 function endNavigation() {
+  console.log('[supabase/client] Зарегистрировано завершение навигации');
   connectionState.navigationInProgress = false;
   connectionState.lastNavigationEvent = Date.now();
   console.log('[supabase/client] Навигация завершена, очистка кеша будет разблокирована через '
@@ -73,14 +112,14 @@ export async function isSupabaseConnected(showLogs = true, forceCheck = false): 
   }
   
   // Проверяем, активна ли страница настроек (для предотвращения ненужных запросов)
-  const routeInfo = getRouteInfo();
+  const onSettingsPage = isOnSettingsPage();
   
-  if (showLogs) {
-    console.log(`[supabase/client] Текущий маршрут: ${JSON.stringify(routeInfo)}`);
+  if (showLogs && onSettingsPage) {
+    console.log('[supabase/client] Определено, что мы на странице настроек');
   }
   
   // Блокируем проверки на странице настроек если явно не запросили проверку
-  if (routeInfo.isSettings && !forceCheck) {
+  if (onSettingsPage && !forceCheck) {
     if (showLogs) {
       console.log('[supabase/client] Пропускаем проверку соединения на странице настроек');
     }
@@ -125,6 +164,19 @@ export async function isSupabaseConnected(showLogs = true, forceCheck = false): 
       console.log('[supabase/client] Проверка подключения к Supabase...');
     }
     
+    // Проверяем еще раз, что мы не в процессе навигации и не на странице настроек
+    if (isNavigating() && !forceCheck) {
+      console.log('[supabase/client] В процессе навигации, возвращаем последний известный результат или true');
+      connectionState.inProgress = false;
+      return connectionState.isConnected !== null ? connectionState.isConnected : true;
+    }
+    
+    if (isOnSettingsPage() && !forceCheck) {
+      console.log('[supabase/client] На странице настроек, пропускаем проверку');
+      connectionState.inProgress = false;
+      return true;
+    }
+    
     // Используем надежный метод для проверки подключения - проверку сессии
     const { data, error } = await supabase.auth.getSession();
     
@@ -132,10 +184,12 @@ export async function isSupabaseConnected(showLogs = true, forceCheck = false): 
     // Даже если сессия не активна (data.session === null), соединение считается рабочим
     const isConnected = !error;
     
-    // Обновляем кеш
-    connectionState.isConnected = isConnected;
-    connectionState.timestamp = now;
-    connectionState.lastError = error;
+    // Обновляем кеш, только если мы не на странице настроек или явно запросили проверку
+    if (!isOnSettingsPage() || forceCheck) {
+      connectionState.isConnected = isConnected;
+      connectionState.timestamp = now;
+      connectionState.lastError = error;
+    }
     
     if (showLogs) {
       if (isConnected) {
@@ -152,9 +206,12 @@ export async function isSupabaseConnected(showLogs = true, forceCheck = false): 
     }
     
     // В случае ошибки обновляем кеш с отрицательным результатом
-    connectionState.isConnected = false;
-    connectionState.timestamp = now;
-    connectionState.lastError = error as Error;
+    // только если мы не на странице настроек или явно запросили проверку
+    if (!isOnSettingsPage() || forceCheck) {
+      connectionState.isConnected = false;
+      connectionState.timestamp = now;
+      connectionState.lastError = error as Error;
+    }
     
     return false;
   } finally {
@@ -178,33 +235,25 @@ export function checkSupabaseConnection(forceCheck = false) {
  */
 export function clearConnectionCache() {
   const now = Date.now();
-  const routeInfo = getRouteInfo();
-  const callStack = new Error().stack;
-  
-  // Логируем вызов с информацией о маршруте, времени и стеке вызовов
-  console.log(`[supabase/client] Попытка очистки кеша. Маршрут: ${JSON.stringify(routeInfo)}, последняя очистка: ${now - connectionState.lastClearTime}мс назад`);
-  
-  // Расширенный лог стека вызовов для диагностики
-  if (connectionState.clearAttempts > 2) {
-    console.log('[supabase/client] Стек вызовов clearConnectionCache:', callStack);
-  }
+  console.log(`[supabase/client] Попытка очистки кеша соединения в ${new Date(now).toISOString()}`);
   
   // Защитный механизм #1: проверяем, что мы не на странице настроек
-  if (routeInfo.isSettings) {
-    console.log('[supabase/client] Попытка очистки кеша на странице настроек игнорируется для предотвращения перенаправления');
+  const onSettingsPage = isOnSettingsPage();
+  if (onSettingsPage) {
+    console.log('[supabase/client] Попытка очистки кеша на странице настроек ОТКЛОНЕНА');
     return; // Предотвращаем очистку кеша на странице настроек
   }
   
   // Защитный механизм #2: проверяем, не происходит ли навигация
   if (isNavigating()) {
-    console.log('[supabase/client] Попытка очистки кеша во время навигации игнорируется');
+    console.log('[supabase/client] Попытка очистки кеша во время навигации ОТКЛОНЕНА');
     return; // Предотвращаем очистку кеша во время навигации
   }
   
   // Защитный механизм #3: ограничиваем частоту очистки кеша
   if (now - connectionState.lastClearTime < MIN_CLEAR_INTERVAL) {
     connectionState.clearAttempts++;
-    console.log(`[supabase/client] Слишком частые попытки очистить кеш (${connectionState.clearAttempts}), игнорируем`);
+    console.log(`[supabase/client] Слишком частые попытки очистить кеш (${connectionState.clearAttempts}), ОТКЛОНЕНО`);
     
     // Если попыток слишком много, логируем предупреждение
     if (connectionState.clearAttempts > 5) {
@@ -213,7 +262,7 @@ export function clearConnectionCache() {
     return;
   }
   
-  // Очищаем кеш состояния
+  // Все проверки пройдены, очищаем кеш состояния
   connectionState.isConnected = null;
   connectionState.timestamp = 0;
   connectionState.lastClearTime = now;
@@ -227,6 +276,7 @@ if (typeof window !== 'undefined') {
   // Отслеживаем навигационные события
   ['popstate', 'hashchange'].forEach(event => {
     window.addEventListener(event, () => {
+      console.log(`[supabase/client] Обнаружено событие ${event}, запускаем обработку навигации`);
       startNavigation();
       
       // Устанавливаем таймер для завершения навигации

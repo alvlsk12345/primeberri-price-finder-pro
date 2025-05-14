@@ -20,9 +20,11 @@ const DEFAULT_CONFIG: SupabaseAIConfig = {
  */
 function isLocalStorageAvailable(): boolean {
   try {
+    console.log('[SupabaseConfig] Проверяем доступность localStorage');
     const testKey = '__test_storage__';
     localStorage.setItem(testKey, testKey);
     localStorage.removeItem(testKey);
+    console.log('[SupabaseConfig] localStorage доступен');
     return true;
   } catch (e) {
     console.warn('[SupabaseConfig] localStorage недоступен:', e);
@@ -35,25 +37,36 @@ function isLocalStorageAvailable(): boolean {
  * @returns Данные из localStorage или null в случае ошибки
  */
 function safeReadFromLocalStorage(key: string): string | null {
+  console.log(`[SupabaseConfig] Пытаемся прочитать из localStorage по ключу: ${key}`);
   try {
     if (!isLocalStorageAvailable()) {
+      console.warn('[SupabaseConfig] localStorage недоступен, возвращаем null');
       return null;
     }
     
+    console.log('[SupabaseConfig] localStorage доступен, пытаемся получить данные');
     const data = localStorage.getItem(key);
+    console.log(`[SupabaseConfig] Прочитанные данные: ${data}`);
     
     // Проверяем, что данные существуют и не являются "undefined"/"null" строками
     if (!data || data === 'undefined' || data === 'null') {
+      console.warn(`[SupabaseConfig] Данные отсутствуют или имеют недопустимое значение: ${data}`);
       return null;
     }
     
     // Базовая проверка на формат JSON
     if (!data.startsWith('{') || !data.endsWith('}')) {
       console.warn(`[SupabaseConfig] Данные в localStorage не похожи на JSON: ${data}`);
-      localStorage.removeItem(key);
+      try {
+        localStorage.removeItem(key);
+        console.log(`[SupabaseConfig] Удалили некорректные данные из localStorage для ключа: ${key}`);
+      } catch (removeError) {
+        console.error(`[SupabaseConfig] Не удалось удалить данные из localStorage для ключа: ${key}`, removeError);
+      }
       return null;
     }
     
+    console.log('[SupabaseConfig] Данные успешно прочитаны и прошли базовую валидацию');
     return data;
   } catch (e) {
     console.error(`[SupabaseConfig] Ошибка при чтении из localStorage (ключ: ${key}):`, e);
@@ -63,9 +76,9 @@ function safeReadFromLocalStorage(key: string): string | null {
 
 // Получение текущей конфигурации с улучшенной обработкой ошибок
 export function getSupabaseAIConfig(): SupabaseAIConfig {
+  console.log('[SupabaseConfig] Начало выполнения getSupabaseAIConfig');
+  
   try {
-    console.log('[SupabaseConfig] Начало выполнения getSupabaseAIConfig');
-    
     // Безопасное чтение из localStorage
     const savedConfigStr = safeReadFromLocalStorage(SUPABASE_AI_CONFIG_KEY);
     
@@ -78,9 +91,15 @@ export function getSupabaseAIConfig(): SupabaseAIConfig {
         // Проверяем валидность конфигурации
         if (typeof parsed !== 'object' || parsed === null) {
           console.warn('[SupabaseConfig] Некорректный формат конфигурации: не объект');
-          if (isLocalStorageAvailable()) {
-            localStorage.removeItem(SUPABASE_AI_CONFIG_KEY);
+          try {
+            if (isLocalStorageAvailable()) {
+              localStorage.removeItem(SUPABASE_AI_CONFIG_KEY);
+              console.log('[SupabaseConfig] Удалили некорректные данные из localStorage');
+            }
+          } catch (removeError) {
+            console.error('[SupabaseConfig] Не удалось удалить данные из localStorage:', removeError);
           }
+          console.log('[SupabaseConfig] Возвращаем дефолтную конфигурацию из-за некорректного формата');
           return { ...DEFAULT_CONFIG };
         }
         
@@ -99,9 +118,15 @@ export function getSupabaseAIConfig(): SupabaseAIConfig {
       } catch (parseError) {
         console.error('[SupabaseConfig] Ошибка при парсинге настроек:', parseError);
         console.warn('[SupabaseConfig] Удаление некорректных данных из localStorage');
-        if (isLocalStorageAvailable()) {
-          localStorage.removeItem(SUPABASE_AI_CONFIG_KEY);
+        try {
+          if (isLocalStorageAvailable()) {
+            localStorage.removeItem(SUPABASE_AI_CONFIG_KEY);
+            console.log('[SupabaseConfig] Успешно удалили некорректные данные из localStorage');
+          }
+        } catch (removeError) {
+          console.error('[SupabaseConfig] Не удалось удалить данные из localStorage:', removeError);
         }
+        console.log('[SupabaseConfig] Возвращаем дефолтную конфигурацию из-за ошибки парсинга');
         return { ...DEFAULT_CONFIG };
       }
     }
@@ -116,8 +141,8 @@ export function getSupabaseAIConfig(): SupabaseAIConfig {
     try {
       if (isLocalStorageAvailable()) {
         localStorage.removeItem(SUPABASE_AI_CONFIG_KEY);
+        console.log('[SupabaseConfig] Локальное хранилище очищено от поврежденных данных');
       }
-      console.log('[SupabaseConfig] Локальное хранилище очищено от поврежденных данных');
     } catch (clearError) {
       console.error('[SupabaseConfig] Не удалось очистить localStorage:', clearError);
     }
@@ -128,6 +153,7 @@ export function getSupabaseAIConfig(): SupabaseAIConfig {
 
 // Сохранение конфигурации
 export function setSupabaseAIConfig(config: Partial<SupabaseAIConfig>): SupabaseAIConfig {
+  console.log('[SupabaseConfig] Начало выполнения setSupabaseAIConfig с конфигурацией:', config);
   try {
     // Проверяем доступность localStorage
     if (!isLocalStorageAvailable()) {
@@ -135,27 +161,62 @@ export function setSupabaseAIConfig(config: Partial<SupabaseAIConfig>): Supabase
       return { ...DEFAULT_CONFIG, ...config };
     }
     
+    // Получаем текущие настройки, безопасно обрабатывая потенциальные ошибки
+    let currentConfig: SupabaseAIConfig;
+    try {
+      currentConfig = getSupabaseAIConfig();
+      console.log('[SupabaseConfig] Текущие настройки получены успешно:', currentConfig);
+    } catch (e) {
+      console.error('[SupabaseConfig] Ошибка при получении текущих настроек, используем дефолтные:', e);
+      currentConfig = { ...DEFAULT_CONFIG };
+    }
+    
     // Объединяем текущие настройки с новыми
-    const currentConfig = getSupabaseAIConfig();
     const newConfig = { ...currentConfig, ...config };
+    console.log('[SupabaseConfig] Новая конфигурация после объединения:', newConfig);
     
     // Сохраняем в localStorage
-    const jsonString = JSON.stringify(newConfig);
-    localStorage.setItem(SUPABASE_AI_CONFIG_KEY, jsonString);
-    console.log('[SupabaseConfig] Настройки успешно сохранены:', newConfig);
+    try {
+      const jsonString = JSON.stringify(newConfig);
+      localStorage.setItem(SUPABASE_AI_CONFIG_KEY, jsonString);
+      console.log('[SupabaseConfig] Настройки успешно сохранены в localStorage');
+    } catch (e) {
+      console.error('[SupabaseConfig] Ошибка при сохранении настроек в localStorage:', e);
+    }
+    
+    console.log('[SupabaseConfig] Возвращаем новую конфигурацию:', newConfig);
     return newConfig;
   } catch (e) {
     console.error('[SupabaseConfig] Ошибка при сохранении настроек Supabase AI:', e);
+    // Возвращаем объединенные настройки, даже если не удалось сохранить их в localStorage
     return { ...DEFAULT_CONFIG, ...config };
   }
 }
 
 // Проверка использования Supabase бэкенда для AI
 export function isUsingSupabaseBackend(): boolean {
-  return getSupabaseAIConfig().useSupabaseBackend;
+  console.log('[SupabaseConfig] Проверка использования Supabase бэкенда');
+  try {
+    const config = getSupabaseAIConfig();
+    console.log('[SupabaseConfig] Конфигурация получена, useSupabaseBackend =', config.useSupabaseBackend);
+    return config.useSupabaseBackend;
+  } catch (e) {
+    console.error('[SupabaseConfig] Ошибка при проверке использования Supabase бэкенда:', e);
+    // По умолчанию используем Supabase при ошибке
+    return DEFAULT_CONFIG.useSupabaseBackend;
+  }
 }
 
 // Проверка использования фоллбэка на прямые вызовы
 export function isFallbackEnabled(): boolean {
-  return getSupabaseAIConfig().fallbackToDirectCalls;
+  console.log('[SupabaseConfig] Проверка использования фоллбэка');
+  try {
+    const config = getSupabaseAIConfig();
+    console.log('[SupabaseConfig] Конфигурация получена, fallbackToDirectCalls =', config.fallbackToDirectCalls);
+    return config.fallbackToDirectCalls;
+  } catch (e) {
+    console.error('[SupabaseConfig] Ошибка при проверке использования фоллбэка:', e);
+    // По умолчанию используем фоллбэк при ошибке
+    return DEFAULT_CONFIG.fallbackToDirectCalls;
+  }
 }

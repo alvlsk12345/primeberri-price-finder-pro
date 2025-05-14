@@ -7,22 +7,43 @@ export const useSettingsPageEffect = () => {
   useEffect(() => {
     console.log('[Settings] useEffect - устанавливаем data-path /settings');
     
-    // Добавляем класс settings-page на body (высокий приоритет для определения маршрута)
-    document.body.classList.add('settings-page');
+    // Сначала проверяем, что мы действительно на странице настроек
+    const routeInfo = getRouteInfo();
+    console.log(`[Settings] useSettingsPageEffect - текущий маршрут: ${JSON.stringify(routeInfo)}`);
     
-    // Устанавливаем data-path как запасной вариант
-    document.body.setAttribute('data-path', '/settings');
+    // Для предотвращения конфликтов проверяем, не имеет ли body уже класс settings-page
+    const hasSettingsClass = document.body.classList.contains('settings-page');
+    
+    if (!hasSettingsClass) {
+      // Добавляем класс settings-page на body (высокий приоритет для определения маршрута)
+      console.log('[Settings] useSettingsPageEffect - добавляем класс settings-page');
+      document.body.classList.add('settings-page');
+      
+      // Устанавливаем data-path как запасной вариант
+      document.body.setAttribute('data-path', '/settings');
+      console.log('[Settings] useSettingsPageEffect - установлен data-path=/settings');
+    } else {
+      console.log('[Settings] useSettingsPageEffect - класс settings-page уже установлен');
+    }
     
     // Очистка при размонтировании
     return () => {
-      console.log('[Settings] useEffect - удаляем классы и атрибуты при размонтировании');
-      document.body.classList.remove('settings-page');
+      console.log('[Settings] useEffect - начало очистки при размонтировании');
       
       // Проверяем, что мы все еще на странице настроек перед удалением атрибута
       const currentRouteInfo = getRouteInfo();
-      if (!currentRouteInfo.isSettings) {
+      console.log(`[Settings] useSettingsPageEffect - размонтирование, текущий маршрут: ${JSON.stringify(currentRouteInfo)}`);
+      
+      // Если мы точно ушли со страницы настроек
+      if (!currentRouteInfo.hash || (currentRouteInfo.hash && !currentRouteInfo.hash.includes('settings'))) {
+        console.log('[Settings] useSettingsPageEffect - удаляем класс settings-page и атрибут data-path');
+        document.body.classList.remove('settings-page');
         document.body.removeAttribute('data-path');
+      } else {
+        console.log('[Settings] useSettingsPageEffect - сохраняем класс и атрибут, так как все еще на странице настроек');
       }
+      
+      console.log('[Settings] useEffect - завершение очистки при размонтировании');
     };
   }, []);
 

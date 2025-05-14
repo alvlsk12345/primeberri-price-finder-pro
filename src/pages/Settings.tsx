@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { PageHeader } from "@/components/PageHeader";
 import { PageFooter } from "@/components/PageFooter";
 import { SettingsHeader } from "@/components/settings/SettingsHeader";
@@ -25,46 +25,111 @@ const SettingsContent = () => {
 
 // Главный компонент страницы настроек
 const Settings = () => {
-  console.log('[Settings] Начало рендера компонента Settings');
+  console.log('[Settings] НАЧАЛО рендера компонента Settings');
   
   // Состояние для отслеживания готовности компонента
   const [isReady, setIsReady] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  
+  // Получаем информацию о маршруте с помощью useMemo для стабильности
+  const routeInfo = useMemo(() => {
+    console.log('[Settings] Получение информации о маршруте через useMemo');
+    try {
+      const info = getRouteInfo();
+      console.log(`[Settings] Информация о маршруте: ${JSON.stringify(info)}`);
+      return info;
+    } catch (e) {
+      console.error('[Settings] Ошибка при получении информации о маршруте:', e);
+      setHasError(true);
+      setErrorMessage('Ошибка при определении текущего маршрута');
+      return { isSettings: true, path: 'settings', rawHash: '', rawPath: '' };
+    }
+  }, []);
   
   // Используем хук для эффектов страницы настроек
-  useSettingsPageEffect();
+  try {
+    console.log('[Settings] Перед вызовом useSettingsPageEffect');
+    useSettingsPageEffect();
+    console.log('[Settings] После вызова useSettingsPageEffect');
+  } catch (e) {
+    console.error('[Settings] Ошибка в useSettingsPageEffect:', e);
+    // Не устанавливаем здесь ошибку, чтобы компонент продолжил рендериться
+  }
 
   // Эффект для задержки рендеринга, чтобы дать время для инициализации
   useEffect(() => {
     console.log('[Settings] Подготовка к рендеру контента');
     
+    // Проверка, что мы на странице настроек
+    if (!routeInfo.isSettings && !document.body.classList.contains('settings-page')) {
+      console.warn('[Settings] Обнаружено, что мы не на странице настроек, добавляем соответствующие атрибуты');
+      document.body.classList.add('settings-page');
+      document.body.setAttribute('data-path', '/settings');
+    }
+    
     // Небольшая задержка для стабилизации состояния маршрута
     const timer = setTimeout(() => {
-      setIsReady(true);
-      console.log('[Settings] Компонент готов к рендеру контента');
-    }, 100);
+      try {
+        console.log('[Settings] Устанавливаем isReady=true после таймаута');
+        setIsReady(true);
+      } catch (e) {
+        console.error('[Settings] Ошибка при установке isReady=true:', e);
+        setHasError(true);
+        setErrorMessage('Не удалось инициализировать страницу настроек');
+      }
+    }, 150); // Увеличим задержку для большей стабильности
     
-    return () => clearTimeout(timer);
-  }, []);
+    return () => {
+      console.log('[Settings] Очистка таймера в useEffect');
+      clearTimeout(timer);
+    };
+  }, [routeInfo]);
 
-  // Проверяем текущий маршрут перед рендерингом
-  const routeInfo = getRouteInfo();
-  console.log(`[Settings] Перед рендерингом, текущий маршрут: ${JSON.stringify(routeInfo)}`);
+  console.log(`[Settings] Перед рендерингом, isReady=${isReady}, hasError=${hasError}`);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand/30 to-brand/10 settings-page">
       <PageHeader />
       
       <main className="container mx-auto py-10 px-4">
-        {isReady ? (
+        {hasError ? (
+          <div className="p-6 bg-red-50 rounded-md text-red-600 max-w-4xl mx-auto">
+            <h3 className="text-lg font-medium mb-2">Произошла ошибка на странице настроек</h3>
+            <p>{errorMessage || 'Не удалось загрузить страницу настроек. Пожалуйста, обновите страницу или вернитесь на главную.'}</p>
+            <div className="mt-4 flex space-x-4">
+              <button 
+                onClick={() => window.location.reload()} 
+                className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md"
+              >
+                Обновить страницу
+              </button>
+              <button 
+                onClick={() => window.location.hash = '#/'} 
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md"
+              >
+                На главную
+              </button>
+            </div>
+          </div>
+        ) : isReady ? (
           <ErrorBoundary fallback={<div className="p-6 bg-red-50 rounded-md text-red-600 max-w-4xl mx-auto">
             <h3 className="text-lg font-medium mb-2">Не удалось загрузить страницу настроек</h3>
             <p>Произошла ошибка при загрузке настроек. Пожалуйста, обновите страницу или вернитесь на главную.</p>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="mt-4 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md"
-            >
-              Обновить страницу
-            </button>
+            <div className="mt-4 flex space-x-4">
+              <button 
+                onClick={() => window.location.reload()} 
+                className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md"
+              >
+                Обновить страницу
+              </button>
+              <button 
+                onClick={() => window.location.hash = '#/'} 
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md"
+              >
+                На главную
+              </button>
+            </div>
           </div>}>
             <SettingsContent />
           </ErrorBoundary>
