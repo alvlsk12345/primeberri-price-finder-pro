@@ -27,6 +27,17 @@ const SettingsContent = () => {
 const Settings = () => {
   console.log('[Settings] НАЧАЛО рендера компонента Settings');
   
+  // Проверка доступности localStorage в самом начале
+  try {
+    console.log('[Settings] Проверка localStorage:', !!window.localStorage);
+    const testKey = '__test_storage__';
+    localStorage.setItem(testKey, testKey);
+    localStorage.removeItem(testKey);
+    console.log('[Settings] localStorage доступен');
+  } catch (e) {
+    console.error('[Settings] Ошибка при проверке localStorage:', e);
+  }
+  
   // Состояние для отслеживания готовности компонента
   const [isReady, setIsReady] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -56,6 +67,17 @@ const Settings = () => {
     console.error('[Settings] Ошибка в useSettingsPageEffect:', e);
     // Не устанавливаем здесь ошибку, чтобы компонент продолжил рендериться
   }
+
+  // Защита от неожиданных перенаправлений
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      console.log('[Settings] Событие beforeunload активировано');
+      // В реальном приложении можно добавить логику для предотвращения ухода
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
 
   // Эффект для задержки рендеринга, чтобы дать время для инициализации
   useEffect(() => {
