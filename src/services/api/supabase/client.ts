@@ -10,11 +10,16 @@ const connectionState = {
   isConnected: null as boolean | null,
   timestamp: 0,
   inProgress: false, // Защита от параллельных проверок
-  lastError: null as Error | null
+  lastError: null as Error | null,
+  lastClearTime: 0, // Время последней очистки кеша
+  clearAttempts: 0 // Счетчик попыток очистки
 };
 
 // Время жизни кеша (10 секунд)
 const CACHE_TTL = 10 * 1000;
+
+// Минимальный интервал между очистками кеша (миллисекунды)
+const MIN_CLEAR_INTERVAL = 2000;
 
 /**
  * Проверяет соединение с Supabase с использованием оптимизированного подхода
@@ -124,20 +129,40 @@ export function checkSupabaseConnection(forceCheck = false) {
 
 /**
  * Удаляет кешированный результат проверки соединения
- * Добавлена защита от запуска на странице настроек
+ * Улучшенная версия с защитой от слишком частого вызова и проверкой маршрута
  */
 export function clearConnectionCache() {
-  // Защитный механизм: проверяем, что мы не на странице настроек
+  const now = Date.now();
   const routeInfo = getRouteInfo();
   
+  // Логируем вызов с информацией о маршруте и времени
+  console.log(`[supabase/client] Попытка очистки кеша. Маршрут: ${JSON.stringify(routeInfo)}, последняя очистка: ${now - connectionState.lastClearTime}мс назад`);
+  
+  // Защитный механизм #1: проверяем, что мы не на странице настроек
   if (routeInfo.isSettings) {
     console.log('[supabase/client] Попытка очистки кеша на странице настроек игнорируется для предотвращения перенаправления');
     return; // Предотвращаем очистку кеша на странице настроек
   }
   
+  // Защитный механизм #2: ограничиваем частоту очистки кеша
+  if (now - connectionState.lastClearTime < MIN_CLEAR_INTERVAL) {
+    connectionState.clearAttempts++;
+    console.log(`[supabase/client] Слишком частые попытки очистить кеш (${connectionState.clearAttempts}), игнорируем`);
+    
+    // Если попыток слишком много, логируем предупреждение
+    if (connectionState.clearAttempts > 5) {
+      console.warn('[supabase/client] Обнаружено множественное обращение к clearConnectionCache, возможно циклический вызов');
+    }
+    return;
+  }
+  
+  // Очищаем кеш состояния
   connectionState.isConnected = null;
   connectionState.timestamp = 0;
-  console.log('[supabase/client] Кеш проверки соединения очищен');
+  connectionState.lastClearTime = now;
+  connectionState.clearAttempts = 0;
+  
+  console.log('[supabase/client] Кеш проверки соединения успешно очищен');
 }
 
 // Сбрасываем кеш при изменении статуса сети

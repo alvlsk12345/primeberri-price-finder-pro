@@ -7,6 +7,7 @@ import NotFound from './pages/NotFound';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
+import { getRouteInfo } from './utils/navigation';
 
 function App() {
   // This helps maintain the component state when navigating
@@ -53,6 +54,10 @@ function App() {
   useEffect(() => {
     const handleGlobalError = (event: ErrorEvent) => {
       console.error('[App] Глобальная ошибка:', event.error || event.message);
+      
+      // Проверяем текущий маршрут
+      const routeInfo = getRouteInfo();
+      console.log(`[App] Маршрут при возникновении глобальной ошибки: ${JSON.stringify(routeInfo)}`);
       
       // Показываем сообщение об ошибке
       toast.error('Произошла ошибка в приложении', {

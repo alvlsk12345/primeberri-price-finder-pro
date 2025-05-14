@@ -1,7 +1,6 @@
 
 import { useEffect } from 'react';
 import { getRouteInfo } from '@/utils/navigation';
-import { clearConnectionCache } from "@/services/api/supabase/client";
 
 export const useSettingsPageEffect = () => {
   // Устанавливаем атрибут data-path в body при монтировании компонента
@@ -10,8 +9,8 @@ export const useSettingsPageEffect = () => {
     document.body.setAttribute('data-path', '/settings');
     document.body.classList.add('settings-page');
     
-    // Удаляем setTimeout для предотвращения очистки кеша в ранней фазе монтирования
-    // Это предотвращает нестабильную работу при проверке маршрута
+    // ВАЖНО: Мы удалили вызов clearConnectionCache() отсюда,
+    // так как он вызывал проблемы при монтировании компонента
     
     return () => {
       console.log('[Settings] useEffect - удаляем data-path при размонтировании');

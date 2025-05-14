@@ -4,6 +4,10 @@
  * Централизованная утилита для использования во всем приложении
  */
 
+// Для дополнительной защиты от ошибок при определении маршрута
+const SETTINGS_ROUTE = 'settings';
+const INDEX_ROUTE = '';
+
 /**
  * Функция для проверки, находится ли пользователь на странице настроек
  */
@@ -37,6 +41,14 @@ export const getCurrentRoute = (): string => {
 };
 
 /**
+ * Проверяет наличие класса settings-page в body
+ * Это дополнительная проверка, которая делает определение страницы настроек более надежным
+ */
+const hasSettingsPageClass = (): boolean => {
+  return document.body.classList.contains('settings-page');
+};
+
+/**
  * Функция для надежного определения текущего маршрута независимо от типа маршрутизации
  * @returns Информация о текущем маршруте
  */
@@ -58,7 +70,19 @@ export const getRouteInfo = (): {
   // Первый и самый высокий приоритет для страницы настроек - прямая проверка на '#/settings'
   if (rawHash === '#/settings') {
     return {
-      path: 'settings',
+      path: SETTINGS_ROUTE,
+      isSettings: true,
+      isIndex: false,
+      rawHash,
+      rawPath,
+      dataPath
+    };
+  }
+  
+  // Дополнительный приоритет - проверка класса settings-page
+  if (hasSettingsPageClass()) {
+    return {
+      path: SETTINGS_ROUTE,
       isSettings: true,
       isIndex: false,
       rawHash,
@@ -68,9 +92,9 @@ export const getRouteInfo = (): {
   }
   
   // Проверка атрибутов data- для страницы настроек, которые устанавливаются компонентом Settings
-  if (dataPath === '/settings' || document.body.classList.contains('settings-page')) {
+  if (dataPath === '/settings') {
     return {
-      path: 'settings',
+      path: SETTINGS_ROUTE,
       isSettings: true,
       isIndex: false,
       rawHash,
@@ -101,7 +125,7 @@ export const getRouteInfo = (): {
   }
   
   // Определяем конкретный маршрут с учетом всех факторов
-  const isSettings = path === 'settings';
+  const isSettings = path === SETTINGS_ROUTE;
   const isIndex = !path || path === '' || path === 'index';
   
   return {
