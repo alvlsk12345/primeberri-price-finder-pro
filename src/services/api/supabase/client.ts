@@ -12,14 +12,12 @@ export async function isSupabaseConnected(showLogs = true): Promise<boolean> {
       console.log('Проверка подключения к Supabase...');
     }
     
-    // Простой запрос для проверки соединения
-    const { error } = await supabase.from('_dummy_query_for_connection_test')
-      .select('*')
-      .limit(1)
-      .catch(() => ({ error: new Error('Ошибка соединения') }));
+    // Используем простую проверку rpc вместо запроса к таблице
+    const { error } = await supabase.rpc('version')
+      .then(response => response)
+      .catch(error => ({ error }));
     
-    // Даже если таблицы не существует, соединение работает, если ошибка связана с отсутствием таблицы
-    const isConnected = !error || error.message.includes('does not exist');
+    const isConnected = !error;
     
     if (showLogs) {
       if (isConnected) {
