@@ -12,11 +12,12 @@ export async function isSupabaseConnected(showLogs = true): Promise<boolean> {
       console.log('Проверка подключения к Supabase...');
     }
     
-    // Используем более простой и надежный метод для проверки подключения - ping
-    // Это обходит проблемы типизации при попытке обращения к несуществующей таблице
-    const { error } = await supabase.auth.getSession();
+    // Используем надежный метод для проверки подключения - проверку сессии
+    // Это даст нам достоверный результат без 404 ошибок
+    const { data, error } = await supabase.auth.getSession();
     
     // Если нет ошибки, считаем что соединение установлено
+    // Даже если сессия не активна (data.session === null), соединение считается рабочим
     const isConnected = !error;
     
     if (showLogs) {

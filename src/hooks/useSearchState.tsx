@@ -3,9 +3,64 @@ import { useSearchQueryState } from './search/useSearchQueryState';
 import { usePaginationState } from './search/usePaginationState';
 import { useResultsState } from './search/useResultsState';
 import { useFiltersState } from './search/useFiltersState';
+import { isOnSettingsPage } from '@/utils/navigation';
 
 export function useSearchState() {
-  // Get state from smaller hooks
+  const inSettingsPage = isOnSettingsPage();
+  
+  // Проверяем, находимся ли мы на странице настроек
+  if (inSettingsPage) {
+    // Возвращаем заглушки состояний для страницы настроек
+    return {
+      // Базовые заглушки для SearchQueryState
+      searchQuery: '', 
+      setSearchQuery: () => {},
+      originalQuery: '',
+      setOriginalQuery: () => {},
+      lastSearchQuery: '',
+      setLastSearchQuery: () => {},
+      hasSearched: false,
+      setHasSearched: () => {},
+      
+      // Заглушки для ResultsState
+      isLoading: false,
+      setIsLoading: () => {},
+      searchResults: [],
+      setSearchResults: () => {},
+      allSearchResults: [],
+      setAllSearchResults: () => {},
+      cachedResults: {},
+      setCachedResults: () => {},
+      selectedProduct: null,
+      setSelectedProduct: () => {},
+      isUsingDemoData: false,
+      setIsUsingDemoData: () => {},
+      apiInfo: undefined,
+      setApiInfo: () => {},
+      getSearchCountries: () => [],
+      
+      // Заглушки для PaginationState
+      currentPage: 1,
+      setCurrentPage: () => {},
+      totalPages: 1,
+      setTotalPages: () => {},
+      pageChangeCount: 0,
+      setPageChangeCount: () => {},
+      
+      // Заглушки для FiltersState
+      filters: {
+        price: { min: 0, max: 0 },
+        brands: [],
+        sources: [],
+        rating: 0,
+        sort: 'relevance',
+        country: 'US',
+      },
+      setFilters: () => {},
+    };
+  }
+
+  // Get state from smaller hooks (только если не на странице настроек)
   const queryState = useSearchQueryState();
   const paginationState = usePaginationState();
   const resultsState = useResultsState();

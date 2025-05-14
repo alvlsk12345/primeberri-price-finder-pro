@@ -14,6 +14,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { InfoIcon } from 'lucide-react';
 import { isOnSettingsPage } from '@/utils/navigation';
+import { SupabaseStatusMessage } from './brand-assistant/SupabaseStatusMessage';
 
 type SearchFormProps = {
   searchQuery: string;
@@ -41,26 +42,13 @@ export const SearchForm: React.FC<SearchFormProps> = ({
 
   // Устанавливаем атрибут data-path в body при загрузке компонента
   useEffect(() => {
-    // Избегаем проверки статуса Supabase на странице настроек
-    if (!inSettingsPage) {
-      // Проверяем статус Supabase, но без логов для уменьшения шума
-      const checkSupabaseStatus = async () => {
-        try {
-          const connected = await isSupabaseConnected(false); // Передаем false, чтобы не логировать
-          const enabled = await isUsingSupabaseBackend();
-          setSupabaseStatus({ connected, enabled });
-        } catch (error) {
-          // Подавляем ошибки, только устанавливаем состояние
-          setSupabaseStatus({ connected: false, enabled: false });
-        }
-      };
-      
-      checkSupabaseStatus();
-    }
-    
+    // Только если мы на странице настроек
     if (inSettingsPage) {
+      console.log('Установка data-path для страницы настроек');
       document.body.setAttribute('data-path', '/settings');
     }
+    
+    // Очистка при размонтировании
     return () => {
       if (inSettingsPage) {
         document.body.removeAttribute('data-path');
@@ -68,11 +56,51 @@ export const SearchForm: React.FC<SearchFormProps> = ({
     };
   }, [inSettingsPage]);
 
+  // Проверяем статус Supabase, но только если мы не на странице настроек
+  useEffect(() => {
+    // Избегаем проверки статуса Supabase на странице настроек
+    if (!inSettingsPage) {
+      const checkSupabaseStatus = async () => {
+        try {
+          // Без логирования, чтобы не засорять консоль
+          const connected = await isSupabaseConnected(false); 
+          const enabled = await isUsingSupabaseBackend();
+          setSupabaseStatus({ connected, enabled });
+        } catch (error) {
+          console.error('Ошибка при проверке статуса Supabase:', error);
+          setSupabaseStatus({ connected: false, enabled: false });
+        }
+      };
+      
+      checkSupabaseStatus();
+    }
+  }, [inSettingsPage]);
+
+  // Функция для повторной проверки соединения с Supabase
+  const handleCheckSupabaseConnection = async () => {
+    try {
+      toast.loading('Проверка соединения с Supabase...');
+      const connected = await isSupabaseConnected(true); // с логированием 
+      const enabled = await isUsingSupabaseBackend();
+      
+      setSupabaseStatus({ connected, enabled });
+      
+      if (connected) {
+        toast.success('Соединение с Supabase успешно установлено');
+      } else {
+        toast.error('Не удалось установить соединение с Supabase');
+      }
+    } catch (error) {
+      console.error('Ошибка при проверке соединения:', error);
+      toast.error('Произошла ошибка при проверке соединения');
+    }
+  };
+
   // Функция выполнения поиска с дополнительными проверками и скроллингом
   const executeSearch = () => {
     try {
       // Проверка на странице настроек
-      if (isOnSettingsPage()) {
+      if (inSettingsPage) {
         console.log("executeSearch: Выполнение предотвращено на странице настроек");
         return;
       }
@@ -96,7 +124,6 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       handleSearch();
       
       // Добавляем скроллинг к результатам после завершения поиска
-      // Увеличиваем время ожидания до 2.5 секунд для уверенности, что результаты загрузились
       setTimeout(() => {
         // Повторно проверяем, не перешли ли мы на страницу настроек
         if (isOnSettingsPage()) {
@@ -113,7 +140,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
         // Закрываем всплывающее окно о поиске
         toast.dismiss('search-toast');
         toast.success('Поиск завершен', { duration: 1500 });
-      }, 2500); // Увеличиваем задержку для гарантии загрузки результатов
+      }, 2500);
     } catch (error: any) {
       console.error('Ошибка при попытке поиска:', error);
       setHasError(true);
@@ -139,8 +166,6 @@ export const SearchForm: React.FC<SearchFormProps> = ({
         />
         
         <SearchErrorMessage hasError={hasError} errorMessage={errorMessage} />
-        
-        <NoResultsMessage />
       </div>
     );
   }
@@ -157,30 +182,12 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       
       <SearchErrorMessage hasError={hasError} errorMessage={errorMessage} />
       
-      {/* Статус Supabase - отображаем только если НЕ на странице настроек */}
-      {(!supabaseStatus.connected || !supabaseStatus.enabled) && !inSettingsPage && (
-        <div className="bg-orange-50 border border-orange-200 rounded-md p-3 mb-4">
-          <div className="flex items-start gap-2">
-            <InfoIcon className="text-orange-600 mt-1 shrink-0" size={18} />
-            <div>
-              <p className="text-sm text-orange-800 font-medium mb-2">
-                Внимание: Проблема с настройками Supabase
-              </p>
-              <p className="text-xs text-orange-700 mb-1">
-                {!supabaseStatus.enabled 
-                  ? 'Supabase Backend отключен в настройках. Некоторые функции будут недоступны.' 
-                  : 'Supabase Backend включен, но соединение не установлено.'}
-              </p>
-              <p className="text-xs text-orange-700">
-                Для корректной работы с OpenAI API необходимо настроить Supabase Backend.
-              </p>
-              <Button variant="outline" size="sm" className="mt-2 text-xs">
-                <Link to="/settings">Перейти к настройкам</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Используем компонент SupabaseStatusMessage с кнопкой проверки */}
+      <SupabaseStatusMessage 
+        connected={supabaseStatus.connected} 
+        enabled={supabaseStatus.enabled}
+        onRequestCheck={handleCheckSupabaseConnection}
+      />
       
       <AiBrandAssistant onSelectProduct={handleSelectProduct} />
       

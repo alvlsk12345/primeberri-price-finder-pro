@@ -1,38 +1,24 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
+import { isOnSettingsPage } from '@/utils/navigation';
 
 interface SupabaseStatusProps {
   connected: boolean;
   enabled: boolean;
-  onRequestCheck?: () => void; // Добавляем опциональную функцию для запроса проверки
+  onRequestCheck?: () => void; // Функция для запроса проверки
 }
-
-// Функция для проверки, находимся ли мы на странице настроек
-const isOnSettingsPage = () => {
-  if (typeof window === 'undefined') return false;
-  
-  // Проверяем все возможные варианты URL страницы настроек
-  const pathname = window.location.pathname;
-  const hash = window.location.hash;
-  
-  // Также проверяем атрибут data-path в body для более надежного определения
-  const dataPath = document.body.getAttribute('data-path');
-  
-  return pathname === "/settings" || 
-         pathname.endsWith("/settings") || 
-         hash === "#/settings" || 
-         hash.includes("/settings") ||
-         dataPath === '/settings';
-};
 
 export const SupabaseStatusMessage: React.FC<SupabaseStatusProps> = ({ 
   connected, 
   enabled,
   onRequestCheck 
 }) => {
+  // Используем централизованную функцию для проверки страницы настроек
+  const inSettingsPage = isOnSettingsPage();
+  
   // Если мы на странице настроек, вообще не отображаем компонент
-  if (isOnSettingsPage()) return null;
+  if (inSettingsPage) return null;
   
   // Если соединение установлено и бекенд включен, тоже ничего не отображаем
   if (connected && enabled) return null;

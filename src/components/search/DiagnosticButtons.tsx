@@ -9,20 +9,7 @@ import { hasValidApiKey as hasValidOpenAIApiKey } from '@/services/api/openai';
 import { getSelectedAIProvider, getProviderDisplayName, getProviderModelName } from '@/services/api/aiProviderService';
 import { isSupabaseConnected } from '@/services/api/supabase/client';
 import { isUsingSupabaseBackend } from '@/services/api/supabase/config';
-
-// Функция для проверки, находимся ли мы на странице настроек
-const isOnSettingsPage = () => {
-  if (typeof window === 'undefined') return false;
-  
-  // Проверяем все возможные варианты URL страницы настроек
-  const pathname = window.location.pathname;
-  const hash = window.location.hash;
-  
-  return pathname === "/settings" || 
-         pathname.endsWith("/settings") || 
-         hash === "#/settings" || 
-         hash.includes("/settings");
-};
+import { isOnSettingsPage } from '@/utils/navigation';
 
 export const DiagnosticButtons: React.FC = () => {
   const [isTesting, setIsTesting] = useState(false);
@@ -33,7 +20,7 @@ export const DiagnosticButtons: React.FC = () => {
   const providerDisplayName = getProviderDisplayName(selectedProvider);
   const modelName = getProviderModelName(selectedProvider);
   
-  // Проверяем, находимся ли мы на странице настроек
+  // Используем централизованную функцию для проверки страницы настроек
   const inSettingsPage = isOnSettingsPage();
   
   // Тест Google API
@@ -75,7 +62,7 @@ export const DiagnosticButtons: React.FC = () => {
       
       toast.loading("Тестирование OpenAI API...");
 
-      // Для теста OpenAI проверяем текущий режим соединения - принудительная проверка
+      // Для теста OpenAI проверяем текущий режим соединения
       const isConnected = await isSupabaseConnected(true);
       const isUsingBackend = await isUsingSupabaseBackend();
 
@@ -123,10 +110,10 @@ export const DiagnosticButtons: React.FC = () => {
     }
   };
 
-  // Отображение информации о провайдере AI - требует явного вызова проверки
+  // Отображение информации о провайдере AI
   const showProviderInfo = async () => {
-    // Проверяем соединение только когда это необходимо - принудительная проверка
-    const isConnected = await isSupabaseConnected(true);
+    // Проверяем соединение только когда это необходимо
+    const isConnected = await isSupabaseConnected(false); // без логов
     const isUsingBackend = await isUsingSupabaseBackend();
     
     const connectionInfo = (isConnected && isUsingBackend) 
@@ -140,6 +127,7 @@ export const DiagnosticButtons: React.FC = () => {
 
   // Не рендерим компонент на странице настроек
   if (inSettingsPage) {
+    console.log("DiagnosticButtons: не отображаются на странице настроек");
     return null;
   }
 
