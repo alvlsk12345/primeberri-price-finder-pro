@@ -1,26 +1,27 @@
 
 import { Product } from "@/services/types";
 import { toast } from "sonner";
+import { useRef } from "react";
 
 type SearchErrorHandlerProps = {
-  lastSuccessfulResults: React.MutableRefObject<Product[]>;
   setSearchResults: (results: Product[]) => void;
 };
 
 export function useSearchErrorHandler({
-  lastSuccessfulResults,
   setSearchResults,
 }: SearchErrorHandlerProps) {
+  // Создаем собственную ссылку внутри хука, вместо получения извне
+  const lastSuccessfulResultsRef = useRef<Product[]>([]);
   
   // Функция обработки ошибок поиска
   const handleSearchError = (error: any): { success: boolean, products: Product[], recovered?: boolean } => {
     console.error('Ошибка поиска:', error);
     
-    if (lastSuccessfulResults.current.length > 0) {
+    if (lastSuccessfulResultsRef.current.length > 0) {
       // В случае ошибки возвращаем последние успешные результаты
       console.log('Произошла ошибка при поиске, возвращаем предыдущие результаты');
-      setSearchResults(lastSuccessfulResults.current);
-      return { success: true, products: lastSuccessfulResults.current, recovered: true };
+      setSearchResults(lastSuccessfulResultsRef.current);
+      return { success: true, products: lastSuccessfulResultsRef.current, recovered: true };
     }
     
     return { success: false, products: [] };
@@ -31,8 +32,15 @@ export function useSearchErrorHandler({
     toast.error(message, { duration: 4000 });
   };
   
+  // Функция для сохранения успешных результатов
+  const saveSuccessfulResults = (results: Product[]) => {
+    lastSuccessfulResultsRef.current = results;
+  };
+  
   return {
     handleSearchError,
-    showErrorMessage
+    showErrorMessage,
+    saveSuccessfulResults,
+    lastSuccessfulResultsRef
   };
 }

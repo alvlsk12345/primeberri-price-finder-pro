@@ -1,10 +1,9 @@
+
 import { useRef } from 'react';
 import { Product, ProductFilters, SearchParams } from "@/services/types";
 import { useSearchExecutor } from "./useSearchExecutor";
 import { useSearchQueryTranslator } from './useSearchQueryTranslator';
 import { useSearchFilterProcessor } from './useSearchFilterProcessor';
-import { useSearchErrorHandler } from './useSearchErrorHandler';
-import { useSearchRetry } from './useSearchRetry';
 
 // Функция для проверки, находимся ли мы на странице настроек
 const isOnSettingsPage = () => {
@@ -76,7 +75,6 @@ export function useSearchExecutionActions(props: SearchExecutionProps) {
   // Используем хуки для разных аспектов поиска
   const { translateQueryIfNeeded } = useSearchQueryTranslator();
   const { applyFiltersAndSorting } = useSearchFilterProcessor();
-  const { handleSearchError } = useSearchErrorHandler();
   
   // Используем исполнитель поиска
   const { executeSearch, cleanupSearch } = useSearchExecutor({
@@ -92,9 +90,6 @@ export function useSearchExecutionActions(props: SearchExecutionProps) {
     setIsUsingDemoData,
     setApiInfo,
   });
-  
-  // Используем механизм повторной попытки
-  const { executeSearchWithRetry, resetRetryAttempts } = useSearchRetry();
   
   // Отслеживаем количество запросов к API
   const searchRequestCountRef = useRef<number>(0);
@@ -142,11 +137,6 @@ export function useSearchExecutionActions(props: SearchExecutionProps) {
           setIsLoading(false);
           return;
         }
-      }
-      
-      // Если запрос изменился - сбрасываем счетчик повторных попыток
-      if (queryChanged) {
-        resetRetryAttempts();
       }
       
       // Увеличиваем счетчик запросов
@@ -197,28 +187,7 @@ export function useSearchExecutionActions(props: SearchExecutionProps) {
       setLastSearchQuery(queryToUse);
       
     } catch (error) {
-      // Обрабатываем ошибки поиска
-      const shouldRetry = handleSearchError(error);
-      
-      if (shouldRetry) {
-        // Пробуем повторить запрос
-        const retryParams = await executeSearchWithRetry(
-          queryToUse, 
-          forcePage !== undefined ? forcePage : currentPage,
-          lastSearchQuery,
-          filters,
-          getSearchCountries
-        );
-        
-        if (retryParams) {
-          // Если получены параметры для повторного запроса, выполняем его
-          return handleSearch({
-            forcePage: retryParams.page,
-            customQuery: retryParams.queryToUse,
-            forceRefresh: true
-          });
-        }
-      }
+      console.error('Ошибка во время выполнения поиска:', error);
     } finally {
       // Завершаем загрузку
       setIsLoading(false);

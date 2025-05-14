@@ -1,15 +1,15 @@
 
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
 import { Product, ProductFilters } from "@/services/types";
 import { useSearchLogic } from "@/hooks/useSearchLogic";
 
-// Определяем тип контекста поиска
+// Обновляем тип контекста поиска для согласования с реализацией
 type SearchContextType = {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   isLoading: boolean;
   searchResults: Product[];
-  allSearchResults: Product[]; // Добавляем все результаты в контекст
+  allSearchResults: Product[]; 
   selectedProduct: Product | null;
   setSelectedProduct: (product: Product | null) => void;
   currentPage: number;
@@ -21,7 +21,8 @@ type SearchContextType = {
   hasSearched: boolean;
   isUsingDemoData: boolean;
   apiInfo?: Record<string, string>;
-  handleSearch: (options?: { forcePage?: number; forceRefresh?: boolean; initialSearch?: boolean; customQuery?: string; }) => Promise<void>;
+  // Обновляем тип handleSearch для согласования
+  handleSearch: (page: number, forceNewSearch?: boolean) => Promise<void>;
   handleProductSelect: (product: Product) => void;
   handlePageChange: (page: number) => void;
   handleFilterChange: (newFilters: ProductFilters) => void;

@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { toast } from "sonner";
 
-type UseSearchRetryProps = {
+export type UseSearchRetryProps = {
   maxRetries?: number;
   retryDelay?: number;
 };

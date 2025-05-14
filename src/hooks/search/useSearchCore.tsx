@@ -1,8 +1,10 @@
+
 import { Product, ProductFilters } from "@/services/types";
 import { toast } from "sonner";
 import { useSearchApiCall } from './useSearchApiCall';
 import { useSearchRetry } from './useSearchRetry'; 
 import { useSearchFilterProcessor } from './useSearchFilterProcessor';
+import { useSearchErrorHandler } from './useSearchErrorHandler';
 
 type SearchCoreProps = {
   setIsLoading: (loading: boolean) => void;
@@ -15,7 +17,6 @@ type SearchCoreProps = {
   setHasSearched: (searched: boolean) => void;
   setIsUsingDemoData: (usingDemo: boolean) => void;
   setApiInfo: (info: Record<string, string> | undefined) => void;
-  lastSuccessfulResultsRef: React.MutableRefObject<Product[]>;
 };
 
 export function useSearchCore({
@@ -29,7 +30,6 @@ export function useSearchCore({
   setHasSearched,
   setIsUsingDemoData,
   setApiInfo,
-  lastSuccessfulResultsRef,
 }: SearchCoreProps) {
   
   // Используем хуки
@@ -40,36 +40,16 @@ export function useSearchCore({
   });
   
   const { applyFiltersAndSorting } = useSearchFilterProcessor();
+  
+  // Используем обновленный хук для обработки ошибок
+  const { handleSearchError, saveSuccessfulResults, lastSuccessfulResultsRef } = useSearchErrorHandler({
+    setSearchResults
+  });
 
-  // Обработчик ошибок поиска
-  const handleSearchError = (error: any): { success: boolean, products: Product[], recovered?: boolean } => {
-    console.error('Ошибка поиска:', error);
-    
-    if (lastSuccessfulResultsRef.current.length > 0) {
-      // В случае ошибки возвращаем последние успешные результаты
-      console.log('Произошла ошибка при поиске, возвращаем предыдущие результаты');
-      setSearchResults(lastSuccessfulResultsRef.current);
-      return { success: true, products: lastSuccessfulResultsRef.current, recovered: true };
-    }
-    
-    return { success: false, products: [] };
-  };
+  // Хук для повторных попыток поиска - корректно создаем экземпляр
+  const { executeSearchWithRetry, resetRetryAttempts } = useSearchRetry();
   
   // Основная функция выполнения поиска с ретраями
-  const executeSearchWithRetry = async (params: any): Promise<any> => {
-    // Здесь добавляем реализацию
-    return { success: true, products: [] };
-  };
-
-  const resetRetryAttempts = () => {
-    // сброс счетчика попыток
-  };
-  
-  // Хук для повторных попыток поиска
-  // Исправляем проблему - передаем функцию напрямую
-  const searchRetry = useSearchRetry();
-  
-  // Основная функция выполнения поиска
   const executeSearchCore = async (
     queryToUse: string, 
     page: number, 
@@ -140,7 +120,7 @@ export function useSearchCore({
     // Сохраняем найденные товары
     if (sortedProducts.length > 0) {
       setSearchResults(sortedProducts);
-      lastSuccessfulResultsRef.current = sortedProducts;
+      saveSuccessfulResults(sortedProducts);
       
       // Обновляем кэш
       const newCache = { ...cachedResults };
@@ -157,7 +137,7 @@ export function useSearchCore({
     }
   };
 
-  // Основная функция выполнения поиска с ретраями
+  // Основная функция выполнения поиска
   const executeSearch = async (params: any) => {
     setIsLoading(true);
     

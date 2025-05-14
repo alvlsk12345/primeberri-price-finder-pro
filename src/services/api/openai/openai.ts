@@ -1,15 +1,13 @@
 
-// Экспортируем всё из подмодулей
-export * from './config';
-export * from './apiClient';
-export * from './proxyUtils';
-export * from './responseUtils';
+// Делаем реэкспорт всего из соответствующих модулей
+import { generateBrandSuggestions } from './brandSuggestion';
+import { searchProducts } from './searchService';
+import { getApiKey, setApiKey } from './config';
 
-// Экспортируем brandSuggestion
-export { fetchBrandSuggestions } from './brandSuggestion';
-
-// Экспортируем основной метод для вызова OpenAI API
-export { callOpenAI } from './apiClient';
-
-// Экспортируем сервис поиска
-export { searchWithOpenAI } from './searchService';
+// Экспортируем все необходимые функции
+export {
+  generateBrandSuggestions,
+  searchProducts,
+  getApiKey,
+  setApiKey
+};
