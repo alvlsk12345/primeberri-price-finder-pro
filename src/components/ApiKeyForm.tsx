@@ -22,7 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { ReloadIcon } from "lucide-react";
+import { RefreshCcw } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 type ApiKeyFormProps = {
@@ -202,7 +202,7 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType }) => {
           >
             {isSaving ? (
               <>
-                <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+                <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
                 Сохранение...
               </>
             ) : (
@@ -217,7 +217,7 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType }) => {
           >
             {isResetting ? (
               <>
-                <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+                <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
                 Сброс...
               </>
             ) : (
