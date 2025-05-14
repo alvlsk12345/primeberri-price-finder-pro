@@ -1,6 +1,8 @@
-import { supabase } from './client';
+
+import { supabase } from '@/integrations/supabase/client';
 import { BrandSuggestion, BrandResponse } from "@/services/types";
 import { OpenAIRequestOptions } from "../openai/proxyUtils";
+import { isOnSettingsPage } from '@/utils/navigation';
 
 /**
  * Универсальная функция для вызова AI через Supabase Edge Function
@@ -15,6 +17,12 @@ export const callAIViaSupabase = async (params: {
 }): Promise<any> => {
   if (!supabase) {
     throw new Error('Supabase client не инициализирован');
+  }
+  
+  // Проверка: не находимся ли мы на странице настроек
+  if (isOnSettingsPage()) {
+    console.log('callAIViaSupabase: Вызов предотвращен на странице настроек');
+    throw new Error('Операция не поддерживается на странице настроек');
   }
   
   try {
@@ -57,6 +65,12 @@ export const callAIViaSupabase = async (params: {
  * Функция для поиска через OpenAI API через Supabase Edge Function
  */
 export const searchViaOpenAI = async (prompt: string, options?: OpenAIRequestOptions): Promise<any> => {
+  // Проверка: не находимся ли мы на странице настроек
+  if (isOnSettingsPage()) {
+    console.log('searchViaOpenAI: Вызов предотвращен на странице настроек');
+    throw new Error('Операция не поддерживается на странице настроек');
+  }
+  
   try {
     return await callAIViaSupabase({
       provider: 'openai',
@@ -73,6 +87,12 @@ export const searchViaOpenAI = async (prompt: string, options?: OpenAIRequestOpt
  * Функция для поиска через Abacus API через Supabase Edge Function
  */
 export const searchViaAbacus = async (endpoint: string, method: 'GET' | 'POST' = 'POST', body?: any): Promise<any> => {
+  // Проверка: не находимся ли мы на странице настроек
+  if (isOnSettingsPage()) {
+    console.log('searchViaAbacus: Вызов предотвращен на странице настроек');
+    throw new Error('Операция не поддерживается на странице настроек');
+  }
+  
   try {
     return await callAIViaSupabase({
       provider: 'abacus',
@@ -92,6 +112,12 @@ export const searchViaAbacus = async (endpoint: string, method: 'GET' | 'POST' =
  * @returns Массив предложений брендов
  */
 export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promise<BrandSuggestion[]> => {
+  // Проверка: не находимся ли мы на странице настроек
+  if (isOnSettingsPage()) {
+    console.log('fetchBrandSuggestionsViaOpenAI: Вызов предотвращен на странице настроек');
+    throw new Error('Операция не поддерживается на странице настроек');
+  }
+  
   if (!supabase) {
     throw new Error('Supabase client не инициализирован');
   }

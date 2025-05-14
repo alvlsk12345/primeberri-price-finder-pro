@@ -13,21 +13,7 @@ import { isUsingSupabaseBackend } from '@/services/api/supabase/config';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { InfoIcon } from 'lucide-react';
-
-// Функция для проверки, находимся ли мы на странице настроек
-const isOnSettingsPage = () => {
-  if (typeof window === 'undefined') return false;
-  
-  // Проверяем все возможные варианты URL страницы настроек
-  const pathname = window.location.pathname;
-  const hash = window.location.hash;
-  
-  return pathname === "/settings" || 
-         pathname.endsWith("/settings") || 
-         hash === "#/settings" || 
-         hash.includes("/settings") ||
-         document.body.getAttribute('data-path') === '/settings';
-};
+import { isOnSettingsPage } from '@/utils/navigation';
 
 type SearchFormProps = {
   searchQuery: string;
@@ -50,7 +36,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   });
   const isDemoMode = useDemoModeForced;
   
-  // Проверяем, находимся ли мы на странице настроек
+  // Проверяем, находимся ли мы на странице настроек, используя центральную функцию
   const inSettingsPage = isOnSettingsPage();
 
   // Устанавливаем атрибут data-path в body при загрузке компонента
@@ -63,11 +49,6 @@ export const SearchForm: React.FC<SearchFormProps> = ({
           const connected = await isSupabaseConnected(false); // Передаем false, чтобы не логировать
           const enabled = await isUsingSupabaseBackend();
           setSupabaseStatus({ connected, enabled });
-          
-          // Убираем всплывающее предупреждение, оставляем только индикацию на странице
-          if (enabled && !connected) {
-            // Не показываем toast, только устанавливаем состояние
-          }
         } catch (error) {
           // Подавляем ошибки, только устанавливаем состояние
           setSupabaseStatus({ connected: false, enabled: false });
@@ -90,6 +71,12 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   // Функция выполнения поиска с дополнительными проверками и скроллингом
   const executeSearch = () => {
     try {
+      // Проверка на странице настроек
+      if (isOnSettingsPage()) {
+        console.log("executeSearch: Выполнение предотвращено на странице настроек");
+        return;
+      }
+      
       if (!searchQuery.trim()) {
         toast.error('Пожалуйста, введите запрос для поиска');
         return;
@@ -111,6 +98,12 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       // Добавляем скроллинг к результатам после завершения поиска
       // Увеличиваем время ожидания до 2.5 секунд для уверенности, что результаты загрузились
       setTimeout(() => {
+        // Повторно проверяем, не перешли ли мы на страницу настроек
+        if (isOnSettingsPage()) {
+          toast.dismiss('search-toast');
+          return;
+        }
+        
         // Ищем элемент с результатами поиска
         const resultsElement = document.querySelector('.search-results-section');
         if (resultsElement) {

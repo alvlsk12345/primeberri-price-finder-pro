@@ -9,6 +9,7 @@ import { hasValidApiKey as hasValidAbacusApiKey } from "./abacus/config";
 import { isUsingSupabaseBackend } from "./supabase/config";
 import { isSupabaseConnected } from "./supabase/client";
 import { fetchBrandSuggestionsViaOpenAI } from "./supabase/aiService";
+import { isOnSettingsPage } from "@/utils/navigation";
 
 // Храним результат последней проверки соединения
 let lastConnectionCheck = {
@@ -17,29 +18,15 @@ let lastConnectionCheck = {
   isUsingBackend: false
 };
 
-// Функция для проверки, находимся ли мы на странице настроек
-const isOnSettingsPage = () => {
-  if (typeof window === 'undefined') return false;
-  
-  // Проверяем все возможные варианты URL страницы настроек
-  const pathname = window.location.pathname;
-  const hash = window.location.hash;
-  
-  return pathname === "/settings" || 
-         pathname.endsWith("/settings") || 
-         hash === "#/settings" || 
-         hash.includes("/settings") ||
-         document.body.getAttribute('data-path') === '/settings';
-};
-
 // Основная функция получения брендов, которая выбирает подходящий провайдер
 export const fetchBrandSuggestions = async (description: string): Promise<BrandSuggestion[]> => {
   // Получаем текущего провайдера
   const provider = getSelectedAIProvider();
   
   try {
-    // Проверяем, находимся ли мы на странице настроек
+    // Проверяем, находимся ли мы на странице настроек с помощью центральной функции
     if (isOnSettingsPage()) {
+      console.log('fetchBrandSuggestions: Вызов предотвращен на странице настроек');
       return []; // Возвращаем пустой массив на странице настроек
     }
 
@@ -66,6 +53,12 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     
     if (useSupabase && supabaseConnected) {
       try {
+        // Повторная проверка на странице настроек для надежности
+        if (isOnSettingsPage()) {
+          console.log('fetchBrandSuggestions: Повторная проверка, вызов предотвращен на странице настроек');
+          return [];
+        }
+        
         // Вызов AI через Supabase Edge Function
         const result = await fetchBrandSuggestionsViaOpenAI(description);
         
@@ -76,6 +69,12 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
         
         return result; // Функция fetchBrandSuggestionsViaOpenAI теперь всегда возвращает BrandSuggestion[]
       } catch (error) {
+        // Если мы в процессе перехода на страницу настроек, подавляем ошибки
+        if (isOnSettingsPage()) {
+          console.log('fetchBrandSuggestions: Подавлена ошибка во время перехода на страницу настроек');
+          return [];
+        }
+        
         toast.error(`Ошибка Supabase: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
                    { duration: 3000 });
         toast.info('Проверьте настройки Supabase в разделе "Настройки"', { duration: 5000 });
@@ -95,6 +94,12 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     // Возвращаем пустой массив, так как прямые вызовы API невозможны из-за CORS
     return [];
   } catch (error) {
+    // Если мы в процессе перехода на страницу настроек, подавляем ошибки
+    if (isOnSettingsPage()) {
+      console.log('fetchBrandSuggestions: Подавлена ошибка во время перехода на страницу настроек');
+    } else {
+      console.error('Ошибка при получении предложений брендов:', error);
+    }
     return []; // Возвращаем пустой массив при ошибке
   }
 };

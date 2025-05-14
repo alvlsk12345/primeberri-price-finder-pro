@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { BrandSuggestionList } from "./BrandSuggestionList";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getApiKey } from "@/services/api/openai/config";
@@ -8,30 +8,16 @@ import { ProductDescriptionForm } from "./ProductDescriptionForm";
 import { BrandAssistantError } from "./BrandAssistantError";
 import { SupabaseStatusMessage } from "./SupabaseStatusMessage";
 import { Bot } from "lucide-react";
-
-// Функция для проверки, находимся ли мы на странице настроек
-const isOnSettingsPage = () => {
-  if (typeof window === 'undefined') return false;
-  
-  // Проверяем все возможные варианты URL страницы настроек
-  const pathname = window.location.pathname;
-  const hash = window.location.hash;
-  
-  // Также проверяем атрибут data-path в body для более надежного определения
-  const dataPath = document.body.getAttribute('data-path');
-  
-  return pathname === "/settings" || 
-         pathname.endsWith("/settings") || 
-         hash === "#/settings" || 
-         hash.includes("/settings") ||
-         dataPath === '/settings';
-};
+import { isOnSettingsPage } from "@/utils/navigation";
 
 interface AiBrandAssistantProps {
   onSelectProduct: (product: string, performSearch: boolean) => void;
 }
 
 export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProduct }) => {
+  // Используем useRef для отслеживания монтирования/размонтирования
+  const isMounted = useRef(true);
+  
   const {
     productDescription,
     setProductDescription,
@@ -46,8 +32,21 @@ export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProd
     handleGetBrandSuggestions
   } = useAiBrandAssistant();
 
+  // Настраиваем эффект для отслеживания жизненного цикла компонента
+  useEffect(() => {
+    isMounted.current = true;
+    
+    return () => {
+      // При размонтировании компонента
+      isMounted.current = false;
+    };
+  }, []);
+
   // Обработчик выбора предложения бренда
   const handleSuggestionSelect = (searchQuery: string, immediate: boolean) => {
+    // Дополнительная проверка, что компонент смонтирован
+    if (!isMounted.current) return;
+    
     // Явно передаем оба параметра в родительский компонент
     onSelectProduct(searchQuery, immediate);
   };

@@ -2,16 +2,7 @@
 import { useEffect } from 'react';
 import { useSearchState } from './useSearchState';
 import { useSearchActions } from './useSearchActions';
-
-// Вспомогательная функция для определения страницы настроек
-const isOnSettingsPage = () => {
-  if (typeof window === 'undefined') return false;
-  return window.location.pathname === "/settings" || 
-         window.location.pathname.endsWith("/settings") || 
-         window.location.hash === "#/settings" || 
-         window.location.hash.includes("/settings") ||
-         document.body.getAttribute('data-path') === '/settings';
-};
+import { isOnSettingsPage } from '@/utils/navigation';
 
 export function useSearchLogic() {
   // Получаем все состояния поиска из нашего кастомного хука
@@ -20,7 +11,7 @@ export function useSearchLogic() {
   // Получаем все действия поиска из нашего кастомного хука
   const searchActions = useSearchActions(searchState);
   
-  // Проверяем, находимся ли мы на странице настроек
+  // Проверяем, находимся ли мы на странице настроек, используя централизованную функцию
   const inSettingsPage = isOnSettingsPage();
   
   // Эффект для очистки
