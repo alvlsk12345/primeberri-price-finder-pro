@@ -55,25 +55,46 @@ function App() {
     // Сохраняем последний известный хороший маршрут для восстановления
     const lastGoodRoute = location.hash || '/';
     let isNavigatingDueToError = false;
+    let navigationBlocked = false;
     
     const handleUnexpectedNavigations = () => {
       if (isNavigatingDueToError) return; // Предотвращаем рекурсивные вызовы
       
       const routeInfo = getRouteInfo();
-      if (routeInfo.isSettings && location.hash !== '#/settings') {
+      
+      // Проверяем признак того, что мы на странице настроек
+      const isSettingsPage = 
+        routeInfo.isSettings || 
+        document.body.classList.contains('settings-page') || 
+        document.body.getAttribute('data-path') === '/settings';
+      
+      // Если мы на странице настроек, но URL не соответствует
+      if (isSettingsPage && location.hash !== '#/settings') {
         console.warn('[App] Обнаружена попытка неожиданной навигации со страницы настроек');
-        toast.error('Произошла ошибка при навигации', {
-          description: 'Восстанавливаем предыдущий маршрут',
-          duration: 3000
-        });
         
-        // Восстанавливаем маршрут
-        try {
-          isNavigatingDueToError = true;
-          window.location.hash = '#/settings';
-          setTimeout(() => { isNavigatingDueToError = false; }, 100);
-        } catch (e) {
-          console.error('[App] Ошибка при восстановлении маршрута:', e);
+        if (!navigationBlocked) {
+          navigationBlocked = true; // Устанавливаем блокировку для предотвращения множественных тостов
+          
+          toast.error('Произошла ошибка при навигации', {
+            description: 'Восстанавливаем предыдущий маршрут',
+            duration: 3000
+          });
+          
+          // Восстанавливаем маршрут с небольшой задержкой
+          setTimeout(() => {
+            try {
+              isNavigatingDueToError = true;
+              window.location.hash = '#/settings';
+              
+              // Устанавливаем таймер для снятия блокировки через некоторое время
+              setTimeout(() => { 
+                isNavigatingDueToError = false; 
+                navigationBlocked = false;
+              }, 300);
+            } catch (e) {
+              console.error('[App] Ошибка при восстановлении маршрута:', e);
+            }
+          }, 100);
         }
       }
     };
@@ -101,8 +122,11 @@ function App() {
         duration: 5000,
       });
       
-      // Предотвращаем перенаправление
+      // Предотвращаем перенаправление и дальнейшую обработку ошибки
       event.preventDefault();
+      event.stopPropagation();
+      
+      return false; // Предотвращаем стандартное поведение
     };
     
     window.addEventListener('error', handleGlobalError);
@@ -125,13 +149,40 @@ function App() {
       
       // Предотвращаем перенаправление
       event.preventDefault();
+      event.stopPropagation();
+      
+      return false;
     };
     
     window.addEventListener('unhandledrejection', handlePromiseRejection);
     
+    // Предотвращаем перезагрузку страницы при ошибках
+    const originalOnError = window.onerror;
+    window.onerror = function(message, source, line, column, error) {
+      console.error('[App] window.onerror перехватил ошибку:', { message, source, line, column });
+      
+      // Проверяем ошибки localStorage
+      if (message && typeof message === 'string' && 
+          (message.includes('localStorage') || message.includes('Storage'))) {
+        console.warn('[App] Обнаружена ошибка localStorage:', message);
+        toast.warning('Проблемы с доступом к локальному хранилищу', {
+          description: 'Будут использованы значения по умолчанию',
+          duration: 5000
+        });
+      }
+      
+      if (originalOnError) {
+        return originalOnError(message, source, line, column, error);
+      }
+      
+      // Предотвращаем стандартную обработку ошибки
+      return true;
+    };
+    
     return () => {
       window.removeEventListener('error', handleGlobalError);
       window.removeEventListener('unhandledrejection', handlePromiseRejection);
+      window.onerror = originalOnError;
     };
   }, []);
   

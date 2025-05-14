@@ -7,6 +7,7 @@ import { SettingsTabs } from "@/components/settings/SettingsTabs";
 import { useSettingsPageEffect } from "@/hooks/settings/useSettingsPageEffect";
 import { getRouteInfo } from '@/utils/navigation';
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { toast } from "sonner";
 
 const SettingsContent = () => {
   console.log('[Settings] Рендер компонента SettingsContent');
