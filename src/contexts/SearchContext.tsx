@@ -1,111 +1,147 @@
 
-import React, { createContext, useContext, useEffect } from 'react';
-import { Product, ProductFilters } from "@/services/types";
-import { useSearchLogic } from "@/hooks/useSearchLogic";
-import { isOnSettingsPage, getRouteInfo, getNormalizedRouteForLogging } from "@/utils/navigation";
+import React, { createContext, useContext, ReactNode } from 'react';
+import { Product, ProductFilters } from '@/services/types';
 
-// Обновляем тип контекста поиска для согласования с реализацией
+// Определяем типы для нашего контекста
 type SearchContextType = {
+  // Состояния поиска
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  originalQuery: string;
+  setOriginalQuery: (query: string) => void;
+  lastSearchQuery: string;
+  setLastSearchQuery: (query: string) => void;
+  hasSearched: boolean;
+  setHasSearched: (searched: boolean) => void;
+  
+  // Состояния результатов
   isLoading: boolean;
+  setIsLoading: (loading: boolean) => void;
   searchResults: Product[];
-  allSearchResults: Product[]; 
+  setSearchResults: (results: Product[]) => void;
+  allSearchResults: Product[];
+  setAllSearchResults: (results: Product[]) => void;
+  cachedResults: {[page: number]: Product[]};
+  setCachedResults: (results: {[page: number]: Product[]}) => void;
   selectedProduct: Product | null;
   setSelectedProduct: (product: Product | null) => void;
+  isUsingDemoData: boolean;
+  setIsUsingDemoData: (usingDemo: boolean) => void;
+  apiInfo: Record<string, string> | undefined;
+  setApiInfo: (info: Record<string, string> | undefined) => void;
+  getSearchCountries: () => string[];
+  
+  // Состояния пагинации
   currentPage: number;
+  setCurrentPage: (page: number) => void;
   totalPages: number;
+  setTotalPages: (pages: number) => void;
+  pageChangeCount: number;
+  setPageChangeCount: (count: number) => void;
+  
+  // Состояния фильтров
   filters: ProductFilters;
   setFilters: (filters: ProductFilters) => void;
-  originalQuery: string;
-  lastSearchQuery: string;
-  hasSearched: boolean;
-  isUsingDemoData: boolean;
-  apiInfo?: Record<string, string>;
-  // Обновляем тип handleSearch для согласования
+  
+  // Действия
   handleSearch: (page: number, forceNewSearch?: boolean) => Promise<void>;
   handleProductSelect: (product: Product) => void;
   handlePageChange: (page: number) => void;
-  handleFilterChange: (newFilters: ProductFilters) => void;
-  isOnSettingsPage: boolean; // Добавляем флаг страницы настроек
+  handleFilterChange: (filterName: string, value: any) => void;
+  cleanupSearch: () => void;
+  isOnSettingsPage: boolean;
 };
 
-// Создаем контекст с пустыми значениями по умолчанию
-const SearchContext = createContext<SearchContextType | undefined>(undefined);
-
-// Создаем заглушку для контекста - вместо выбрасывания ошибки
-const createSearchContextStub = (): SearchContextType => {
-  console.log('[SearchContext] Создание заглушки контекста, так как провайдер недоступен');
+// Значения по умолчанию для контекста
+const defaultSearchContext: SearchContextType = {
+  searchQuery: '',
+  setSearchQuery: () => {},
+  originalQuery: '',
+  setOriginalQuery: () => {},
+  lastSearchQuery: '',
+  setLastSearchQuery: () => {},
+  hasSearched: false,
+  setHasSearched: () => {},
   
-  return {
-    searchQuery: '',
-    setSearchQuery: () => {},
-    isLoading: false,
-    searchResults: [],
-    allSearchResults: [],
-    selectedProduct: null,
-    setSelectedProduct: () => {},
-    currentPage: 1,
-    totalPages: 1,
-    filters: {
-      price: { min: 0, max: 0 },
-      brands: [],
-      sources: [],
-      rating: 0,
-      sort: 'relevance',
-      country: 'US',
-    },
-    setFilters: () => {},
-    originalQuery: '',
-    lastSearchQuery: '',
-    hasSearched: false,
-    isUsingDemoData: false,
-    apiInfo: {},
-    handleSearch: async () => {},
-    handleProductSelect: () => {},
-    handlePageChange: () => {},
-    handleFilterChange: () => {},
-    isOnSettingsPage: true
-  };
+  isLoading: false,
+  setIsLoading: () => {},
+  searchResults: [],
+  setSearchResults: () => {},
+  allSearchResults: [],
+  setAllSearchResults: () => {},
+  cachedResults: {},
+  setCachedResults: () => {},
+  selectedProduct: null,
+  setSelectedProduct: () => {},
+  isUsingDemoData: false,
+  setIsUsingDemoData: () => {},
+  apiInfo: undefined,
+  setApiInfo: () => {},
+  getSearchCountries: () => [],
+  
+  currentPage: 1,
+  setCurrentPage: () => {},
+  totalPages: 1,
+  setTotalPages: () => {},
+  pageChangeCount: 0,
+  setPageChangeCount: () => {},
+  
+  filters: {
+    minPrice: 0,
+    maxPrice: 0,
+    brands: [],
+    sources: [],
+    rating: 0,
+    sort: 'relevance',
+    country: 'US',
+  },
+  setFilters: () => {},
+  
+  handleSearch: async () => {},
+  handleProductSelect: () => {},
+  handlePageChange: () => {},
+  handleFilterChange: () => {},
+  cleanupSearch: () => {},
+  isOnSettingsPage: false
 };
 
-// Компонент провайдера с улучшенной проверкой страницы настроек
-export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const routeInfo = getRouteInfo();
-  const inSettingsPage = routeInfo.isSettings;
-  
-  console.log(`[SearchProvider] Инициализация, текущий маршрут: ${getNormalizedRouteForLogging()}, inSettingsPage=${inSettingsPage}`);
-  
-  // Устраняем циклическую зависимость и защищаем от ошибок на странице настроек
-  const searchLogic = useSearchLogic();
-  
-  // Логируем монтирование/размонтирование провайдера для отслеживания жизненного цикла
-  useEffect(() => {
-    console.log('[SearchProvider] Провайдер смонтирован');
-    
-    return () => {
-      console.log('[SearchProvider] Провайдер размонтирован');
-    };
-  }, []);
-  
-  // Передаем всю логику поиска в провайдер
-  return <SearchContext.Provider value={searchLogic}>{children}</SearchContext.Provider>;
-};
+// Создаем контекст поиска
+const SearchContext = createContext<SearchContextType>(defaultSearchContext);
 
-// Пользовательский хук для использования контекста поиска с защитой от ошибок
+// Хук для использования контекста поиска
 export const useSearch = () => {
-  // Сначала проверяем, находимся ли мы на странице настроек
-  const routeInfo = getRouteInfo();
-  const inSettingsPage = routeInfo.isSettings;
-  
-  // Получаем контекст (может быть undefined)
   const context = useContext(SearchContext);
-  
-  // Если контекст недоступен, возвращаем заглушку с пустыми функциями
-  if (context === undefined) {
-    console.warn(`[useSearch] Контекст недоступен! Возвращаем заглушку. Текущий маршрут: ${getNormalizedRouteForLogging()}`);
-    return createSearchContextStub();
+  if (!context) {
+    console.error('useSearch должен использоваться внутри SearchProvider');
+    // Возвращаем заглушку вместо выброса ошибки
+    return defaultSearchContext;
   }
-  
   return context;
 };
+
+// Провайдер контекста поиска
+export const SearchProvider = ({ children, searchState }: { children: ReactNode, searchState: SearchContextType }) => {
+  return (
+    <SearchContext.Provider value={searchState}>
+      {children}
+    </SearchContext.Provider>
+  );
+};
+
+// Компонент для безопасного рендеринга
+export const SafeRenderComponent = ({ 
+  children, 
+  fallback = null 
+}: { 
+  children: ReactNode, 
+  fallback?: ReactNode 
+}) => {
+  try {
+    return <>{children}</>;
+  } catch (error) {
+    console.error('Ошибка при рендеринге компонента:', error);
+    return <>{fallback}</>;
+  }
+};
+
+export default SearchContext;

@@ -1,4 +1,3 @@
-
 import { BrandSuggestion } from "@/services/types";
 import { fetchBrandSuggestions as fetchBrandSuggestionsFromOpenAI } from "./openai";
 import { fetchBrandSuggestions as fetchBrandSuggestionsFromAbacus } from "./abacus";
@@ -20,8 +19,7 @@ let lastConnectionCheck = {
 
 // Основная функция получения брендов, которая выбирает подходящий провайдер
 export const fetchBrandSuggestions = async (description: string): Promise<BrandSuggestion[]> => {
-  console.log(`[brandSuggestionService] ВЫЗОВ fetchBrandSuggestions с описанием: "${description}"`);
-  console.log(`[brandSuggestionService] isOnSettingsPage()=${isOnSettingsPage()}, window.location.hash="${window.location.hash}", document.body.getAttribute('data-path')="${document.body.getAttribute('data-path')}"`);
+  console.log(`[brandSuggestionService] ENTER fetchBrandSuggestions. Description: "${description.substring(0,30)}...", isOnSettingsPage() -> ${isOnSettingsPage()}`);
   
   // Получаем текущего провайдера
   const provider = getSelectedAIProvider();

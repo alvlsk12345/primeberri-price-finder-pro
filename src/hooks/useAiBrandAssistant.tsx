@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { toast } from "sonner";
 import { fetchBrandSuggestions } from "@/services/api/brandSuggestionService";
@@ -90,7 +89,7 @@ export const useAiBrandAssistant = () => {
   const hasError = !!errorMessage;
 
   const handleGetBrandSuggestions = async () => {
-    console.log(`[useAiBrandAssistant] ВЫЗОВ handleGetBrandSuggestions. isOnSettingsPage()=${isOnSettingsPage()}, window.location.hash="${window.location.hash}", document.body.getAttribute('data-path')="${document.body.getAttribute('data-path')}"`);
+    console.log(`[useAiBrandAssistant] ENTER handleGetBrandSuggestions. isOnSettingsPage() -> ${isOnSettingsPage()}`);
     
     // Защита от вызовов на странице настроек
     if (isOnSettingsPage()) {

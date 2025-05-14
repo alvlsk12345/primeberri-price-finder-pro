@@ -129,8 +129,7 @@ export const searchViaAbacus = async (endpoint: string, method: 'GET' | 'POST' =
  * @returns Массив предложений брендов
  */
 export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promise<BrandSuggestion[]> => {
-  console.log(`[supabase/aiService] ВЫЗОВ fetchBrandSuggestionsViaOpenAI с описанием: "${description}"`);
-  console.log(`[supabase/aiService] isOnSettingsPage()=${isOnSettingsPage()}, window.location.hash="${window.location.hash}", document.body.getAttribute('data-path')="${document.body.getAttribute('data-path')}"`);
+  console.log(`[aiService] ENTER fetchBrandSuggestionsViaOpenAI. Description: "${description.substring(0,30)}...", isOnSettingsPage() -> ${isOnSettingsPage()}`);
   
   // Получаем текущий маршрут
   const routeInfo = getRouteInfo();
@@ -249,7 +248,7 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
     // Проверяем текущий маршрут при ошибке
     const currentRouteInfo = getRouteInfo();
     
-    // Если мы в процессе перехода на страницу настроек, подавляем логи
+    // Если мы в пр��цессе перехода на страницу настроек, подавляем логи
     if (currentRouteInfo.isSettings) {
       console.log('[supabase/aiService] Подавлена ошибка во время перехода на страницу настроек');
     } else {
