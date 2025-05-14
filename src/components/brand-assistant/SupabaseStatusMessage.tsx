@@ -35,7 +35,7 @@ export const SupabaseStatusMessage: React.FC<SupabaseStatusMessageProps> = ({
                 size="sm" 
                 variant="outline" 
                 className="text-xs"
-                onClick={onRequestCheck}
+                onClick={() => onRequestCheck()}
               >
                 Проверить соединение
               </Button>
