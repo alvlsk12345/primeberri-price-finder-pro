@@ -18,9 +18,33 @@ const DEFAULT_CONFIG: SupabaseAIConfig = {
 export function getSupabaseAIConfig(): SupabaseAIConfig {
   try {
     const savedConfig = localStorage.getItem(SUPABASE_AI_CONFIG_KEY);
-    return savedConfig ? JSON.parse(savedConfig) : DEFAULT_CONFIG;
+    
+    // Проверяем, есть ли данные
+    if (!savedConfig) {
+      return DEFAULT_CONFIG;
+    }
+    
+    // Пробуем распарсить JSON
+    const parsedConfig = JSON.parse(savedConfig);
+    
+    // Проверяем структуру данных
+    if (typeof parsedConfig !== 'object' || parsedConfig === null) {
+      console.warn('Невалидная структура настроек Supabase AI в localStorage, используем значения по умолчанию');
+      localStorage.removeItem(SUPABASE_AI_CONFIG_KEY);
+      return DEFAULT_CONFIG;
+    }
+    
+    // Проверяем наличие обязательных полей
+    const mergedConfig = {
+      ...DEFAULT_CONFIG,
+      ...parsedConfig
+    };
+    
+    return mergedConfig;
   } catch (e) {
     console.error('Ошибка при получении настроек Supabase AI:', e);
+    // Удаляем повреждённые данные
+    localStorage.removeItem(SUPABASE_AI_CONFIG_KEY);
     return DEFAULT_CONFIG;
   }
 }

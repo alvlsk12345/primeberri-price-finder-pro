@@ -27,29 +27,48 @@ const isValidApiKey = (key: string): boolean => {
 
 // Получение API-ключа с проверкой валидности
 export const getApiKey = (): string => {
-  const storedKey = localStorage.getItem('zylalabs_api_key');
-  
-  // Если в localStorage хранится невалидный ключ, сбрасываем его и возвращаем дефолтный
-  if (storedKey && !isValidApiKey(storedKey)) {
-    console.warn('Обнаружен невалидный API ключ Zylalabs в localStorage, сбрасываем на дефолтный');
-    localStorage.removeItem('zylalabs_api_key');
+  try {
+    const storedKey = localStorage.getItem('zylalabs_api_key');
+    
+    // Если в localStorage хранится невалидный ключ, сбрасываем его и возвращаем дефолтный
+    if (storedKey && !isValidApiKey(storedKey)) {
+      console.warn('Обнаружен невалидный API ключ Zylalabs в localStorage, сбрасываем на дефолтный');
+      localStorage.removeItem('zylalabs_api_key');
+      return ZYLALABS_API_KEY;
+    }
+    
+    // Если ключ есть в localStorage и он валиден, используем его, иначе возвращаем предустановленный ключ
+    return storedKey || ZYLALABS_API_KEY;
+  } catch (error) {
+    console.error('Ошибка при получении API ключа Zylalabs:', error);
     return ZYLALABS_API_KEY;
   }
-  
-  // Если ключ есть в localStorage и он валиден, используем его, иначе возвращаем предустановленный ключ
-  return storedKey || ZYLALABS_API_KEY;
 };
 
 // Сохранение нового API ключа
 export const setApiKey = (newKey: string): boolean => {
-  if (isValidApiKey(newKey)) {
-    localStorage.setItem('zylalabs_api_key', newKey);
-    return true;
+  try {
+    if (isValidApiKey(newKey)) {
+      localStorage.setItem('zylalabs_api_key', newKey);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Ошибка при сохранении API ключа Zylalabs:', error);
+    return false;
   }
-  return false;
 };
 
 // Сброс API ключа на дефолтный
 export const resetApiKey = (): void => {
-  localStorage.setItem('zylalabs_api_key', ZYLALABS_API_KEY);
+  try {
+    // Удаляем текущий ключ из localStorage
+    localStorage.removeItem('zylalabs_api_key');
+    // Устанавливаем дефолтный ключ
+    localStorage.setItem('zylalabs_api_key', ZYLALABS_API_KEY);
+    console.log('API ключ Zylalabs успешно сброшен на значение по умолчанию');
+  } catch (error) {
+    console.error('Ошибка при сбросе API ключа Zylalabs:', error);
+  }
 };
+

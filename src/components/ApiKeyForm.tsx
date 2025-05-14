@@ -42,17 +42,23 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
 
   useEffect(() => {
     // Проверяем наличие сохраненного ключа при инициализации
-    if (keyType === 'zylalabs') {
-      const key = getZylalabsApiKey();
-      setApiKey(key);
-    } else if (keyType === 'openai') {
-      const key = getOpenAIApiKey();
-      setApiKey(key);
-    } else if (keyType === 'abacus') {
-      const key = getAbacusApiKey();
-      setApiKey(key);
+    try {
+      if (keyType === 'zylalabs') {
+        const key = getZylalabsApiKey();
+        setApiKey(key);
+      } else if (keyType === 'openai') {
+        const key = getOpenAIApiKey();
+        setApiKey(key);
+      } else if (keyType === 'abacus') {
+        const key = getAbacusApiKey();
+        setApiKey(key);
+      }
+    } catch (error) {
+      console.error(`Ошибка при получении ключа ${keyType}:`, error);
+      setApiKey(keyType === 'zylalabs' ? ZYLALABS_API_KEY : '');
+      toast.error(`Ошибка при загрузке ключа ${keyTitle}`, { duration: 3000 });
     }
-  }, [keyType]);
+  }, [keyType, keyTitle]);
 
   const handleSaveKey = () => {
     if (!apiKey.trim()) {
@@ -60,27 +66,37 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
       return;
     }
 
-    if (keyType === 'zylalabs') {
-      const success = setZylalabsApiKey(apiKey.trim());
-      if (success) {
-        toast.success('API ключ Zylalabs успешно сохранен');
-      } else {
-        toast.error('Неверный формат API ключа Zylalabs');
+    try {
+      if (keyType === 'zylalabs') {
+        const success = setZylalabsApiKey(apiKey.trim());
+        if (success) {
+          toast.success('API ключ Zylalabs успешно сохранен');
+        } else {
+          toast.error('Неверный формат API ключа Zylalabs');
+        }
+      } else if (keyType === 'openai') {
+        setOpenAIApiKey(apiKey.trim());
+        toast.success('API ключ OpenAI успешно сохранен');
+      } else if (keyType === 'abacus') {
+        setAbacusApiKey(apiKey.trim());
+        toast.success('API ключ Abacus.ai успешно сохранен');
       }
-    } else if (keyType === 'openai') {
-      setOpenAIApiKey(apiKey.trim());
-      toast.success('API ключ OpenAI успешно сохранен');
-    } else if (keyType === 'abacus') {
-      setAbacusApiKey(apiKey.trim());
-      toast.success('API ключ Abacus.ai успешно сохранен');
+    } catch (error) {
+      console.error(`Ошибка при сохранении ключа ${keyType}:`, error);
+      toast.error(`Ошибка при сохранении ключа ${keyTitle}`, { duration: 3000 });
     }
   };
 
   const handleResetKey = () => {
-    if (keyType === 'zylalabs') {
-      resetZylalabsApiKey();
-      setApiKey(ZYLALABS_API_KEY);
-      toast.success('API ключ Zylalabs сброшен на значение по умолчанию');
+    try {
+      if (keyType === 'zylalabs') {
+        resetZylalabsApiKey();
+        setApiKey(ZYLALABS_API_KEY);
+        toast.success('API ключ Zylalabs сброшен на значение по умолчанию');
+      }
+    } catch (error) {
+      console.error(`Ошибка при сбросе ключа ${keyType}:`, error);
+      toast.error(`Ошибка при сбросе ключа ${keyTitle}`, { duration: 3000 });
     }
   };
 
@@ -143,3 +159,4 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
     </Card>
   );
 };
+
