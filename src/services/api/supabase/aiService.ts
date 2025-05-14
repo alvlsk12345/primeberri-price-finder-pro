@@ -5,9 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 /**
  * Выполняет запрос к OpenAI через Supabase Edge Function
  */
-export const searchViaOpenAI = async (prompt: string, options: any = {}): Promise<any> => {
+export const searchViaOpenAI = async (params: SearchParams, options: any = {}): Promise<any> => {
   try {
-    console.log("Вызов OpenAI через Supabase Edge Function:", { prompt, options });
+    console.log("Вызов OpenAI через Supabase Edge Function:", { params, options });
     
     // Заглушка, которая возвращает ошибку
     throw new Error("Функция searchViaOpenAI не реализована");
@@ -21,9 +21,9 @@ export const searchViaOpenAI = async (prompt: string, options: any = {}): Promis
 /**
  * Выполняет запрос к Perplexity через Supabase Edge Function
  */
-export const searchViaPerplexity = async (action: string, method: 'GET' | 'POST' = 'POST', requestData: Record<string, any> = {}): Promise<any> => {
+export const searchViaPerplexity = async (params: SearchParams, method: 'GET' | 'POST' = 'POST', requestData: Record<string, any> = {}): Promise<any> => {
   try {
-    console.log("Вызов Perplexity через Supabase Edge Function:", { action, method, requestData });
+    console.log("Вызов Perplexity через Supabase Edge Function:", { params, method, requestData });
     
     // Заглушка, которая возвращает ошибку
     throw new Error("Функция searchViaPerplexity не реализована");

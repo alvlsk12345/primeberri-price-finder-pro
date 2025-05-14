@@ -1,26 +1,29 @@
 
-import { SearchParams, SearchResult } from "@/services/types";
-import { callOpenAI } from "./apiClient";
+import { SearchParams, SearchResult } from "../../types";
 import { toast } from "@/components/ui/use-toast";
+import { isUsingSupabase } from "../supabase/config";
+import { isSupabaseConnected } from "@/integrations/supabase/client";
+import { searchViaOpenAI } from "../supabase/aiService";
 
-export const fetchFromOpenAI = async (searchParams: SearchParams): Promise<SearchResult> => {
+export const fetchFromOpenAI = async (params: SearchParams): Promise<SearchResult> => {
   try {
-    // Заглушка для поиска через OpenAI
-    toast.error("Поиск через OpenAI временно недоступен. Используйте другой источник данных.", { 
-      duration: 5000
-    });
-    
+    // Проверка на использование Supabase
+    if (isUsingSupabase && await isSupabaseConnected()) {
+      // Логика для работы с Supabase
+      // ...
+    }
+
+    // Реализация запроса к API OpenAI
+    // ...
+
+    // Заглушка для возврата результатов
     return {
       products: [],
       totalPages: 0,
-      isDemo: true,
-      apiInfo: {
-        source: "OpenAI",
-        status: "Недоступно"
-      }
+      isDemo: true
     };
   } catch (error) {
-    console.error("Ошибка при поиске через OpenAI:", error);
+    toast.error(`Ошибка при запросе к OpenAI: ${error instanceof Error ? error.message : String(error)}`);
     throw error;
   }
 };
