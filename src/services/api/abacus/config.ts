@@ -2,11 +2,24 @@
 // Константа для названия ключа в localStorage
 const ABACUS_API_KEY_STORAGE = 'abacus_api_key';
 
+// Вспомогательная функция для безопасной проверки доступности localStorage
+function isLocalStorageAvailable(): boolean {
+  try {
+    const testKey = '__test_abacus_storage__';
+    localStorage.setItem(testKey, testKey);
+    localStorage.removeItem(testKey);
+    return true;
+  } catch (e) {
+    console.error('[AbacusConfig] localStorage недоступен:', e);
+    return false;
+  }
+}
+
 // Функция для получения API ключа из localStorage
 export const getApiKey = (): string => {
   try {
     // Проверяем доступность localStorage
-    if (typeof window === 'undefined' || !window.localStorage) {
+    if (!isLocalStorageAvailable()) {
       console.warn('[AbacusConfig] localStorage недоступен');
       return '';
     }
@@ -23,7 +36,7 @@ export const getApiKey = (): string => {
 export const setApiKey = (key: string): void => {
   try {
     // Проверяем доступность localStorage
-    if (typeof window === 'undefined' || !window.localStorage) {
+    if (!isLocalStorageAvailable()) {
       console.warn('[AbacusConfig] localStorage недоступен, ключ не будет сохранен');
       return;
     }

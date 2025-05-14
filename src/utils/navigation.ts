@@ -9,14 +9,52 @@ const SETTINGS_ROUTE = 'settings';
 const INDEX_ROUTE = '';
 
 /**
+ * Функция для безопасной проверки доступности localStorage
+ * @returns true если localStorage доступен, false в противном случае
+ */
+export function isLocalStorageAvailable(): boolean {
+  try {
+    console.log('[navigation.ts] Проверка доступности localStorage');
+    const testKey = '__test_navigation_storage__';
+    localStorage.setItem(testKey, testKey);
+    localStorage.removeItem(testKey);
+    return true;
+  } catch (e) {
+    console.error('[navigation.ts] localStorage недоступен:', e);
+    return false;
+  }
+}
+
+/**
  * Функция для проверки, находится ли пользователь на странице настроек
+ * С дополнительными проверками для повышения надежности
  */
 export const isOnSettingsPage = (): boolean => {
   console.log(`[navigation.ts -> isOnSettingsPage] ENTER. hash: "${window.location.hash}", pathname: "${window.location.pathname}", data-path: "${document.body.getAttribute('data-path')}"`);
   
   if (typeof window === 'undefined') return false;
   
-  // Получаем полную информацию о маршруте для более надежного определения
+  // Проверяем все возможные способы определения страницы settings
+  
+  // Способ 1: Проверка класса на body
+  if (document.body.classList.contains('settings-page')) {
+    console.log('[navigation.ts] Определено по классу settings-page: страница настроек');
+    return true;
+  }
+  
+  // Способ 2: Проверка хеша
+  if (window.location.hash === '#/settings') {
+    console.log('[navigation.ts] Определено по хешу: страница настроек');
+    return true;
+  }
+  
+  // Способ 3: Проверка data-path атрибута
+  if (document.body.getAttribute('data-path') === '/settings') {
+    console.log('[navigation.ts] Определено по data-path: страница настроек');
+    return true;
+  }
+  
+  // Способ 4: Полная информация о маршруте через getRouteInfo
   const routeInfo = getRouteInfo();
   const result = routeInfo.isSettings;
   
@@ -27,17 +65,23 @@ export const isOnSettingsPage = (): boolean => {
 /**
  * Функция для получения текущего маршрута в формате, совместимом с HashRouter
  * Возвращает путь без начального слеша для использования с HashRouter
+ * С дополнительной обработкой ошибок
  */
 export const getCurrentRoute = (): string => {
-  if (typeof window === 'undefined') return '';
-  
-  // Извлекаем маршрут из хеша (для HashRouter)
-  const hash = window.location.hash;
-  if (hash.startsWith('#/')) {
-    return hash.substring(2); // Убираем '#/'
+  try {
+    if (typeof window === 'undefined') return '';
+    
+    // Извлекаем маршрут из хеша (для HashRouter)
+    const hash = window.location.hash;
+    if (hash.startsWith('#/')) {
+      return hash.substring(2); // Убираем '#/'
+    }
+    
+    return '';
+  } catch (e) {
+    console.error('[navigation.ts] Ошибка в getCurrentRoute:', e);
+    return '';
   }
-  
-  return '';
 };
 
 /**
@@ -45,7 +89,12 @@ export const getCurrentRoute = (): string => {
  * Это дополнительная проверка, которая делает определение страницы настроек более надежным
  */
 const hasSettingsPageClass = (): boolean => {
-  return document.body.classList.contains('settings-page');
+  try {
+    return document.body.classList.contains('settings-page');
+  } catch (e) {
+    console.error('[navigation.ts] Ошибка при проверке класса settings-page:', e);
+    return false;
+  }
 };
 
 /**
@@ -63,17 +112,42 @@ export const getRouteInfo = (): {
   hash: string | null; // Добавляем новое поле для хранения хэша для удобства проверки
 } => {
   console.log('[navigation.ts -> getRouteInfo] ENTER. Определение маршрута');
-  const rawHash = window.location.hash;
-  const rawPath = window.location.pathname;
-  const dataPath = document.body.getAttribute('data-path');
-  const hasSettingsClass = hasSettingsPageClass();
+  
+  let rawHash = '';
+  let rawPath = '';
+  let dataPath: string | null = null;
+  let hasSettingsClass = false;
+  
+  try {
+    // Безопасно получаем информацию о маршруте
+    rawHash = window.location.hash || '';
+    rawPath = window.location.pathname || '';
+    
+    try {
+      dataPath = document.body.getAttribute('data-path');
+    } catch (e) {
+      console.warn('[navigation.ts] Не удалось получить data-path:', e);
+    }
+    
+    try {
+      hasSettingsClass = hasSettingsPageClass();
+    } catch (e) {
+      console.warn('[navigation.ts] Не удалось проверить класс settings-page:', e);
+    }
+  } catch (e) {
+    console.error('[navigation.ts] Ошибка при получении базовой информации о маршруте:', e);
+  }
   
   console.log(`[navigation.ts -> getRouteInfo] Параметры: hash="${rawHash}", path="${rawPath}", dataPath="${dataPath}", hasSettingsClass=${hasSettingsClass}`);
   
   let hash = null;
-  if (rawHash && rawHash.startsWith('#/')) {
-    hash = rawHash.substring(2); // Без '#/'
-    console.log(`[navigation.ts -> getRouteInfo] Извлечен хэш: "${hash}"`);
+  try {
+    if (rawHash && rawHash.startsWith('#/')) {
+      hash = rawHash.substring(2); // Без '#/'
+      console.log(`[navigation.ts -> getRouteInfo] Извлечен хэш: "${hash}"`);
+    }
+  } catch (e) {
+    console.error('[navigation.ts] Ошибка при извлечении хэша:', e);
   }
   
   // Самый точный и высокоприоритетный способ определения - проверка класса settings-page
@@ -124,31 +198,43 @@ export const getRouteInfo = (): {
   // Определяем путь для других страниц
   let path = '';
   
-  // Первый приоритет - хеш для HashRouter
-  if (hash) {
-    path = hash;
-    console.log(`[navigation.ts -> getRouteInfo] Определен путь из хэша: "${path}"`);
-  } 
-  // Второй приоритет - атрибут data-path
-  else if (dataPath) {
-    path = dataPath;
-    if (path.startsWith('/')) {
-      path = path.substring(1);
+  try {
+    // Первый приоритет - хеш для HashRouter
+    if (hash) {
+      path = hash;
+      console.log(`[navigation.ts -> getRouteInfo] Определен путь из хэша: "${path}"`);
+    } 
+    // Второй приоритет - атрибут data-path
+    else if (dataPath) {
+      path = dataPath;
+      if (path.startsWith('/')) {
+        path = path.substring(1);
+      }
+      console.log(`[navigation.ts -> getRouteInfo] Определен путь из data-path: "${path}"`);
     }
-    console.log(`[navigation.ts -> getRouteInfo] Определен путь из data-path: "${path}"`);
-  }
-  // Последний приоритет - pathname
-  else {
-    path = rawPath;
-    if (path.startsWith('/')) {
-      path = path.substring(1);
+    // Последний приоритет - pathname
+    else {
+      path = rawPath;
+      if (path.startsWith('/')) {
+        path = path.substring(1);
+      }
+      console.log(`[navigation.ts -> getRouteInfo] Определен путь из pathname: "${path}"`);
     }
-    console.log(`[navigation.ts -> getRouteInfo] Определен путь из pathname: "${path}"`);
+  } catch (e) {
+    console.error('[navigation.ts] Ошибка при определении пути:', e);
+    path = ''; // По умолчанию - индексная страница
   }
   
   // Определяем тип маршрута
-  const isSettings = path === SETTINGS_ROUTE;
-  const isIndex = !path || path === '' || path === 'index';
+  let isSettings = false;
+  let isIndex = false;
+  
+  try {
+    isSettings = path === SETTINGS_ROUTE;
+    isIndex = !path || path === '' || path === 'index';
+  } catch (e) {
+    console.error('[navigation.ts] Ошибка при определении типа маршрута:', e);
+  }
   
   console.log(`[navigation.ts -> getRouteInfo] EXIT. path="${path}", isSettings=${isSettings}, isIndex=${isIndex}`);
   
@@ -169,7 +255,26 @@ export const getRouteInfo = (): {
  * @returns Нормализованное представление текущего маршрута
  */
 export const getNormalizedRouteForLogging = (): string => {
-  const { path, isIndex, isSettings, rawHash, rawPath, dataPath, hasSettingsClass } = getRouteInfo();
-  
-  return `route=${path} (isIndex=${isIndex}, isSettings=${isSettings}, hash=${rawHash}, path=${rawPath}, dataPath=${dataPath || 'null'}, hasSettingsClass=${hasSettingsClass})`;
+  try {
+    const { path, isIndex, isSettings, rawHash, rawPath, dataPath, hasSettingsClass } = getRouteInfo();
+    
+    return `route=${path} (isIndex=${isIndex}, isSettings=${isSettings}, hash=${rawHash}, path=${rawPath}, dataPath=${dataPath || 'null'}, hasSettingsClass=${hasSettingsClass})`;
+  } catch (e) {
+    console.error('[navigation.ts] Ошибка при нормализации маршрута для логирования:', e);
+    return 'route=ERROR_RETRIEVING';
+  }
+};
+
+/**
+ * Устанавливает все необходимые атрибуты для страницы настроек
+ * Используется для обеспечения консистентности страницы
+ */
+export const ensureSettingsPageAttributes = (): void => {
+  try {
+    console.log('[navigation.ts] Устанавливаем атрибуты для страницы настроек');
+    document.body.classList.add('settings-page');
+    document.body.setAttribute('data-path', '/settings');
+  } catch (e) {
+    console.error('[navigation.ts] Ошибка при установке атрибутов страницы настроек:', e);
+  }
 };

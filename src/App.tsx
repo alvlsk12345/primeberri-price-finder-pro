@@ -50,6 +50,42 @@ function App() {
     };
   }, [location]);
   
+  // Защита от навигации при ошибках
+  useEffect(() => {
+    // Сохраняем последний известный хороший маршрут для восстановления
+    const lastGoodRoute = location.hash || '/';
+    let isNavigatingDueToError = false;
+    
+    const handleUnexpectedNavigations = () => {
+      if (isNavigatingDueToError) return; // Предотвращаем рекурсивные вызовы
+      
+      const routeInfo = getRouteInfo();
+      if (routeInfo.isSettings && location.hash !== '#/settings') {
+        console.warn('[App] Обнаружена попытка неожиданной навигации со страницы настроек');
+        toast.error('Произошла ошибка при навигации', {
+          description: 'Восстанавливаем предыдущий маршрут',
+          duration: 3000
+        });
+        
+        // Восстанавливаем маршрут
+        try {
+          isNavigatingDueToError = true;
+          window.location.hash = '#/settings';
+          setTimeout(() => { isNavigatingDueToError = false; }, 100);
+        } catch (e) {
+          console.error('[App] Ошибка при восстановлении маршрута:', e);
+        }
+      }
+    };
+    
+    // Отслеживаем неожиданную навигацию
+    window.addEventListener('popstate', handleUnexpectedNavigations);
+    
+    return () => {
+      window.removeEventListener('popstate', handleUnexpectedNavigations);
+    };
+  }, [location]);
+  
   // Обработчик ошибок для глобальных исключений
   useEffect(() => {
     const handleGlobalError = (event: ErrorEvent) => {
@@ -71,8 +107,31 @@ function App() {
     
     window.addEventListener('error', handleGlobalError);
     
+    // Также добавляем обработчик для непойманных промисов
+    const handlePromiseRejection = (event: PromiseRejectionEvent) => {
+      console.error('[App] Необработанное отклонение промиса:', event.reason);
+      
+      // Проверяем, связана ли ошибка с localStorage
+      const isLocalStorageError = event.reason && 
+        (event.reason.toString().includes('localStorage') || 
+         (event.reason.message && event.reason.message.includes('localStorage')));
+      
+      if (isLocalStorageError) {
+        toast.error('Проблема с доступом к локальному хранилищу', {
+          description: 'Некоторые функции могут работать некорректно',
+          duration: 5000,
+        });
+      }
+      
+      // Предотвращаем перенаправление
+      event.preventDefault();
+    };
+    
+    window.addEventListener('unhandledrejection', handlePromiseRejection);
+    
     return () => {
       window.removeEventListener('error', handleGlobalError);
+      window.removeEventListener('unhandledrejection', handlePromiseRejection);
     };
   }, []);
   

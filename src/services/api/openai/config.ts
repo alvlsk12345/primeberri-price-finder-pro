@@ -2,11 +2,24 @@
 // Константа для названия ключа в localStorage
 const OPENAI_API_KEY_STORAGE = 'openai_api_key';
 
+// Вспомогательная функция для безопасной проверки доступности localStorage
+function isLocalStorageAvailable(): boolean {
+  try {
+    const testKey = '__test_openai_storage__';
+    localStorage.setItem(testKey, testKey);
+    localStorage.removeItem(testKey);
+    return true;
+  } catch (e) {
+    console.error('[OpenAIConfig] localStorage недоступен:', e);
+    return false;
+  }
+}
+
 // Функция для получения API ключа из localStorage
 export const getApiKey = (): string => {
   try {
     // Проверяем доступность localStorage
-    if (typeof window === 'undefined' || !window.localStorage) {
+    if (!isLocalStorageAvailable()) {
       console.warn('[OpenAIConfig] localStorage недоступен');
       return '';
     }
@@ -23,7 +36,7 @@ export const getApiKey = (): string => {
 export const setApiKey = (key: string): void => {
   try {
     // Проверяем доступность localStorage
-    if (typeof window === 'undefined' || !window.localStorage) {
+    if (!isLocalStorageAvailable()) {
       console.warn('[OpenAIConfig] localStorage недоступен, ключ не будет сохранен');
       return;
     }

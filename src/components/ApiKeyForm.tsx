@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Key, RefreshCw } from 'lucide-react';
+
+// Импортируем функции для работы с API ключами
 import { getApiKey as getZylalabsApiKey, setApiKey as setZylalabsApiKey, resetApiKey as resetZylalabsApiKey, ZYLALABS_API_KEY } from '@/services/api/zylalabs/config';
 import { getApiKey as getOpenAIApiKey, setApiKey as setOpenAIApiKey } from '@/services/api/openai/config';
 import { getApiKey as getAbacusApiKey, setApiKey as setAbacusApiKey } from '@/services/api/abacus/config';
@@ -16,6 +18,7 @@ type ApiKeyProps = {
 export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
   const [apiKey, setApiKey] = useState<string>('');
   const [isVisible, setIsVisible] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Определяем параметры в зависимости от типа ключа
   const localStorageKey = 
@@ -42,51 +45,97 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
 
   useEffect(() => {
     // Проверяем наличие сохраненного ключа при инициализации
-    if (keyType === 'zylalabs') {
-      const key = getZylalabsApiKey();
+    try {
+      let key = '';
+      
+      if (keyType === 'zylalabs') {
+        key = getZylalabsApiKey();
+      } else if (keyType === 'openai') {
+        key = getOpenAIApiKey();
+      } else if (keyType === 'abacus') {
+        key = getAbacusApiKey();
+      }
+      
       setApiKey(key);
-    } else if (keyType === 'openai') {
-      const key = getOpenAIApiKey();
-      setApiKey(key);
-    } else if (keyType === 'abacus') {
-      const key = getAbacusApiKey();
-      setApiKey(key);
+      setError(null);
+    } catch (err) {
+      console.error(`[ApiKeyForm] Ошибка при получении ${keyType} ключа:`, err);
+      setError(`Не удалось получить ${keyTitle} ключ. Проверьте консоль для деталей.`);
     }
-  }, [keyType]);
+  }, [keyType, keyTitle]);
 
   const handleSaveKey = () => {
-    if (!apiKey.trim()) {
-      toast.error('Пожалуйста, введите API ключ');
-      return;
-    }
-
-    if (keyType === 'zylalabs') {
-      const success = setZylalabsApiKey(apiKey.trim());
-      if (success) {
-        toast.success('API ключ Zylalabs успешно сохранен');
-      } else {
-        toast.error('Неверный формат API ключа Zylalabs');
+    try {
+      if (!apiKey.trim()) {
+        toast.error('Пожалуйста, введите API ключ');
+        return;
       }
-    } else if (keyType === 'openai') {
-      setOpenAIApiKey(apiKey.trim());
-      toast.success('API ключ OpenAI успешно сохранен');
-    } else if (keyType === 'abacus') {
-      setAbacusApiKey(apiKey.trim());
-      toast.success('API ключ Abacus.ai успешно сохранен');
+
+      if (keyType === 'zylalabs') {
+        const success = setZylalabsApiKey(apiKey.trim());
+        if (success) {
+          toast.success('API ключ Zylalabs успешно сохранен');
+          setError(null);
+        } else {
+          toast.error('Неверный формат API ключа Zylalabs');
+        }
+      } else if (keyType === 'openai') {
+        setOpenAIApiKey(apiKey.trim());
+        toast.success('API ключ OpenAI успешно сохранен');
+        setError(null);
+      } else if (keyType === 'abacus') {
+        setAbacusApiKey(apiKey.trim());
+        toast.success('API ключ Abacus.ai успешно сохранен');
+        setError(null);
+      }
+    } catch (err) {
+      console.error(`[ApiKeyForm] Ошибка при сохранении ${keyType} ключа:`, err);
+      toast.error(`Ошибка при сохранении ключа ${keyTitle}. Попробуйте еще раз.`);
     }
   };
 
   const handleResetKey = () => {
-    if (keyType === 'zylalabs') {
-      resetZylalabsApiKey();
-      setApiKey(ZYLALABS_API_KEY);
-      toast.success('API ключ Zylalabs сброшен на значение по умолчанию');
+    try {
+      if (keyType === 'zylalabs') {
+        resetZylalabsApiKey();
+        setApiKey(ZYLALABS_API_KEY);
+        toast.success('API ключ Zylalabs сброшен на значение по умолчанию');
+        setError(null);
+      }
+    } catch (err) {
+      console.error(`[ApiKeyForm] Ошибка при сбросе ${keyType} ключа:`, err);
+      toast.error(`Ошибка при сбросе ключа ${keyTitle}. Попробуйте еще раз.`);
     }
   };
 
   const toggleVisibility = () => {
     setIsVisible(!isVisible);
   };
+
+  if (error) {
+    return (
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Key size={18} /> Настройки {keyTitle}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="p-4 bg-red-50 rounded-md text-red-600">
+            {error}
+            <Button 
+              onClick={() => setError(null)} 
+              variant="outline" 
+              size="sm"
+              className="mt-2"
+            >
+              Попробовать снова
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="shadow-sm">

@@ -15,7 +15,16 @@ const SettingsContent = () => {
     <div className="max-w-4xl mx-auto">
       <SettingsHeader />
       <ErrorBoundary fallback={<div className="p-4 bg-red-50 rounded-md text-red-600 mt-4">
-        Произошла ошибка при загрузке вкладок настроек. Пожалуйста, обновите страницу.
+        <h3 className="text-lg font-medium mb-2">Произошла ошибка при загрузке вкладок настроек</h3>
+        <p>Пожалуйста, обновите страницу или вернитесь позже.</p>
+        <div className="mt-4 flex space-x-4">
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md"
+          >
+            Обновить страницу
+          </button>
+        </div>
       </div>}>
         <SettingsTabs />
       </ErrorBoundary>
@@ -25,17 +34,20 @@ const SettingsContent = () => {
 
 // Главный компонент страницы настроек
 const Settings = () => {
-  console.log('[Settings] НАЧАЛО рендера компонента Settings');
+  console.log('%c[Settings] НАЧАЛО рендера компонента Settings', 'color: blue; font-weight: bold;');
   
   // Проверка доступности localStorage в самом начале
+  let isLocalStorageAvailable = false;
   try {
     console.log('[Settings] Проверка localStorage:', !!window.localStorage);
-    const testKey = '__test_storage__';
+    const testKey = '__test_settings_storage__';
     localStorage.setItem(testKey, testKey);
     localStorage.removeItem(testKey);
     console.log('[Settings] localStorage доступен');
+    isLocalStorageAvailable = true;
   } catch (e) {
     console.error('[Settings] Ошибка при проверке localStorage:', e);
+    isLocalStorageAvailable = false;
   }
   
   // Состояние для отслеживания готовности компонента
@@ -48,7 +60,7 @@ const Settings = () => {
     console.log('[Settings] Получение информации о маршруте через useMemo');
     try {
       const info = getRouteInfo();
-      console.log(`[Settings] Информация о маршруте: ${JSON.stringify(info)}`);
+      console.log('[Settings] Информация о маршруте:', JSON.stringify(info));
       return info;
     } catch (e) {
       console.error('[Settings] Ошибка при получении информации о маршруте:', e);
@@ -57,6 +69,15 @@ const Settings = () => {
       return { isSettings: true, path: 'settings', rawHash: '', rawPath: '' };
     }
   }, []);
+  
+  // Защита от некорректных маршрутов - проверяем, что мы действительно на странице настроек
+  useEffect(() => {
+    if (!routeInfo.isSettings) {
+      console.warn('[Settings] Обнаружена попытка загрузки страницы Settings с некорректным маршрутом:', routeInfo);
+      setHasError(true);
+      setErrorMessage('Произошла ошибка при загрузке настроек: некорректный маршрут');
+    }
+  }, [routeInfo]);
   
   // Используем хук для эффектов страницы настроек
   try {
@@ -90,23 +111,31 @@ const Settings = () => {
       document.body.setAttribute('data-path', '/settings');
     }
     
-    // Небольшая задержка для стабилизации состояния маршрута
+    // Увеличенная задержка для стабилизации состояния маршрута
     const timer = setTimeout(() => {
       try {
-        console.log('[Settings] Устанавливаем isReady=true после таймаута');
+        console.log('%c[Settings] Устанавливаем isReady=true после таймаута', 'color:green; font-weight:bold;');
         setIsReady(true);
       } catch (e) {
         console.error('[Settings] Ошибка при установке isReady=true:', e);
         setHasError(true);
         setErrorMessage('Не удалось инициализировать страницу настроек');
       }
-    }, 150); // Увеличим задержку для большей стабильности
+    }, 300); // Увеличили задержку для большей стабильности
     
     return () => {
       console.log('[Settings] Очистка таймера в useEffect');
       clearTimeout(timer);
     };
   }, [routeInfo]);
+
+  // Защита от потенциальных ошибок в localStorage
+  useEffect(() => {
+    if (!isLocalStorageAvailable) {
+      console.warn('[Settings] localStorage недоступен, возможны проблемы с функциональностью страницы');
+      toast.warning('Обнаружены проблемы с доступом к localStorage. Некоторые функции могут работать некорректно.');
+    }
+  }, [isLocalStorageAvailable]);
 
   console.log(`[Settings] Перед рендерингом, isReady=${isReady}, hasError=${hasError}`);
 

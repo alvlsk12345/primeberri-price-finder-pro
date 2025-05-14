@@ -14,6 +14,8 @@ export const useSupabaseConfig = () => {
   
   // Начинаем с безопасного дефолтного значения и только после успешной загрузки обновляем 
   const [supabaseConfig, setSupabaseConfig] = useState<SupabaseAIConfig>(DEFAULT_HOOK_CONFIG);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   
   // Загружаем конфигурацию после монтирования компонента
   useEffect(() => {
@@ -23,6 +25,7 @@ export const useSupabaseConfig = () => {
 
     const loadConfig = () => {
       console.log('[useSupabaseConfig] Начинаем загрузку конфигурации');
+      setIsLoading(true);
       
       try {
         // Получаем конфигурацию вне useState для безопасности
@@ -35,6 +38,7 @@ export const useSupabaseConfig = () => {
           // Обновляем состояние полученными значениями
           setSupabaseConfig(loadedConfig);
           console.log('[useSupabaseConfig] Состояние успешно обновлено');
+          setIsLoading(false);
         } else {
           console.warn('[useSupabaseConfig] Компонент размонтирован, пропускаем обновление состояния');
         }
@@ -45,6 +49,8 @@ export const useSupabaseConfig = () => {
           // Используем дефолтные значения при ошибке
           console.warn('[useSupabaseConfig] Используем дефолтные настройки из-за ошибки');
           setSupabaseConfig(DEFAULT_HOOK_CONFIG);
+          setHasError(true);
+          setIsLoading(false);
         }
       }
     };
@@ -53,7 +59,7 @@ export const useSupabaseConfig = () => {
     const timerId = setTimeout(() => {
       console.log('[useSupabaseConfig] Запускаем загрузку конфигурации после задержки');
       loadConfig();
-    }, 50);
+    }, 300);
     
     return () => {
       console.log('[useSupabaseConfig] Размонтирование хука');
@@ -88,6 +94,8 @@ export const useSupabaseConfig = () => {
   
   return {
     supabaseConfig,
+    isLoading,
+    hasError,
     handleSupabaseBackendChange,
     handleFallbackChange
   };
