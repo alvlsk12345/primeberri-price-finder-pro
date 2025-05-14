@@ -1,6 +1,6 @@
 
 import React, { Suspense } from 'react';
-import { SafeApiKeyForm } from "@/components/ApiKeyForm";
+import { SafeApiKeyForm } from "@/components/api-key";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export const ApiKeysTab: React.FC = () => {
