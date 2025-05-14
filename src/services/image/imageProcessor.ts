@@ -1,5 +1,5 @@
 
-import { isValidImageUrl } from '../imageService';
+import { isValidImageUrl } from './imageValidator';
 import { 
   isZylalabsImage, 
   isGoogleShoppingImage
@@ -28,18 +28,24 @@ export const processProductImage = (
   const useCache = isIndex ? true : indexOrUseCache;
   const index = isIndex ? indexOrUseCache : undefined;
 
+  // Проверяем источник изображения
+  const isZylalabs = isZylalabsImage(imageUrl);
+  const isGoogleShopping = isGoogleShoppingImage(imageUrl);
+  
   // Проверяем, нужна ли прокси для изображения
-  const needsProxy = isZylalabsImage(imageUrl) || isGoogleShoppingImage(imageUrl);
+  // Для Zylalabs используем всегда только прямую загрузку без прокси 
+  const needsProxy = !isZylalabs && isGoogleShopping;
   
   // Получаем URL с учетом кэширования
-  const shouldUseCache = useCache;
-  const uniqueUrl = getUniqueImageUrl(imageUrl, index, shouldUseCache);
+  const uniqueUrl = getUniqueImageUrl(imageUrl, index, useCache);
   
-  // Для изображений из Zylalabs всегда используем directFetch=true при первой загрузке
-  const shouldDirectFetch = directFetch || isZylalabsImage(imageUrl);
-  
-  // Применяем прокси только если нужно
-  return needsProxy ? getProxiedImageUrl(uniqueUrl, shouldDirectFetch) : uniqueUrl;
+  // Для изображений из Zylalabs добавляем временную метку для обхода кэша
+  const processedUrl = isZylalabs 
+    ? `${uniqueUrl}${uniqueUrl.includes('?') ? '&' : '?'}t=${Date.now()}`
+    : uniqueUrl;
+    
+  // Применяем прокси только если нужно (не для Zylalabs)
+  return needsProxy ? getProxiedImageUrl(processedUrl, directFetch) : processedUrl;
 };
 
 /**
@@ -56,8 +62,12 @@ export const getBaseSizeImageUrl = (url: string | null, useCache: boolean = true
     return url.replace(/=w\d+-h\d+/, '=w300-h300');
   }
   
-  // Для Zylalabs изображений применяем оптимизацию размера и всегда directFetch=true
-  return getZylalabsSizeImageUrl(url, 'medium', useCache);
+  // Для Zylalabs изображений не применяем прокси, а используем прямой URL
+  if (isZylalabsImage(url)) {
+    return url;
+  }
+  
+  return processProductImage(url, useCache);
 };
 
 /**
@@ -74,8 +84,12 @@ export const getLargeSizeImageUrl = (url: string | null, useCache: boolean = tru
     return url.replace(/=w\d+-h\d+/, '=w800-h800');
   }
   
-  // Для Zylalabs изображений применяем оптимизацию размера
-  return getZylalabsSizeImageUrl(url, 'large', useCache);
+  // Для Zylalabs изображений не применяем прокси
+  if (isZylalabsImage(url)) {
+    return url;
+  }
+  
+  return processProductImage(url, useCache);
 };
 
 /**
@@ -90,6 +104,6 @@ export const getZylalabsSizeImageUrl = (url: string, size: 'small' | 'medium' | 
   
   if (!isZylalabsImage(url)) return url;
   
-  // Для Zylalabs всегда принудительно добавляем параметр directFetch=true для первой загрузки
-  return getProxiedImageUrl(getUniqueImageUrl(url, undefined, true), true);
+  // Для Zylalabs больше не применяем прокси, используем прямой URL с добавлением временной метки
+  return `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
 };

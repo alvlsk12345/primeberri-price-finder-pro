@@ -17,3 +17,15 @@ export {
 export {
     isValidImageUrl
 } from './image/imageValidator';
+
+// Добавляем экспорт дополнительных полезных функций
+export {
+    markImageAsLoaded,
+    isImageLoaded,
+    getUniqueImageUrl
+} from './image/imageCache';
+
+export {
+    needsProxying,
+    getProxiedImageUrl
+} from './image/imageProxy';

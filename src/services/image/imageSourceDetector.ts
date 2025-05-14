@@ -25,13 +25,18 @@ export const isGoogleCseImage = (url: string): boolean => {
 
 /**
  * Проверяет, является ли URL изображением из Zylalabs API
+ * Расширенная проверка для учета различных форматов URL Zylalabs
  */
 export const isZylalabsImage = (url: string): boolean => {
   if (!url) return false;
   
+  // Расширяем список возможных доменов и подстрок Zylalabs
   return url.includes('zylalabs.com') || 
          url.includes('zyla-api') || 
-         url.includes('zylahome');
+         url.includes('zylahome') ||
+         url.includes('encik.blob.core.windows.net') || // Хранилище Zylalabs
+         url.includes('zdatastore') || // Новый формат URL Zylalabs
+         url.includes('zyla-pd'); // Еще один формат для продуктов Zylalabs
 };
 
 /**

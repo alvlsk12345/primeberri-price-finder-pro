@@ -7,6 +7,7 @@ import { ImageLoadingState } from './useProductImageLoading';
 import { ImageSourceInfo } from './ImageSourceDetector';
 import { getPlaceholderImageUrl } from '@/services/image/imagePlaceholder';
 import { getProxiedImageUrl, needsProxying } from '@/services/image/imageProxy';
+import { isZylalabsImage } from '@/services/image/imageSourceDetector';
 
 interface AvatarProductImageProps {
   image: string;
@@ -30,35 +31,43 @@ export const AvatarProductImage: React.FC<AvatarProductImageProps> = ({
   
   const MAX_RETRIES = 3;
   
-  // Функция для попытки использования прокси при CORS-ошибках
-  const tryWithProxy = (originalUrl: string) => {
-    // Если URL уже проксирован или не требует проксирования, используем другую стратегию
-    if (isProxiedUrl || !needsProxying(originalUrl)) {
-      return `${originalUrl}?retry=${Date.now()}`;
+  // Функция для попытки использования прямой загрузки изображений
+  const tryDirectLoad = (originalUrl: string): string => {
+    // Для Zylalabs добавляем только временную метку для обхода кэша
+    if (isZylalabsImage(originalUrl)) {
+      const timestamp = Date.now();
+      return `${originalUrl}${originalUrl.includes('?') ? '&' : '?'}t=${timestamp}&retry=${retryCount}`;
     }
     
-    // Применяем прокси
-    console.log(`Попытка проксирования изображения для обхода CORS: ${originalUrl}`);
-    return getProxiedImageUrl(originalUrl);
+    // Для других изображений с CORS-проблемами используем проксирование
+    if (needsProxying(originalUrl) && !isProxiedUrl) {
+      console.log(`Применяем проксирование для изображения: ${originalUrl}`);
+      return getProxiedImageUrl(originalUrl, true);
+    }
+    
+    // Для остальных просто добавляем временную метку
+    return `${originalUrl}${originalUrl.includes('?') ? '&' : '?'}t=${Date.now()}&retry=${retryCount}`;
   };
   
   // Пытаемся автоматически восстановиться после ошибки загрузки 
   useEffect(() => {
     if (imageError && retryCount < MAX_RETRIES) {
-      // Задержка перед повторной попыткой
+      // Задержка перед повторной попыткой с экспоненциальным ростом
+      const delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
+      
       const timer = setTimeout(() => {
-        console.log(`Повторная попытка загрузки изображения ${retryCount + 1}/${MAX_RETRIES}: ${image}`);
+        console.log(`Повторная попытка загрузки изображения ${retryCount + 1}/${MAX_RETRIES}: ${image}`, {
+          isZylalabs,
+          isGoogleImage,
+          isProxiedUrl,
+          delay
+        });
         
         setRetryCount(prev => prev + 1);
         
-        // Если это первая попытка и URL требует проксирования - используем прокси
-        if (retryCount === 0 && needsProxying(image)) {
-          setFallbackImage(tryWithProxy(image));
-        } else {
-          // Иначе просто форсируем ререндер изображения с новым timestamp
-          setFallbackImage(`${image}?retry=${Date.now()}`);
-        }
-      }, 1000 * (retryCount + 1)); // Увеличиваем время ожидания с каждой попыткой
+        // Применяем стратегию в зависимости от типа изображения
+        setFallbackImage(tryDirectLoad(image));
+      }, delay);
       
       return () => clearTimeout(timer);
     } else if (imageError && retryCount >= MAX_RETRIES) {
@@ -66,7 +75,7 @@ export const AvatarProductImage: React.FC<AvatarProductImageProps> = ({
       console.log(`Все ${MAX_RETRIES} попытки загрузки изображения исчерпаны, используем заглушку`);
       setFallbackImage(getPlaceholderImageUrl(title));
     }
-  }, [imageError, retryCount, image, title]);
+  }, [imageError, retryCount, image, title, isZylalabs, isGoogleImage, isProxiedUrl]);
   
   // Используем источник изображения с учетом повторных попыток
   const imageSrc = fallbackImage || image;
@@ -90,11 +99,9 @@ export const AvatarProductImage: React.FC<AvatarProductImageProps> = ({
               src: e.currentTarget.src,
               originalSrc: image,
               isRetry: retryCount > 0,
-              isProxiedUrl,
-              isGoogleImage,
               isZylalabs,
-              errorType: e.type,
-              corsError: e.currentTarget.src.includes('encrypted-tbn')
+              isGoogleImage,
+              isProxiedUrl
             });
             handleImageError();
           }}
@@ -102,9 +109,9 @@ export const AvatarProductImage: React.FC<AvatarProductImageProps> = ({
             console.log(`Успешно загружено изображение:`, {
               src: e.currentTarget.src,
               isRetry: retryCount > 0,
-              isProxiedUrl,
+              isZylalabs,
               isGoogleImage,
-              isZylalabs
+              isProxiedUrl
             });
             handleImageLoad();
           }}
