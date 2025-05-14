@@ -1,11 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { toast } from "sonner";
 import {
   getApiKey as getApiKeyZylalabs,
   setApiKey as setApiKeyZylalabs,
-  resetApiKey as resetApiKeyZylalabs,
-  hasValidApiKey as hasValidApiKeyZylalabs
-} from '@/services/api/zylalabsService';
+  resetApiKey as resetApiKeyZylalabs
+} from '@/services/api/zylalabs/config';
 import {
   getApiKey as getApiKeyOpenAI,
   setApiKey as setApiKeyOpenAI,
@@ -16,14 +16,13 @@ import {
   getApiKey as getApiKeyAbacus,
   setApiKey as setApiKeyAbacus,
   resetApiKey as resetApiKeyAbacus,
-  hasValidApiKey as hasValidApiKeyAbacus,
-  resetApiKey as resetApiKeyAbacus
+  hasValidApiKey as hasValidApiKeyAbacus
 } from '@/services/api/abacus';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { ReloadIcon } from '@radix-ui/react-icons';
+import { ReloadIcon } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 type ApiKeyFormProps = {
@@ -35,7 +34,7 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [isValid, setIsValid] = useState(false);
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   
   const keyTitle = keyType === 'zylalabs'
     ? 'Zyla Labs'
@@ -58,11 +57,11 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType }) => {
   }, [keyType]);
   
   useEffect(() => {
-    setIsValid(
-      (keyType === 'zylalabs' && hasValidApiKeyZylalabs()) ||
+    const hasValidKey = 
+      (keyType === 'zylalabs' && apiKey.length > 0) || // Простая проверка для Zylalabs
       (keyType === 'openai' && hasValidApiKeyOpenAI()) ||
-      (keyType === 'abacus' && hasValidApiKeyAbacus())
-    );
+      (keyType === 'abacus' && hasValidApiKeyAbacus());
+    setIsValid(hasValidKey);
   }, [apiKey, keyType]);
   
   const refreshApiKey = () => {

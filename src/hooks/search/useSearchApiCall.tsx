@@ -15,6 +15,11 @@ type SearchApiCallProps = {
   setApiInfo: (info: Record<string, string> | undefined) => void;
 };
 
+// Расширяем тип SearchParams из services/types.ts для использования внутри этого компонента
+type ExtendedSearchParams = SearchParams & {
+  requireAdvancedSearch?: boolean;
+};
+
 export function useSearchApiCall({
   setIsLoading,
   setIsUsingDemoData,
@@ -24,7 +29,7 @@ export function useSearchApiCall({
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
   
   // Функция выполнения поискового запроса к API
-  const executeApiCall = async (searchParams: SearchParams) => {
+  const executeApiCall = async (searchParams: ExtendedSearchParams) => {
     // Отменяем предыдущий таймаут, если он существует
     if (searchTimeout) {
       clearTimeout(searchTimeout);
