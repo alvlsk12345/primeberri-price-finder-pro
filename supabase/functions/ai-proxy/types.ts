@@ -5,6 +5,8 @@ export interface Brand {
   product?: string;
   description?: string;
   products?: string[];
+  logo?: string;
+  imageUrl?: string;
 }
 
 export interface BrandResponse {

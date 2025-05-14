@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { toast } from "sonner";
 import { fetchBrandSuggestions } from "@/services/api/brandSuggestionService";
@@ -23,6 +22,14 @@ export const useAiBrandAssistant = () => {
   const [isAssistantLoading, setIsAssistantLoading] = useState<boolean>(false);
   const [brandSuggestions, setBrandSuggestions] = useState<BrandSuggestion[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  
+  // Добавляем необходимые свойства для совместимости с AiBrandAssistant
+  // Алиас для isAssistantLoading
+  const isLoading = isAssistantLoading;
+  // Алиас для errorMessage
+  const error = errorMessage;
+  // Заглушка для imageChoices
+  const imageChoices = [];
   
   // Реф для отслеживания размонтирования компонента
   const isMounted = useRef(true);
@@ -129,7 +136,7 @@ export const useAiBrandAssistant = () => {
   const handleGetBrandSuggestions = async () => {
     console.log(`[useAiBrandAssistant] ENTER handleGetBrandSuggestions.`);
     
-    // Первая проверка - быстрое определение маршрута
+    // Первая проверка - быстрае определение маршрута
     if (safeCheckIsSettingsPage()) {
       console.log("[useAiBrandAssistant] Предотвращен вызов на странице настроек (быстрая проверка)");
       return;
@@ -243,6 +250,13 @@ export const useAiBrandAssistant = () => {
     }
   };
 
+  // Добавляем функцию для сброса предложений брендов
+  const resetBrandSuggestions = () => {
+    console.log('[useAiBrandAssistant] Сброс предложений брендов');
+    setBrandSuggestions([]);
+    setErrorMessage('');
+  };
+
   return {
     productDescription,
     setProductDescription,
@@ -254,6 +268,11 @@ export const useAiBrandAssistant = () => {
     checkSupabaseStatus,
     isAssistantEnabled,
     setIsAssistantEnabled,
-    handleGetBrandSuggestions
+    handleGetBrandSuggestions,
+    // Добавляем новые свойства для совместимости
+    isLoading,
+    error,
+    imageChoices,
+    resetBrandSuggestions
   };
 };

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from "sonner";
 import { useDemoModeForced } from '@/services/api/mock/mockServiceConfig';
@@ -88,7 +87,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   }, [inSettingsPage]);
 
   // Функция для повторной проверки соединения с Supabase
-  const handleCheckSupabaseConnection = async () => {
+  const handleCheckConnection = async () => {
     try {
       toast.loading('Проверка соединения с Supabase...');
       const connected = await checkSupabaseConnection(true); // с принудительной проверкой
@@ -166,7 +165,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   // Используем обновленный хук для обработки выбора продуктов
   const { handleSelectProduct } = useProductSelectionHandler(setSearchQuery, executeSearch);
 
-  // Если мы на странице настроек, показываем упрощенный компонент без проверок соединения
+  // Если мы на странице настроек, показываем упрощенный ко��понент без проверок соединения
   if (inSettingsPage) {
     console.log('[SearchForm] Рендер упрощенного компонента для страницы настроек');
     return (
@@ -201,7 +200,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       <SupabaseStatusMessage 
         connected={supabaseStatus.connected} 
         enabled={supabaseStatus.enabled}
-        onRequestCheck={handleCheckSupabaseConnection}
+        onRequestCheck={handleCheckConnection}
       />
       
       <AiBrandAssistant onSelectProduct={handleSelectProduct} />

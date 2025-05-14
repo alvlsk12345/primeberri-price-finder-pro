@@ -9,7 +9,11 @@ import { useAiBrandAssistant } from '@/hooks/useAiBrandAssistant';
 import { isSupabaseConnected } from '@/services/api/supabase/client';
 import { isUsingSupabaseBackend } from '@/services/api/supabase/config';
 
-export const AiBrandAssistant = () => {
+interface AiBrandAssistantProps {
+  onSelectProduct?: (productName: string) => void;
+}
+
+export const AiBrandAssistant: React.FC<AiBrandAssistantProps> = ({ onSelectProduct }) => {
   const {
     isLoading, 
     error, 
@@ -18,7 +22,9 @@ export const AiBrandAssistant = () => {
     setProductDescription,
     handleGetBrandSuggestions,
     resetBrandSuggestions,
-    imageChoices
+    imageChoices,
+    errorMessage,
+    isAssistantLoading
   } = useAiBrandAssistant();
 
   // Состояние для отслеживания подключения к Supabase
@@ -79,6 +85,13 @@ export const AiBrandAssistant = () => {
       }));
     }
   };
+
+  // Функция для обработки выбора продукта
+  const handleSelectProduct = (searchQuery: string, immediate?: boolean) => {
+    if (onSelectProduct) {
+      onSelectProduct(searchQuery);
+    }
+  };
   
   return (
     <div className="mb-6 relative">
@@ -93,13 +106,13 @@ export const AiBrandAssistant = () => {
       <ProductDescriptionForm
         productDescription={productDescription}
         setProductDescription={setProductDescription}
-        onSubmit={handleGetBrandSuggestions}
-        isLoading={isLoading}
+        handleGetBrandSuggestions={handleGetBrandSuggestions}
+        isAssistantLoading={isAssistantLoading}
         imageChoices={imageChoices}
       />
       
       {/* Отображение ошибок */}
-      {error && <BrandAssistantError error={error} />}
+      {errorMessage && <BrandAssistantError errorMessage={errorMessage} />}
       
       {/* Список предложений брендов */}
       {brandSuggestions.length > 0 && (
@@ -114,7 +127,10 @@ export const AiBrandAssistant = () => {
               Очистить результаты
             </Button>
           </div>
-          <BrandSuggestionList suggestions={brandSuggestions} />
+          <BrandSuggestionList 
+            suggestions={brandSuggestions} 
+            onSelect={handleSelectProduct}
+          />
         </div>
       )}
     </div>
