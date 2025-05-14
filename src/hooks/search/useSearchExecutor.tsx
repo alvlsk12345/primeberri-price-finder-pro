@@ -44,12 +44,13 @@ export function useSearchExecutor({
     setTotalPages,
     setHasSearched,
     setIsUsingDemoData,
-    setApiInfo,
-    lastSuccessfulResultsRef
+    setApiInfo
+    // Удаляем проблемное свойство lastSuccessfulResultsRef, так как оно не определено в SearchCoreProps
   });
 
   return {
     executeSearch,
-    cleanupSearch
+    cleanupSearch,
+    lastSuccessfulResultsRef // Возвращаем ссылку, чтобы она была доступна в других местах
   };
 }

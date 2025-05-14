@@ -1,45 +1,43 @@
 
+import { useRef } from 'react';
 import { Product } from "@/services/types";
-import { toast } from "sonner";
-import { useRef } from "react";
 
 type SearchErrorHandlerProps = {
   setSearchResults: (results: Product[]) => void;
 };
 
 export function useSearchErrorHandler({
-  setSearchResults,
+  setSearchResults
 }: SearchErrorHandlerProps) {
-  // Создаем собственную ссылку внутри хука, вместо получения извне
+  // Сохраняем последние успешные результаты
   const lastSuccessfulResultsRef = useRef<Product[]>([]);
-  
-  // Функция обработки ошибок поиска
-  const handleSearchError = (error: any): { success: boolean, products: Product[], recovered?: boolean } => {
-    console.error('Ошибка поиска:', error);
-    
-    if (lastSuccessfulResultsRef.current.length > 0) {
-      // В случае ошибки возвращаем последние успешные результаты
-      console.log('Произошла ошибка при поиске, возвращаем предыдущие результаты');
-      setSearchResults(lastSuccessfulResultsRef.current);
-      return { success: true, products: lastSuccessfulResultsRef.current, recovered: true };
-    }
-    
-    return { success: false, products: [] };
-  };
-  
-  // Функция для отображения сообщений об ошибках пользователю
-  const showErrorMessage = (message: string) => {
-    toast.error(message, { duration: 4000 });
-  };
-  
+
   // Функция для сохранения успешных результатов
   const saveSuccessfulResults = (results: Product[]) => {
     lastSuccessfulResultsRef.current = results;
   };
-  
+
+  // Функция для обработки ошибок поиска
+  const handleSearchError = (error: any) => {
+    console.error('Ошибка при выполнении поиска:', error);
+    
+    // Если есть сохраненные результаты, используем их
+    if (lastSuccessfulResultsRef.current.length > 0) {
+      console.log(`Восстанавливаем ${lastSuccessfulResultsRef.current.length} предыдущих результатов`);
+      setSearchResults(lastSuccessfulResultsRef.current);
+      return { 
+        success: true, 
+        products: lastSuccessfulResultsRef.current, 
+        recovered: true 
+      };
+    }
+    
+    // В противном случае возвращаем пустой массив
+    return { success: false, products: [], recovered: false };
+  };
+
   return {
     handleSearchError,
-    showErrorMessage,
     saveSuccessfulResults,
     lastSuccessfulResultsRef
   };

@@ -119,7 +119,8 @@ export function useSearchActions(props: SearchStateProps) {
     pageChangeCount,
     setPageChangeCount,
     setCurrentPage,
-    handlePageChange: (page: number) => handleSearch({ forcePage: page })
+    // Используем правильный интерфейс для передачи параметра
+    handleSearch: (page: number) => handleSearch({ forcePage: page })
   });
   
   const { handleFilterChange } = useFilterActions({

@@ -1,4 +1,3 @@
-
 import { Product, ProductFilters } from "@/services/types";
 import { toast } from "sonner";
 import { useSearchApiCall } from './useSearchApiCall';
