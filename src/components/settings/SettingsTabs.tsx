@@ -1,9 +1,10 @@
 
-import React, { Suspense } from 'react';
+import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ApiKeysTab } from "@/components/settings/tabs/ApiKeysTab";
-import { SupabaseTab } from "@/components/settings/tabs/SupabaseTab";
+import { ApiKeysTabContent } from "@/components/settings/ApiKeysTabContent";
+import { SupabaseTabContent } from "@/components/settings/SupabaseTabContent";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const SettingsTabs: React.FC = () => {
   return (
@@ -28,9 +29,9 @@ export const SettingsTabs: React.FC = () => {
             </div>
           </div>
         }>
-          <Suspense fallback={<div className="animate-pulse p-4">Загрузка настроек API...</div>}>
-            <ApiKeysTab />
-          </Suspense>
+          <React.Suspense fallback={<LoadingApiKeysTab />}>
+            <ApiKeysTabContent />
+          </React.Suspense>
         </ErrorBoundary>
       </TabsContent>
       
@@ -49,11 +50,35 @@ export const SettingsTabs: React.FC = () => {
             </div>
           </div>
         }>
-          <Suspense fallback={<div className="animate-pulse p-4">Загрузка настроек Supabase...</div>}>
-            <SupabaseTab />
-          </Suspense>
+          <React.Suspense fallback={<LoadingSupabaseTab />}>
+            <SupabaseTabContent />
+          </React.Suspense>
         </ErrorBoundary>
       </TabsContent>
     </Tabs>
   );
 };
+
+// Компоненты для отображения состояния загрузки
+const LoadingApiKeysTab: React.FC = () => (
+  <div className="space-y-6">
+    <div className="space-y-4">
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-20 w-full" />
+      <Skeleton className="h-10 w-40" />
+    </div>
+    <div className="space-y-4">
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-20 w-full" />
+      <Skeleton className="h-10 w-40" />
+    </div>
+  </div>
+);
+
+const LoadingSupabaseTab: React.FC = () => (
+  <div className="space-y-4">
+    <Skeleton className="h-12 w-full" />
+    <Skeleton className="h-24 w-full" />
+    <Skeleton className="h-24 w-full" />
+  </div>
+);
