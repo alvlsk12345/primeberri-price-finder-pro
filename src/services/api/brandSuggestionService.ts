@@ -1,6 +1,6 @@
 
 import { BrandSuggestion } from "@/services/types";
-import { fetchBrandSuggestions as fetchBrandSuggestionsFromOpenAI } from "./openai";
+import { fetchBrandSuggestions as fetchBrandSuggestionsFromOpenAI } from "./openai/brandSuggestion";
 import { fetchBrandSuggestions as fetchBrandSuggestionsFromAbacus } from "./abacus";
 import { getSelectedAIProvider, AIProvider } from "./aiProviderService";
 import { toast } from "sonner";
@@ -67,3 +67,4 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     return []; // Возвращаем пустой массив при ошибке
   }
 };
+

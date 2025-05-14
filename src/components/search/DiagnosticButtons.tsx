@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, Bot, Search } from 'lucide-react';
 import { toast } from "sonner";
 import { testMinimalGoogleApiRequest } from '@/services/api/googleSearchService';
-import { callOpenAI } from '@/services/api/openai';
+import { callOpenAI } from '@/services/api/openai/apiClient';
 import { hasValidApiKey as hasValidOpenAIApiKey } from '@/services/api/openai';
 import { getSelectedAIProvider, getProviderDisplayName, getProviderModelName } from '@/services/api/aiProviderService';
 import { isSupabaseConnected } from '@/services/api/supabase/client';

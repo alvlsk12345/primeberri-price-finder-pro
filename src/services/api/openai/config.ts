@@ -1,44 +1,34 @@
 
-// Функция для получения API ключа из localStorage
+// Модуль для работы с конфигурациями OpenAI API
+import { toast } from "sonner";
+
+// Константа для названия ключа в localStorage
+const OPENAI_API_KEY = 'openai_api_key';
+
+// Функция для получения API ключа
 export const getApiKey = (): string => {
-  try {
-    return localStorage.getItem('openai_api_key') || '';
-  } catch (error) {
-    console.error('Ошибка при получении API ключа OpenAI:', error);
-    return '';
-  }
+  return localStorage.getItem(OPENAI_API_KEY) || '';
 };
 
-// Функция для сохранения API ключа в localStorage
-export const setApiKey = (key: string): void => {
-  try {
-    localStorage.setItem('openai_api_key', key);
-    console.log('API ключ OpenAI успешно сохранен');
-  } catch (error) {
-    console.error('Ошибка при сохранении API ключа OpenAI:', error);
-  }
+// Функция для установки API ключа
+export const setApiKey = (apiKey: string): void => {
+  localStorage.setItem(OPENAI_API_KEY, apiKey);
 };
 
-// Функция для сброса API ключа OpenAI
-export const resetApiKey = (): boolean => {
-  try {
-    console.log('Выполняется сброс API ключа OpenAI...');
-    localStorage.removeItem('openai_api_key');
-    console.log('API ключ OpenAI успешно удален');
-    return true;
-  } catch (error) {
-    console.error('Ошибка при сбросе API ключа OpenAI:', error);
-    return false;
-  }
+// Функция для сброса API ключа (удаления)
+export const resetApiKey = (): void => {
+  localStorage.removeItem(OPENAI_API_KEY);
+  toast.success("API ключ OpenAI успешно удален", { duration: 3000 });
+  console.log("OpenAI API ключ сброшен");
 };
 
-// Функция для проверки наличия действительного API ключа
+// Функция для проверки валидности API ключа
 export const hasValidApiKey = (): boolean => {
-  try {
-    const key = getApiKey();
-    return key !== '' && key.startsWith('sk-');
-  } catch (error) {
-    console.error('Ошибка при проверке валидности API ключа OpenAI:', error);
-    return false;
-  }
+  const apiKey = getApiKey();
+  // Простая проверка на формат ключа OpenAI
+  return /^sk-[A-Za-z0-9]{32,}$/.test(apiKey);
 };
+
+// Реэкспортируем функцию callOpenAI из apiClient
+export { callOpenAI } from './apiClient';
+

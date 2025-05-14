@@ -18,3 +18,4 @@ export {
   fetchBrandSuggestions,
   createMockProductsFromQuery
 };
+

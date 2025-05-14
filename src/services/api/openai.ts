@@ -5,14 +5,16 @@ import {
   getApiKey, 
   setApiKey,
   resetApiKey,
-  hasValidApiKey 
+  hasValidApiKey,
+  callOpenAI
 } from './openai/config';
 
 export { 
   getApiKey, 
   setApiKey,
   resetApiKey,
-  hasValidApiKey 
+  hasValidApiKey,
+  callOpenAI
 };
 
 // Дополнительные функции, которые могут понадобиться для совместимости
@@ -26,3 +28,7 @@ export const configureOpenAI = (apiKey?: string): void => {
 export const hasOpenAIConfig = (): boolean => {
   return hasValidApiKey();
 };
+
+// Импорт функции для получения предложений брендов
+export { fetchBrandSuggestions } from './openai/brandSuggestion';
+
