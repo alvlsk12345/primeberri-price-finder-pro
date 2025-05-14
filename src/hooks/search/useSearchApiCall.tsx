@@ -2,7 +2,9 @@
 import { useState } from 'react';
 import { SearchParams } from "@/services/types";
 import { searchProductsViaZylalabs } from "@/services/api/zylalabsService";
+import { searchProductsViaSelectedAI } from "@/services/api/aiSearchService";
 import { toast } from "sonner";
+import { getSelectedAIProvider, getProviderDisplayName } from "@/services/api/aiProviderService";
 
 // Уменьшаем время таймаута для более быстрого поиска
 const API_TIMEOUT = 20000; // 20 секунд вместо 30
@@ -32,8 +34,12 @@ export function useSearchApiCall({
     // Явно устанавливаем загрузку в true
     setIsLoading(true);
     
-    // Показываем toast о поиске
-    toast.loading('Выполняется поиск товаров...', {
+    // Получаем информацию о выбранном AI провайдере для уведомления
+    const selectedProvider = getSelectedAIProvider();
+    const providerName = getProviderDisplayName(selectedProvider);
+    
+    // Показываем toast о поиске с указанием используемого провайдера
+    toast.loading(`Выполняется поиск товаров с использованием ${providerName}...`, {
       id: 'search-progress',
       duration: API_TIMEOUT + 5000
     });
@@ -56,8 +62,17 @@ export function useSearchApiCall({
     try {
       console.log('Выполняем запрос к API с параметрами:', searchParams);
       
-      // Выполняем поисковый запрос
-      const results = await searchProductsViaZylalabs(searchParams);
+      // Выполняем поисковый запрос через выбранный AI провайдер, если это обычный поиск по товарам
+      // или через Zylalabs, если требуется специфичный поиск с фильтрами
+      let results;
+      
+      if (searchParams.requireAdvancedSearch) {
+        // Если требуется продвинутый поиск с фильтрами, используем Zylalabs
+        results = await searchProductsViaZylalabs(searchParams);
+      } else {
+        // Для обычного поиска используем выбранный AI провайдер
+        results = await searchProductsViaSelectedAI(searchParams.query);
+      }
       
       console.log('Получен ответ от API:', results);
       
