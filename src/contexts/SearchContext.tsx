@@ -92,7 +92,7 @@ const defaultSearchContext: SearchContextType = {
     brands: [],
     sources: [],
     rating: 0,
-    sort: 'relevance',
+    sortBy: 'relevance',
     country: 'US',
   },
   setFilters: () => {},

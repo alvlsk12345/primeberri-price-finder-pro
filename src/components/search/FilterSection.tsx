@@ -10,9 +10,9 @@ export const FilterSection: React.FC = () => {
     searchResults
   } = useSearch();
   
-  // Для немедленного применения фильтров передаем изменения напрямую
-  const handleFilterUpdate = (newFilters) => {
-    handleFilterChange(newFilters);
+  // Для немедленного применения фильтров передаем изменения через новый обработчик
+  const handleFilterUpdate = (filterName: string, value: any) => {
+    handleFilterChange(filterName, value);
   };
   
   return (

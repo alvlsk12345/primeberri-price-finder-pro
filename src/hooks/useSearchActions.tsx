@@ -146,10 +146,10 @@ export function useSearchActions(props: SearchStateProps) {
     }
   });
   
-  const { handleFilterChange } = useFilterActions({
+  const { handleFilterChange: filterChange, handleMultipleFiltersChange } = useFilterActions({
     allResults: allSearchResults,
     setFilters,
-    handleSearch: () => {
+    handleSearch: (page, forceNewSearch) => {
       // Дополнительная проверка перед выполнением поиска
       const currentRouteInfo = getRouteInfo();
       if (currentRouteInfo.isSettings) {
@@ -157,11 +157,25 @@ export function useSearchActions(props: SearchStateProps) {
         return Promise.resolve();
       }
       
-      return handleSearch({ forceRefresh: true });
+      return adaptedHandleSearch(page, forceNewSearch);
     },
     filters,
     setSearchResults
   });
+  
+  // Адаптируем handleFilterChange для поддержки двух разных сигнатур:
+  // 1. handleFilterChange(filterName: string, value: any) - изменение одного фильтра
+  // 2. handleFilterChange(newFilters: ProductFilters) - изменение нескольких фильтров сразу
+  const handleFilterChange = (filterNameOrFilters: string | ProductFilters, value?: any) => {
+    // Если первый аргумент - строка, то вызываем filterChange с двумя аргументами
+    if (typeof filterNameOrFilters === 'string') {
+      return filterChange(filterNameOrFilters, value);
+    } 
+    // Иначе считаем, что передан объект фильтров целиком
+    else {
+      return handleMultipleFiltersChange(filterNameOrFilters);
+    }
+  };
 
   return {
     handleSearch: adaptedHandleSearch,

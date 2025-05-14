@@ -60,10 +60,7 @@ export const SearchResultsSection: React.FC = () => {
     // Обновленный обработчик сортировки - сразу применяет изменения
     const handleSortChange = (sortBy: SortOption) => {
       // Обновляем текущие фильтры с новым методом сортировки и сразу применяем
-      handleFilterChange({
-        ...filters,
-        sortBy
-      });
+      handleFilterChange("sortBy", sortBy);
     };
 
     // Проверяем, был ли запрос переведен (если оригинальный запрос на русском)
