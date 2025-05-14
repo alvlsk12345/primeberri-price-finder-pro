@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { getSelectedAIProvider, getProviderDisplayName } from "./aiProviderService";
 import { fetchFromOpenAI } from "./openai/searchService";
 import { searchProductsViaAbacus } from "./abacus";
-import { Product } from "../types";
+import { Product, SearchParams } from "../types";
 
 /**
  * Универсальная функция для поиска товаров через выбранный AI провайдер
@@ -21,17 +21,22 @@ export const searchProductsViaSelectedAI = async (query: string): Promise<any> =
     // Показываем уведомление о выбранном провайдере
     toast.info(`Поиск выполняется с использованием ${providerName}`, { duration: 2000 });
     
+    // Создаем параметры поиска
+    const searchParams: SearchParams = {
+      query: query
+    };
+    
     // В зависимости от выбранного провайдера вызываем соответствующую функцию
     if (selectedProvider === 'openai') {
       console.log('Использование OpenAI для поиска товаров');
-      return await fetchFromOpenAI(query);
+      return await fetchFromOpenAI(searchParams);
     } else if (selectedProvider === 'perplexity') {
       console.log('Использование Perplexity для поиска товаров');
-      return await searchProductsViaAbacus(query);
+      return await searchProductsViaAbacus(searchParams);
     } else {
       // Если провайдер неизвестен, используем OpenAI по умолчанию
       console.warn(`Неизвестный провайдер AI: ${selectedProvider}, используем OpenAI по умолчанию`);
-      return await fetchFromOpenAI(query);
+      return await fetchFromOpenAI(searchParams);
     }
   } catch (error) {
     console.error(`Ошибка при поиске через ${providerName}:`, error);
@@ -41,7 +46,8 @@ export const searchProductsViaSelectedAI = async (query: string): Promise<any> =
     if (selectedProvider === 'openai') {
       toast.info('Пробуем выполнить поиск через Perplexity...', { duration: 2000 });
       try {
-        return await searchProductsViaAbacus(query);
+        const fallbackParams: SearchParams = { query: query };
+        return await searchProductsViaAbacus(fallbackParams);
       } catch (fallbackError) {
         console.error('Ошибка при использовании запасного провайдера:', fallbackError);
         throw new Error('Не удалось выполнить поиск с помощью доступных AI провайдеров');
@@ -49,7 +55,8 @@ export const searchProductsViaSelectedAI = async (query: string): Promise<any> =
     } else {
       toast.info('Пробуем выполнить поиск через OpenAI...', { duration: 2000 });
       try {
-        return await fetchFromOpenAI(query);
+        const fallbackParams: SearchParams = { query: query };
+        return await fetchFromOpenAI(fallbackParams);
       } catch (fallbackError) {
         console.error('Ошибка при использовании запасного провайдера:', fallbackError);
         throw new Error('Не удалось выполнить поиск с помощью доступных AI провайдеров');

@@ -168,6 +168,40 @@ function toast({ ...props }: Toast) {
   };
 }
 
+// Добавляем вспомогательные методы к объекту toast
+toast.error = (message: string, options: Omit<ToasterToast, "id" | "description" | "variant"> = {}) => {
+  return toast({
+    variant: "destructive",
+    title: "Ошибка",
+    description: message,
+    ...options,
+  });
+};
+
+toast.success = (message: string, options: Omit<ToasterToast, "id" | "description" | "variant"> = {}) => {
+  return toast({
+    title: "Успех",
+    description: message,
+    ...options,
+  });
+};
+
+toast.info = (message: string, options: Omit<ToasterToast, "id" | "description" | "variant"> = {}) => {
+  return toast({
+    title: "Информация",
+    description: message,
+    ...options,
+  });
+};
+
+toast.warning = (message: string, options: Omit<ToasterToast, "id" | "description" | "variant"> = {}) => {
+  return toast({
+    title: "Предупреждение",
+    description: message,
+    ...options,
+  });
+};
+
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState);
 
