@@ -1,8 +1,7 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { BrandSuggestion, BrandResponse } from "@/services/types";
 import { OpenAIRequestOptions } from "../openai/proxyUtils";
-import { isOnSettingsPage } from '@/utils/navigation';
+import { isOnSettingsPage, getRouteInfo } from '@/utils/navigation';
 
 /**
  * Универсальная функция для вызова AI через Supabase Edge Function
@@ -15,14 +14,24 @@ export const callAIViaSupabase = async (params: {
   method?: 'GET' | 'POST';
   body?: any;
 }): Promise<any> => {
+  console.log(`[supabase/aiService] ВЫЗОВ callAIViaSupabase с параметрами: ${JSON.stringify(params)}`);
+  console.log(`[supabase/aiService] isOnSettingsPage()=${isOnSettingsPage()}, window.location.hash="${window.location.hash}", document.body.getAttribute('data-path')="${document.body.getAttribute('data-path')}"`);
+  
   if (!supabase) {
-    throw new Error('Supabase client не инициализирован');
+    const error = new Error('Supabase client не инициализирован');
+    console.error('[supabase/aiService] Ошибка:', error);
+    throw error;
   }
   
+  // Получаем текущий маршрут
+  const routeInfo = getRouteInfo();
+  console.log(`[supabase/aiService] Текущий маршрут: ${JSON.stringify(routeInfo)}`);
+  
   // Проверка: не находимся ли мы на странице настроек
-  if (isOnSettingsPage()) {
-    console.log('callAIViaSupabase: Вызов предотвращен на странице настроек');
-    throw new Error('Операция не поддерживается на странице настроек');
+  if (routeInfo.isSettings) {
+    const error = new Error('Операция не поддерживается на странице настроек');
+    console.log('[supabase/aiService] Вызов предотвращен на странице настроек');
+    throw error;
   }
   
   try {
@@ -36,7 +45,7 @@ export const callAIViaSupabase = async (params: {
       ...(params.body && { body: params.body }),
     };
 
-    console.log(`Отправка запроса к Supabase Edge Function: ai-proxy, провайдер: ${params.provider}`, requestBody);
+    console.log(`[supabase/aiService] Отправка запроса к Supabase Edge Function: ai-proxy, провайдер: ${params.provider}`, requestBody);
     
     // Вызываем Edge Function для запроса к AI с таймаутом
     const { data, error } = await supabase.functions.invoke('ai-proxy', {
@@ -44,19 +53,27 @@ export const callAIViaSupabase = async (params: {
     });
     
     if (error) {
-      console.error('Ошибка при вызове Supabase Edge Function:', error);
+      console.error('[supabase/aiService] Ошибка при вызове Supabase Edge Function:', error);
       throw new Error(`Ошибка Supabase: ${error.message}`);
     }
     
     if (!data) {
-      console.warn('Пустой ответ от Supabase Edge Function');
+      console.warn('[supabase/aiService] Пустой ответ от Supabase Edge Function');
     } else {
-      console.log('Получен ответ от Supabase Edge Function:', data);
+      console.log('[supabase/aiService] Получен ответ от Supabase Edge Function:', data);
     }
     
     return data;
   } catch (error) {
-    console.error('Ошибка при вызове AI через Supabase:', error);
+    // Проверяем текущий маршрут при ошибке
+    const currentRouteInfo = getRouteInfo();
+    
+    // Если мы в процессе перехода на страницу настроек, подавляем логи
+    if (currentRouteInfo.isSettings) {
+      console.log('[supabase/aiService] Подавлена ошибка во время перехода на страницу настроек');
+    } else {
+      console.error('[supabase/aiService] Ошибка при вызове AI через Supabase:', error);
+    }
     throw error;
   }
 };
@@ -112,18 +129,27 @@ export const searchViaAbacus = async (endpoint: string, method: 'GET' | 'POST' =
  * @returns Массив предложений брендов
  */
 export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promise<BrandSuggestion[]> => {
+  console.log(`[supabase/aiService] ВЫЗОВ fetchBrandSuggestionsViaOpenAI с описанием: "${description}"`);
+  console.log(`[supabase/aiService] isOnSettingsPage()=${isOnSettingsPage()}, window.location.hash="${window.location.hash}", document.body.getAttribute('data-path')="${document.body.getAttribute('data-path')}"`);
+  
+  // Получаем текущий маршрут
+  const routeInfo = getRouteInfo();
+  console.log(`[supabase/aiService] Текущий маршрут: ${JSON.stringify(routeInfo)}`);
+  
   // Проверка: не находимся ли мы на странице настроек
-  if (isOnSettingsPage()) {
-    console.log('fetchBrandSuggestionsViaOpenAI: Вызов предотвращен на странице настроек');
+  if (routeInfo.isSettings) {
+    console.log('[supabase/aiService] Вызов fetchBrandSuggestionsViaOpenAI предотвращен на странице настроек');
     throw new Error('Операция не поддерживается на странице настроек');
   }
   
   if (!supabase) {
-    throw new Error('Supabase client не инициализирован');
+    const error = new Error('Supabase client не инициализирован');
+    console.error('[supabase/aiService] Ошибка:', error);
+    throw error;
   }
   
   try {
-    console.log('Вызов AI через Supabase Edge Function: openai для получения предложений брендов');
+    console.log('[supabase/aiService] Вызов AI через Supabase Edge Function: openai для получения предложений брендов');
     
     // Устанавливаем таймаут для запроса
     const timeoutPromise = new Promise<never>((_, reject) => {
@@ -131,6 +157,7 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
     });
 
     // Создаем основной запрос
+    console.log('[supabase/aiService] Отправка запроса к Supabase Edge Function: ai-proxy для получения предложений брендов');
     const requestPromise = supabase.functions.invoke('ai-proxy', {
       body: { 
         provider: 'openai',
@@ -147,16 +174,16 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
     const { data, error } = result as { data: any, error: any };
     
     if (error) {
-      console.error('Ошибка при вызове Supabase Edge Function:', error);
+      console.error('[supabase/aiService] Ошибка при вызове Supabase Edge Function:', error);
       throw new Error(`Ошибка Supabase: ${error.message}`);
     }
     
     if (!data) {
-      console.warn('Пустой ответ от Supabase Edge Function');
+      console.warn('[supabase/aiService] Пустой ответ от Supabase Edge Function');
       return [];
     }
     
-    console.log('Результат от fetchBrandSuggestionsViaOpenAI:', data);
+    console.log('[supabase/aiService] Результат от fetchBrandSuggestionsViaOpenAI:', data);
     
     // Нормализация результатов
     let normalizedResults: BrandSuggestion[] = [];
@@ -172,7 +199,7 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
           // Сохраняем оригинальные данные для совместимости
           ...item
         }));
-      console.log('Нормализованные результаты из массива:', normalizedResults);
+      console.log('[supabase/aiService] Нормализованные результаты из массива:', normalizedResults);
     } else if (data && typeof data === 'object') {
       // Проверяем наличие поля products
       if ('products' in data && Array.isArray((data as any).products)) {
@@ -182,11 +209,11 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
           .map((item: any) => ({
             brand: item.brand || item.name || 'Неизвестный бренд',
             product: item.product || '',
-            description: item.description || 'Описание недоступно',
+            description: item.description || 'Описани�� недоступно',
             // Сохраняем оригинальные данные для совместимости
             ...item
           }));
-        console.log('Нормализованные результаты из поля products:', normalizedResults);
+        console.log('[supabase/aiService] Нормализованные результаты из поля products:', normalizedResults);
       } else {
         // Если это одиночный объект с нужными полями
         if ('brand' in data || 'name' in data) {
@@ -202,7 +229,7 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
       }
     }
     
-    console.log('Финальные нормализованные результаты (количество):', normalizedResults.length);
+    console.log('[supabase/aiService] Финальные нормализованные результаты (количество):', normalizedResults.length);
     
     // Убедимся, что все объекты в массиве имеют нужную структуру и удаляем дубликаты
     const uniqueBrands = new Set();
@@ -219,7 +246,15 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
     
     return uniqueResults;
   } catch (error) {
-    console.error('Ошибка при получении предложений брендов через Supabase:', error);
+    // Проверяем текущий маршрут при ошибке
+    const currentRouteInfo = getRouteInfo();
+    
+    // Если мы в процессе перехода на страницу настроек, подавляем логи
+    if (currentRouteInfo.isSettings) {
+      console.log('[supabase/aiService] Подавлена ошибка во время перехода на страницу настроек');
+    } else {
+      console.error('[supabase/aiService] Ошибка при получении предложений брендов через Supabase:', error);
+    }
     throw error;
   }
 };

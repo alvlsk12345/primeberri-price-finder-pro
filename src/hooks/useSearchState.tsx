@@ -3,13 +3,21 @@ import { useSearchQueryState } from './search/useSearchQueryState';
 import { usePaginationState } from './search/usePaginationState';
 import { useResultsState } from './search/useResultsState';
 import { useFiltersState } from './search/useFiltersState';
-import { isOnSettingsPage } from '@/utils/navigation';
+import { isOnSettingsPage, getRouteInfo } from '@/utils/navigation';
 
 export function useSearchState() {
-  const inSettingsPage = isOnSettingsPage();
+  console.log('[useSearchState] Инициализация хука useSearchState');
+  
+  // Получаем информацию о маршруте
+  const routeInfo = getRouteInfo();
+  const inSettingsPage = routeInfo.isSettings;
+  
+  console.log(`[useSearchState] routeInfo = ${JSON.stringify(routeInfo)}, inSettingsPage = ${inSettingsPage}`);
   
   // Проверяем, находимся ли мы на странице настроек
   if (inSettingsPage) {
+    console.log('[useSearchState] Возвращаем заглушки состояний для страницы настроек');
+    
     // Возвращаем заглушки состояний для страницы настроек
     return {
       // Базовые заглушки для SearchQueryState
@@ -60,6 +68,8 @@ export function useSearchState() {
     };
   }
 
+  console.log('[useSearchState] Инициализация состояний поиска для основной страницы');
+  
   // Get state from smaller hooks (только если не на странице настроек)
   const queryState = useSearchQueryState();
   const paginationState = usePaginationState();

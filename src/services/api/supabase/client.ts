@@ -1,13 +1,17 @@
 
+
 import { supabase as integrationSupabase } from '@/integrations/supabase/client';
+import { getRouteInfo } from '@/utils/navigation';
 
 // Переиспользуем клиент из интеграции Supabase
 export const supabase = integrationSupabase;
 
-// Кеш результата проверки соединения для уменьшения количества запросов
-let connectionCache: { isConnected: boolean | null; timestamp: number } = {
-  isConnected: null,
-  timestamp: 0
+// Глобальный объект для отслеживания состояния подключения
+const connectionState = {
+  isConnected: null as boolean | null,
+  timestamp: 0,
+  inProgress: false, // Защита от параллельных проверок
+  lastError: null as Error | null
 };
 
 // Время жизни кеша (10 секунд)
@@ -20,22 +24,56 @@ const CACHE_TTL = 10 * 1000;
  * @returns Статус подключения (true - подключено, false - нет соединения)
  */
 export async function isSupabaseConnected(showLogs = true, forceCheck = false): Promise<boolean> {
+  console.log(`[supabase/client] Вызов isSupabaseConnected(showLogs=${showLogs}, forceCheck=${forceCheck})`);
+  
   // Проверяем, активна ли страница настроек (для предотвращения ненужных запросов)
-  const bodyDataPath = document.body.getAttribute('data-path');
-  const isSettings = bodyDataPath === '/settings' || window.location.hash === '#/settings';
+  const routeInfo = getRouteInfo();
+  console.log(`[supabase/client] Текущий маршрут: ${JSON.stringify(routeInfo)}`);
+  
+  // Блокируем проверки на странице настроек если явно не запросили проверку
+  if (routeInfo.isSettings && !forceCheck) {
+    if (showLogs) {
+      console.log('[supabase/client] Пропускаем проверку соединения на странице настроек');
+    }
+    // На странице настроек по умолчанию считаем, что соединение есть
+    // для предотвращения ошибок UI
+    return true;
+  }
   
   // Используем кеш, если он еще действителен и не требуется принудительная проверка
   const now = Date.now();
-  if (!forceCheck && connectionCache.isConnected !== null && (now - connectionCache.timestamp < CACHE_TTL)) {
+  if (!forceCheck && connectionState.isConnected !== null && (now - connectionState.timestamp < CACHE_TTL)) {
     if (showLogs) {
-      console.log('Использую кешированный результат проверки соединения:', connectionCache.isConnected);
+      console.log('[supabase/client] Использую кешированный результат проверки соединения:', connectionState.isConnected);
     }
-    return connectionCache.isConnected;
+    return connectionState.isConnected;
   }
-
+  
+  // Предотвращаем параллельные проверки соединения
+  if (connectionState.inProgress) {
+    if (showLogs) {
+      console.log('[supabase/client] Проверка соединения уже выполняется, ожидаем...');
+    }
+    
+    // Ждем завершения текущей проверки
+    let retries = 0;
+    while (connectionState.inProgress && retries < 10) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      retries++;
+    }
+    
+    // Если после ожидания результат есть в кеше, используем его
+    if (connectionState.isConnected !== null && (Date.now() - connectionState.timestamp < CACHE_TTL)) {
+      return connectionState.isConnected;
+    }
+  }
+  
+  // Устанавливаем флаг проверки
+  connectionState.inProgress = true;
+  
   try {
     if (showLogs) {
-      console.log('Проверка подключения к Supabase...');
+      console.log('[supabase/client] Проверка подключения к Supabase...');
     }
     
     // Используем надежный метод для проверки подключения - проверку сессии
@@ -46,25 +84,33 @@ export async function isSupabaseConnected(showLogs = true, forceCheck = false): 
     const isConnected = !error;
     
     // Обновляем кеш
-    connectionCache = { isConnected, timestamp: now };
+    connectionState.isConnected = isConnected;
+    connectionState.timestamp = now;
+    connectionState.lastError = error;
     
     if (showLogs) {
       if (isConnected) {
-        console.log('Соединение с Supabase установлено успешно');
+        console.log('[supabase/client] Соединение с Supabase установлено успешно');
       } else {
-        console.error('Ошибка соединения с Supabase:', error);
+        console.error('[supabase/client] Ошибка соединения с Supabase:', error);
       }
     }
     
     return isConnected;
   } catch (error) {
     if (showLogs) {
-      console.error('Ошибка при проверке подключения к Supabase:', error);
+      console.error('[supabase/client] Ошибка при проверке подключения к Supabase:', error);
     }
     
     // В случае ошибки обновляем кеш с отрицательным результатом
-    connectionCache = { isConnected: false, timestamp: now };
+    connectionState.isConnected = false;
+    connectionState.timestamp = now;
+    connectionState.lastError = error as Error;
+    
     return false;
+  } finally {
+    // Снимаем флаг проверки
+    connectionState.inProgress = false;
   }
 }
 
@@ -73,13 +119,30 @@ export async function isSupabaseConnected(showLogs = true, forceCheck = false): 
  * @param forceCheck Игнорировать кеш и выполнить принудительную проверку
  */
 export function checkSupabaseConnection(forceCheck = false) {
+  console.log(`[supabase/client] Вызов checkSupabaseConnection(forceCheck=${forceCheck})`);
   return isSupabaseConnected(true, forceCheck);
+}
+
+/**
+ * Удаляет кешированный результат проверки соединения
+ */
+export function clearConnectionCache() {
+  connectionState.isConnected = null;
+  connectionState.timestamp = 0;
+  console.log('[supabase/client] Кеш проверки соединения очищен');
 }
 
 // Сбрасываем кеш при изменении статуса сети
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
-    connectionCache.isConnected = null;
+    console.log('[supabase/client] Сеть снова онлайн, сбрасываем кеш состояния подключения');
+    connectionState.isConnected = null;
+  });
+  
+  window.addEventListener('offline', () => {
+    console.log('[supabase/client] Сеть офлайн, устанавливаем состояние подключения в false');
+    connectionState.isConnected = false;
+    connectionState.timestamp = Date.now();
   });
 }
 
@@ -87,5 +150,6 @@ if (typeof window !== 'undefined') {
 export default {
   isSupabaseConnected,
   supabase,
-  checkSupabaseConnection
+  checkSupabaseConnection,
+  clearConnectionCache
 };

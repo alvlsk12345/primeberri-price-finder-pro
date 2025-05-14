@@ -10,11 +10,14 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { setSupabaseAIConfig, getSupabaseAIConfig } from "@/services/api/supabase/config";
-import { checkSupabaseConnection } from "@/services/api/supabase/client";
+import { checkSupabaseConnection, clearConnectionCache } from "@/services/api/supabase/client";
 import { RefreshCw, Check, X } from "lucide-react";
+import { getRouteInfo } from '@/utils/navigation';
 
 // Отключаем SearchProvider на странице настроек, чтобы избежать автоматических проверок
 const Settings = () => {
+  console.log('[Settings] Рендер компонента Settings');
+  
   const [supabaseConfig, setSupabaseConfig] = useState(getSupabaseAIConfig());
   const [checkingStatus, setCheckingStatus] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<null | boolean>(null);
@@ -22,11 +25,39 @@ const Settings = () => {
   // Используем useEffect для установки атрибута data-path в body
   // Это поможет другим компонентам определять текущий маршрут
   useEffect(() => {
-    console.log('Settings: устанавливаем data-path /settings');
+    console.log('[Settings] useEffect - устанавливаем data-path /settings');
     document.body.setAttribute('data-path', '/settings');
+    document.body.classList.add('settings-page');
+    
+    // Перед креплением компонента Settings, очищаем кеш состояния подключения
+    clearConnectionCache();
+    
     return () => {
-      console.log('Settings: удаляем data-path при размонтировании');
+      console.log('[Settings] useEffect - удаляем data-path при размонтировании');
       document.body.removeAttribute('data-path');
+      document.body.classList.remove('settings-page');
+    };
+  }, []);
+  
+  // Дополнительный эффект для проверки и логирования текущего маршрута
+  useEffect(() => {
+    const routeInfo = getRouteInfo();
+    console.log(`[Settings] Текущий маршрут после монтирования: ${JSON.stringify(routeInfo)}`);
+    
+    // Проверка каждые 500 мс, чтобы убедиться, что маршрут корректно определяется
+    const intervalId = setInterval(() => {
+      const currentRouteInfo = getRouteInfo();
+      if (!currentRouteInfo.isSettings) {
+        console.warn(`[Settings] Обнаружен некорректный маршрут: ${JSON.stringify(currentRouteInfo)}`);
+        // Восстанавливаем правильный атрибут
+        document.body.setAttribute('data-path', '/settings');
+        document.body.classList.add('settings-page');
+      }
+    }, 500);
+    
+    // Очистка интервала при размонтировании
+    return () => {
+      clearInterval(intervalId);
     };
   }, []);
 
@@ -47,6 +78,10 @@ const Settings = () => {
     
     try {
       toast.loading("Проверка соединения с Supabase...");
+      
+      // Очищаем кеш состояния подключения перед проверкой
+      clearConnectionCache();
+      
       // Явное требование проверки соединения с принудительным обновлением кеша
       const isConnected = await checkSupabaseConnection(true);
       
@@ -64,7 +99,7 @@ const Settings = () => {
         });
       }
     } catch (error) {
-      console.error("Ошибка при проверке соединения:", error);
+      console.error("[Settings] Ошибка при проверке соединения:", error);
       setConnectionStatus(false);
       toast.error("Произошла ошибка при проверке соединения", {
         description: error instanceof Error ? error.message : "Неизвестная ошибка",
@@ -75,8 +110,12 @@ const Settings = () => {
     }
   };
 
+  // Проверяем текущий маршрут перед рендерингом
+  const routeInfo = getRouteInfo();
+  console.log(`[Settings] Перед рендерингом, текущий маршрут: ${JSON.stringify(routeInfo)}`);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand/30 to-brand/10">
+    <div className="min-h-screen bg-gradient-to-br from-brand/30 to-brand/10 settings-page">
       <PageHeader />
       
       <main className="container mx-auto py-10 px-4">

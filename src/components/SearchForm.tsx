@@ -13,7 +13,7 @@ import { isUsingSupabaseBackend } from '@/services/api/supabase/config';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { InfoIcon } from 'lucide-react';
-import { isOnSettingsPage } from '@/utils/navigation';
+import { isOnSettingsPage, getRouteInfo } from '@/utils/navigation';
 import { SupabaseStatusMessage } from './brand-assistant/SupabaseStatusMessage';
 
 type SearchFormProps = {
@@ -29,6 +29,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   handleSearch,
   isLoading
 }) => {
+  console.log('[SearchForm] Рендер SearchForm');
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [supabaseStatus, setSupabaseStatus] = useState<{ connected: boolean; enabled: boolean }>({ 
@@ -38,18 +39,23 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   const isDemoMode = useDemoModeForced;
   
   // Проверяем, находимся ли мы на странице настроек, используя центральную функцию
-  const inSettingsPage = isOnSettingsPage();
+  const routeInfo = getRouteInfo();
+  const inSettingsPage = routeInfo.isSettings;
+  
+  console.log(`[SearchForm] routeInfo = ${JSON.stringify(routeInfo)}, inSettingsPage = ${inSettingsPage}`);
 
   // Устанавливаем атрибут data-path в body при загрузке компонента
   useEffect(() => {
+    console.log('[SearchForm] useEffect - установка data-path');
     // Только если мы на странице настроек
     if (inSettingsPage) {
-      console.log('Установка data-path для страницы настроек');
+      console.log('[SearchForm] Установка data-path для страницы настроек');
       document.body.setAttribute('data-path', '/settings');
     }
     
     // Очистка при размонтировании
     return () => {
+      console.log('[SearchForm] useEffect - очистка data-path');
       if (inSettingsPage) {
         document.body.removeAttribute('data-path');
       }
@@ -58,21 +64,31 @@ export const SearchForm: React.FC<SearchFormProps> = ({
 
   // Проверяем статус Supabase, но только если мы не на странице настроек
   useEffect(() => {
+    console.log('[SearchForm] useEffect - проверка статуса Supabase');
     // Избегаем проверки статуса Supabase на странице настроек
     if (!inSettingsPage) {
       const checkSupabaseStatus = async () => {
         try {
+          console.log('[SearchForm] Запуск проверки статуса Supabase');
           // Без логирования, чтобы не засорять консоль
           const connected = await isSupabaseConnected(false); 
           const enabled = await isUsingSupabaseBackend();
+          console.log(`[SearchForm] Результат проверки: connected=${connected}, enabled=${enabled}`);
           setSupabaseStatus({ connected, enabled });
         } catch (error) {
-          console.error('Ошибка при проверке статуса Supabase:', error);
+          console.error('[SearchForm] Ошибка при проверке статуса Supabase:', error);
           setSupabaseStatus({ connected: false, enabled: false });
         }
       };
       
-      checkSupabaseStatus();
+      // Добавляем таймаут, чтобы не блокировать рендеринг
+      const timeoutId = setTimeout(() => {
+        checkSupabaseStatus();
+      }, 1000);
+      
+      return () => {
+        clearTimeout(timeoutId);
+      };
     }
   }, [inSettingsPage]);
 
@@ -91,7 +107,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
         toast.error('Не удалось установить соединение с Supabase');
       }
     } catch (error) {
-      console.error('Ошибка при проверке соединения:', error);
+      console.error('[SearchForm] Ошибка при проверке соединения:', error);
       toast.error('Произошла ошибка при проверке соединения');
     }
   };
@@ -99,9 +115,10 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   // Функция выполнения поиска с дополнительными проверками и скроллингом
   const executeSearch = () => {
     try {
+      console.log('[SearchForm] Вызов executeSearch()');
       // Проверка на странице настроек
       if (inSettingsPage) {
-        console.log("executeSearch: Выполнение предотвращено на странице настроек");
+        console.log("[SearchForm] executeSearch: Выполнение предотвращено на странице настроек");
         return;
       }
       
@@ -126,7 +143,8 @@ export const SearchForm: React.FC<SearchFormProps> = ({
       // Добавляем скроллинг к результатам после завершения поиска
       setTimeout(() => {
         // Повторно проверяем, не перешли ли мы на страницу настроек
-        if (isOnSettingsPage()) {
+        const currentRouteInfo = getRouteInfo();
+        if (currentRouteInfo.isSettings) {
           toast.dismiss('search-toast');
           return;
         }
@@ -142,7 +160,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
         toast.success('Поиск завершен', { duration: 1500 });
       }, 2500);
     } catch (error: any) {
-      console.error('Ошибка при попытке поиска:', error);
+      console.error('[SearchForm] Ошибка при попытке поиска:', error);
       setHasError(true);
       setErrorMessage(error?.message || 'Произошла ошибка при поиске. Пожалуйста, попробуйте снова.');
       toast.dismiss('search-toast');
@@ -155,6 +173,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
 
   // Если мы на странице настроек, показываем упрощенный компонент без проверок соединения
   if (inSettingsPage) {
+    console.log('[SearchForm] Рендер упрощенного компонента для страницы настроек');
     return (
       <div className="space-y-4">
         <SearchInput
@@ -170,6 +189,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
     );
   }
 
+  console.log('[SearchForm] Рендер полного компонента для главной страницы');
   return (
     <div className="space-y-4">
       <SearchInput

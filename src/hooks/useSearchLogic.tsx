@@ -2,9 +2,11 @@
 import { useEffect } from 'react';
 import { useSearchState } from './useSearchState';
 import { useSearchActions } from './useSearchActions';
-import { isOnSettingsPage } from '@/utils/navigation';
+import { isOnSettingsPage, getRouteInfo } from '@/utils/navigation';
 
 export function useSearchLogic() {
+  console.log('[useSearchLogic] Инициализация хука useSearchLogic');
+  
   // Получаем все состояния поиска из нашего кастомного хука
   const searchState = useSearchState();
   
@@ -12,18 +14,32 @@ export function useSearchLogic() {
   const searchActions = useSearchActions(searchState);
   
   // Проверяем, находимся ли мы на странице настроек, используя централизованную функцию
-  const inSettingsPage = isOnSettingsPage();
+  const routeInfo = getRouteInfo();
+  const inSettingsPage = routeInfo.isSettings;
+  
+  console.log(`[useSearchLogic] routeInfo = ${JSON.stringify(routeInfo)}, inSettingsPage = ${inSettingsPage}`);
   
   // Эффект для очистки - выполняем только если не на странице настроек
   useEffect(() => {
+    console.log(`[useSearchLogic] useEffect выполняется, inSettingsPage = ${inSettingsPage}`);
+    
     // Защита от выполнения эффекта на странице настроек
     if (inSettingsPage) {
-      console.log('Пропускаем логику поиска на странице настроек');
-      return () => {}; // Пустая функция очистки для страницы настроек
+      console.log('[useSearchLogic] Пропускаем логику поиска на странице настроек');
+      return () => {
+        console.log('[useSearchLogic] Функция очистки для страницы настроек (пустая)');
+      }; // Пустая функция очистки для страницы настроек
     }
     
-    console.log('Инициализация логики поиска');
-    return searchActions.cleanupSearch;
+    console.log('[useSearchLogic] Инициализация логики поиска на главной странице');
+    
+    // Возвращаем функцию очистки
+    return () => {
+      console.log('[useSearchLogic] Выполняем очистку логики поиска');
+      if (searchActions.cleanupSearch) {
+        searchActions.cleanupSearch();
+      }
+    };
   }, [inSettingsPage, searchActions]);
 
   // Возвращаем все состояния и действия как единый объект
