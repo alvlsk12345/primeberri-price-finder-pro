@@ -1,46 +1,48 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from "sonner";
-import { setSupabaseAIConfig, getSupabaseAIConfig } from "@/services/api/supabase/config";
+import { setSupabaseAIConfig, getSupabaseAIConfig, SupabaseAIConfig } from "@/services/api/supabase/config";
+
+// Значения по умолчанию для хука (дублируем для надежности)
+const DEFAULT_HOOK_CONFIG: SupabaseAIConfig = {
+  useSupabaseBackend: true,
+  fallbackToDirectCalls: true
+};
 
 export const useSupabaseConfig = () => {
   console.log('[useSupabaseConfig] Инициализация хука');
   
-  // Безопасно получаем конфигурацию
-  const [supabaseConfig, setSupabaseConfig] = useState(() => {
-    console.log('[Settings] Инициализация состояния supabaseConfig');
+  // Начинаем с безопасного дефолтного значения
+  const [supabaseConfig, setSupabaseConfig] = useState<SupabaseAIConfig>(DEFAULT_HOOK_CONFIG);
+  
+  // Загружаем конфигурацию после монтирования компонента
+  useEffect(() => {
+    console.log('[useSupabaseConfig] useEffect для получения начальной конфигурации');
+    
     try {
-      // Очищаем localStorage перед получением, чтобы предотвратить ошибки
-      try {
-        const raw = localStorage.getItem('supabase_ai_config');
-        if (raw && (raw === 'undefined' || raw === 'null' || !raw.startsWith('{'))) {
-          console.warn('[useSupabaseConfig] Обнаружен невалидный JSON в localStorage, очищаем');
-          localStorage.removeItem('supabase_ai_config');
-        }
-      } catch (e) {
-        console.error('[useSupabaseConfig] Ошибка при проверке localStorage:', e);
-      }
+      // Получаем конфигурацию вне useState для безопасности
+      const loadedConfig = getSupabaseAIConfig();
+      console.log('[useSupabaseConfig] Конфигурация успешно загружена:', loadedConfig);
       
-      const config = getSupabaseAIConfig();
-      console.log('[useSupabaseConfig] Получена конфигурация:', config);
-      return config;
+      // Обновляем состояние полученными значениями
+      setSupabaseConfig(loadedConfig);
     } catch (error) {
-      console.error('[Settings] Ошибка при получении конфигурации:', error);
-      console.log('[useSupabaseConfig] Возвращаем дефолтные настройки из-за ошибки');
-      return {
-        useSupabaseBackend: true,
-        fallbackToDirectCalls: true
-      };
+      console.error('[useSupabaseConfig] Ошибка при загрузке конфигурации:', error);
+      
+      // Используем дефолтные значения при ошибке
+      console.warn('[useSupabaseConfig] Используем дефолтные настройки из-за ошибки');
+      setSupabaseConfig(DEFAULT_HOOK_CONFIG);
     }
-  });
+  }, []);
   
   const handleSupabaseBackendChange = (checked: boolean) => {
     try {
       console.log('[useSupabaseConfig] handleSupabaseBackendChange:', checked);
       const newConfig = setSupabaseAIConfig({ useSupabaseBackend: checked });
       setSupabaseConfig(newConfig);
+      toast.success('Настройка сохранена');
     } catch (error) {
-      console.error('[Settings] Ошибка при изменении настройки useSupabaseBackend:', error);
+      console.error('[useSupabaseConfig] Ошибка при изменении настройки useSupabaseBackend:', error);
       toast.error('Не удалось сохранить настройки, попробуйте еще раз');
     }
   };
@@ -50,8 +52,9 @@ export const useSupabaseConfig = () => {
       console.log('[useSupabaseConfig] handleFallbackChange:', checked);
       const newConfig = setSupabaseAIConfig({ fallbackToDirectCalls: checked });
       setSupabaseConfig(newConfig);
+      toast.success('Настройка сохранена');
     } catch (error) {
-      console.error('[Settings] Ошибка при изменении настройки fallbackToDirectCalls:', error);
+      console.error('[useSupabaseConfig] Ошибка при изменении настройки fallbackToDirectCalls:', error);
       toast.error('Не удалось сохранить настройки, попробуйте еще раз');
     }
   };

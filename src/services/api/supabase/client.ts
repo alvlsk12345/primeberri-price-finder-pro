@@ -12,14 +12,54 @@ const connectionState = {
   inProgress: false, // Защита от параллельных проверок
   lastError: null as Error | null,
   lastClearTime: 0, // Время последней очистки кеша
-  clearAttempts: 0 // Счетчик попыток очистки
+  clearAttempts: 0, // Счетчик попыток очистки
+  navigationInProgress: false, // Флаг для предотвращения очистки во время навигации
+  lastNavigationEvent: 0 // Время последнего события навигации
 };
 
 // Время жизни кеша (10 секунд)
 const CACHE_TTL = 10 * 1000;
 
 // Минимальный интервал между очистками кеша (миллисекунды)
-const MIN_CLEAR_INTERVAL = 2000;
+const MIN_CLEAR_INTERVAL = 3000;
+
+// Минимальное время после навигации, когда разрешена очистка кеша
+const NAVIGATION_COOLDOWN = 1500;
+
+/**
+ * Проверяет, находимся ли мы в процессе навигации
+ * @returns true если навигация в процессе, false в противном случае
+ */
+function isNavigating(): boolean {
+  const now = Date.now();
+  
+  // Если с момента последнего события навигации прошло меньше NAVIGATION_COOLDOWN,
+  // считаем, что мы всё ещё в процессе навигации
+  if (now - connectionState.lastNavigationEvent < NAVIGATION_COOLDOWN) {
+    return true;
+  }
+  
+  return connectionState.navigationInProgress;
+}
+
+/**
+ * Отмечает начало навигации
+ */
+function startNavigation() {
+  connectionState.navigationInProgress = true;
+  connectionState.lastNavigationEvent = Date.now();
+  console.log('[supabase/client] Началась навигация, очистка кеша заблокирована');
+}
+
+/**
+ * Отмечает завершение навигации
+ */
+function endNavigation() {
+  connectionState.navigationInProgress = false;
+  connectionState.lastNavigationEvent = Date.now();
+  console.log('[supabase/client] Навигация завершена, очистка кеша будет разблокирована через '
+   + NAVIGATION_COOLDOWN + 'мс');
+}
 
 /**
  * Проверяет соединение с Supabase с использованием оптимизированного подхода
@@ -28,11 +68,16 @@ const MIN_CLEAR_INTERVAL = 2000;
  * @returns Статус подключения (true - подключено, false - нет соединения)
  */
 export async function isSupabaseConnected(showLogs = true, forceCheck = false): Promise<boolean> {
-  console.log(`[supabase/client] Вызов isSupabaseConnected(showLogs=${showLogs}, forceCheck=${forceCheck})`);
+  if (showLogs) {
+    console.log(`[supabase/client] Вызов isSupabaseConnected(showLogs=${showLogs}, forceCheck=${forceCheck})`);
+  }
   
   // Проверяем, активна ли страница настроек (для предотвращения ненужных запросов)
   const routeInfo = getRouteInfo();
-  console.log(`[supabase/client] Текущий маршрут: ${JSON.stringify(routeInfo)}`);
+  
+  if (showLogs) {
+    console.log(`[supabase/client] Текущий маршрут: ${JSON.stringify(routeInfo)}`);
+  }
   
   // Блокируем проверки на странице настроек если явно не запросили проверку
   if (routeInfo.isSettings && !forceCheck) {
@@ -134,9 +179,15 @@ export function checkSupabaseConnection(forceCheck = false) {
 export function clearConnectionCache() {
   const now = Date.now();
   const routeInfo = getRouteInfo();
+  const callStack = new Error().stack;
   
-  // Логируем вызов с информацией о маршруте и времени
+  // Логируем вызов с информацией о маршруте, времени и стеке вызовов
   console.log(`[supabase/client] Попытка очистки кеша. Маршрут: ${JSON.stringify(routeInfo)}, последняя очистка: ${now - connectionState.lastClearTime}мс назад`);
+  
+  // Расширенный лог стека вызовов для диагностики
+  if (connectionState.clearAttempts > 2) {
+    console.log('[supabase/client] Стек вызовов clearConnectionCache:', callStack);
+  }
   
   // Защитный механизм #1: проверяем, что мы не на странице настроек
   if (routeInfo.isSettings) {
@@ -144,7 +195,13 @@ export function clearConnectionCache() {
     return; // Предотвращаем очистку кеша на странице настроек
   }
   
-  // Защитный механизм #2: ограничиваем частоту очистки кеша
+  // Защитный механизм #2: проверяем, не происходит ли навигация
+  if (isNavigating()) {
+    console.log('[supabase/client] Попытка очистки кеша во время навигации игнорируется');
+    return; // Предотвращаем очистку кеша во время навигации
+  }
+  
+  // Защитный механизм #3: ограничиваем частоту очистки кеша
   if (now - connectionState.lastClearTime < MIN_CLEAR_INTERVAL) {
     connectionState.clearAttempts++;
     console.log(`[supabase/client] Слишком частые попытки очистить кеш (${connectionState.clearAttempts}), игнорируем`);
@@ -165,8 +222,21 @@ export function clearConnectionCache() {
   console.log('[supabase/client] Кеш проверки соединения успешно очищен');
 }
 
-// Сбрасываем кеш при изменении статуса сети
+// Отслеживаем изменения в URL для предотвращения очистки кеша во время навигации
 if (typeof window !== 'undefined') {
+  // Отслеживаем навигационные события
+  ['popstate', 'hashchange'].forEach(event => {
+    window.addEventListener(event, () => {
+      startNavigation();
+      
+      // Устанавливаем таймер для завершения навигации
+      setTimeout(() => {
+        endNavigation();
+      }, NAVIGATION_COOLDOWN);
+    });
+  });
+  
+  // Сбрасываем кеш при изменении статуса сети
   window.addEventListener('online', () => {
     console.log('[supabase/client] Сеть снова онлайн, сбрасываем кеш состояния подключения');
     connectionState.isConnected = null;
