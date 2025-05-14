@@ -1,7 +1,7 @@
 
 // Этот файл предоставляет основной API для работы с OpenAI
 
-import { getApiKey, setApiKey, hasValidApiKey } from './config';
+import { getApiKey, setApiKey, hasValidApiKey, resetApiKey } from './config';
 import { callOpenAI } from './apiClient';
 import { fetchFromOpenAI } from './searchService'; 
 import { createMockProductsFromQuery } from './responseUtils';
@@ -12,6 +12,7 @@ export {
   getApiKey,
   setApiKey,
   hasValidApiKey,
+  resetApiKey,
   callOpenAI,
   fetchFromOpenAI,
   fetchBrandSuggestions,

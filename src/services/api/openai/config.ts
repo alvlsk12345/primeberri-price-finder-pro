@@ -19,6 +19,19 @@ export const setApiKey = (key: string): void => {
   }
 };
 
+// Функция для сброса API ключа OpenAI
+export const resetApiKey = (): boolean => {
+  try {
+    console.log('Выполняется сброс API ключа OpenAI...');
+    localStorage.removeItem('openai_api_key');
+    console.log('API ключ OpenAI успешно удален');
+    return true;
+  } catch (error) {
+    console.error('Ошибка при сбросе API ключа OpenAI:', error);
+    return false;
+  }
+};
+
 // Функция для проверки наличия действительного API ключа
 export const hasValidApiKey = (): boolean => {
   try {

@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Key, RefreshCw } from 'lucide-react';
-import { getApiKey as getZylalabsApiKey, setApiKey as setZylalabsApiKey, resetApiKey as resetZylalabsApiKey, ZYLALABS_API_KEY } from '@/services/api/zylalabs/config';
-import { getApiKey as getOpenAIApiKey, setApiKey as setOpenAIApiKey } from '@/services/api/openai/config';
-import { getApiKey as getAbacusApiKey, setApiKey as setAbacusApiKey } from '@/services/api/abacus/config';
+import { Key, RefreshCw, Trash2 } from 'lucide-react';
+import { getApiKey as getZylalabsApiKey, setApiKey as setZylalabsApiKey, resetApiKey as resetZylalabsApiKey } from '@/services/api/zylalabs/config';
+import { getApiKey as getOpenAIApiKey, setApiKey as setOpenAIApiKey, resetApiKey as resetOpenAIApiKey } from '@/services/api/openai/config';
+import { getApiKey as getAbacusApiKey, setApiKey as setAbacusApiKey, resetApiKey as resetAbacusApiKey } from '@/services/api/abacus/config';
 
 type ApiKeyProps = {
   keyType: 'openai' | 'zylalabs' | 'abacus';
@@ -17,15 +17,9 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
   const [apiKey, setApiKey] = useState<string>('');
   const [isVisible, setIsVisible] = useState<boolean>(false);
   const [isResetting, setIsResetting] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   
   // Определяем параметры в зависимости от типа ключа
-  const localStorageKey = 
-    keyType === 'openai' ? 'openai_api_key' : 
-    keyType === 'abacus' ? 'abacus_api_key' : 
-    'zylalabs_api_key';
-    
-  const defaultKey = keyType === 'zylalabs' ? ZYLALABS_API_KEY : '';
-  
   const keyTitle = 
     keyType === 'openai' ? 'OpenAI API' : 
     keyType === 'abacus' ? 'Abacus.ai API' : 
@@ -44,22 +38,24 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
   // Загружаем сохраненный ключ
   const loadApiKey = () => {
     try {
+      setIsLoading(true);
+      let key = '';
+      
       if (keyType === 'zylalabs') {
-        const key = getZylalabsApiKey();
-        console.log(`Загружен API ключ ${keyType}:`, key ? `${key.substring(0, 4)}...` : 'пустой');
-        setApiKey(key);
+        key = getZylalabsApiKey();
       } else if (keyType === 'openai') {
-        const key = getOpenAIApiKey();
-        console.log(`Загружен API ключ ${keyType}:`, key ? `${key.substring(0, 4)}...` : 'пустой');
-        setApiKey(key);
+        key = getOpenAIApiKey();
       } else if (keyType === 'abacus') {
-        const key = getAbacusApiKey();
-        console.log(`Загружен API ключ ${keyType}:`, key ? `${key.substring(0, 4)}...` : 'пустой');
-        setApiKey(key);
+        key = getAbacusApiKey();
       }
+      
+      console.log(`Загружен API ключ ${keyType}:`, key ? `${key.substring(0, 4)}...` : 'пустой');
+      setApiKey(key);
+      setIsLoading(false);
     } catch (error) {
       console.error(`Ошибка при получении ключа ${keyType}:`, error);
-      setApiKey(keyType === 'zylalabs' ? ZYLALABS_API_KEY : '');
+      setApiKey('');
+      setIsLoading(false);
       toast.error(`Ошибка при загрузке ключа ${keyTitle}`, { duration: 3000 });
     }
   };
@@ -99,20 +95,26 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
   const handleResetKey = () => {
     try {
       setIsResetting(true);
+      let success = false;
+      
       if (keyType === 'zylalabs') {
-        const success = resetZylalabsApiKey();
-        
-        if (success) {
-          // Принудительно загружаем ключ снова
-          setTimeout(() => {
-            loadApiKey();
-            setIsResetting(false);
-            toast.success('API ключ Zylalabs сброшен на значение по умолчанию');
-          }, 100);
-        } else {
+        success = resetZylalabsApiKey();
+      } else if (keyType === 'openai') {
+        success = resetOpenAIApiKey();
+      } else if (keyType === 'abacus') {
+        success = resetAbacusApiKey();
+      }
+      
+      if (success) {
+        // Принудительно загружаем ключ снова после небольшой задержки
+        setTimeout(() => {
+          loadApiKey();
           setIsResetting(false);
-          toast.error('Не удалось сбросить API ключ Zylalabs');
-        }
+          toast.success(`API ключ ${keyTitle} успешно сброшен`);
+        }, 300);
+      } else {
+        setIsResetting(false);
+        toast.error(`Не удалось сбросить API ключ ${keyTitle}`);
       }
     } catch (error) {
       console.error(`Ошибка при сбросе ключа ${keyType}:`, error);
@@ -121,9 +123,49 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
     }
   };
 
+  const handleClearKey = () => {
+    try {
+      setIsResetting(true);
+      
+      if (keyType === 'zylalabs') {
+        resetZylalabsApiKey();
+      } else if (keyType === 'openai') {
+        resetOpenAIApiKey();
+      } else if (keyType === 'abacus') {
+        resetAbacusApiKey();
+      }
+      
+      // Очищаем поле ввода и обновляем состояние
+      setApiKey('');
+      setIsResetting(false);
+      toast.success(`API ключ ${keyTitle} успешно удален`);
+    } catch (error) {
+      console.error(`Ошибка при очистке ключа ${keyType}:`, error);
+      setIsResetting(false);
+      toast.error(`Ошибка при очистке ключа ${keyTitle}`, { duration: 3000 });
+    }
+  };
+
   const toggleVisibility = () => {
     setIsVisible(!isVisible);
   };
+
+  if (isLoading) {
+    return (
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Key size={18} /> Загрузка настроек {keyTitle}...
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center py-4">
+            <RefreshCw size={24} className="animate-spin text-gray-400" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="shadow-sm">
@@ -158,6 +200,15 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
           <div className="flex flex-col sm:flex-row gap-2">
             <Button onClick={handleSaveKey} className="flex-1">
               Сохранить ключ
+            </Button>
+            <Button 
+              onClick={handleClearKey} 
+              variant="destructive" 
+              className="flex items-center gap-1"
+              disabled={isResetting}
+            >
+              <Trash2 size={16} /> 
+              {isResetting ? "Удаление..." : "Удалить ключ"}
             </Button>
             {keyType === 'zylalabs' && (
               <Button 
