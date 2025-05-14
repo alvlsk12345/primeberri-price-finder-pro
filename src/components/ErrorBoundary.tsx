@@ -1,5 +1,6 @@
 
 import React, { Component, ErrorInfo, ReactNode } from "react";
+import { toast } from "sonner";
 
 interface Props {
   children: ReactNode;
@@ -36,6 +37,16 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error("[ErrorBoundary] Перехвачена ошибка:", error);
     console.error("[ErrorBoundary] Информация о компоненте:", errorInfo);
     
+    // Отображаем toast сообщение о перехваченной ошибке
+    try {
+      toast.error("Произошла ошибка в компоненте", {
+        description: error.message.substring(0, 100), // Ограничиваем длину сообщения
+        duration: 6000
+      });
+    } catch (toastError) {
+      console.error("[ErrorBoundary] Ошибка при отображении toast:", toastError);
+    }
+    
     // Сохраняем errorInfo в состоянии для возможного отображения
     this.setState({ errorInfo });
     
@@ -53,17 +64,48 @@ export class ErrorBoundary extends Component<Props, State> {
         console.error("[ErrorBoundary] window.onerror перехватил ошибку:", message);
         console.log("[ErrorBoundary] Детали ошибки:", { source, line, column });
         
-        // Проверяем, содержит ли сообщение об ошибке признаки проблем с локальным хранилищем
-        const isStorageError = (
-          message && typeof message === 'string' && 
-          (message.includes('localStorage') || 
-           message.includes('Storage') || 
-           message.includes('storage'))
+        // Проверяем, связана ли ошибка с localStorage
+        const isStorageError = typeof message === 'string' && (
+          message.includes('localStorage') || 
+          message.includes('Storage') || 
+          message.includes('storage')
+        );
+        
+        // Проверяем, связана ли ошибка с навигацией
+        const isNavigationError = typeof message === 'string' && (
+          message.includes('navigation') || 
+          message.includes('location') || 
+          message.includes('history')
         );
         
         if (isStorageError) {
           console.warn("[ErrorBoundary] Обнаружена возможная ошибка localStorage:", message);
-          // Можно добавить специальную обработку для ошибок localStorage
+          try {
+            toast.warning("Проблема с доступом к локальному хранилищу", {
+              description: "Некоторые функции могут работать некорректно",
+              duration: 5000
+            });
+          } catch (e) {
+            console.error("[ErrorBoundary] Не удалось показать toast:", e);
+          }
+        }
+        
+        if (isNavigationError) {
+          console.warn("[ErrorBoundary] Обнаружена возможная ошибка навигации:", message);
+          // Предотвращаем перенаправление при ошибках навигации
+          try {
+            const currentPath = window.location.hash || window.location.pathname;
+            console.log("[ErrorBoundary] Текущий путь при ошибке навигации:", currentPath);
+            
+            // Если мы на странице настроек, убеждаемся что data-path установлен правильно
+            if (currentPath.includes('settings')) {
+              document.body.setAttribute('data-path', '/settings');
+              document.body.classList.add('settings-page');
+              console.log("[ErrorBoundary] Восстановлен атрибут data-path для страницы настроек");
+            }
+          } catch (navError) {
+            console.error("[ErrorBoundary] Ошибка при обработке ошибки навигации:", navError);
+          }
         }
         
         if (originalOnError) {
@@ -78,6 +120,20 @@ export class ErrorBoundary extends Component<Props, State> {
       const originalOnUnhandledRejection = window.onunhandledrejection;
       window.onunhandledrejection = function(event) {
         console.error('[ErrorBoundary] Необработанное отклонение промиса:', event.reason);
+        
+        // Проверяем, связано ли отклонение с localStorage
+        const reason = event.reason?.toString() || '';
+        if (reason.includes('localStorage') || reason.includes('Storage') || reason.includes('storage')) {
+          console.warn('[ErrorBoundary] Необработанное отклонение связано с localStorage:', reason);
+          try {
+            toast.warning("Проблема с доступом к локальному хранилищу", {
+              description: "Используются значения по умолчанию",
+              duration: 5000
+            });
+          } catch (e) {
+            console.error("[ErrorBoundary] Не удалось показать toast:", e);
+          }
+        }
         
         if (originalOnUnhandledRejection) {
           originalOnUnhandledRejection.call(window, event);
@@ -126,3 +182,5 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
+
+export default ErrorBoundary;

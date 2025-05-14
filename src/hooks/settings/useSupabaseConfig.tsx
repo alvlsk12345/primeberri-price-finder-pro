@@ -9,6 +9,22 @@ const DEFAULT_HOOK_CONFIG: SupabaseAIConfig = {
   fallbackToDirectCalls: true
 };
 
+// Функция безопасной задержки
+const safeSetTimeout = (callback: () => void, delay: number): number => {
+  try {
+    return window.setTimeout(callback, delay);
+  } catch (e) {
+    console.error('[useSupabaseConfig] Ошибка при вызове setTimeout:', e);
+    // Немедленно вызываем колбэк в случае ошибки с setTimeout
+    try {
+      callback();
+    } catch (callbackError) {
+      console.error('[useSupabaseConfig] Ошибка в колбэке setTimeout:', callbackError);
+    }
+    return 0;
+  }
+};
+
 export const useSupabaseConfig = () => {
   console.log('[useSupabaseConfig] Инициализация хука');
   
@@ -16,13 +32,49 @@ export const useSupabaseConfig = () => {
   const [supabaseConfig, setSupabaseConfig] = useState<SupabaseAIConfig>(DEFAULT_HOOK_CONFIG);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  
+  // Безопасная функция получения конфигурации
+  const safeGetConfig = () => {
+    console.log('[useSupabaseConfig] Выполняем safeGetConfig');
+    try {
+      // Проверяем доступность localStorage перед получением конфигурации
+      let isLocalStorageAvailable = false;
+      try {
+        const testKey = '__test_settings_storage__';
+        localStorage.setItem(testKey, testKey);
+        localStorage.removeItem(testKey);
+        isLocalStorageAvailable = true;
+        console.log('[useSupabaseConfig] localStorage доступен в safeGetConfig');
+      } catch (e) {
+        console.error('[useSupabaseConfig] localStorage недоступен в safeGetConfig:', e);
+        return DEFAULT_HOOK_CONFIG;
+      }
+      
+      if (!isLocalStorageAvailable) {
+        console.warn('[useSupabaseConfig] localStorage недоступен, используем дефолтные настройки');
+        return DEFAULT_HOOK_CONFIG;
+      }
+      
+      // Получаем конфигурацию, обрабатывая потенциальные ошибки
+      try {
+        console.log('[useSupabaseConfig] Вызываем getSupabaseAIConfig()');
+        return getSupabaseAIConfig();
+      } catch (configError) {
+        console.error('[useSupabaseConfig] Ошибка при вызове getSupabaseAIConfig():', configError);
+        return DEFAULT_HOOK_CONFIG;
+      }
+    } catch (e) {
+      console.error('[useSupabaseConfig] Общая ошибка в safeGetConfig:', e);
+      return DEFAULT_HOOK_CONFIG;
+    }
+  };
   
   // Загружаем конфигурацию после монтирования компонента с задержкой
   useEffect(() => {
     console.log('[useSupabaseConfig] useEffect для получения начальной конфигурации');
     
     let isMounted = true; // Флаг для предотвращения setState после размонтирования
-    let retryCount = 0;
     const maxRetries = 2;
 
     const loadConfig = () => {
@@ -35,48 +87,17 @@ export const useSupabaseConfig = () => {
       setIsLoading(true);
       
       try {
-        // Проверяем доступность localStorage перед получением конфигурации
-        let isLocalStorageAvailable = false;
-        try {
-          const testKey = '__test_settings_storage__';
-          localStorage.setItem(testKey, testKey);
-          localStorage.removeItem(testKey);
-          isLocalStorageAvailable = true;
-          console.log('[useSupabaseConfig] localStorage доступен');
-        } catch (e) {
-          console.error('[useSupabaseConfig] localStorage недоступен:', e);
-          if (isMounted) {
-            toast.error('Проблемы с доступом к хранилищу', {
-              description: 'Настройки будут загружены со значениями по умолчанию'
-            });
-            setHasError(true);
-            setSupabaseConfig(DEFAULT_HOOK_CONFIG);
-            setIsLoading(false);
-          }
-          return;
-        }
-        
-        if (!isLocalStorageAvailable) {
-          console.warn('[useSupabaseConfig] localStorage недоступен, используем дефолтные настройки');
-          if (isMounted) {
-            setSupabaseConfig(DEFAULT_HOOK_CONFIG);
-            setHasError(true);
-            setIsLoading(false);
-          }
-          return;
-        }
-        
-        // Получаем конфигурацию вне useState для безопасности
-        console.log('[useSupabaseConfig] Вызываем getSupabaseAIConfig()');
-        const loadedConfig = getSupabaseAIConfig();
-        console.log('[useSupabaseConfig] Конфигурация успешно загружена:', loadedConfig);
+        // Получаем конфигурацию через безопасную функцию
+        const loadedConfig = safeGetConfig();
+        console.log('[useSupabaseConfig] Конфигурация загружена:', loadedConfig);
         
         // Проверяем, что компонент все еще смонтирован перед обновлением состояния
         if (isMounted) {
           // Обновляем состояние полученными значениями
           setSupabaseConfig(loadedConfig);
-          console.log('[useSupabaseConfig] Состояние успешно обновлено');
           setIsLoading(false);
+          setHasError(false);
+          console.log('[useSupabaseConfig] Состояние успешно обновлено');
         } else {
           console.warn('[useSupabaseConfig] Компонент размонтирован, пропускаем обновление состояния');
         }
@@ -85,10 +106,12 @@ export const useSupabaseConfig = () => {
         
         if (isMounted) {
           if (retryCount < maxRetries) {
-            retryCount++;
-            console.log(`[useSupabaseConfig] Повторная попытка ${retryCount} из ${maxRetries}...`);
+            const newRetryCount = retryCount + 1;
+            setRetryCount(newRetryCount);
+            console.log(`[useSupabaseConfig] Повторная попытка ${newRetryCount} из ${maxRetries}...`);
+            
             // Повторная попытка с увеличенной задержкой
-            setTimeout(loadConfig, 300 * retryCount);
+            safeSetTimeout(() => loadConfig(), 500 * newRetryCount);
           } else {
             // Используем дефолтные значения при ошибке после всех попыток
             console.warn('[useSupabaseConfig] Используем дефолтные настройки из-за ошибки');
@@ -96,26 +119,34 @@ export const useSupabaseConfig = () => {
             setHasError(true);
             setIsLoading(false);
             
-            toast.error('Не удалось загрузить настройки', {
-              description: 'Используются значения по умолчанию'
-            });
+            try {
+              toast.error('Не удалось загрузить настройки', {
+                description: 'Используются значения по умолчанию'
+              });
+            } catch (toastError) {
+              console.error('[useSupabaseConfig] Ошибка при отображении toast:', toastError);
+            }
           }
         }
       }
     };
 
     // Запускаем загрузку с задержкой для стабилизации маршрута
-    const timerId = setTimeout(() => {
+    const timerId = safeSetTimeout(() => {
       console.log('[useSupabaseConfig] Запускаем загрузку конфигурации после задержки');
       loadConfig();
-    }, 300);
+    }, 500); // Увеличенная задержка для стабильности
     
     return () => {
       console.log('[useSupabaseConfig] Размонтирование хука');
       isMounted = false; // Предотвращаем обновление состояния после размонтирования
-      clearTimeout(timerId);
+      try {
+        clearTimeout(timerId);
+      } catch (e) {
+        console.error('[useSupabaseConfig] Ошибка при очистке таймера:', e);
+      }
     };
-  }, []);
+  }, [retryCount]);
   
   const handleSupabaseBackendChange = (checked: boolean) => {
     try {

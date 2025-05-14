@@ -18,16 +18,21 @@ function isLocalStorageAvailable(): boolean {
 // Функция для получения API ключа из localStorage
 export const getApiKey = (): string => {
   try {
-    // Проверяем доступность localStorage
+    // Проверяем доступность localStorage перед любой операцией
     if (!isLocalStorageAvailable()) {
-      console.warn('[OpenAIConfig] localStorage недоступен');
+      console.warn('[OpenAIConfig] localStorage недоступен, возвращаем пустую строку');
       return '';
     }
     
-    const key = localStorage.getItem(OPENAI_API_KEY_STORAGE);
-    return key || '';
+    try {
+      const key = localStorage.getItem(OPENAI_API_KEY_STORAGE);
+      return key || '';
+    } catch (e) {
+      console.error('[OpenAIConfig] Ошибка при чтении API ключа из localStorage:', e);
+      return '';
+    }
   } catch (e) {
-    console.error('[OpenAIConfig] Ошибка при получении API ключа:', e);
+    console.error('[OpenAIConfig] Непредвиденная ошибка при получении API ключа:', e);
     return '';
   }
 };
@@ -35,15 +40,19 @@ export const getApiKey = (): string => {
 // Функция для сохранения API ключа в localStorage
 export const setApiKey = (key: string): void => {
   try {
-    // Проверяем доступность localStorage
+    // Проверяем доступность localStorage перед любой операцией
     if (!isLocalStorageAvailable()) {
       console.warn('[OpenAIConfig] localStorage недоступен, ключ не будет сохранен');
       return;
     }
     
-    localStorage.setItem(OPENAI_API_KEY_STORAGE, key);
+    try {
+      localStorage.setItem(OPENAI_API_KEY_STORAGE, key);
+    } catch (e) {
+      console.error('[OpenAIConfig] Ошибка при сохранении API ключа в localStorage:', e);
+    }
   } catch (e) {
-    console.error('[OpenAIConfig] Ошибка при сохранении API ключа:', e);
+    console.error('[OpenAIConfig] Непредвиденная ошибка при сохранении API ключа:', e);
   }
 };
 
