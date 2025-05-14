@@ -56,9 +56,11 @@ export const ApiKeyFormContent: React.FC = () => {
             {resetKey && (
               <Button 
                 onClick={() => {
-                  const defaultKey = resetKey();
-                  if (defaultKey) {
-                    setApiKey(defaultKey);
+                  if (resetKey) {
+                    const defaultKey = resetKey();
+                    if (defaultKey) {
+                      setApiKey(defaultKey);
+                    }
                   }
                 }} 
                 variant="outline" 

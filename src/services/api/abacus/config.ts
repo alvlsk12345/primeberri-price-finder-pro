@@ -26,7 +26,12 @@ export const getApiKey = (): string => {
     
     try {
       const key = localStorage.getItem(ABACUS_API_KEY_STORAGE);
-      return key || '';
+      // Дополнительная проверка на null и невалидные значения
+      if (key === null || key === 'null' || key === 'undefined') {
+        console.log('[AbacusConfig] Ключ в localStorage равен null или невалидному значению');
+        return '';
+      }
+      return key;
     } catch (e) {
       console.error('[AbacusConfig] Ошибка при чтении API ключа из localStorage:', e);
       return '';

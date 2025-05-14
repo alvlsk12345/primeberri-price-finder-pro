@@ -2,7 +2,7 @@
 import React from 'react';
 import { toast } from "sonner";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { ApiKeyProvider, ApiKeyType } from './ApiKeyContext';
+import { ApiKeyProvider, ApiKeyType, useApiKey } from './ApiKeyContext';
 
 // Импортируем компоненты формы
 import { ApiKeyFormContent } from './ApiKeyFormContent';

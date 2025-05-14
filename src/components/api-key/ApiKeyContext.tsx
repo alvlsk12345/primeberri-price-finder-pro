@@ -15,7 +15,7 @@ export interface ApiKeyContextValue {
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
   saveKey: () => void;
-  resetKey?: () => void;
+  resetKey?: () => string | undefined;  // Уточняем тип - может вернуть строку или undefined
   keyTitle: string;
   keyPlaceholder: string;
   keyWebsite: string;
@@ -30,7 +30,7 @@ interface ApiKeyProviderProps {
   keyType: ApiKeyType;
   getKey: () => string;
   saveKey: (key: string) => boolean | void;
-  resetKey?: () => void;
+  resetKey?: () => string | undefined;  // Уточняем тип - может вернуть строку или undefined
   defaultKey?: string;
   keyTitle: string;
   keyPlaceholder: string;

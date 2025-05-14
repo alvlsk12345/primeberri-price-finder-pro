@@ -26,7 +26,12 @@ export const getApiKey = (): string => {
     
     try {
       const key = localStorage.getItem(OPENAI_API_KEY_STORAGE);
-      return key || '';
+      // Дополнительная проверка на null и невалидные значения
+      if (key === null || key === 'null' || key === 'undefined') {
+        console.log('[OpenAIConfig] Ключ в localStorage равен null или невалидному значению');
+        return '';
+      }
+      return key;
     } catch (e) {
       console.error('[OpenAIConfig] Ошибка при чтении API ключа из localStorage:', e);
       return '';
