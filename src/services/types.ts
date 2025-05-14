@@ -35,8 +35,8 @@ export type SearchParams = {
   minResultCount?: number; // Минимальное количество результатов
 };
 
-// Тип для сортировки товаров
-export type SortOption = "price_asc" | "price_desc" | "rating_desc" | "";
+// Тип для сортировки товаров - добавляем "relevance"
+export type SortOption = "price_asc" | "price_desc" | "rating_desc" | "relevance" | "";
 
 // Тип для фильтров товаров
 export type ProductFilters = {

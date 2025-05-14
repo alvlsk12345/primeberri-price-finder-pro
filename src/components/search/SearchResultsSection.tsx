@@ -57,9 +57,9 @@ export const SearchResultsSection: React.FC = () => {
       return null;
     }
 
-    // Обновленный обработчик сортировки - сразу применяет изменения
+    // Обновленный обработчик сортировки - использует параметры filterName и value
     const handleSortChange = (sortBy: SortOption) => {
-      // Обновляем текущие фильтры с новым методом сортировки и сразу применяем
+      // Используем обновленную сигнатуру handleFilterChange
       handleFilterChange("sortBy", sortBy);
     };
 

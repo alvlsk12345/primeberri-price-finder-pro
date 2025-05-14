@@ -47,7 +47,7 @@ type SearchContextType = {
   handleSearch: (page: number, forceNewSearch?: boolean) => Promise<void>;
   handleProductSelect: (product: Product) => void;
   handlePageChange: (page: number) => void;
-  handleFilterChange: (filterName: string, value: any) => void;
+  handleFilterChange: (filterNameOrFilters: string | ProductFilters, value?: any) => void;
   cleanupSearch: () => void;
   isOnSettingsPage: boolean;
 };
@@ -92,7 +92,7 @@ const defaultSearchContext: SearchContextType = {
     brands: [],
     sources: [],
     rating: 0,
-    sortBy: 'relevance',
+    sortBy: "relevance",
     country: 'US',
   },
   setFilters: () => {},

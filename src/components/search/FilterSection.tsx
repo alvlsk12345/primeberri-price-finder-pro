@@ -2,6 +2,7 @@
 import React from 'react';
 import { FilterPanel } from "@/components/FilterPanel";
 import { useSearch } from "@/contexts/SearchContext";
+import { ProductFilters } from "@/services/types";
 
 export const FilterSection: React.FC = () => {
   const { 
@@ -10,9 +11,9 @@ export const FilterSection: React.FC = () => {
     searchResults
   } = useSearch();
   
-  // Для немедленного применения фильтров передаем изменения через новый обработчик
-  const handleFilterUpdate = (filterName: string, value: any) => {
-    handleFilterChange(filterName, value);
+  // Создаем адаптер для передачи в FilterPanel, который ожидает функцию с одним аргументом
+  const handleFilterUpdate = (updatedFilters: ProductFilters) => {
+    handleFilterChange(updatedFilters);
   };
   
   return (
