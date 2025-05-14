@@ -8,7 +8,7 @@ import { SearchInput } from './search/SearchInput';
 import { SearchErrorMessage } from './search/SearchErrorMessage';
 import { useProductSelectionHandler } from './search/ProductSelectionHandler';
 import { NoResultsMessage } from './search/NoResultsMessage';
-import { isSupabaseConnected } from '@/services/api/supabase/client';
+import { isSupabaseConnected, checkSupabaseConnection } from '@/services/api/supabase/client';
 import { isUsingSupabaseBackend } from '@/services/api/supabase/config';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -80,7 +80,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   const handleCheckSupabaseConnection = async () => {
     try {
       toast.loading('Проверка соединения с Supabase...');
-      const connected = await isSupabaseConnected(true); // с логированием 
+      const connected = await checkSupabaseConnection(true); // с принудительной проверкой
       const enabled = await isUsingSupabaseBackend();
       
       setSupabaseStatus({ connected, enabled });

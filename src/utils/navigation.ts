@@ -26,3 +26,19 @@ export const isOnSettingsPage = (): boolean => {
 
   return false;
 };
+
+/**
+ * Функция для получения текущего маршрута в формате, совместимом с HashRouter
+ * Возвращает путь без начального слеша для использования с HashRouter
+ */
+export const getCurrentRoute = (): string => {
+  if (typeof window === 'undefined') return '';
+  
+  // Извлекаем маршрут из хеша (для HashRouter)
+  const hash = window.location.hash;
+  if (hash.startsWith('#/')) {
+    return hash.substring(2); // Убираем '#/'
+  }
+  
+  return '';
+};

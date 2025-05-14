@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { PageHeader } from "@/components/PageHeader";
 import { PageFooter } from "@/components/PageFooter";
@@ -21,8 +22,10 @@ const Settings = () => {
   // Используем useEffect для установки атрибута data-path в body
   // Это поможет другим компонентам определять текущий маршрут
   useEffect(() => {
+    console.log('Settings: устанавливаем data-path /settings');
     document.body.setAttribute('data-path', '/settings');
     return () => {
+      console.log('Settings: удаляем data-path при размонтировании');
       document.body.removeAttribute('data-path');
     };
   }, []);
@@ -44,8 +47,8 @@ const Settings = () => {
     
     try {
       toast.loading("Проверка соединения с Supabase...");
-      // Явное требование проверки соединения
-      const isConnected = await checkSupabaseConnection();
+      // Явное требование проверки соединения с принудительным обновлением кеша
+      const isConnected = await checkSupabaseConnection(true);
       
       setConnectionStatus(isConnected);
       

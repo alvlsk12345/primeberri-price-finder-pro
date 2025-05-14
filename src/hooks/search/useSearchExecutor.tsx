@@ -2,6 +2,7 @@
 import { useRef } from 'react';
 import { Product, ProductFilters, SearchParams } from "@/services/types";
 import { useSearchCore } from './useSearchCore';
+import { isOnSettingsPage } from '@/utils/navigation';
 
 type SearchExecutorProps = {
   isLoading: boolean;
@@ -30,6 +31,9 @@ export function useSearchExecutor({
   setIsUsingDemoData,
   setApiInfo,
 }: SearchExecutorProps) {
+  // Проверка на страницу настроек для предотвращения выполнения поиска
+  const inSettingsPage = isOnSettingsPage();
+  
   // Сохраняем предыдущие результаты для восстановления при ошибке
   const lastSuccessfulResultsRef = useRef<Product[]>([]);
   
@@ -45,12 +49,31 @@ export function useSearchExecutor({
     setHasSearched,
     setIsUsingDemoData,
     setApiInfo
-    // Удаляем проблемное свойство lastSuccessfulResultsRef, так как оно не определено в SearchCoreProps
   });
+  
+  // Обертка для executeSearch с дополнительными проверками
+  const safeExecuteSearch = async (searchParams: SearchParams, forceNewSearch: boolean = false) => {
+    if (inSettingsPage) {
+      console.log('Попытка выполнить поиск на странице настроек - отменено');
+      return [];
+    }
+    
+    return await executeSearch(searchParams, forceNewSearch);
+  };
+  
+  // Обертка для cleanupSearch с дополнительными проверками
+  const safeCleanupSearch = () => {
+    if (inSettingsPage) {
+      console.log('Попытка очистить поиск на странице настроек - отменено');
+      return;
+    }
+    
+    cleanupSearch();
+  };
 
   return {
-    executeSearch,
-    cleanupSearch,
-    lastSuccessfulResultsRef // Возвращаем ссылку, чтобы она была доступна в других местах
+    executeSearch: safeExecuteSearch,
+    cleanupSearch: safeCleanupSearch,
+    lastSuccessfulResultsRef
   };
 }
