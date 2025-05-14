@@ -16,6 +16,7 @@ type ApiKeyProps = {
 export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
   const [apiKey, setApiKey] = useState<string>('');
   const [isVisible, setIsVisible] = useState<boolean>(false);
+  const [isResetting, setIsResetting] = useState<boolean>(false);
   
   // Определяем параметры в зависимости от типа ключа
   const localStorageKey = 
@@ -40,17 +41,20 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
     keyType === 'abacus' ? 'https://abacus.ai/app/apiKeys' : 
     'https://zylalabs.com/api/2033/real+time+product+search+api';
 
-  useEffect(() => {
-    // Проверяем наличие сохраненного ключа при инициализации
+  // Загружаем сохраненный ключ
+  const loadApiKey = () => {
     try {
       if (keyType === 'zylalabs') {
         const key = getZylalabsApiKey();
+        console.log(`Загружен API ключ ${keyType}:`, key ? `${key.substring(0, 4)}...` : 'пустой');
         setApiKey(key);
       } else if (keyType === 'openai') {
         const key = getOpenAIApiKey();
+        console.log(`Загружен API ключ ${keyType}:`, key ? `${key.substring(0, 4)}...` : 'пустой');
         setApiKey(key);
       } else if (keyType === 'abacus') {
         const key = getAbacusApiKey();
+        console.log(`Загружен API ключ ${keyType}:`, key ? `${key.substring(0, 4)}...` : 'пустой');
         setApiKey(key);
       }
     } catch (error) {
@@ -58,6 +62,11 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
       setApiKey(keyType === 'zylalabs' ? ZYLALABS_API_KEY : '');
       toast.error(`Ошибка при загрузке ключа ${keyTitle}`, { duration: 3000 });
     }
+  };
+
+  useEffect(() => {
+    // Проверяем наличие сохраненного ключа при инициализации
+    loadApiKey();
   }, [keyType, keyTitle]);
 
   const handleSaveKey = () => {
@@ -89,13 +98,25 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
 
   const handleResetKey = () => {
     try {
+      setIsResetting(true);
       if (keyType === 'zylalabs') {
-        resetZylalabsApiKey();
-        setApiKey(ZYLALABS_API_KEY);
-        toast.success('API ключ Zylalabs сброшен на значение по умолчанию');
+        const success = resetZylalabsApiKey();
+        
+        if (success) {
+          // Принудительно загружаем ключ снова
+          setTimeout(() => {
+            loadApiKey();
+            setIsResetting(false);
+            toast.success('API ключ Zylalabs сброшен на значение по умолчанию');
+          }, 100);
+        } else {
+          setIsResetting(false);
+          toast.error('Не удалось сбросить API ключ Zylalabs');
+        }
       }
     } catch (error) {
       console.error(`Ошибка при сбросе ключа ${keyType}:`, error);
+      setIsResetting(false);
       toast.error(`Ошибка при сбросе ключа ${keyTitle}`, { duration: 3000 });
     }
   };
@@ -143,8 +164,10 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
                 onClick={handleResetKey} 
                 variant="outline" 
                 className="flex items-center gap-1"
+                disabled={isResetting}
               >
-                <RefreshCw size={16} /> Сбросить ключ
+                <RefreshCw size={16} className={isResetting ? "animate-spin" : ""} /> 
+                {isResetting ? "Сброс..." : "Сбросить ключ"}
               </Button>
             )}
           </div>
@@ -159,4 +182,3 @@ export const ApiKeyForm: React.FC<ApiKeyProps> = ({ keyType }) => {
     </Card>
   );
 };
-

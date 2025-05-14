@@ -13,6 +13,7 @@ export const getApiKey = (): string => {
 export const setApiKey = (key: string): void => {
   try {
     localStorage.setItem('openai_api_key', key);
+    console.log('API ключ OpenAI успешно сохранен');
   } catch (error) {
     console.error('Ошибка при сохранении API ключа OpenAI:', error);
   }
@@ -20,7 +21,11 @@ export const setApiKey = (key: string): void => {
 
 // Функция для проверки наличия действительного API ключа
 export const hasValidApiKey = (): boolean => {
-  const key = getApiKey();
-  return key !== '' && key.startsWith('sk-');
+  try {
+    const key = getApiKey();
+    return key !== '' && key.startsWith('sk-');
+  } catch (error) {
+    console.error('Ошибка при проверке валидности API ключа OpenAI:', error);
+    return false;
+  }
 };
-
