@@ -21,7 +21,13 @@ export class ErrorBoundary extends Component<Props, State> {
       error: null, 
       errorInfo: null 
     };
+    
+    // Добавляем debug ID для отслеживания экземпляров
+    this._debugId = Math.random().toString(36).substr(2, 9);
+    console.log(`[ErrorBoundary ${this._debugId}] Инициализирован`);
   }
+
+  private _debugId: string;
 
   static getDerivedStateFromError(error: Error): Partial<State> {
     // Обновляем состояние, чтобы при следующем рендере показать запасной UI
@@ -34,8 +40,8 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // Логируем подробную информацию об ошибке
-    console.error("[ErrorBoundary] Перехвачена ошибка:", error);
-    console.error("[ErrorBoundary] Информация о компоненте:", errorInfo);
+    console.error(`[ErrorBoundary ${this._debugId}] Перехвачена ошибка:`, error);
+    console.error(`[ErrorBoundary ${this._debugId}] Информация о компоненте:`, errorInfo);
     
     // Отображаем toast сообщение о перехваченной ошибке
     try {
@@ -44,7 +50,7 @@ export class ErrorBoundary extends Component<Props, State> {
         duration: 6000
       });
     } catch (toastError) {
-      console.error("[ErrorBoundary] Ошибка при отображении toast:", toastError);
+      console.error(`[ErrorBoundary ${this._debugId}] Ошибка при отображении toast:`, toastError);
     }
     
     // Сохраняем errorInfo в состоянии для возможного отображения
@@ -52,7 +58,7 @@ export class ErrorBoundary extends Component<Props, State> {
     
     // Стабилизация перед попыткой восстановления
     setTimeout(() => {
-      console.log("[ErrorBoundary] Попытка стабилизации после ошибки...");
+      console.log(`[ErrorBoundary ${this._debugId}] Попытка стабилизации после ошибки...`);
     }, 100);
     
     // Предотвращаем перезагрузку страницы из-за необработанных ошибок
@@ -102,6 +108,9 @@ export class ErrorBoundary extends Component<Props, State> {
               document.body.setAttribute('data-path', '/settings');
               document.body.classList.add('settings-page');
               console.log("[ErrorBoundary] Восстановлен атрибут data-path для страницы настроек");
+              
+              // Дополнительная защита от перенаправления
+              window.history.pushState(null, '', '#/settings');
             }
           } catch (navError) {
             console.error("[ErrorBoundary] Ошибка при обработке ошибки навигации:", navError);
@@ -150,6 +159,24 @@ export class ErrorBoundary extends Component<Props, State> {
     }
   }
 
+  // Добавляем метод для принудительного сброса ошибки
+  resetError = () => {
+    console.log(`[ErrorBoundary ${this._debugId}] Сброс ошибки вручную`);
+    this.setState({ 
+      hasError: false, 
+      error: null, 
+      errorInfo: null 
+    });
+  }
+
+  componentDidUpdate(prevProps: Props, prevState: State) {
+    // Проверяем, изменились ли дочерние элементы
+    if (prevState.hasError && this.props.children !== prevProps.children) {
+      console.log(`[ErrorBoundary ${this._debugId}] Дочерние элементы изменились, сбрасываем ошибку`);
+      this.resetError();
+    }
+  }
+
   render(): ReactNode {
     if (this.state.hasError) {
       // Если есть customFallback, используем его, иначе дефолтный UI
@@ -173,6 +200,12 @@ export class ErrorBoundary extends Component<Props, State> {
               className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md"
             >
               Обновить страницу
+            </button>
+            <button
+              onClick={this.resetError}
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md"
+            >
+              Попробовать снова
             </button>
           </div>
         </div>

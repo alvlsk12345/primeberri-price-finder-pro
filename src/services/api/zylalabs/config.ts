@@ -47,6 +47,7 @@ const isValidApiKey = (key: string): boolean => {
 
 // Получение API-ключа с проверкой валидности
 export const getApiKey = (): string => {
+  console.log('[ZylalabsConfig] Вызов getApiKey()');
   try {
     // Проверяем доступность localStorage перед любыми операциями
     if (!isLocalStorageAvailable()) {
@@ -60,6 +61,7 @@ export const getApiKey = (): string => {
     if (!storedKey) {
       console.log('[ZylalabsConfig] Ключ не найден в localStorage, сохраняем дефолтный');
       try {
+        // Вызываем функцию сохранения ключа по умолчанию здесь, а не при импорте модуля
         saveDefaultApiKey();
         return ZYLALABS_API_KEY;
       } catch (e) {

@@ -8,9 +8,38 @@ import { useSettingsPageEffect } from "@/hooks/settings/useSettingsPageEffect";
 import { getRouteInfo } from '@/utils/navigation';
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { toast } from "sonner";
+import { getSupabaseAIConfig, SupabaseAIConfig } from "@/services/api/supabase/config";
+import { useSupabaseConfig } from "@/hooks/settings/useSupabaseConfig";
+import { useSupabaseConnection } from "@/hooks/settings/useSupabaseConnection";
 
+// Компонент для содержимого настроек, чтобы изолировать его от основного компонента Settings
 const SettingsContent = () => {
   console.log('[Settings] Рендер компонента SettingsContent');
+  
+  // Используем кастомные хуки, которые уже имеют встроенную обработку ошибок
+  // Эти хуки будут загружать данные с задержкой для предотвращения ранних ошибок
+  const { 
+    supabaseConfig,
+    isLoading,
+    hasError,
+    handleSupabaseBackendChange,
+    handleFallbackChange
+  } = useSupabaseConfig();
+  
+  const { 
+    checkingStatus, 
+    connectionStatus, 
+    handleCheckConnection 
+  } = useSupabaseConnection();
+  
+  // Логируем состояние для отладки
+  console.log('[SettingsContent] Текущее состояние:', {
+    supabaseConfig,
+    isLoading,
+    hasError,
+    checkingStatus,
+    connectionStatus
+  });
   
   return (
     <div className="max-w-4xl mx-auto">
@@ -35,7 +64,7 @@ const SettingsContent = () => {
 
 // Главный компонент страницы настроек
 const Settings = () => {
-  console.log('%c[Settings] НАЧАЛО рендера компонента Settings', 'color: blue; font-weight: bold;');
+  console.log('%c[Settings] === НАЧАЛО рендера компонента Settings ===', 'color: blue; font-weight: bold;');
   
   // Проверка доступности localStorage в самом начале
   let isLocalStorageAvailable = false;
@@ -58,7 +87,7 @@ const Settings = () => {
   
   // Получаем информацию о маршруте с помощью useMemo для стабильности
   const routeInfo = useMemo(() => {
-    console.log('[Settings] Получение информации о маршруте через useMemo');
+    console.log('[Settings] ПЕРЕД useMemo для routeInfo');
     try {
       const info = getRouteInfo();
       console.log('[Settings] Информация о маршруте:', JSON.stringify(info));
@@ -70,6 +99,22 @@ const Settings = () => {
       return { isSettings: true, path: 'settings', rawHash: '', rawPath: '' };
     }
   }, []);
+  
+  // Получаем начальную конфигурацию Supabase с помощью useMemo для стабильности и логирования
+  console.log('[Settings] ПЕРЕД useMemo для initialSupabaseConfig');
+  const initialSupabaseConfig = useMemo(() => {
+    console.log('%c[Settings -> useMemo ДЛЯ initialSupabaseConfig] ВЫЗОВ getSupabaseAIConfig', 'color: purple; font-weight: bold;');
+    try {
+      return getSupabaseAIConfig(); 
+    } catch (e) {
+      console.error('[Settings] Ошибка при получении Supabase конфигурации:', e);
+      return {
+        useSupabaseBackend: true,
+        fallbackToDirectCalls: true
+      } as SupabaseAIConfig;
+    }
+  }, []);
+  console.log('[Settings] ПОСЛЕ useMemo для initialSupabaseConfig, результат:', JSON.stringify(initialSupabaseConfig)); 
   
   // Защита от некорректных маршрутов - проверяем, что мы действительно на странице настроек
   useEffect(() => {
@@ -122,7 +167,7 @@ const Settings = () => {
         setHasError(true);
         setErrorMessage('Не удалось инициализировать страницу настроек');
       }
-    }, 300); // Увеличили задержку для большей стабильности
+    }, 500); // Увеличили задержку для большей стабильности
     
     return () => {
       console.log('[Settings] Очистка таймера в useEffect');
