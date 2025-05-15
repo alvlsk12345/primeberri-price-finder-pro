@@ -129,8 +129,8 @@ export const fetchBrandSuggestionsViaPerplexity = async (description: string): P
         { role: "system", content: systemPrompt },
         { role: "user", content: description }
       ],
-      temperature: 0.1,  // Изменено с 0.7 на 0.1
-      max_tokens: 300    // Изменено с 1000 на 300
+      temperature: 0.1,  // Оставляем температуру 0.1
+      max_tokens: 500    // Увеличиваем с 300 до 500 токенов
       // Удален параметр response_format, который вызывал ошибку
     };
     

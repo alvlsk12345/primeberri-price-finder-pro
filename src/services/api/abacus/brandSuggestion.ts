@@ -31,8 +31,8 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
         { role: "system", content: systemPrompt },
         { role: "user", content: description }
       ],
-      temperature: 0.1,  // Изменено с 0.7 на 0.1
-      max_tokens: 300    // Изменено с 1000 на 300
+      temperature: 0.1,  // Оставляем температуру 0.1
+      max_tokens: 500    // Увеличиваем с 300 до 500 токенов
       // Параметр response_format удален, так как он вызывает ошибку
     };
     

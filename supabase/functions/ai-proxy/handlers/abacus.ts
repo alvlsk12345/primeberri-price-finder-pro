@@ -121,8 +121,8 @@ function createBrandSuggestionsRequestData(description: string, count: number = 
       { role: "system", content: systemPrompt },
       { role: "user", content: description }
     ],
-    temperature: 0.1,  // Изменено с 0.7 на 0.1
-    max_tokens: 300    // Изменено с 1000 на 300
+    temperature: 0.1,  // Оставляем температуру 0.1
+    max_tokens: 500    // Увеличиваем с 300 до 500 токенов
     // Убран параметр response_format, так как он вызывает ошибку
   };
 }
@@ -152,9 +152,9 @@ async function makePerplexityRequest(requestData: any, PERPLEXITY_API_KEY: strin
       console.log('Параметр temperature изменен на 0.1');
     }
     
-    if (requestData.max_tokens === 1000) {
-      requestData.max_tokens = 300;
-      console.log('Параметр max_tokens изменен на 300');
+    if (requestData.max_tokens === 1000 || requestData.max_tokens === 300) {
+      requestData.max_tokens = 500;
+      console.log('Параметр max_tokens изменен на 500');
     }
     
     // Выполняем запрос к API
