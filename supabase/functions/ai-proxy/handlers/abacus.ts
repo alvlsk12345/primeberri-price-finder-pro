@@ -105,7 +105,7 @@ async function handleBrandSuggestionsRequest(params: any, PERPLEXITY_API_KEY: st
  */
 function createBrandSuggestionsRequestData(description: string, count: number = 6) {
   const systemPrompt = `Ты - эксперт по электронным товарам и аксессуарам для мобильных устройств.
-Твоя задача - предложить конкретные товары на основе описания пользователя.
+Твоя задача - предложить конкретные товары на основе описания пользователя. Ищи товары только в странах европейского союза.
 Ответ ДОЛЖЕН содержать ТОЛЬКО JSON-массив products с объектами, где каждый объект имеет:
 1. brand - название бренда (строка)
 2. product - название модели или товара (строка)
@@ -121,8 +121,8 @@ function createBrandSuggestionsRequestData(description: string, count: number = 
       { role: "system", content: systemPrompt },
       { role: "user", content: description }
     ],
-    temperature: 0.7,
-    max_tokens: 1000
+    temperature: 0.1,  // Изменено с 0.7 на 0.1
+    max_tokens: 300    // Изменено с 1000 на 300
     // Убран параметр response_format, так как он вызывает ошибку
   };
 }
@@ -144,6 +144,17 @@ async function makePerplexityRequest(requestData: any, PERPLEXITY_API_KEY: strin
     if (requestData.response_format) {
       delete requestData.response_format;
       console.log('Удален параметр response_format из запроса');
+    }
+    
+    // Обновляем параметры temperature и max_tokens
+    if (requestData.temperature === 0.7) {
+      requestData.temperature = 0.1;
+      console.log('Параметр temperature изменен на 0.1');
+    }
+    
+    if (requestData.max_tokens === 1000) {
+      requestData.max_tokens = 300;
+      console.log('Параметр max_tokens изменен на 300');
     }
     
     // Выполняем запрос к API

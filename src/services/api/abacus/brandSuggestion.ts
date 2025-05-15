@@ -12,7 +12,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
   try {
     // Системный промпт для формата JSON
     const systemPrompt = `Ты - эксперт по электронным товарам и аксессуарам для мобильных устройств.
-Твоя задача - предложить конкретные товары на основе описания пользователя.
+Твоя задача - предложить конкретные товары на основе описания пользователя. Ищи товары только в странах европейского союза.
 Ответ ДОЛЖЕН содержать ТОЛЬКО JSON-массив products с объектами, где каждый объект имеет:
 1. brand - название бренда (строка)
 2. product - название модели или товара (строка)
@@ -31,8 +31,8 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
         { role: "system", content: systemPrompt },
         { role: "user", content: description }
       ],
-      temperature: 0.7,
-      max_tokens: 1000
+      temperature: 0.1,  // Изменено с 0.7 на 0.1
+      max_tokens: 300    // Изменено с 1000 на 300
       // Параметр response_format удален, так как он вызывает ошибку
     };
     
