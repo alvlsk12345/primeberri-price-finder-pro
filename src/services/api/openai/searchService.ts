@@ -27,9 +27,7 @@ export const fetchFromOpenAI = async (params: SearchParams): Promise<SearchResul
         if ('products' in response) {
           return {
             products: response.products,
-            totalPages: 1, // Заменили 'total' на 'totalPages'
-            page: 1,
-            pages: 1,
+            totalPages: 1,
             apiInfo: {
               provider: 'openai',
               model: 'gpt-4o',
@@ -43,9 +41,7 @@ export const fetchFromOpenAI = async (params: SearchParams): Promise<SearchResul
       console.warn("Ответ от OpenAI в неожиданном формате, используем демо-данные");
       return {
         products: createMockProductsFromQuery(params.query),
-        totalPages: 1, // Заменили 'total' на 'totalPages'
-        page: 1,
-        pages: 1,
+        totalPages: 1,
         apiInfo: {
           provider: 'openai-mock',
           model: 'mock-data',
@@ -58,9 +54,7 @@ export const fetchFromOpenAI = async (params: SearchParams): Promise<SearchResul
     console.log("Supabase не используется, генерируем демо-данные");
     return {
       products: createMockProductsFromQuery(params.query),
-      totalPages: 1, // Заменили 'total' на 'totalPages'
-      page: 1,
-      pages: 1,
+      totalPages: 1,
       apiInfo: {
         provider: 'openai-mock',
         model: 'mock-data',
@@ -74,9 +68,7 @@ export const fetchFromOpenAI = async (params: SearchParams): Promise<SearchResul
     // В случае ошибки генерируем демо-данные
     return {
       products: createMockProductsFromQuery(params.query),
-      totalPages: 1, // Заменили 'total' на 'totalPages'
-      page: 1,
-      pages: 1,
+      totalPages: 1,
       apiInfo: {
         provider: 'openai-mock',
         model: 'mock-data',
