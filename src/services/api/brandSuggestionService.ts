@@ -34,7 +34,7 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
         console.log('Вызов AI через Supabase Edge Function:', provider);
         
         // Используем perplexity или openai в зависимости от провайдера
-        if (provider === 'abacus') {
+        if (provider === 'perplexity') {
           // Для perplexity используем специализированную функцию
           const result = await fetchBrandSuggestionsViaPerplexity(description);
           console.log('Результат от Perplexity:', result);

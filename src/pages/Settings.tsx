@@ -31,7 +31,7 @@ const Settings = () => {
   const handleAIProviderChange = (value: AIProvider) => {
     setSelectedAIProvider(value);
     setAiProvider(value);
-    toast.success(`AI провайдер изменен на ${value === 'openai' ? 'OpenAI' : 'Abacus.ai'}`, { duration: 2000 });
+    toast.success(`AI провайдер изменен на ${value === 'openai' ? 'OpenAI' : 'Perplexity AI'}`, { duration: 2000 });
   };
 
   return (
@@ -120,23 +120,23 @@ const Settings = () => {
                             <SelectValue placeholder="Выберите AI провайдер" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="openai">OpenAI (GPT-4o-search-preview)</SelectItem>
-                            <SelectItem value="abacus">Abacus.ai (Text Generation Model)</SelectItem>
+                            <SelectItem value="openai">OpenAI (GPT-4o)</SelectItem>
+                            <SelectItem value="perplexity">Perplexity AI (Llama-3 Sonar)</SelectItem>
                           </SelectContent>
                         </Select>
                         <p className="text-sm text-muted-foreground mt-2">
                           OpenAI обеспечивает высокую точность результатов поиска, но имеет ограничения на количество запросов.
-                          Abacus.ai предлагает альтернативный подход с другими возможностями.
+                          Perplexity AI предлагает альтернативный подход с другими возможностями.
                         </p>
                       </div>
                     </div>
                     
                     <div className="border border-dashed border-gray-300 p-4 rounded-md">
-                      <h3 className="text-sm font-medium">Текущий провайдер: {aiProvider === 'openai' ? 'OpenAI' : 'Abacus.ai'}</h3>
+                      <h3 className="text-sm font-medium">Текущий провайдер: {aiProvider === 'openai' ? 'OpenAI' : 'Perplexity AI'}</h3>
                       <p className="text-sm text-muted-foreground mt-1">
                         {aiProvider === 'openai' 
-                          ? 'Используется модель GPT-4o-search-preview для поиска товаров и брендов' 
-                          : 'Используется Text Generation Model от Abacus.ai для поиска товаров и брендов'}
+                          ? 'Используется модель GPT-4o для поиска товаров и брендов' 
+                          : 'Используется Llama-3 Sonar от Perplexity AI для поиска товаров и брендов'}
                       </p>
                       <p className="text-sm mt-1 text-amber-600">
                         Не забудьте добавить API ключ для выбранного провайдера во вкладке "API ключи"
