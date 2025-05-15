@@ -122,16 +122,16 @@ export const fetchBrandSuggestionsViaPerplexity = async (description: string): P
 
 Всегда возвращай точно 6 результатов. Не нумеруй результаты.`;
 
-    // Формируем данные запроса для Perplexity
+    // Формируем данные запроса для Perplexity - ИСПРАВЛЕНО
     const requestData = {
-      model: "llama-3-sonar-large-32k-chat",
+      model: "sonar", // Заменено на sonar
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: description }
       ],
       temperature: 0.7,
-      max_tokens: 1000,
-      response_format: { type: "json_object" }
+      max_tokens: 1000
+      // Удален параметр response_format, который вызывал ошибку
     };
     
     // Вызываем Edge Function для получения предложений брендов

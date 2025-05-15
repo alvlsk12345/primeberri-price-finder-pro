@@ -51,6 +51,19 @@ async function handleBrandSuggestionsRequest(params: any, PERPLEXITY_API_KEY: st
     // Если в запросе переданы готовые requestData, используем их
     const requestData = params.requestData || createBrandSuggestionsRequestData(params.description, params.count || 6);
     
+    // Убедимся, что модель установлена как "sonar" и отсутствует параметр response_format
+    if (requestData.model === "llama-3-sonar-large-32k-chat") {
+      requestData.model = "sonar";
+    }
+    
+    // Удаляем параметр response_format если он существует
+    if (requestData.response_format) {
+      delete requestData.response_format;
+      console.log("Удален параметр response_format из запроса к Perplexity");
+    }
+    
+    console.log("Данные запроса к Perplexity:", JSON.stringify(requestData, null, 2));
+    
     // Выполняем запрос к Perplexity API
     const response = await fetch("https://api.perplexity.ai/chat/completions", {
       method: "POST",
@@ -70,34 +83,13 @@ async function handleBrandSuggestionsRequest(params: any, PERPLEXITY_API_KEY: st
 
     // Получаем ответ от Perplexity
     const responseData = await response.json();
+    console.log("Получен ответ от Perplexity API");
     
-    // Получаем содержимое ответа
-    const content = responseData.choices?.[0]?.message?.content;
-    
-    // Пытаемся распарсить ответ как JSON
-    try {
-      const data = JSON.parse(content);
-      
-      if (data && data.products && Array.isArray(data.products)) {
-        console.log("Успешно получен массив products:", data.products.length);
-      } else {
-        console.warn("Некорректный формат JSON или отсутствует массив products:", data);
-      }
-      
-      // Возвращаем результат
-      return new Response(
-        JSON.stringify(data),
-        { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
-      );
-    } catch (parseError) {
-      console.error('Ошибка при парсинге ответа как JSON:', parseError);
-      
-      // Возвращаем исходный ответ, если не удалось распарсить как JSON
-      return new Response(
-        JSON.stringify({ result: content }),
-        { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
-      );
-    }
+    // Возвращаем полный ответ
+    return new Response(
+      JSON.stringify(responseData),
+      { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+    );
     
   } catch (error) {
     console.error('Ошибка при получении предложений брендов от Perplexity:', error);
@@ -131,7 +123,7 @@ function createBrandSuggestionsRequestData(description: string, count: number = 
     ],
     temperature: 0.7,
     max_tokens: 1000
-    // Убираем параметр response_format, так как он вызывает ошибку
+    // Убран параметр response_format, так как он вызывает ошибку
   };
 }
 
@@ -145,11 +137,13 @@ async function makePerplexityRequest(requestData: any, PERPLEXITY_API_KEY: strin
     // Если указана модель llama-3-sonar-large-32k-chat, заменяем на sonar
     if (requestData.model === "llama-3-sonar-large-32k-chat") {
       requestData.model = "sonar";
+      console.log('Модель изменена на "sonar"');
     }
     
     // Удаляем параметр response_format если он есть, так как он вызывает ошибку
     if (requestData.response_format) {
       delete requestData.response_format;
+      console.log('Удален параметр response_format из запроса');
     }
     
     // Выполняем запрос к API

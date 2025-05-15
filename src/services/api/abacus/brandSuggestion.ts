@@ -26,14 +26,14 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
 
     // Формируем данные для запроса
     const requestData = {
-      model: "sonar", // Изменено с llama-3-sonar-large-32k-chat на sonar
+      model: "sonar", // Используем модель sonar
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: description }
       ],
       temperature: 0.7,
       max_tokens: 1000
-      // Убираем параметр response_format
+      // Параметр response_format удален, так как он вызывает ошибку
     };
     
     // Вызываем API для получения брендов
