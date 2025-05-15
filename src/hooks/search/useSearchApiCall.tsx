@@ -39,12 +39,8 @@ export function useSearchApiCall({
     // Явно устанавливаем загрузку в true
     setIsLoading(true);
     
-    // Получаем информацию о выбранном AI провайдере для уведомления
-    const selectedProvider = getSelectedAIProvider();
-    const providerName = getProviderDisplayName(selectedProvider);
-    
-    // Показываем toast о поиске с указанием используемого провайдера
-    toast.loading(`Выполняется поиск товаров с использованием ${providerName}...`, {
+    // Показываем toast о поиске
+    toast.loading(`Выполняется поиск товаров...`, {
       id: 'search-progress',
       duration: API_TIMEOUT + 5000
     });
@@ -67,17 +63,9 @@ export function useSearchApiCall({
     try {
       console.log('Выполняем запрос к API с параметрами:', searchParams);
       
-      // Выполняем поисковый запрос через выбранный AI провайдер, если это обычный поиск по товарам
-      // или через Zylalabs, если требуется специфичный поиск с фильтрами
-      let results;
-      
-      if (searchParams.requireAdvancedSearch) {
-        // Если требуется продвинутый поиск с фильтрами, используем Zylalabs
-        results = await searchProductsViaZylalabs(searchParams);
-      } else {
-        // Для обычного поиска используем выбранный AI провайдер
-        results = await searchProductsViaSelectedAI(searchParams.query);
-      }
+      // ВАЖНОЕ ИЗМЕНЕНИЕ: Всегда используем Zylalabs для основного поиска
+      // вместо выбранного AI провайдера
+      let results = await searchProductsViaZylalabs(searchParams);
       
       console.log('Получен ответ от API:', results);
       
