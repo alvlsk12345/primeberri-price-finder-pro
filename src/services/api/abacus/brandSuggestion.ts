@@ -32,7 +32,8 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
         { role: "user", content: description }
       ],
       temperature: 0.7,
-      max_tokens: 300 // Ограничение в 300 токенов
+      max_tokens: 1000
+      // Параметр response_format удален, так как он вызывает ошибку
     };
     
     // Вызываем API для получения брендов
@@ -46,9 +47,8 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
       return [];
     }
     
-    // Пытаемся распарсить ответ как JSON с улучшенной обработкой ошибок
+    // Пытаемся распарсить ответ как JSON
     try {
-      console.log("Оригинальный ответ от Perplexity API:", content);
       const data = JSON.parse(content);
       
       if (data && data.products && Array.isArray(data.products)) {
@@ -61,29 +61,6 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     } catch (parseError) {
       console.error('Ошибка при парсинге ответа от Perplexity API:', parseError);
       console.log('Сырой ответ от API:', content);
-      
-      // Попытка восстановления поврежденного JSON
-      try {
-        // Ищем начало массива products
-        if (content.includes('"products"')) {
-          const match = content.match(/\{\s*"products"\s*:\s*\[\s*(.*?)\s*\]\s*\}/s);
-          if (match && match[1]) {
-            const items = `[${match[1]}]`;
-            try {
-              const parsedItems = JSON.parse(items);
-              if (Array.isArray(parsedItems) && parsedItems.length > 0) {
-                console.log("Удалось восстановить массив products из поврежденного JSON");
-                return parsedItems as BrandSuggestion[];
-              }
-            } catch (e) {
-              console.error("Не удалось восстановить массив products:", e);
-            }
-          }
-        }
-      } catch (recoveryError) {
-        console.error("Ошибка при попытке восстановления JSON:", recoveryError);
-      }
-      
       return [];
     }
   } catch (error) {

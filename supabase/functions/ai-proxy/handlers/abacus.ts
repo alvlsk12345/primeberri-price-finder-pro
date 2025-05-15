@@ -52,14 +52,8 @@ async function handleBrandSuggestionsRequest(params: any, PERPLEXITY_API_KEY: st
     const requestData = params.requestData || createBrandSuggestionsRequestData(params.description, params.count || 6);
     
     // Убедимся, что модель установлена как "sonar" и отсутствует параметр response_format
-    if (requestData.model === "sonar-small") {
+    if (requestData.model === "llama-3-sonar-large-32k-chat") {
       requestData.model = "sonar";
-      console.log("Модель изменена на 'sonar'");
-    }
-    
-    // Обновим max_tokens до 300
-    if (requestData.max_tokens > 300) {
-      requestData.max_tokens = 300;
     }
     
     // Удаляем параметр response_format если он существует
@@ -91,57 +85,7 @@ async function handleBrandSuggestionsRequest(params: any, PERPLEXITY_API_KEY: st
     const responseData = await response.json();
     console.log("Получен ответ от Perplexity API");
     
-    // Дополнительная обработка ответа для исправления содержимого
-    if (responseData && responseData.choices && responseData.choices[0]?.message?.content) {
-      try {
-        // Пытаемся очистить JSON в контенте от возможных проблем
-        const content = responseData.choices[0].message.content;
-        console.log("Оригинальный ответ API:", content);
-        
-        // Попытаемся проверить и обработать JSON перед отправкой
-        try {
-          // Проверка корректности JSON путем парсинга
-          JSON.parse(content);
-          // Если парсинг прошел успешно, не изменяем контент
-        } catch (jsonError) {
-          console.log("Обнаружена проблема с JSON в ответе:", jsonError.message);
-          
-          // Попытка исправить незакрытые кавычки или другие распространенные проблемы
-          let fixedContent = content;
-          
-          // Исправление незавершенных строк (ищем незакрытые кавычки)
-          const quoteRegex = /"([^"\\]*(\\.[^"\\]*)*)$/;
-          if (quoteRegex.test(fixedContent)) {
-            fixedContent = fixedContent + '"';
-            console.log("Исправлена незакрытая кавычка в JSON");
-          }
-          
-          // Проверяем, что объект корректно закрыт
-          if (fixedContent.trim().endsWith(",")) {
-            fixedContent = fixedContent.slice(0, -1) + "}]}";
-            console.log("Исправлен незакрытый объект в JSON");
-          }
-          
-          // Если у нас всё еще проблемы с JSON, попробуем искусственно сформировать пустой результат
-          try {
-            JSON.parse(fixedContent);
-            // Если парсинг прошел успешно, обновляем контент
-            responseData.choices[0].message.content = fixedContent;
-            console.log("JSON успешно исправлен");
-          } catch (fixError) {
-            console.log("Не удалось исправить JSON, возвращаем пустой массив", fixError.message);
-            // Если исправить не удалось, возвращаем корректный пустой JSON
-            responseData.choices[0].message.content = '{"products":[]}';
-          }
-        }
-      } catch (contentError) {
-        console.error("Ошибка при обработке содержимого ответа:", contentError);
-        // В случае ошибки при обработке контента, устанавливаем пустой результат
-        responseData.choices[0].message.content = '{"products":[]}';
-      }
-    }
-    
-    // Возвращаем обработанный ответ
+    // Возвращаем полный ответ
     return new Response(
       JSON.stringify(responseData),
       { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
@@ -172,13 +116,14 @@ function createBrandSuggestionsRequestData(description: string, count: number = 
 Всегда возвращай точно ${count} результатов. Не нумеруй результаты.`;
 
   return {
-    model: "sonar", // Используем модель sonar
+    model: "sonar", // Использование модели sonar вместо llama-3-sonar-large-32k-chat
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: description }
     ],
     temperature: 0.7,
-    max_tokens: 300 // Ограничение в 300 токенов
+    max_tokens: 1000
+    // Убран параметр response_format, так как он вызывает ошибку
   };
 }
 
@@ -189,16 +134,10 @@ async function makePerplexityRequest(requestData: any, PERPLEXITY_API_KEY: strin
   console.log('Отправка запроса к Perplexity API');
   
   try {
-    // Если указана модель sonar-small, заменяем на sonar
-    if (requestData.model === "sonar-small") {
+    // Если указана модель llama-3-sonar-large-32k-chat, заменяем на sonar
+    if (requestData.model === "llama-3-sonar-large-32k-chat") {
       requestData.model = "sonar";
       console.log('Модель изменена на "sonar"');
-    }
-    
-    // Обновим max_tokens до 300
-    if (requestData.max_tokens > 300) {
-      requestData.max_tokens = 300;
-      console.log('Уменьшено количество токенов до 300');
     }
     
     // Удаляем параметр response_format если он есть, так как он вызывает ошибку
