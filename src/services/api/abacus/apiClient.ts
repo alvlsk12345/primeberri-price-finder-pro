@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 import { getApiKey, API_BASE_URL } from "./config";
 import { isUsingSupabaseBackend } from "../supabase/config";
@@ -47,6 +48,16 @@ export const callPerplexityAI = async (
     // Вводим таймаут для запроса
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 секунд
+
+    // Заменяем модель на "sonar", если указана llama-3-sonar-large-32k-chat
+    if (requestData.model === "llama-3-sonar-large-32k-chat") {
+      requestData.model = "sonar";
+    }
+    
+    // Удаляем параметр response_format если он есть, так как он вызывает ошибку
+    if (requestData.response_format) {
+      delete requestData.response_format;
+    }
 
     // Опции для запроса
     const fetchOptions: RequestInit = {
@@ -125,14 +136,14 @@ export const searchProductsViaAbacus = async (query: string, options: any = {}):
     
     // Формируем данные для запроса
     const requestData = {
-      model: "llama-3-sonar-large-32k-chat",
+      model: "sonar", // Заменено на sonar
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: query }
       ],
       temperature: 0.7,
-      max_tokens: 1000,
-      response_format: { type: "json_object" }
+      max_tokens: 1000
+      // Удален параметр response_format
     };
     
     // Вызываем API для поиска товаров
@@ -170,7 +181,7 @@ export const searchProductsViaAbacus = async (query: string, options: any = {}):
 export const generateTextViaAbacus = async (prompt: string, options: any = {}): Promise<string> => {
   try {
     const data = {
-      model: "llama-3-sonar-large-32k-chat",
+      model: "sonar", // Заменено на sonar
       messages: [
         { role: "user", content: prompt }
       ],
