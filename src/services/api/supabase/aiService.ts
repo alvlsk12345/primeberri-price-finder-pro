@@ -1,3 +1,4 @@
+
 import { SearchParams, SearchResult, BrandSuggestion } from "@/services/types";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -123,13 +124,13 @@ export const fetchBrandSuggestionsViaPerplexity = async (description: string): P
 
     // Формируем данные запроса для Perplexity - ИСПРАВЛЕНО
     const requestData = {
-      model: "sonar-small", // Заменено на sonar-small
+      model: "sonar", // Изменено обратно на sonar
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: description }
       ],
       temperature: 0.7,
-      max_tokens: 300 // Уменьшено с 1000 до 300
+      max_tokens: 300 // Оставляем ограничение в 300 токенов
     };
     
     // Вызываем Edge Function для получения предложений брендов

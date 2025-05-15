@@ -51,9 +51,10 @@ async function handleBrandSuggestionsRequest(params: any, PERPLEXITY_API_KEY: st
     // Если в запросе переданы готовые requestData, используем их
     const requestData = params.requestData || createBrandSuggestionsRequestData(params.description, params.count || 6);
     
-    // Убедимся, что модель установлена как "sonar-small" и отсутствует параметр response_format
-    if (requestData.model === "sonar" || requestData.model === "llama-3-sonar-large-32k-chat") {
-      requestData.model = "sonar-small";
+    // Убедимся, что модель установлена как "sonar" и отсутствует параметр response_format
+    if (requestData.model === "sonar-small") {
+      requestData.model = "sonar";
+      console.log("Модель изменена на 'sonar'");
     }
     
     // Обновим max_tokens до 300
@@ -121,13 +122,13 @@ function createBrandSuggestionsRequestData(description: string, count: number = 
 Всегда возвращай точно ${count} результатов. Не нумеруй результаты.`;
 
   return {
-    model: "sonar-small", // Использование модели sonar-small
+    model: "sonar", // Возвращение к модели sonar
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: description }
     ],
     temperature: 0.7,
-    max_tokens: 300 // Уменьшено с 1000 до 300
+    max_tokens: 300 // Сохраняем ограничение в 300 токенов
   };
 }
 
@@ -138,10 +139,10 @@ async function makePerplexityRequest(requestData: any, PERPLEXITY_API_KEY: strin
   console.log('Отправка запроса к Perplexity API');
   
   try {
-    // Если указана старая модель, заменяем на sonar-small
-    if (requestData.model === "sonar" || requestData.model === "llama-3-sonar-large-32k-chat") {
-      requestData.model = "sonar-small";
-      console.log('Модель изменена на "sonar-small"');
+    // Если указана модель sonar-small, заменяем на sonar
+    if (requestData.model === "sonar-small") {
+      requestData.model = "sonar";
+      console.log('Модель изменена на "sonar"');
     }
     
     // Обновим max_tokens до 300

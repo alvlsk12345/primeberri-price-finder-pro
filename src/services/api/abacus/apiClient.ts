@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { getApiKey, API_BASE_URL } from "./config";
 import { isUsingSupabaseBackend } from "../supabase/config";
@@ -49,9 +48,9 @@ export const callPerplexityAI = async (
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 секунд
 
-    // Заменяем модель на "sonar-small", если указана другая модель
-    if (requestData.model === "sonar" || requestData.model === "llama-3-sonar-large-32k-chat") {
-      requestData.model = "sonar-small";
+    // Заменяем модель на "sonar", если указана другая модель
+    if (requestData.model === "sonar-small") {
+      requestData.model = "sonar";
     }
     
     // Обновляем max_tokens до 300, если больше
@@ -141,13 +140,13 @@ export const searchProductsViaAbacus = async (query: string, options: any = {}):
     
     // Формируем данные для запроса
     const requestData = {
-      model: "sonar-small", // Заменено на sonar-small
+      model: "sonar", // Возвращаем обратно к sonar
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: query }
       ],
       temperature: 0.7,
-      max_tokens: 300 // Уменьшено с 1000 до 300
+      max_tokens: 300 // Оставляем ограничение в 300 токенов
     };
     
     // Вызываем API для поиска товаров
@@ -185,12 +184,12 @@ export const searchProductsViaAbacus = async (query: string, options: any = {}):
 export const generateTextViaAbacus = async (prompt: string, options: any = {}): Promise<string> => {
   try {
     const data = {
-      model: "sonar-small", // Заменено на sonar-small
+      model: "sonar", // Возвращаем обратно к sonar
       messages: [
         { role: "user", content: prompt }
       ],
       temperature: 0.7,
-      max_tokens: 300 // Уменьшено с 1000 до 300
+      max_tokens: 300 // Оставляем ограничение в 300 токенов
     };
     
     // Вызываем API для генерации текста
