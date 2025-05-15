@@ -3,12 +3,12 @@ import { BrandSuggestion } from "@/services/types";
 import { fetchBrandSuggestions as fetchBrandSuggestionsFromOpenAI } from "./openai/brandSuggestion";
 import { fetchBrandSuggestions as fetchBrandSuggestionsFromPerplexity } from "./abacus/brandSuggestion";
 import { getSelectedAIProvider, AIProvider } from "./aiProviderService";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast";
 import { hasValidApiKey as hasValidOpenAIApiKey } from "./openai/config";
 import { hasValidApiKey as hasValidPerplexityApiKey } from "./abacus/config";
 import { isUsingSupabaseBackend } from "./supabase/config";
 import { isSupabaseConnected } from "./supabase/client";
-import { fetchBrandSuggestionsViaOpenAI } from "./supabase/aiService";
+import { fetchBrandSuggestionsViaOpenAI, fetchBrandSuggestionsViaPerplexity } from "./supabase/aiService";
 
 // Основная функция получения брендов, которая выбирает подходящий провайдер
 export const fetchBrandSuggestions = async (description: string): Promise<BrandSuggestion[]> => {
@@ -34,23 +34,10 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
         console.log('Вызов AI через Supabase Edge Function:', provider);
         
         // Используем perplexity или openai в зависимости от провайдера
-        if (provider === 'perplexity') {
-          // Для perplexity используем новый формат запроса
-          const systemPrompt = `Ты - эксперт по электронным товарам и аксессуарам для мобильных устройств.
-Твоя задача - предложить конкретные товары на основе описания пользователя.
-Ответ ДОЛЖЕН содержать ТОЛЬКО JSON-массив products с объектами, где каждый объект имеет:
-1. brand - название бренда (строка)
-2. product - название модели или товара (строка)
-3. description - краткое описание товара на русском языке (1-2 предложения)
-
-Формат: {"products": [{"brand": "...", "product": "...", "description": "..."}]}
-
-Всегда возвращай точно 6 результатов. Не нумеруй результаты.`;
-          
-          // Вызываем Perplexity через Edge Function
-          const result = await fetchBrandSuggestionsFromPerplexity(description);
+        if (provider === 'abacus') {
+          // Для perplexity используем специализированную функцию
+          const result = await fetchBrandSuggestionsViaPerplexity(description);
           console.log('Результат от Perplexity:', result);
-          
           return result;
         } else {
           // Для OpenAI используем существующий метод
@@ -60,21 +47,20 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
         }
       } catch (error) {
         console.error('Ошибка при использовании Supabase для предложений брендов:', error);
-        toast.error(`Ошибка Supabase: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
-                   { duration: 3000 });
-        toast.info('Проверьте настройки Supabase в разделе "Настройки"', { duration: 5000 });
+        toast.error(`Ошибка Supabase: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+        toast.info('Проверьте настройки Supabase в разделе "Настройки"');
         
         // Возвращаем пустой массив, так как произошла ошибка
         return [];
       }
     } else if (!supabaseConnected && useSupabase) {
-      toast.warning('Supabase не подключен, но выбран для использования. Проверьте настройки.', { duration: 5000 });
+      toast.warning('Supabase не подключен, но выбран для использования. Проверьте настройки.');
       return []; // Возвращаем пустой массив, так как Supabase не подключен
     }
     
     // Проверка настрок при попытке прямого вызова API
-    toast.error("Прямые запросы к API из браузера блокируются политикой CORS. Пожалуйста, используйте Supabase Edge Function.", { duration: 6000 });
-    toast.info("Перейдите в раздел 'Настройки' и убедитесь, что 'Использовать Supabase Backend' включено", { duration: 5000 });
+    toast.error("Прямые запросы к API из браузера блокируются политикой CORS. Пожалуйста, используйте Supabase Edge Function.");
+    toast.info("Перейдите в раздел 'Настройки' и убедитесь, что 'Использовать Supabase Backend' включено");
     
     // Возвращаем пустой массив, так как прямые вызовы API невозможны из-за CORS
     return [];

@@ -42,7 +42,7 @@ export const searchViaPerplexity = async (params: SearchParams, method: 'GET' | 
     // Вызываем Edge Function для запроса к Perplexity
     const { data, error } = await supabase.functions.invoke('ai-proxy', {
       body: {
-        provider: 'abacus', // или 'perplexity', в зависимости от настроек Edge Function
+        provider: 'perplexity', // Изменено с 'abacus' на 'perplexity' для ясности
         prompt: params.query,
         method: method,
         requestData: requestData
@@ -99,6 +99,79 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
     
   } catch (error) {
     console.error("Ошибка при получении предложений брендов через OpenAI (Supabase):", error);
+    return [];
+  }
+};
+
+/**
+ * Получает предложения брендов через Perplexity с использованием Supabase Edge Function
+ */
+export const fetchBrandSuggestionsViaPerplexity = async (description: string): Promise<BrandSuggestion[]> => {
+  try {
+    console.log("Получение предложений брендов через Perplexity (Supabase):", description);
+    
+    // Системный промпт для формата JSON
+    const systemPrompt = `Ты - эксперт по электронным товарам и аксессуарам для мобильных устройств.
+Твоя задача - предложить конкретные товары на основе описания пользователя.
+Ответ ДОЛЖЕН содержать ТОЛЬКО JSON-массив products с объектами, где каждый объект имеет:
+1. brand - название бренда (строка)
+2. product - название модели или товара (строка)
+3. description - краткое описание товара на русском языке (1-2 предложения)
+
+Формат: {"products": [{"brand": "...", "product": "...", "description": "..."}]}
+
+Всегда возвращай точно 6 результатов. Не нумеруй результаты.`;
+
+    // Формируем данные запроса для Perplexity
+    const requestData = {
+      model: "llama-3-sonar-large-32k-chat",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: description }
+      ],
+      temperature: 0.7,
+      max_tokens: 1000,
+      response_format: { type: "json_object" }
+    };
+    
+    // Вызываем Edge Function для получения предложений брендов
+    const { data, error } = await supabase.functions.invoke('ai-proxy', {
+      body: {
+        provider: 'perplexity',
+        action: 'getBrandSuggestions',
+        description: description,
+        count: 6,
+        requestData: requestData
+      }
+    });
+
+    if (error) {
+      console.error("Ошибка при получении предложений брендов через Perplexity (Supabase):", error);
+      throw new Error(`Ошибка Supabase: ${error.message}`);
+    }
+
+    console.log("Предложения брендов от Perplexity через Supabase Edge Function:", data);
+    
+    // Обработка ответа от Perplexity
+    if (data && data.choices && data.choices[0]?.message?.content) {
+      try {
+        const content = data.choices[0].message.content;
+        const parsedContent = JSON.parse(content);
+        
+        if (parsedContent && parsedContent.products && Array.isArray(parsedContent.products)) {
+          console.log("Успешно получены предложения брендов от Perplexity:", parsedContent.products.length);
+          return parsedContent.products;
+        }
+      } catch (parseError) {
+        console.error("Ошибка при парсинге JSON от Perplexity:", parseError);
+      }
+    }
+    
+    // Если пришел некорректный формат, возвращаем пустой массив
+    return [];
+    
+  } catch (error) {
+    console.error("Ошибка при получении предложений брендов через Perplexity (Supabase):", error);
     return [];
   }
 };

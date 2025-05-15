@@ -73,7 +73,7 @@ serve(async (req) => {
         );
       }
       
-      // Используем обработчик Abacus для совместимости
+      // Используем обработчик Abacus/Perplexity
       responseData = await handleAbacusRequest(params, PERPLEXITY_API_KEY);
     } else {
       // Если провайдер не поддерживается, возвращаем ошибку
