@@ -27,7 +27,6 @@ export const fetchFromOpenAI = async (params: SearchParams): Promise<SearchResul
         if ('products' in response) {
           return {
             products: response.products,
-            query: params.query,
             total: response.products.length,
             page: 1,
             pages: 1,
@@ -44,7 +43,6 @@ export const fetchFromOpenAI = async (params: SearchParams): Promise<SearchResul
       console.warn("Ответ от OpenAI в неожиданном формате, используем демо-данные");
       return {
         products: createMockProductsFromQuery(params.query),
-        query: params.query,
         total: 10,
         page: 1,
         pages: 1,
@@ -60,7 +58,6 @@ export const fetchFromOpenAI = async (params: SearchParams): Promise<SearchResul
     console.log("Supabase не используется, генерируем демо-данные");
     return {
       products: createMockProductsFromQuery(params.query),
-      query: params.query,
       total: 10,
       page: 1,
       pages: 1,
@@ -77,7 +74,6 @@ export const fetchFromOpenAI = async (params: SearchParams): Promise<SearchResul
     // В случае ошибки генерируем демо-данные
     return {
       products: createMockProductsFromQuery(params.query),
-      query: params.query,
       total: 10,
       page: 1,
       pages: 1,
