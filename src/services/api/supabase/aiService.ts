@@ -1,4 +1,3 @@
-
 import { SearchParams, SearchResult, BrandSuggestion } from "@/services/types";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -94,7 +93,7 @@ export const fetchBrandSuggestionsViaOpenAI = async (description: string): Promi
       return data.products;
     }
     
-    // Если пришел некорректный формат, возвращаем пустой массив
+    // Если пришел некорректный формат, возвращаем пустой ма��сив
     return [];
     
   } catch (error) {
@@ -124,14 +123,13 @@ export const fetchBrandSuggestionsViaPerplexity = async (description: string): P
 
     // Формируем данные запроса для Perplexity - ИСПРАВЛЕНО
     const requestData = {
-      model: "sonar", // Заменено на sonar
+      model: "sonar-small", // Заменено на sonar-small
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: description }
       ],
       temperature: 0.7,
-      max_tokens: 1000
-      // Удален параметр response_format, который вызывал ошибку
+      max_tokens: 300 // Уменьшено с 1000 до 300
     };
     
     // Вызываем Edge Function для получения предложений брендов

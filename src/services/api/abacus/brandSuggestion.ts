@@ -26,14 +26,13 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
 
     // Формируем данные для запроса
     const requestData = {
-      model: "sonar", // Используем модель sonar
+      model: "sonar-small", // Используем модель sonar-small
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: description }
       ],
       temperature: 0.7,
-      max_tokens: 1000
-      // Параметр response_format удален, так как он вызывает ошибку
+      max_tokens: 300 // Уменьшено с 1000 до 300
     };
     
     // Вызываем API для получения брендов

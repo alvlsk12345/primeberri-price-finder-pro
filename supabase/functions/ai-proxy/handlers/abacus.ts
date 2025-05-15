@@ -51,9 +51,14 @@ async function handleBrandSuggestionsRequest(params: any, PERPLEXITY_API_KEY: st
     // Если в запросе переданы готовые requestData, используем их
     const requestData = params.requestData || createBrandSuggestionsRequestData(params.description, params.count || 6);
     
-    // Убедимся, что модель установлена как "sonar" и отсутствует параметр response_format
-    if (requestData.model === "llama-3-sonar-large-32k-chat") {
-      requestData.model = "sonar";
+    // Убедимся, что модель установлена как "sonar-small" и отсутствует параметр response_format
+    if (requestData.model === "sonar" || requestData.model === "llama-3-sonar-large-32k-chat") {
+      requestData.model = "sonar-small";
+    }
+    
+    // Обновим max_tokens до 300
+    if (requestData.max_tokens > 300) {
+      requestData.max_tokens = 300;
     }
     
     // Удаляем параметр response_format если он существует
@@ -116,14 +121,13 @@ function createBrandSuggestionsRequestData(description: string, count: number = 
 Всегда возвращай точно ${count} результатов. Не нумеруй результаты.`;
 
   return {
-    model: "sonar", // Использование модели sonar вместо llama-3-sonar-large-32k-chat
+    model: "sonar-small", // Использование модели sonar-small
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: description }
     ],
     temperature: 0.7,
-    max_tokens: 1000
-    // Убран параметр response_format, так как он вызывает ошибку
+    max_tokens: 300 // Уменьшено с 1000 до 300
   };
 }
 
@@ -134,10 +138,16 @@ async function makePerplexityRequest(requestData: any, PERPLEXITY_API_KEY: strin
   console.log('Отправка запроса к Perplexity API');
   
   try {
-    // Если указана модель llama-3-sonar-large-32k-chat, заменяем на sonar
-    if (requestData.model === "llama-3-sonar-large-32k-chat") {
-      requestData.model = "sonar";
-      console.log('Модель изменена на "sonar"');
+    // Если указана старая модель, заменяем на sonar-small
+    if (requestData.model === "sonar" || requestData.model === "llama-3-sonar-large-32k-chat") {
+      requestData.model = "sonar-small";
+      console.log('Модель изменена на "sonar-small"');
+    }
+    
+    // Обновим max_tokens до 300
+    if (requestData.max_tokens > 300) {
+      requestData.max_tokens = 300;
+      console.log('Уменьшено количество токенов до 300');
     }
     
     // Удаляем параметр response_format если он есть, так как он вызывает ошибку
