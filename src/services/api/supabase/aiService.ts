@@ -122,15 +122,15 @@ export const fetchBrandSuggestionsViaPerplexity = async (description: string): P
 
 Всегда возвращай точно 6 результатов. Не нумеруй результаты.`;
 
-    // Формируем данные запроса для Perplexity - ИСПРАВЛЕНО
+    // Формируем данные запроса для Perplexity
     const requestData = {
-      model: "sonar", // Изменено обратно на sonar
+      model: "sonar", // Используем модель sonar
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: description }
       ],
       temperature: 0.7,
-      max_tokens: 300 // Оставляем ограничение в 300 токенов
+      max_tokens: 300 // Ограничение в 300 токенов
     };
     
     // Вызываем Edge Function для получения предложений брендов
@@ -151,22 +151,67 @@ export const fetchBrandSuggestionsViaPerplexity = async (description: string): P
 
     console.log("Предложения брендов от Perplexity через Supabase Edge Function:", data);
     
-    // Обработка ответа от Perplexity
+    // Обработка ответа от Perplexity с улучшенной обработкой ошибок
     if (data && data.choices && data.choices[0]?.message?.content) {
       try {
         const content = data.choices[0].message.content;
-        const parsedContent = JSON.parse(content);
+        console.log("Контент ответа от Perplexity:", content);
         
-        if (parsedContent && parsedContent.products && Array.isArray(parsedContent.products)) {
-          console.log("Успешно получены предложения брендов от Perplexity:", parsedContent.products.length);
-          return parsedContent.products;
+        // Безопасный парсинг JSON с обработкой ошибок
+        try {
+          const parsedContent = JSON.parse(content);
+          
+          if (parsedContent && parsedContent.products && Array.isArray(parsedContent.products)) {
+            console.log("Успешно получены предложения брендов от Perplexity:", parsedContent.products.length);
+            return parsedContent.products;
+          } else {
+            console.warn("Получен некорректный формат ответа от Perplexity (отсутствует массив products):", parsedContent);
+            return [];
+          }
+        } catch (parseError) {
+          console.error("Ошибка при парсинге JSON от Perplexity:", parseError);
+          console.log("Попытка восстановления поврежденного JSON...");
+          
+          // Попытка исправить простые проблемы с JSON
+          // Проверяем наличие текста "products" в контенте, если есть, пытаемся извлечь массив
+          if (content.includes("products")) {
+            const productsMatch = content.match(/\{\s*"products"\s*:\s*\[(.*)\]\s*\}/s);
+            if (productsMatch && productsMatch[1]) {
+              try {
+                // Пытаемся восстановить только содержимое массива products
+                const itemsJson = `[${productsMatch[1]}]`;
+                console.log("Извлеченный массив products:", itemsJson);
+                
+                const items = JSON.parse(itemsJson);
+                console.log("Восстановленный массив товаров:", items);
+                
+                if (Array.isArray(items) && items.length > 0) {
+                  return items;
+                }
+              } catch (e) {
+                console.error("Не удалось восстановить массив products:", e);
+              }
+            }
+          }
+          
+          // Если все попытки восстановления не удались, возвращаем пустой массив
+          return [];
         }
-      } catch (parseError) {
-        console.error("Ошибка при парсинге JSON от Perplexity:", parseError);
+      } catch (error) {
+        console.error("Критическая ошибка при обработке ответа от Perplexity:", error);
+        return [];
+      }
+    } else if (data && typeof data === 'object') {
+      // Проверяем другие возможные форматы ответа
+      if ('products' in data && Array.isArray(data.products)) {
+        return data.products;
+      } else if (Array.isArray(data)) {
+        return data;
       }
     }
     
-    // Если пришел некорректный формат, возвращаем пустой массив
+    // Если формат не распознан или данные отсутствуют, возвращаем пустой массив
+    console.warn("Не удалось извлечь предложения брендов из ответа Perplexity");
     return [];
     
   } catch (error) {
