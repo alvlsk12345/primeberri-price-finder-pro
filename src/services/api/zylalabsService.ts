@@ -15,7 +15,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
   console.log('searchProductsViaZylalabs: Вызов с параметрами:', params);
   try {
     // Используем новый подход поиска по странам ЕС, как в HTML-примере
-    const results = await searchEuProducts(params.query, params.page);
+    const results = await searchEuProducts(params.query, params.page || 1);
     
     // Если найдены товары, возвращаем их
     if (results.products && results.products.length > 0) {
@@ -31,7 +31,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
       // При полном отсутствии результатов используем демо-данные
       console.log('Не удалось получить результаты API, использование демо-данных');
       
-      const demoData = generateMockSearchResults(params.query, params.page);
+      const demoData = generateMockSearchResults(params.query, params.page || 1);
       return {
         products: demoData.products,
         totalPages: demoData.totalPages || 1,
@@ -44,12 +44,12 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
     }
     
     // Анализ и обработка структуры ответа
-    return parseApiResponse(result, params);
+    return parseApiResponse(result, params.query);
   } catch (error) {
     console.error('Критическая ошибка при вызове API:', error);
     
     // При любой ошибке возвращаем демо-данные
-    const demoData = generateMockSearchResults(params.query, params.page);
+    const demoData = generateMockSearchResults(params.query, params.page || 1);
     return {
       products: demoData.products,
       totalPages: demoData.totalPages || 1,

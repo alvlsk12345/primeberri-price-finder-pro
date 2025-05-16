@@ -3,7 +3,7 @@ import { useDemoModeForced } from '../mock/mockServiceConfig';
 import { SearchParams } from '../../types';
 import { buildUrl } from './urlBuilder';
 import { parseResponse } from './responseParser';
-import { generateMockSearch } from '../mock/mockSearchGenerator';
+import { generateMockSearchResults } from '../mock/mockSearchGenerator';
 
 /**
  * Выполняет запрос к Zylalabs API с возможностью отката на моки
@@ -14,7 +14,7 @@ export const makeZylalabsApiRequest = async (params: SearchParams) => {
   // Проверяем, используем ли мы демо-режим
   if (useDemoModeForced()) {
     console.log('Используется демо-режим, возвращаем моки');
-    return generateMockSearch(params.query, params.page || 1);
+    return generateMockSearchResults(params.query, params.page || 1);
   }
 
   try {
@@ -56,12 +56,20 @@ export const makeZylalabsApiRequest = async (params: SearchParams) => {
     
     // В случае ошибки возвращаем моки с пометкой о демо-режиме
     console.log('Возвращаем моки из-за ошибки API');
-    const mockData = generateMockSearch(params.query, params.page || 1);
+    const mockData = generateMockSearchResults(params.query, params.page || 1);
     return { ...mockData, isDemo: true };
   }
 };
 
 // Добавляем функцию для выполнения запросов по странам
-export const makeZylalabsCountryRequest = async (params: SearchParams) => {
+export const makeZylalabsCountryRequest = async (query: string, countryCode: string, page: number = 1, language: string = 'en') => {
+  // Создаем параметры для запроса по стране
+  const params: SearchParams = {
+    query,
+    page,
+    language,
+    countries: [countryCode]
+  };
+  
   return makeZylalabsApiRequest(params);
 };

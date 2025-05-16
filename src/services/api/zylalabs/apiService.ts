@@ -21,7 +21,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
     console.log('Получен ответ от API Zylalabs:', Object.keys(result));
     
     // Анализ и обработка структуры ответа
-    return parseApiResponse(result, params);
+    return parseApiResponse(result, params.query);
   } catch (error) {
     console.error('Ошибка при вызове API:', error);
     toast.error('Произошла непредвиденная ошибка при поиске товаров');

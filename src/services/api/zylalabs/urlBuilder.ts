@@ -1,45 +1,34 @@
 
 import { SearchParams } from "../../types";
-import { BASE_URL } from "./config";
 
 /**
- * Формирование URL с параметрами для Zylalabs API, аналогично HTML-примеру
+ * Строит URL для запроса к Zylalabs API
  * @param params Параметры поиска
- * @returns Сформированный URL для API запроса
+ * @returns URL для запроса
  */
 export const buildUrl = (params: SearchParams): string => {
-  // Формирование параметров запроса аналогично HTML-примеру
-  const query = encodeURIComponent(params.query);
+  // Базовый URL для API поиска товаров
+  const baseUrl = "https://api.zylalabs.com/api/2033/real-time-product-search-api/1809/search-products";
   
-  // Создаем URLSearchParams как в HTML-примере
-  const urlParams = new URLSearchParams({
-    q: params.query, // Используем 'q' вместо 'query'
-  });
+  // Создаем экземпляр URLSearchParams для построения параметров запроса
+  const urlParams = new URLSearchParams();
   
-  // Добавляем страницу
-  if (params.page && params.page > 1) {
+  // Добавляем обязательный параметр запроса
+  urlParams.append('query', params.query);
+  
+  // Добавляем опциональные параметры, если они есть
+  if (params.page) {
     urlParams.append('page', params.page.toString());
   }
   
-  // Добавляем страну (только одну, как в HTML-примере)
-  // В HTML-примере страны добавляются по одной в разных запросах
   if (params.countries && params.countries.length > 0) {
-    urlParams.append('country', params.countries[0]);
-  } else {
-    // По умолчанию используем Германию
-    urlParams.append('country', 'de');
+    urlParams.append('countries', params.countries.join(','));
   }
   
-  // Добавляем язык (теперь по умолчанию русский)
   if (params.language) {
     urlParams.append('language', params.language);
-  } else {
-    urlParams.append('language', 'ru'); // По умолчанию используем русский язык
   }
   
-  // Создаем итоговый URL
-  return `${BASE_URL}?${urlParams.toString()}`;
+  // Собираем полный URL запроса
+  return `${baseUrl}?${urlParams.toString()}`;
 };
-
-// Alias для совместимости с старым кодом
-export const buildZylalabsUrl = buildUrl;
