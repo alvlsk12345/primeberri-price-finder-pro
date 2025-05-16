@@ -52,7 +52,7 @@ const Settings = () => {
               
               <TabsContent value="api-keys" className="space-y-4">
                 <div className="grid gap-6">
-                  <ApiKeyForm />
+                  <ApiKeyForm keyType="zylalabs" />
                   <ApiKeyForm keyType="openai" />
                   <ApiKeyForm keyType="perplexity" />
                 </div>

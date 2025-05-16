@@ -13,7 +13,9 @@ import { toast } from "sonner";
  */
 export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any> => {
   // Проверка на принудительное использование демо-режима
-  if (useDemoModeForced()) {
+  // Исправлено: проверяем значение demo напрямую без вызова функции
+  const demoModeEnabled = Boolean(useDemoModeForced());
+  if (demoModeEnabled) {
     console.log('Принудительное использование демо-режима. Запрос API пропущен.');
     return generateMockSearchResults(params.query, params.page);
   }

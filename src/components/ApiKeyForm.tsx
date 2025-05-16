@@ -24,7 +24,8 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType = "zylalabs" }) 
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [storedApiKey, setStoredApiKey] = useState<string>("");
   
-  const isDemoMode = Boolean(useDemoModeForced());
+  // Исправлено: теперь используем правильное получение булевого значения
+  const isDemoMode = useDemoModeForced() || false;
 
   // Загрузка сохраненного API ключа при монтировании компонента
   useEffect(() => {
