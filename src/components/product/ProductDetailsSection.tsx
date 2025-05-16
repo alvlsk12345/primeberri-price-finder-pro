@@ -3,9 +3,18 @@ import React from 'react';
 import { CostCalculator } from "@/components/CostCalculator";
 import { ActionButtons } from "@/components/ActionButtons";
 import { useSearch } from "@/contexts/SearchContext";
+import { SearchProvider } from "@/contexts/SearchContext";
 
 export const ProductDetailsSection: React.FC = () => {
-  // Более безопасное использование контекста
+  return (
+    <SearchProvider>
+      <ProductDetailsContent />
+    </SearchProvider>
+  );
+};
+
+// Выделяем внутренний компонент с логикой
+const ProductDetailsContent: React.FC = () => {
   try {
     const { selectedProduct, searchQuery } = useSearch();
     
