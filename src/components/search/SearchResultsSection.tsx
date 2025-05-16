@@ -1,22 +1,12 @@
 
 import React from 'react';
 import { useSearch } from "@/contexts/SearchContext";
-import { SearchProvider } from "@/contexts/SearchContext";
 import { ProductListContainer } from "./ProductListContainer";
 import { SearchResultsAlert } from "./SearchResultsAlert";
 import { ApiUsageInfo } from "./ApiUsageInfo";
 import { FilterSection } from "./FilterSection";
 
 export const SearchResultsSection: React.FC = () => {
-  return (
-    <SearchProvider>
-      <SearchResultsContent />
-    </SearchProvider>
-  );
-};
-
-// Выделяем внутренний компонент, который использует хук useSearch
-const SearchResultsContent: React.FC = () => {
   const { searchResults, hasSearched, apiInfo, lastSearchQuery, originalQuery, selectedProduct, currentPage, totalPages, handleProductSelect, handlePageChange } = useSearch();
   
   if (!hasSearched || searchResults.length === 0) {
@@ -36,7 +26,7 @@ const SearchResultsContent: React.FC = () => {
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={handlePageChange}
-        isDemo={apiInfo?.isDemo}
+        isDemo={apiInfo?.isDemo === true}
       />
       
       {apiInfo && Object.keys(apiInfo).length > 0 && (

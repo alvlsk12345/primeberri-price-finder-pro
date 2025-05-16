@@ -1,79 +1,67 @@
 
-import { SearchParams } from "@/services/types";
-import { buildUrl } from "./urlBuilder";
-import { parseResponse } from "./responseParser";
-import { generateMockSearchResults } from "../mock/mockSearchGenerator";
-import { REQUEST_TIMEOUT } from "./config";
 import { useDemoModeForced } from '../mock/mockServiceConfig';
+import { SearchParams } from '../../types';
+import { buildUrl } from './urlBuilder';
+import { parseResponse } from './responseParser';
+import { generateMockSearch } from '../mock/mockSearchGenerator';
 
 /**
- * Выполняет API-запрос к Zylalabs с указанными параметрами
- * @param params Параметры поискового запроса
- * @returns Результат поиска товаров
+ * Выполняет запрос к Zylalabs API с возможностью отката на моки
+ * @param params Параметры поиска
+ * @returns Результаты поиска
  */
-export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any> => {
-  // Проверка на принудительное использование демо-режима
-  // Исправлено: получаем значение напрямую, а не через вызов функции
-  const demoModeEnabled = useDemoModeForced;
-  if (demoModeEnabled) {
-    console.log('Принудительное использование демо-режима. Запрос API пропущен.');
-    return generateMockSearchResults(params.query, params.page);
+export const makeZylalabsApiRequest = async (params: SearchParams) => {
+  // Проверяем, используем ли мы демо-режим
+  if (useDemoModeForced()) {
+    console.log('Используется демо-режим, возвращаем моки');
+    return generateMockSearch(params.query, params.page || 1);
   }
 
-  // Строим URL для запроса
-  const url = buildUrl(params);
-  
   try {
-    // Устанавливаем таймаут для запроса
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+    // Получаем API ключ из локального хранилища
+    const apiKey = localStorage.getItem('zylalabs_api_key');
     
+    if (!apiKey) {
+      console.error('Не найден API ключ для Zylalabs');
+      throw new Error('API ключ не настроен. Пожалуйста, добавьте API ключ в настройках.');
+    }
+    
+    // Формируем URL для запроса
+    const url = buildUrl(params);
+    console.log('Zylalabs URL запроса:', url);
+    
+    // Выполняем запрос к API
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-      },
-      signal: controller.signal
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
     });
     
-    // Очищаем таймаут после получения ответа
-    clearTimeout(timeoutId);
-    
-    // Обрабатываем ошибки HTTP
+    // Проверяем статус ответа
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`API Error: ${response.status} - ${errorText}`);
+      console.error('Ошибка Zylalabs API:', response.status, errorText);
+      throw new Error(`Ошибка API: ${response.status} - ${errorText}`);
     }
     
-    // Парсим JSON ответ
+    // Парсим ответ
     const data = await response.json();
     
-    // Обрабатываем полученные данные
+    // Применяем трансформацию данных
     return parseResponse(data, params.query);
   } catch (error) {
     console.error('Ошибка при выполнении запроса к Zylalabs API:', error);
-    throw error;
+    
+    // В случае ошибки возвращаем моки с пометкой о демо-режиме
+    console.log('Возвращаем моки из-за ошибки API');
+    const mockData = generateMockSearch(params.query, params.page || 1);
+    return { ...mockData, isDemo: true };
   }
 };
 
-/**
- * Выполняет API-запрос к Zylalabs для конкретной страны
- * @param query Поисковый запрос
- * @param countryCode Код страны
- * @param page Номер страницы
- * @param language Язык запроса
- * @returns Результат поиска товаров
- */
-export const makeZylalabsCountryRequest = async (
-  query: string, 
-  countryCode: string, 
-  page: number = 1, 
-  language: string = 'ru'
-): Promise<any> => {
-  return makeZylalabsApiRequest({
-    query,
-    page,
-    countries: [countryCode],
-    language
-  });
+// Добавляем функцию для выполнения запросов по странам
+export const makeZylalabsCountryRequest = async (params: SearchParams) => {
+  return makeZylalabsApiRequest(params);
 };

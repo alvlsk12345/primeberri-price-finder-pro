@@ -1,3 +1,4 @@
+
 // Добавим экспорт parseResponse для обратной совместимости
 export const parseResponse = (data: any, originalQuery: string) => {
   // Здесь должна быть ваша логика парсинга

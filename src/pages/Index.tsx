@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { SearchProvider } from "@/contexts/SearchContext";
 import { SearchContainer } from "@/components/search/SearchContainer";
 import { BenefitsSection } from "@/components/BenefitsSection";
 import { PageFooter } from "@/components/PageFooter";
@@ -12,10 +11,7 @@ const Index = () => {
       <PageHeader />
       
       <main className="container mx-auto py-10 px-4">
-        <SearchProvider>
-          <SearchContainer />
-        </SearchProvider>
-
+        <SearchContainer />
         <BenefitsSection />
         <PageFooter />
       </main>

@@ -5,6 +5,7 @@ import { SearchFormSection } from "@/components/search/SearchFormSection";
 import { SearchResultsSection } from "@/components/search/SearchResultsSection";
 import { NoResultsMessage } from "@/components/search/NoResultsMessage";
 import { ProductDetailsSection } from "@/components/product/ProductDetailsSection";
+import { SearchProvider } from "@/contexts/SearchContext";
 
 export const SearchContainer: React.FC = () => {
   return (
@@ -20,10 +21,12 @@ export const SearchContainer: React.FC = () => {
       </CardHeader>
       <CardContent className="p-6">
         <div className="flex flex-col gap-6">
-          <SearchFormSection />
-          <NoResultsMessage />
-          <SearchResultsSection />
-          <ProductDetailsSection />
+          <SearchProvider>
+            <SearchFormSection />
+            <NoResultsMessage />
+            <SearchResultsSection />
+            <ProductDetailsSection />
+          </SearchProvider>
         </div>
       </CardContent>
     </Card>
