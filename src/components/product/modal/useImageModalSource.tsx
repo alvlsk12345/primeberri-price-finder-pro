@@ -1,11 +1,12 @@
 
-import { isZylalabsImage, isGoogleCseImage, isGoogleShoppingImage, isUrlWithCorsProxy } from '@/services/image';
+import { isZylalabsImage, isGoogleCseImage, isGoogleShoppingImage, isUrlWithCorsProxy, isImageRequiringProxy } from '@/services/image';
 
 export interface ImageModalSourceInfo {
   useAvatar: boolean;
   isGoogleImage: boolean;
   isZylalabs: boolean;
   isProxiedUrl: boolean;
+  requiresProxy: boolean;
 }
 
 export function useImageModalSource(imageUrl: string | null): ImageModalSourceInfo {
@@ -14,24 +15,32 @@ export function useImageModalSource(imageUrl: string | null): ImageModalSourceIn
       useAvatar: false,
       isGoogleImage: false,
       isZylalabs: false,
-      isProxiedUrl: false
+      isProxiedUrl: false,
+      requiresProxy: false
     };
   }
   
   // Проверяем источник изображения для специальной обработки
   const isGoogleImage = isGoogleShoppingImage(imageUrl) || isGoogleCseImage(imageUrl);
   const isZylalabs = isZylalabsImage(imageUrl);
+  const isEncryptedTbn = imageUrl.includes('encrypted-tbn');
   
-  // С удалением CORS-прокси эта функция всегда возвращает false
-  const isProxiedUrlResult = false;
+  // Проверяем, является ли URL с прокси
+  const isProxiedUrlResult = isUrlWithCorsProxy(imageUrl);
+  
+  // Проверяем, требует ли изображение проксирования
+  const requiresProxy = isImageRequiringProxy(imageUrl);
   
   // Решаем, использовать ли Avatar компонент для изображения
-  const useAvatar = isGoogleImage || isZylalabs || imageUrl.includes('encrypted-tbn');
+  const useAvatar = isGoogleImage || isZylalabs || isEncryptedTbn;
+  
+  console.log(`useImageModalSource: URL=${imageUrl?.substring(0, 60)}..., isGoogleImage=${isGoogleImage}, isZylalabs=${isZylalabs}, isEncryptedTbn=${isEncryptedTbn}, requiresProxy=${requiresProxy}`);
   
   return {
     useAvatar,
     isGoogleImage,
     isZylalabs,
-    isProxiedUrl: isProxiedUrlResult
+    isProxiedUrl: isProxiedUrlResult,
+    requiresProxy
   };
 }

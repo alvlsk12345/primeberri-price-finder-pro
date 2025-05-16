@@ -2,7 +2,8 @@
 import { isValidImageUrl } from '../imageService';
 import { 
   isZylalabsImage, 
-  isGoogleShoppingImage
+  isGoogleShoppingImage, 
+  isImageRequiringProxy
 } from './imageSourceDetector';
 import { getUniqueImageUrl } from './imageCache';
 import { getProxiedImageUrl } from './imageProxy';
@@ -44,15 +45,16 @@ export const processProductImage = (
   // Проверяем тип изображения и нужно ли проксирование
   const isZylalabs = isZylalabsImage(formattedUrl);
   const isGoogleShopping = isGoogleShoppingImage(formattedUrl);
-  const needsProxy = isZylalabs || isGoogleShopping;
+  const isEncryptedTbn = formattedUrl.includes('encrypted-tbn');
+  const needsProxy = isImageRequiringProxy(formattedUrl);
   
-  console.log(`processProductImage: тип изображения - Zylalabs: ${isZylalabs}, Google Shopping: ${isGoogleShopping}`);
+  console.log(`processProductImage: анализ URL - Zylalabs: ${isZylalabs}, Google Shopping: ${isGoogleShopping}, encrypted-tbn: ${isEncryptedTbn}, требует прокси: ${needsProxy}`);
   
   // Получаем URL с учетом кэширования
   const uniqueUrl = getUniqueImageUrl(formattedUrl, index, useCache);
   
-  // Для изображений из Zylalabs всегда используем directFetch=true при первой загрузке
-  const shouldDirectFetch = directFetch || isZylalabs;
+  // Для изображений из Google Shopping, encrypted-tbn и Zylalabs всегда используем directFetch=true при первой загрузке
+  const shouldDirectFetch = directFetch || isZylalabs || isGoogleShopping || isEncryptedTbn;
   
   // Применяем прокси при необходимости
   const resultUrl = needsProxy ? getProxiedImageUrl(uniqueUrl, shouldDirectFetch) : uniqueUrl;
