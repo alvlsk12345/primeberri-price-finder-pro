@@ -2,8 +2,10 @@
 import { SearchParams, Product } from "../../types";
 
 // Добавляем экспорт parseResponse для обратной совместимости
-export const parseResponse = (data: any, originalQuery: string) => {
-  // Здесь должна быть ваша логика парсинга
+export const parseResponse = (data: any, originalQuery: string | SearchParams) => {
+  // Получаем строку запроса
+  const query = typeof originalQuery === 'string' ? originalQuery : originalQuery.query;
+  
   // Проверяем есть ли данные и структура соответствует ожидаемой
   if (!data || !data.data || !Array.isArray(data.data.products)) {
     console.error('Некорректная структура ответа API:', data);
@@ -39,7 +41,7 @@ export const parseResponse = (data: any, originalQuery: string) => {
     isDemo: false,
     apiInfo: {
       source: 'Zylalabs API',
-      query: originalQuery,
+      query,
       totalResults: data.data.total?.toString() || '0'
     }
   };

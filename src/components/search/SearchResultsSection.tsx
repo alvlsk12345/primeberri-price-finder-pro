@@ -26,7 +26,7 @@ export const SearchResultsSection: React.FC = () => {
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={handlePageChange}
-        isDemo={apiInfo?.isDemo === true}
+        isDemo={apiInfo && apiInfo.isDemo === true}
       />
       
       {apiInfo && Object.keys(apiInfo).length > 0 && (

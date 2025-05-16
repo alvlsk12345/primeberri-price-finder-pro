@@ -44,7 +44,7 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
     }
     
     // Анализ и обработка структуры ответа
-    return parseApiResponse(result, params.query);
+    return parseApiResponse(result, params);
   } catch (error) {
     console.error('Критическая ошибка при вызове API:', error);
     

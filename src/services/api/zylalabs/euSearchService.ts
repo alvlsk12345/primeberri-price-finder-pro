@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { makeZylalabsCountryRequest } from "./apiClient";
 import { Product } from "../../types";
@@ -75,11 +74,12 @@ export const searchEuProducts = async (query: string, page: number = 1): Promise
         const countryData = await makeZylalabsCountryRequest(query, countryCode, page, 'ru');
         clearTimeout(timeoutId);
         
-        if (countryData?.status === "OK" && countryData?.data?.products) {
-          console.log(`Найдено ${countryData.data.products.length} товаров в ${countryCode.toUpperCase()}`);
+        // Проверяем формат возвращаемых данных
+        if (countryData && countryData.products && Array.isArray(countryData.products)) {
+          console.log(`Найдено ${countryData.products.length} товаров в ${countryCode.toUpperCase()}`);
           
           // Преобразовываем товары из API
-          const mappedCountryProducts = mapProductsFromApi(countryData.data.products, {
+          const mappedCountryProducts = mapProductsFromApi(countryData.products, {
             query,
             countries: [countryCode],
             language: 'ru'
@@ -148,7 +148,7 @@ export const searchEuProducts = async (query: string, page: number = 1): Promise
       if (allDisplayProducts.length < MIN_PRODUCTS) {
         console.log(`Найдено менее ${MIN_PRODUCTS} товаров (${allDisplayProducts.length}), добавляем товары из других стран`);
         
-        // Добавляем товары из других стран, чтобы достичь минимума
+        // Добавляем товары из других стр��н, чтобы достичь минимума
         const needed = Math.min(MIN_PRODUCTS - allDisplayProducts.length, otherEuProducts.length);
         if (needed > 0 && otherEuProducts.length > 0) {
           const additionalProducts = otherEuProducts.slice(0, needed)
