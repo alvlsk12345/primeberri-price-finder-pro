@@ -7,7 +7,7 @@ import { BASE_URL } from "./config";
  * @param params Параметры поиска
  * @returns Сформированный URL для API запроса
  */
-export const buildZylalabsUrl = (params: SearchParams): string => {
+export const buildUrl = (params: SearchParams): string => {
   // Формирование параметров запроса аналогично HTML-примеру
   const query = encodeURIComponent(params.query);
   
@@ -40,3 +40,6 @@ export const buildZylalabsUrl = (params: SearchParams): string => {
   // Создаем итоговый URL
   return `${BASE_URL}?${urlParams.toString()}`;
 };
+
+// Alias для совместимости с старым кодом
+export const buildZylalabsUrl = buildUrl;

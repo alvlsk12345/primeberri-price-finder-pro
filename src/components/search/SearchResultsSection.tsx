@@ -17,7 +17,7 @@ export const SearchResultsSection: React.FC = () => {
 
 // Выделяем внутренний компонент, который использует хук useSearch
 const SearchResultsContent: React.FC = () => {
-  const { searchResults, hasSearched, apiInfo, lastSearchQuery, originalQuery } = useSearch();
+  const { searchResults, hasSearched, apiInfo, lastSearchQuery, originalQuery, selectedProduct, currentPage, totalPages, handleProductSelect, handlePageChange } = useSearch();
   
   if (!hasSearched || searchResults.length === 0) {
     return null;
@@ -25,11 +25,19 @@ const SearchResultsContent: React.FC = () => {
 
   return (
     <div className="search-results-section">
-      <SearchResultsAlert />
+      <SearchResultsAlert currentPage={currentPage} />
       <div className="mb-4">
         <FilterSection />
       </div>
-      <ProductListContainer />
+      <ProductListContainer 
+        products={searchResults}
+        selectedProduct={selectedProduct}
+        onSelect={handleProductSelect}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+        isDemo={apiInfo?.isDemo}
+      />
       
       {apiInfo && Object.keys(apiInfo).length > 0 && (
         <ApiUsageInfo apiInfo={apiInfo} />

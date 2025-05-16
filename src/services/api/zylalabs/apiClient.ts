@@ -55,3 +55,25 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
     throw error;
   }
 };
+
+/**
+ * Выполняет API-запрос к Zylalabs для конкретной страны
+ * @param query Поисковый запрос
+ * @param countryCode Код страны
+ * @param page Номер страницы
+ * @param language Язык запроса
+ * @returns Результат поиска товаров
+ */
+export const makeZylalabsCountryRequest = async (
+  query: string, 
+  countryCode: string, 
+  page: number = 1, 
+  language: string = 'ru'
+): Promise<any> => {
+  return makeZylalabsApiRequest({
+    query,
+    page,
+    countries: [countryCode],
+    language
+  });
+};
