@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RotateCw, ExternalLink } from "lucide-react";
 import { getApiKey, ZYLALABS_API_KEY } from "@/services/api/zylalabs";
@@ -14,13 +14,32 @@ interface SearchResultsAlertProps {
 export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({ currentPage }) => {
   const { isUsingDemoData, apiInfo, handleSearch } = useSearch();
   
-  // Получаем API ключ для отображения
-  const apiKey = getApiKey() || 'Не указан';
+  // Состояние для хранения API ключа после получения
+  const [apiKey, setApiKey] = useState<string>('Загрузка...');
+  const [maskedKey, setMaskedKey] = useState<string>('Загрузка...');
   
-  // Маскируем API ключ для безопасности (показываем первые 5 и последние 4 символа)
-  const maskedKey = apiKey !== 'Не указан' && apiKey.length > 10 
-    ? `${apiKey.substring(0, 5)}...${apiKey.substring(apiKey.length - 4)}`
-    : apiKey;
+  // Получаем API ключ асинхронно
+  useEffect(() => {
+    const fetchApiKey = async () => {
+      try {
+        const key = await getApiKey() || 'Не указан';
+        setApiKey(key);
+        
+        // Маскируем API ключ для безопасности (показываем первые 5 и последние 4 символа)
+        if (key !== 'Не указан' && key.length > 10) {
+          setMaskedKey(`${key.substring(0, 5)}...${key.substring(key.length - 4)}`);
+        } else {
+          setMaskedKey(key);
+        }
+      } catch (error) {
+        console.error('Ошибка при получении API ключа:', error);
+        setApiKey('Ошибка загрузки');
+        setMaskedKey('Ошибка загрузки');
+      }
+    };
+    
+    fetchApiKey();
+  }, []);
 
   // Не показываем алерт, если все в порядке
   if (!isUsingDemoData) return null;

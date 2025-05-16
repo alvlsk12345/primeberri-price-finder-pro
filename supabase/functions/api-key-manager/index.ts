@@ -1,84 +1,102 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-// Заголовки CORS
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-};
+}
 
-// Хранилище API ключей
-const API_KEYS = {
-  zylalabs: Deno.env.get('ZYLALABS_API_KEY') || '',
-  openai: Deno.env.get('OPENAI_API_KEY') || '',
-  perplexity: Deno.env.get('PERPLEXITY_API_KEY') || '',
-  abacus: Deno.env.get('ABACUS_API_KEY') || '',
-};
-
-// Обработчик запросов
 serve(async (req) => {
-  // CORS preflight обработка
+  // CORS обработка для preflight запросов
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Получаем провайдера из URL-параметров
-    const url = new URL(req.url);
-    const provider = url.searchParams.get('provider');
-
-    // Для GET запросов возвращаем ключ API
-    if (req.method === 'GET') {
-      // Проверяем, что провайдер указан
-      if (!provider || !Object.keys(API_KEYS).includes(provider)) {
-        return new Response(
-          JSON.stringify({ error: 'Необходимо указать корректный провайдер' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+    // Создаем Supabase клиент с env переменными
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { 
+        auth: { persistSession: false }
       }
+    )
 
-      // Проверяем наличие ключа
-      const apiKey = API_KEYS[provider as keyof typeof API_KEYS];
-      if (!apiKey) {
-        return new Response(
-          JSON.stringify({ error: `API ключ для ${provider} не настроен` }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // Возвращаем ключ API
-      return new Response(
-        JSON.stringify({ key: apiKey }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } 
-    // Для POST запросов устанавливаем новый ключ API (не поддерживается в Edge Functions)
-    else if (req.method === 'POST') {
-      return new Response(
-        JSON.stringify({ error: 'Сохранение ключей API не поддерживается через Edge Functions. Установите переменные окружения через панель управления Supabase.' }),
-        { status: 501, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } 
-    // Для DELETE запросов удаляем ключ API (не поддерживается в Edge Functions)
-    else if (req.method === 'DELETE') {
-      return new Response(
-        JSON.stringify({ error: 'Удаление ключей API не поддерживается через Edge Functions. Управляйте переменными окружения через панель управления Supabase.' }),
-        { status: 501, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Получаем текущего пользователя из запроса
+    const authHeader = req.headers.get('Authorization')
+    let token = ''
+    
+    if (authHeader) {
+      token = authHeader.replace('Bearer ', '')
     }
 
-    // Для неподдерживаемых методов возвращаем ошибку
-    return new Response(
-      JSON.stringify({ error: `Метод ${req.method} не поддерживается` }),
-      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    // Получаем параметры запроса
+    const { action, key, value } = await req.json()
+
+    if (!action || !key) {
+      throw new Error('Отсутствуют обязательные параметры: action и key')
+    }
+
+    // Выполняем действие в зависимости от запрошенной операции
+    if (action === 'get') {
+      // Получаем значение из метаданных
+      const { data, error } = await supabaseClient
+        .from('user_metadata')
+        .select('value')
+        .eq('key', key)
+        .maybeSingle()
+
+      if (error) {
+        console.error('Ошибка при получении значения из БД:', error)
+        throw new Error('Не удалось получить значение из БД')
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, value: data?.value || null }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      )
+    } else if (action === 'set') {
+      if (!value) {
+        throw new Error('Отсутствует обязательный параметр: value')
+      }
+
+      // Сохраняем значение в метаданных
+      const { error } = await supabaseClient.from('user_metadata').upsert(
+        { key, value },
+        { onConflict: 'key' }
+      )
+
+      if (error) {
+        console.error('Ошибка при сохранении значения в БД:', error)
+        throw new Error('Не удалось сохранить значение в БД')
+      }
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      )
+    } else {
+      throw new Error('Неизвестное действие: ' + action)
+    }
   } catch (error) {
-    // Обработка ошибок
-    console.error('Ошибка API Key Manager:', error);
+    console.error('Ошибка в Edge Function:', error)
+    
     return new Response(
-      JSON.stringify({ error: error.message || 'Внутренняя ошибка сервера' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+      JSON.stringify({
+        success: false,
+        error: error instanceof Error ? error.message : 'Произошла неизвестная ошибка',
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      }
+    )
   }
-});
+})
