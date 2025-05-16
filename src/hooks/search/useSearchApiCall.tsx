@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { SearchParams } from "@/services/types";
 import { searchProductsViaZylalabs } from "@/services/api/zylalabsService";
-import { searchProductsViaSelectedAI } from "@/services/api/aiSearchService";
 import { toast } from "sonner";
 import { getSelectedAIProvider, getProviderDisplayName } from "@/services/api/aiProviderService";
 
@@ -39,8 +38,13 @@ export function useSearchApiCall({
     // Явно устанавливаем загрузку в true
     setIsLoading(true);
     
+    // Собираем информацию о странах для отображения в toast
+    const countriesInfo = searchParams.countries && searchParams.countries.length > 0 
+      ? `(${searchParams.countries.map(c => c.toUpperCase()).join(', ')})` 
+      : '';
+    
     // Показываем toast о поиске
-    toast.loading(`Выполняется поиск товаров...`, {
+    toast.loading(`Выполняется поиск товаров ${countriesInfo}...`, {
       id: 'search-progress',
       duration: API_TIMEOUT + 5000
     });
@@ -63,8 +67,7 @@ export function useSearchApiCall({
     try {
       console.log('Выполняем запрос к API с параметрами:', searchParams);
       
-      // ВАЖНОЕ ИЗМЕНЕНИЕ: Всегда используем Zylalabs для основного поиска
-      // вместо выбранного AI провайдера
+      // Выполняем поиск через Zylalabs
       let results = await searchProductsViaZylalabs(searchParams);
       
       console.log('Получен ответ от API:', results);
@@ -73,8 +76,14 @@ export function useSearchApiCall({
       isCurrentlyLoading = false;
       setIsLoading(false);
       
-      // Скрываем toast загрузки
+      // Скрываем toast загрузки и показываем уведомление о завершении поиска
       toast.dismiss('search-progress');
+      
+      // Проверяем количество найденных товаров
+      const productCount = results.products?.length || 0;
+      if (productCount > 0) {
+        toast.success(`Найдено ${productCount} товаров`, { duration: 3000 });
+      }
       
       // Проверяем, используются ли демо-данные
       if (results.isDemo) {

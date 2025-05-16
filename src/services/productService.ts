@@ -33,44 +33,74 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
     // Проверяем, используются ли демо-данные
     const isDemo = !!response.isDemo;
     
+    // Создаем Map для отслеживания уникальных товаров по ID
+    const uniqueProductsMap = new Map<string, Product>();
+    
     // Обрабатываем данные о товарах
     let products = await processZylalabsProductsData(response.products, params.filters);
 
-    // Добавляем информацию о стране для каждого товара (если отсутствует)
+    // Проверяем, есть ли у продуктов информация о стране, если нет - добавляем её
     products = products.map(product => {
-      if (!product.country) {
-        // Определяем страну по домену или типу магазина
-        if (product.source.toLowerCase().includes('amazon.de') || 
-            product.source.toLowerCase().includes('otto') || 
-            product.source.toLowerCase().includes('zalando.de')) {
+      // Если у товара уже есть информация о стране, оставляем её без изменений
+      if (product.country) {
+        return product;
+      }
+      
+      // Определяем страну по домену или типу магазина
+      if (product.source) {
+        const source = product.source.toLowerCase();
+        if (source.includes('amazon.de') || source.includes('otto') || source.includes('zalando.de')) {
           return { ...product, country: 'de' };
-        } else {
-          // Присваиваем случайную европейскую страну для демонстрации
-          const europeanCountries = ['fr', 'es', 'it', 'nl', 'be', 'pl'];
-          const randomCountry = europeanCountries[Math.floor(Math.random() * europeanCountries.length)];
-          return { ...product, country: randomCountry };
+        } else if (source.includes('amazon.fr') || source.includes('fnac')) {
+          return { ...product, country: 'fr' };
+        } else if (source.includes('amazon.es')) {
+          return { ...product, country: 'es' };
+        } else if (source.includes('amazon.it')) {
+          return { ...product, country: 'it' };
+        } else if (source.includes('amazon.nl') || source.includes('bol.com')) {
+          return { ...product, country: 'nl' };
         }
       }
-      return product;
+      
+      // Если не удалось определить страну, присваиваем случайную европейскую страну 
+      const europeanCountries = ['fr', 'es', 'it', 'nl', 'be', 'pl'];
+      const randomIndex = Math.floor(Math.random() * europeanCountries.length);
+      return { ...product, country: europeanCountries[randomIndex] };
     });
 
-    // Обеспечиваем наличие результатов из Германии и других стран
+    // Добавляем только уникальные товары в Map
+    products.forEach(product => {
+      const productKey = `${product.title}-${product.price}`;
+      if (!uniqueProductsMap.has(productKey)) {
+        uniqueProductsMap.set(productKey, product);
+      }
+    });
+    
+    // Преобразуем Map обратно в массив
+    products = Array.from(uniqueProductsMap.values());
+    console.log(`После удаления дубликатов осталось ${products.length} уникальных товаров`);
+
+    // Разделяем товары на немецкие и другие европейские
+    const germanProducts = products.filter(product => product.country === 'de');
+    const otherEuropeanProducts = products.filter(product => product.country !== 'de');
+    
+    console.log(`Разделение товаров: ${germanProducts.length} из Германии, ${otherEuropeanProducts.length} из других стран ЕС`);
+
+    // Обеспечиваем приоритет товаров из Германии
     if (params.requireGermanResults) {
-      // Разделяем результаты на немецкие и другие европейские
-      const germanProducts = products.filter(product => product.country === 'de');
-      const otherEuropeanProducts = products.filter(product => product.country !== 'de');
-
-      // Обеспечиваем наличие как минимум 6 немецких результатов (увеличено с 5)
+      // Определяем минимальное количество товаров из Германии для показа
       const minGermanResults = Math.min(6, germanProducts.length);
-      let selectedGermanProducts = germanProducts.slice(0, minGermanResults);
-
-      // Обеспечиваем наличие оставшихся результатов из других стран ЕС
+      
+      // Отбираем товары из Германии
+      const selectedGermanProducts = germanProducts.slice(0, minGermanResults);
+      
+      // Отбираем товары из других стран
       const minOtherResults = Math.min(params.minResultCount ? params.minResultCount - minGermanResults : 6, otherEuropeanProducts.length);
-      let selectedOtherProducts = otherEuropeanProducts.slice(0, minOtherResults);
-
-      // Комбинируем результаты, обеспечивая общий минимум в 12 (или максимально доступное)
+      const selectedOtherProducts = otherEuropeanProducts.slice(0, minOtherResults);
+      
+      // Комбинируем результаты, отдавая приоритет товарам из Германии
       let combinedProducts = [...selectedGermanProducts, ...selectedOtherProducts];
-
+      
       // Если нам не хватает до минимального количества результатов, добавляем оставшиеся товары
       const neededResults = Math.max(0, (params.minResultCount || 12) - combinedProducts.length);
       if (neededResults > 0) {
@@ -79,7 +109,7 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
           const additionalGerman = germanProducts.slice(minGermanResults, minGermanResults + neededResults);
           combinedProducts = [...combinedProducts, ...additionalGerman];
         }
-
+        
         // Если еще нужны товары, добавляем другие европейские
         if (combinedProducts.length < (params.minResultCount || 12) && otherEuropeanProducts.length > minOtherResults) {
           const additionalOther = otherEuropeanProducts.slice(minOtherResults, 
@@ -87,25 +117,35 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
           combinedProducts = [...combinedProducts, ...additionalOther];
         }
       }
-
+      
+      // Обновляем список товаров
       products = combinedProducts;
+      console.log(`После приоритизации: ${products.length} товаров (из них ${selectedGermanProducts.length} из Германии)`);
     }
     
     // Максимальное количество - 36 товаров
     if (products.length > 36) {
       products = products.slice(0, 36);
+      console.log(`Ограничение количества товаров до 36`);
     }
     
-    // Расчет общего количества страниц (приблизительное значение)
-    const itemsPerPage = 12; // 12 элементов на странице (изменено с 9)
+    // Расчет общего количества страниц
+    const itemsPerPage = 12; // 12 элементов на странице
     const totalPages = response.totalPages || Math.max(1, Math.ceil(products.length / itemsPerPage));
+    
+    console.log(`Итоговое количество товаров: ${products.length}, страниц: ${totalPages}`);
     
     // Возвращаем результаты с флагом демо-данных и информацией об API
     return { 
       products, 
       totalPages, 
       isDemo, 
-      apiInfo: response.apiInfo || {} 
+      apiInfo: {
+        ...response.apiInfo,
+        finalProductCount: products.length.toString(),
+        germanCount: germanProducts.length.toString(),
+        otherEuCount: otherEuropeanProducts.length.toString()
+      }
     };
   } catch (error) {
     console.error('Ошибка при поиске товаров:', error);

@@ -21,20 +21,28 @@ export function useImageModalSource(imageUrl: string | null): ImageModalSourceIn
   }
   
   // Проверяем источник изображения для специальной обработки
+  // Улучшенная проверка Google Shopping изображений
   const isGoogleImage = isGoogleShoppingImage(imageUrl) || isGoogleCseImage(imageUrl);
-  const isZylalabs = isZylalabsImage(imageUrl);
   const isEncryptedTbn = imageUrl.includes('encrypted-tbn');
+  const isZylalabs = isZylalabsImage(imageUrl);
   
   // Проверяем, является ли URL с прокси
   const isProxiedUrlResult = isUrlWithCorsProxy(imageUrl);
   
   // Проверяем, требует ли изображение проксирования
-  const requiresProxy = isImageRequiringProxy(imageUrl);
+  // Для encrypted-tbn всегда требуется прокси
+  const requiresProxy = isImageRequiringProxy(imageUrl) || isEncryptedTbn;
   
   // Решаем, использовать ли Avatar компонент для изображения
+  // Для Google Shopping изображений и Zylalabs всегда используем Avatar
   const useAvatar = isGoogleImage || isZylalabs || isEncryptedTbn;
   
-  console.log(`useImageModalSource: URL=${imageUrl?.substring(0, 60)}..., isGoogleImage=${isGoogleImage}, isZylalabs=${isZylalabs}, isEncryptedTbn=${isEncryptedTbn}, requiresProxy=${requiresProxy}`);
+  console.log(`useImageModalSource: URL=${imageUrl?.substring(0, 60)}..., 
+    isGoogleImage=${isGoogleImage}, 
+    isZylalabs=${isZylalabs}, 
+    isEncryptedTbn=${isEncryptedTbn}, 
+    requiresProxy=${requiresProxy}, 
+    useAvatar=${useAvatar}`);
   
   return {
     useAvatar,

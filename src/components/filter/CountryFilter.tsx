@@ -12,12 +12,16 @@ type CountryOption = {
   flag: string;
 };
 
+// Фиксированный список стран ЕС в порядке приоритета
 export const EUROPEAN_COUNTRIES: CountryOption[] = [
-  { code: 'gb', name: 'Великобритания', flag: '🇬🇧' },
   { code: 'de', name: 'Германия', flag: '🇩🇪' },
   { code: 'fr', name: 'Франция', flag: '🇫🇷' },
-  { code: 'it', name: 'Италия', flag: '🇮🇹' },
   { code: 'es', name: 'Испания', flag: '🇪🇸' },
+  { code: 'it', name: 'Италия', flag: '🇮🇹' },
+  { code: 'nl', name: 'Нидерланды', flag: '🇳🇱' },
+  { code: 'be', name: 'Бельгия', flag: '🇧🇪' },
+  { code: 'pl', name: 'Польша', flag: '🇵🇱' },
+  { code: 'gb', name: 'Великобритания', flag: '🇬🇧' },
 ];
 
 interface CountryFilterProps {

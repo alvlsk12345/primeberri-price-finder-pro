@@ -20,8 +20,31 @@ const isValidApiKey = (key: string): boolean => {
 };
 
 // Получение API-ключа с проверкой валидности
-export const getApiKey = (): string => {
+export const getApiKey = async (): Promise<string> => {
   try {
+    // Сначала пытаемся получить ключ из Supabase Edge Function
+    try {
+      const response = await fetch('https://juacmpkewomkducoanle.supabase.co/functions/v1/api-key-manager?provider=zylalabs', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.key && isValidApiKey(data.key)) {
+          console.log('Успешно получен API ключ Zylalabs из Supabase');
+          return data.key;
+        }
+      } else {
+        console.warn('Не удалось получить API ключ Zylalabs из Supabase:', await response.text());
+      }
+    } catch (err) {
+      console.warn('Ошибка при запросе API ключа Zylalabs из Supabase:', err);
+    }
+    
+    // Если не удалось получить из Supabase, используем локальное хранилище
     const storedKey = localStorage.getItem('zylalabs_api_key');
     
     // Если в localStorage хранится невалидный ключ, сбрасываем его и возвращаем пустую строку
@@ -44,11 +67,37 @@ export const getApiKey = (): string => {
 };
 
 // Сохранение нового API ключа
-export const setApiKey = (newKey: string): boolean => {
+export const setApiKey = async (newKey: string): Promise<boolean> => {
   try {
     if (isValidApiKey(newKey)) {
+      // Попытка сохранить ключ в Supabase
+      try {
+        const response = await fetch('https://juacmpkewomkducoanle.supabase.co/functions/v1/api-key-manager', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            provider: 'zylalabs',
+            key: newKey
+          })
+        });
+        
+        if (response.ok) {
+          console.log('API ключ Zylalabs успешно сохранен в Supabase');
+          // Также сохраняем в localStorage для резервного доступа
+          localStorage.setItem('zylalabs_api_key', newKey);
+          return true;
+        } else {
+          console.warn('Не удалось сохранить API ключ Zylalabs в Supabase, сохраняем только локально');
+        }
+      } catch (err) {
+        console.warn('Ошибка при сохранении API ключа Zylalabs в Supabase:', err);
+      }
+      
+      // Если не удалось сохранить в Supabase, сохраняем только в localStorage
       localStorage.setItem('zylalabs_api_key', newKey);
-      console.log('API ключ Zylalabs успешно сохранен');
+      console.log('API ключ Zylalabs сохранен локально');
       return true;
     }
     return false;
@@ -59,12 +108,34 @@ export const setApiKey = (newKey: string): boolean => {
 };
 
 // Сброс API ключа на пустое значение
-export const resetApiKey = (): boolean => {
+export const resetApiKey = async (): Promise<boolean> => {
   try {
     console.log('Выполняется полное удаление API ключа Zylalabs...');
+    
+    // Удаляем ключ из Supabase
+    try {
+      const response = await fetch('https://juacmpkewomkducoanle.supabase.co/functions/v1/api-key-manager', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          provider: 'zylalabs'
+        })
+      });
+      
+      if (response.ok) {
+        console.log('API ключ Zylalabs успешно удален из Supabase');
+      } else {
+        console.warn('Не удалось удалить API ключ Zylalabs из Supabase:', await response.text());
+      }
+    } catch (err) {
+      console.warn('Ошибка при удалении API ключа Zylalabs из Supabase:', err);
+    }
+    
     // Полностью удаляем ключ из localStorage
     localStorage.removeItem('zylalabs_api_key');
-    console.log('API ключ Zylalabs успешно удален');
+    console.log('API ключ Zylalabs успешно удален из локального хранилища');
     
     // Принудительно форсируем очистку кэша
     window.sessionStorage.removeItem('zylalabs_cache');

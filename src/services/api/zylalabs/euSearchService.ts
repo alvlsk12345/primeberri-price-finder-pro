@@ -5,28 +5,27 @@ import { Product } from "../../types";
 import { mapProductsFromApi } from "./productMapper";
 import { getCachedResponse, setCacheResponse } from "./cacheService";
 
-// Страны ЕС для поиска товаров (исключая Германию, которая обрабатывается отдельно)
-const OTHER_EU_COUNTRIES = ['fr', 'es', 'it', 'nl', 'be', 'pl', 'se', 'at', 'ie', 'pt'];
+// Приоритетные страны ЕС для поиска товаров
+const PRIORITY_EU_COUNTRIES = ['de', 'fr', 'es', 'it', 'nl', 'be', 'pl', 'se', 'at', 'ie', 'pt'];
 
 // Константы для оптимизации
 const MIN_PRODUCTS = 24; // Минимальное количество товаров для поиска
 const MAX_PRODUCTS = 36; // Максимальное количество товаров
 const MIN_GERMAN_PRODUCTS = 8; // Минимальное количество товаров из Германии
-const COUNTRIES_PER_BATCH = 3; // Увеличиваем количество стран в одном батче для параллельного запроса
 const REQUEST_TIMEOUT = 15000; // Уменьшаем таймаут до 15 секунд для более быстрого ответа
 
 /**
- * Функция для перемешивания массива 
- * @param array Массив для перемешивания
- * @returns Перемешанный массив
+ * Получает уникальный идентификатор товара, учитывая возможные дубликаты
+ * @param product Товар для идентификации
+ * @returns Уникальный идентификатор товара
  */
-function shuffleArray<T>(array: T[]): T[] {
-  const newArray = [...array];
-  for (let i = newArray.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-  }
-  return newArray;
+function getUniqueProductId(product: Product): string {
+  // Используем комбинацию полей для более точной идентификации
+  const baseId = product.id || '';
+  const title = (product.title || '').slice(0, 50); // Обрезаем до 50 символов чтобы избежать различий из-за длинны
+  const price = product.price?.toString() || '';
+  
+  return `${baseId}-${title}-${price}`.trim().toLowerCase();
 }
 
 /**
@@ -62,12 +61,12 @@ export const searchEuProducts = async (query: string, page: number = 1): Promise
   toast.loading('Выполняется поиск товаров...', { id: searchToastId, duration: 30000 });
   
   try {
-    // Шаг 2: Создаем запросы для всех стран сразу, включая Германию на первом месте
-    // для параллельного выполнения
-    const allCountries = ['de', ...shuffleArray(OTHER_EU_COUNTRIES)];
+    // Шаг 2: Создаем запросы в приоритетном порядке стран
+    // Германия всегда на первом месте, остальные страны в фиксированном порядке
+    console.log(`Поиск в странах: [${PRIORITY_EU_COUNTRIES.join(', ')}]`);
     
     // Создаем запросы для всех стран с ограничением по времени
-    const countryPromises = allCountries.map(async (countryCode) => {
+    const countryPromises = PRIORITY_EU_COUNTRIES.map(async (countryCode) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
       
@@ -105,28 +104,26 @@ export const searchEuProducts = async (query: string, page: number = 1): Promise
     const countryResults = await Promise.allSettled(countryPromises);
     toast.dismiss(searchToastId);
 
-    // Обработка результатов
+    // Обработка результатов с устранением дубликатов
+    const uniqueProducts = new Map<string, Product>();
+    
     countryResults.forEach((result, index) => {
       if (result.status === 'fulfilled' && result.value.success) {
         const { products, country } = result.value;
         
-        // Разделяем результаты из Германии и других стран
-        if (country === 'de') {
-          for (const product of products) {
-            if (product.id && !displayedProductIds.has(product.id)) {
-              germanProducts.push({ ...product, country });
-              displayedProductIds.add(product.id);
-            }
-          }
+        // Добавляем только уникальные продукты
+        for (const product of products) {
+          const uniqueId = getUniqueProductId(product);
           
-          // Обновляем информацию об API
-          apiInfo.totalGerman = germanProducts.length.toString();
-          console.log(`Успешно обработаны ${germanProducts.length} товаров из Германии`);
-        } else {
-          for (const product of products) {
-            if (product.id && !displayedProductIds.has(product.id)) {
+          // Если товар еще не добавлен, добавляем его
+          if (!uniqueProducts.has(uniqueId)) {
+            uniqueProducts.set(uniqueId, { ...product, country });
+            
+            // Разделяем результаты из Германии и других стран
+            if (country === 'de') {
+              germanProducts.push({ ...product, country });
+            } else {
               otherEuProducts.push({ ...product, country });
-              displayedProductIds.add(product.id);
             }
           }
         }
@@ -136,53 +133,46 @@ export const searchEuProducts = async (query: string, page: number = 1): Promise
     // Обновляем API информацию
     apiInfo.totalGerman = germanProducts.length.toString();
     apiInfo.totalOtherEu = otherEuProducts.length.toString();
+    apiInfo.uniqueProductCount = uniqueProducts.size.toString();
+    
+    console.log(`Найдено ${germanProducts.length} уникальных товаров из Германии, ${otherEuProducts.length} из других стран ЕС`);
     
     // Объединяем все найденные товары, отдавая приоритет товарам из Германии
-    const allDisplayProducts = [...germanProducts, ...otherEuProducts];
-    console.log(`Всего найдено товаров: ${allDisplayProducts.length} (${germanProducts.length} из Германии, ${otherEuProducts.length} из других стран ЕС)`);
+    let allDisplayProducts = [...germanProducts, ...otherEuProducts];
     
-    // Проверяем, есть ли у нас минимум товаров из Германии
-    if (germanProducts.length < MIN_GERMAN_PRODUCTS && germanProducts.length > 0) {
-      console.log(`Внимание! Найдено менее ${MIN_GERMAN_PRODUCTS} товаров из Германии (${germanProducts.length}), дублируем немецкие товары`);
+    // Проверка минимального количества товаров из Германии
+    if (germanProducts.length < MIN_GERMAN_PRODUCTS && germanProducts.length > 0 && allDisplayProducts.length > 0) {
+      console.log(`Внимание! Найдено недостаточно товаров из Германии (${germanProducts.length})`);
       
-      // Дублируем имеющиеся немецкие товары, если их меньше минимума
-      while (germanProducts.length > 0 && germanProducts.length < MIN_GERMAN_PRODUCTS) {
-        const indexToDuplicate = germanProducts.length % germanProducts.length;
-        const duplicatedProduct = {...germanProducts[indexToDuplicate]};
+      // Обеспечиваем минимальное количество товаров для отображения
+      if (allDisplayProducts.length < MIN_PRODUCTS) {
+        console.log(`Найдено менее ${MIN_PRODUCTS} товаров (${allDisplayProducts.length}), добавляем товары из других стран`);
         
-        // Модифицируем ID, чтобы React не жаловался на дубликаты ключей
-        duplicatedProduct.id = `${duplicatedProduct.id}-dup-de-${germanProducts.length}`;
-        germanProducts.push(duplicatedProduct);
+        // Добавляем товары из других стран, чтобы достичь минимума
+        const needed = Math.min(MIN_PRODUCTS - allDisplayProducts.length, otherEuProducts.length);
+        if (needed > 0 && otherEuProducts.length > 0) {
+          const additionalProducts = otherEuProducts.slice(0, needed)
+            .map(product => ({
+              ...product,
+              id: `${product.id}-additional-${Math.random().toString(36).substring(7)}` // Гарантируем уникальность ID
+            }));
+            
+          allDisplayProducts = [...germanProducts, ...otherEuProducts, ...additionalProducts];
+          console.log(`Добавлено ${additionalProducts.length} дополнительных товаров из других стран`);
+        }
       }
-      
-      // Обновляем общий список с дополнительными товарами из Германии
-      const updatedAllProducts = [...germanProducts, ...otherEuProducts];
-      console.log(`После дублирования товаров из Германии: ${germanProducts.length} из DE, всего ${updatedAllProducts.length}`);
-      
-      // Обновляем список всех товаров
-      allDisplayProducts.length = 0;
-      allDisplayProducts.push(...updatedAllProducts);
+    } else if (allDisplayProducts.length > MAX_PRODUCTS) {
+      // Ограничиваем до максимального количества товаров
+      console.log(`Ограничиваем количество товаров до ${MAX_PRODUCTS}`);
+      // Сохраняем все немецкие товары
+      const keptGermanProducts = germanProducts.slice(0, Math.min(germanProducts.length, MAX_PRODUCTS));
+      // Добавляем товары из других стран до достижения MAX_PRODUCTS
+      const keptOtherProducts = otherEuProducts.slice(0, MAX_PRODUCTS - keptGermanProducts.length);
+      allDisplayProducts = [...keptGermanProducts, ...keptOtherProducts];
     }
     
     // Возвращаем результаты поиска
     if (allDisplayProducts.length > 0) {
-      // Обеспечиваем минимум товаров для улучшения отображения
-      if (allDisplayProducts.length < MIN_PRODUCTS) {
-        console.log(`Найдено менее ${MIN_PRODUCTS} товаров (${allDisplayProducts.length}), дублируем некоторые товары для достижения минимума`);
-        // Дублируем имеющиеся товары, чтобы достичь минимума
-        while (allDisplayProducts.length < MIN_PRODUCTS) {
-          const indexToDuplicate = allDisplayProducts.length % allDisplayProducts.length;
-          const duplicatedProduct = {...allDisplayProducts[indexToDuplicate]};
-          // Модифицируем ID, чтобы React не жаловался на дубликаты ключей
-          duplicatedProduct.id = `${duplicatedProduct.id}-dup-${allDisplayProducts.length}`;
-          allDisplayProducts.push(duplicatedProduct);
-        }
-      } else if (allDisplayProducts.length > MAX_PRODUCTS) {
-        // Ограничиваем до максимального количества товаров
-        allDisplayProducts.length = MAX_PRODUCTS;
-        console.log(`Ограничиваем список товаров до ${MAX_PRODUCTS}`);
-      }
-      
       // Правильно рассчитываем количество страниц
       const itemsPerPage = 12;
       const calculatedPages = Math.ceil(allDisplayProducts.length / itemsPerPage);
@@ -191,6 +181,9 @@ export const searchEuProducts = async (query: string, page: number = 1): Promise
       apiInfo.totalProducts = allDisplayProducts.length.toString();
       apiInfo.totalPages = calculatedPages.toString();
       apiInfo.source = 'Zylalabs EU Search (Optimized)';
+      apiInfo.searchCountries = PRIORITY_EU_COUNTRIES.join(',');
+      apiInfo.germanProductCount = germanProducts.length.toString();
+      apiInfo.otherEuProductCount = otherEuProducts.length.toString();
       
       console.log(`Итого товаров: ${allDisplayProducts.length}, страниц: ${calculatedPages} (по ${itemsPerPage} на страницу)`);
       

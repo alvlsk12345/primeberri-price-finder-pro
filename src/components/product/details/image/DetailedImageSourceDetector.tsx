@@ -21,20 +21,28 @@ export function detectDetailedImageSource(image: string | null): DetailedImageSo
   }
   
   // Проверяем источник изображения для применения специальной обработки
+  // Улучшенная проверка Google Shopping изображений
   const isGoogleImage = isGoogleShoppingImage(image) || isGoogleCseImage(image);
-  const isZylalabs = isZylalabsImage(image);
   const isEncryptedTbn = image.includes('encrypted-tbn');
+  const isZylalabs = isZylalabsImage(image);
   
   // Проверяем, является ли URL с прокси
   const isProxiedUrlResult = isUrlWithCorsProxy(image);
   
   // Проверяем, требует ли изображение проксирования
-  const requiresProxy = isImageRequiringProxy(image);
+  // Для encrypted-tbn всегда требуется прокси
+  const requiresProxy = isImageRequiringProxy(image) || isEncryptedTbn;
   
   // Определяем, использовать ли Avatar вместо img
+  // Для Google Shopping изображений и Zylalabs всегда используем Avatar
   const useAvatar = isGoogleImage || isZylalabs || isEncryptedTbn;
   
-  console.log(`detectDetailedImageSource: URL=${image?.substring(0, 60)}..., isGoogleImage=${isGoogleImage}, isZylalabs=${isZylalabs}, isEncryptedTbn=${isEncryptedTbn}, requiresProxy=${requiresProxy}`);
+  console.log(`detectDetailedImageSource: URL=${image?.substring(0, 60)}..., 
+    isGoogleImage=${isGoogleImage}, 
+    isZylalabs=${isZylalabs}, 
+    isEncryptedTbn=${isEncryptedTbn}, 
+    requiresProxy=${requiresProxy}, 
+    useAvatar=${useAvatar}`);
   
   return {
     useAvatar,
