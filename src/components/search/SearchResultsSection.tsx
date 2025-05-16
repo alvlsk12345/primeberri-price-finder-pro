@@ -9,6 +9,7 @@ import { FilterSection } from "./FilterSection";
 export const SearchResultsSection: React.FC = () => {
   const { searchResults, hasSearched, apiInfo, lastSearchQuery, originalQuery, selectedProduct, currentPage, totalPages, handleProductSelect, handlePageChange } = useSearch();
   
+  // Если поиск не выполнялся или нет результатов, не отображаем секцию
   if (!hasSearched || searchResults.length === 0) {
     return null;
   }

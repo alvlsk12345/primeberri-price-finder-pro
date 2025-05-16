@@ -1,5 +1,4 @@
 
-import { useDemoModeForced } from '../mock/mockServiceConfig';
 import { SearchParams } from '../../types';
 import { buildUrl } from './urlBuilder';
 import { parseResponse } from './responseParser';
@@ -60,6 +59,9 @@ export const makeZylalabsApiRequest = async (params: SearchParams) => {
     return { ...mockData, isDemo: true };
   }
 };
+
+// Импортируем функцию для проверки демо-режима
+import { useDemoModeForced } from '../mock/mockServiceConfig';
 
 // Добавляем функцию для выполнения запросов по странам
 export const makeZylalabsCountryRequest = async (query: string, countryCode: string, page: number = 1, language: string = 'en') => {
