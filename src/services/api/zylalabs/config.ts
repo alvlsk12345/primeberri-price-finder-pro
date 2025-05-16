@@ -7,6 +7,16 @@ import { supabase } from '@/integrations/supabase/client';
 export const ZYLALABS_API_KEY = 'zylalabs-api-key';
 
 /**
+ * Базовый URL для API запросов
+ */
+export const BASE_URL = 'https://api.zylalabs.com/api/2033/real+time+product+search+api/1809/search+products';
+
+/**
+ * Таймаут для запросов в миллисекундах (30 секунд)
+ */
+export const REQUEST_TIMEOUT = 30000;
+
+/**
  * Получает API ключ сначала из Supabase, затем из localStorage если не найден
  * @returns API ключ или пустую строку
  */
@@ -65,6 +75,3 @@ export const setApiKey = async (apiKey: string): Promise<boolean> => {
     }
   }
 };
-
-// URL и другие константы
-export const ZYLALABS_API_URL = 'https://api.zylalabs.com/api/2033/real+time+product+search+api/1809/search+products';

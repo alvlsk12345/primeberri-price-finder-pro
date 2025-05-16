@@ -8,18 +8,23 @@ import { toast } from "sonner";
 import { Check, Copy, KeyRound } from "lucide-react";
 import { useDemoModeForced } from "@/services/api/mock/mockServiceConfig";
 
+// Интерфейс для пропсов ApiKeyForm
+interface ApiKeyFormProps {
+  keyType?: string;
+}
+
 // Функция для проверки валидности API ключа
 const isValidApiKey = (key: string) => {
   return key && key.length > 20;
 };
 
-export const ApiKeyForm: React.FC = () => {
+export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType = "zylalabs" }) => {
   const [apiKey, setApiKeyState] = useState<string>("");
   const [hasCopied, setHasCopied] = useState<boolean>(false);
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [storedApiKey, setStoredApiKey] = useState<string>("");
   
-  const isDemoMode = useDemoModeForced();
+  const isDemoMode = Boolean(useDemoModeForced());
 
   // Загрузка сохраненного API ключа при монтировании компонента
   useEffect(() => {
@@ -83,7 +88,7 @@ export const ApiKeyForm: React.FC = () => {
     <div className="space-y-4 mb-6">
       <div className="flex items-center gap-2 mb-2">
         <KeyRound className="h-5 w-5 text-blue-600" />
-        <Label htmlFor="api-key" className="text-lg font-medium">API ключ Zylalabs</Label>
+        <Label htmlFor="api-key" className="text-lg font-medium">API ключ {keyType === "zylalabs" ? "Zylalabs" : keyType}</Label>
       </div>
       
       {isDemoMode && (
@@ -95,7 +100,7 @@ export const ApiKeyForm: React.FC = () => {
       
       <div className="space-y-2">
         <Label htmlFor="api-key" className="text-sm text-gray-600">
-          Введите ваш API ключ от Zylalabs для доступа к поиску товаров
+          Введите ваш API ключ от {keyType === "zylalabs" ? "Zylalabs" : keyType} для доступа к поиску товаров
         </Label>
         <div className="flex gap-2">
           <Input

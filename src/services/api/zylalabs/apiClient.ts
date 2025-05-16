@@ -2,7 +2,7 @@
 import { SearchParams } from "../../types";
 import { generateMockSearchResults } from "../mock/mockSearchGenerator";
 import { useDemoModeForced } from "../mock/mockServiceConfig";
-import { getApiKey, REQUEST_TIMEOUT } from "./config";
+import { getApiKey, REQUEST_TIMEOUT, BASE_URL } from "./config";
 import { buildZylalabsUrl } from "./urlBuilder";
 import { toast } from "sonner"; 
 
@@ -13,12 +13,12 @@ import { toast } from "sonner";
  */
 export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any> => {
   // Проверка на принудительное использование демо-режима
-  if (useDemoModeForced) {
+  if (useDemoModeForced()) {
     console.log('Принудительное использование демо-режима. Запрос API пропущен.');
     return generateMockSearchResults(params.query, params.page);
   }
   
-  const apiKey = getApiKey();
+  const apiKey = await getApiKey();
   
   // Проверка наличия ключа API
   if (!apiKey) {
@@ -34,7 +34,7 @@ export const makeZylalabsApiRequest = async (params: SearchParams): Promise<any>
   try {
     // Увеличиваем таймаут до 30 секунд для запросов к API
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 секунд
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT); // 30 секунд
     
     // Показываем уведомление о запросе
     toast.loading('Выполняется запрос к Zylalabs API...', {
@@ -145,7 +145,7 @@ export const makeZylalabsCountryRequest = async (
   page: number = 1,
   language: string = 'en' // По умолчанию используем английский язык
 ): Promise<any> => {
-  const apiKey = getApiKey();
+  const apiKey = await getApiKey();
   
   // Проверка наличия ключа API
   if (!apiKey) {
