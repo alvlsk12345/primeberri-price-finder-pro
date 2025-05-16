@@ -29,9 +29,14 @@ export const isGoogleCseImage = (url: string): boolean => {
 export const isZylalabsImage = (url: string): boolean => {
   if (!url) return false;
   
+  // Расширенный список шаблонов для распознавания изображений Zylalabs
   return url.includes('zylalabs.com') || 
          url.includes('zyla-api') || 
-         url.includes('zylahome');
+         url.includes('zylahome') ||
+         url.includes('zylaproductapi') ||
+         url.includes('zylaproduct') ||
+         url.includes('images-na.ssl-images-amazon') ||  // Amazon изображения через Zylalabs
+         url.includes('m.media-amazon.com');            // Еще один формат Amazon через Zylalabs
 };
 
 /**

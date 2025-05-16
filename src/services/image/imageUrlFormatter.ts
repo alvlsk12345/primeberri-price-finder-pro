@@ -33,6 +33,28 @@ export const formatImageUrl = (url: string): string => {
   
   let formattedUrl = url.trim();
   
+  // Логирование для диагностики
+  console.log(`Форматирование URL изображения (начало): ${formattedUrl}`);
+  
+  // Удаляем экранирование слешей
+  formattedUrl = formattedUrl.replace(/\\\//g, '/');
+  
+  // Удаляем кавычки из URL, если они есть в начале и конце
+  if ((formattedUrl.startsWith('"') && formattedUrl.endsWith('"')) || 
+      (formattedUrl.startsWith("'") && formattedUrl.endsWith("'"))) {
+    formattedUrl = formattedUrl.substring(1, formattedUrl.length - 1);
+  }
+  
+  // Декодируем URL-encoded символы
+  try {
+    // Только если URL содержит энкодированные символы
+    if (formattedUrl.includes('%')) {
+      formattedUrl = decodeURIComponent(formattedUrl);
+    }
+  } catch (e) {
+    console.warn('Ошибка декодирования URL:', e);
+  }
+  
   // Добавляем протокол если отсутствует и это не data URL
   if (!formattedUrl.startsWith('http') && !formattedUrl.startsWith('data:') && !formattedUrl.startsWith('//')) {
     // Если URL начинается с //, добавляем https:
@@ -43,13 +65,6 @@ export const formatImageUrl = (url: string): string => {
     }
   }
   
-  // Удаляем экранирование слешей
-  formattedUrl = formattedUrl.replace(/\\\//g, '/');
-  
-  // Удаляем кавычки из URL, если они есть в начале и конце
-  if (formattedUrl.startsWith('"') && formattedUrl.endsWith('"')) {
-    formattedUrl = formattedUrl.substring(1, formattedUrl.length - 1);
-  }
-  
+  console.log(`Форматирование URL изображения (результат): ${formattedUrl}`);
   return formattedUrl;
 };

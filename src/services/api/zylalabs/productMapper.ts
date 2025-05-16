@@ -1,6 +1,8 @@
 
 import { Product } from "../../types";
 import { processProductImage } from "../../imageProcessor";
+import { formatImageUrl } from "../../image/imageUrlFormatter";
+import { isZylalabsImage } from "../../image/imageSourceDetector";
 
 /**
  * Преобразует продукты API в стандартный формат с дополнительной информацией
@@ -50,26 +52,49 @@ export const mapProductsFromApi = (products: any[], params: any): Product[] => {
     
     // Улучшенная обработка URL изображения
     let imageUrl = '';
+    const productId = product.product_id || `zyla-${Date.now()}-${index}`;
     
-    // Логирование для отладки
-    console.log(`Обработка изображения для товара ${product.product_title || 'Unknown'}, индекс: ${index}`);
+    console.log(`=== Обработка изображения для товара ${productId}: ${product.product_title || 'Unknown'} ===`);
+    
+    // Пробуем найти изображение в разных местах ответа API
+    let rawImageUrl = null;
     
     if (product.product_photos && product.product_photos.length > 0) {
-      console.log(`Найдены product_photos, используем первое из ${product.product_photos.length} изображений`);
-      imageUrl = processProductImage(product.product_photos[0], index) || '';
+      console.log(`Найдены product_photos (${product.product_photos.length}): ${JSON.stringify(product.product_photos[0]).substring(0, 100)}`);
+      rawImageUrl = product.product_photos[0];
     } else if (product.image) {
       console.log(`Найдено поле image: ${product.image?.substring(0, 100)}`);
-      imageUrl = processProductImage(product.image, index) || '';
-    } else {
-      console.log(`Не найдены изображения для товара ${product.product_title || 'Unknown'}`);
-      imageUrl = '';
+      rawImageUrl = product.image;
+    } else if (product.product_image) {
+      console.log(`Найдено поле product_image: ${product.product_image?.substring(0, 100)}`);
+      rawImageUrl = product.product_image;
+    } else if (product.product_images && product.product_images.length > 0) {
+      console.log(`Найдены product_images, используем первое из ${product.product_images.length}`);
+      rawImageUrl = product.product_images[0];
+    } else if (product.offer && product.offer.image) {
+      console.log(`Найдено изображение в offer: ${product.offer.image?.substring(0, 100)}`);
+      rawImageUrl = product.offer.image;
     }
     
-    console.log(`Итоговый URL изображения: ${imageUrl?.substring(0, 100)}`);
+    if (rawImageUrl) {
+      // Форматируем URL изображения
+      const formattedUrl = formatImageUrl(rawImageUrl);
+      console.log(`Форматированный URL: ${formattedUrl}`);
+      
+      // Проверяем, является ли это изображением Zylalabs
+      const isFromZylalabs = isZylalabsImage(formattedUrl);
+      console.log(`Изображение от Zylalabs: ${isFromZylalabs}`);
+      
+      // Обрабатываем изображение с учетом индекса для кэширования
+      imageUrl = processProductImage(formattedUrl, index, isFromZylalabs) || '';
+      console.log(`Финальный URL изображения: ${imageUrl.substring(0, 100)}`);
+    } else {
+      console.log(`Не найдены изображения для товара ${productId}`);
+    }
     
     // Преобразование в формат Product
     return {
-      id: product.product_id || `product-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      id: productId,
       title: product.product_title || 'Без названия',
       subtitle: product.product_attributes?.Brand || '',
       price: (product.offer && product.offer.price) || product.price || 'Цена не указана',
