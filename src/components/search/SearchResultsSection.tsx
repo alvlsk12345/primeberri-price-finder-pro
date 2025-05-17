@@ -10,7 +10,6 @@ import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { clearApiCache } from "@/services/api/zylalabs/cacheService";
 import { toast } from "sonner";
-import { SortButtons } from "../filter/SortButtons";
 import { SortOption } from "@/services/types";
 
 export const SearchResultsSection: React.FC = () => {
@@ -89,7 +88,6 @@ export const SearchResultsSection: React.FC = () => {
         </Button>
       </div>
       
-      {/* ИСПРАВЛЕНИЕ: Убираем дублирование кнопок сортировки */}
       <div className="mb-4">
         <FilterSection />
       </div>
@@ -109,3 +107,4 @@ export const SearchResultsSection: React.FC = () => {
       )}
     </div>
   );
+};
