@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Bot, Search } from 'lucide-react';
@@ -49,8 +50,8 @@ export const DiagnosticButtons: React.FC = () => {
       }
       
       toast.loading("Тестирование Zylalabs API...");
-      // Используем BASE_URL из config
-      const testUrl = `${BASE_URL}?query=test&limit=1`;
+      // Используем BASE_URL из config и параметр 'q' вместо 'query'
+      const testUrl = `${BASE_URL}?q=test&limit=1`;
       
       const response = await fetch(testUrl, {
         method: 'GET',

@@ -11,8 +11,8 @@ export const buildUrl = (params: SearchParams): string => {
   // Создаем экземпляр URLSearchParams для построения параметров запроса
   const urlParams = new URLSearchParams();
   
-  // Добавляем обязательный параметр запроса
-  urlParams.append('query', params.query);
+  // Добавляем обязательный параметр запроса 'q' вместо 'query' согласно документации
+  urlParams.append('q', params.query);
   
   // Добавляем опциональные параметры, если они есть
   if (params.page) {
@@ -20,7 +20,7 @@ export const buildUrl = (params: SearchParams): string => {
   }
   
   if (params.countries && params.countries.length > 0) {
-    urlParams.append('countries', params.countries.join(','));
+    urlParams.append('country', params.countries[0]); // Используем только первую страну как параметр country
   }
   
   if (params.language) {

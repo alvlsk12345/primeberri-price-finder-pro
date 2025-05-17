@@ -47,8 +47,17 @@ export function useSearchApiCall({
             clearApiCache();
           }
           
+          // Используем первый элемент массива countries в качестве параметра country
+          const searchCountry = params.countries && params.countries.length > 0 ? params.countries[0] : 'de';
+          
           // Передаем параметр forceNewSearch в функцию searchEuProducts
-          const result = await searchEuProducts(params.query, params.page || 1, forceNewSearch);
+          const result = await searchEuProducts(
+            params.query, 
+            params.page || 1, 
+            forceNewSearch, 
+            params.language || 'ru',
+            searchCountry
+          );
           
           // Проверяем результаты поиска
           if (result && result.products && result.products.length > 0) {

@@ -93,8 +93,8 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType = "zylalabs" }) 
         return;
       }
       
-      // Используем BASE_URL из config и добавляем параметры запроса
-      const testUrl = `${BASE_URL}?query=test&limit=1`;
+      // Используем BASE_URL из config и добавляем параметр 'q' вместо 'query'
+      const testUrl = `${BASE_URL}?q=test&limit=1`;
       
       // Показываем уведомление о начале проверки
       toast.loading("Проверка API ключа...", { id: "api-check", duration: 5000 });
@@ -161,7 +161,7 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType = "zylalabs" }) 
       )}
       
       <div className="text-xs text-gray-500 mt-2">
-        <p>Для получения API ключа перейдите на сайт <a href="https://zylalabs.com/api/2033/real-time+product+search+api" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Zylalabs Real Time Product Search API</a></p>
+        <p>Для получения API ключа перейдите на сайт <a href="https://zylalabs.com/api/2033/real+time+product+search+api" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Zylalabs Real Time Product Search API</a></p>
       </div>
     </div>
   );
