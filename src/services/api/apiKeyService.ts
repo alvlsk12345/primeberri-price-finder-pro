@@ -27,6 +27,10 @@ export const API_KEY_URLS: Record<ApiKeyType, string> = {
   'perplexity': 'https://www.perplexity.ai/settings'
 };
 
+// URL Supabase Edge Function для управления API ключами
+// Используем полный URL вместо относительного пути
+const API_KEY_MANAGER_URL = 'https://juacmpkewomkducoanle.supabase.co/functions/v1/api-key-manager';
+
 /**
  * Получает API ключ для заданного сервиса
  * @param keyType Тип API ключа
@@ -40,7 +44,7 @@ export const getApiKey = async (keyType: ApiKeyType): Promise<string> => {
     // Пытаемся получить ключ из Supabase Edge Function
     try {
       console.log(`Проверка наличия API ключа ${keyType} в Supabase Edge Functions...`);
-      const response = await fetch('/api/api-key-manager', {
+      const response = await fetch(API_KEY_MANAGER_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -49,11 +53,22 @@ export const getApiKey = async (keyType: ApiKeyType): Promise<string> => {
       });
       
       if (response.ok) {
+        // Проверяем, что ответ действительно JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const responseText = await response.text();
+          console.error(`Ожидался JSON, получен: ${contentType}. Ответ:`, responseText.substring(0, 100) + '...');
+          throw new Error('Неверный формат ответа от Edge Function');
+        }
+        
         const data = await response.json();
         if (data.success && data.value) {
           console.log(`API ключ ${keyType} получен из Supabase Edge Functions (источник: ${data.source})`);
           return data.value;
         }
+      } else {
+        const responseText = await response.text();
+        console.error(`Ошибка при запросе к Edge Function: ${response.status}. Ответ:`, responseText.substring(0, 100) + '...');
       }
     } catch (edgeFunctionError) {
       console.error(`Ошибка при получении API ключа ${keyType} из Supabase:`, edgeFunctionError);
@@ -93,7 +108,7 @@ export const setApiKey = async (keyType: ApiKeyType, apiKey: string): Promise<bo
     
     // Пытаемся уведомить Supabase Edge Function о сохранении ключа
     try {
-      const response = await fetch('/api/api-key-manager', {
+      const response = await fetch(API_KEY_MANAGER_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -106,12 +121,22 @@ export const setApiKey = async (keyType: ApiKeyType, apiKey: string): Promise<bo
       });
       
       if (response.ok) {
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const responseText = await response.text();
+          console.error(`Ожидался JSON, получен: ${contentType}. Ответ:`, responseText.substring(0, 100) + '...');
+          throw new Error('Неверный формат ответа от Edge Function');
+        }
+        
         const data = await response.json();
         if (data.success) {
           console.log(`Supabase Edge Function уведомлена о сохранении ключа ${keyType}`);
         } else {
           console.warn(`Предупреждение от Supabase Edge Function:`, data.message);
         }
+      } else {
+        const responseText = await response.text();
+        console.error(`Ошибка при запросе к Edge Function: ${response.status}. Ответ:`, responseText.substring(0, 100) + '...');
       }
     } catch (edgeFunctionError) {
       console.error(`Ошибка при уведомлении Supabase Edge Function о ключе ${keyType}:`, edgeFunctionError);

@@ -21,6 +21,11 @@ export const REQUEST_TIMEOUT = 30000;
 import { getApiKey as getApiKeyGeneric, setApiKey as setApiKeyGeneric } from '../apiKeyService';
 
 /**
+ * URL для Edge Function управления API ключами
+ */
+export const API_KEY_MANAGER_URL = 'https://juacmpkewomkducoanle.supabase.co/functions/v1/api-key-manager';
+
+/**
  * Получает API ключ Zylalabs
  * @returns API ключ или пустую строку
  */
