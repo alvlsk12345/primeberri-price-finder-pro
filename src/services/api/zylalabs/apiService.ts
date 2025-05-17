@@ -2,7 +2,7 @@
 import { Product, SearchParams } from "../../types";
 import { makeZylalabsApiRequest } from "./apiClient";
 import { parseResponse } from "./responseParser";
-import { calculatePageUrl } from "./urlBuilder";
+import { buildUrl } from "./urlBuilder";
 import { generateMockSearchResults } from "../mock/mockSearchGenerator";
 import { useMockData } from "../mock/mockServiceConfig";
 
@@ -63,6 +63,6 @@ export async function fetchProductsAsync(searchParams: SearchParams) {
 export const _testing = {
   parseResponse,
   makeZylalabsApiRequest,
-  calculatePageUrl,
+  buildUrl, // Заменили calculatePageUrl на buildUrl
   generateMockSearchResults
 };

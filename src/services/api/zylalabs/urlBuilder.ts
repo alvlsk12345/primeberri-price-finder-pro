@@ -50,3 +50,27 @@ export const buildUrl = (params: SearchParams): string => {
     throw new Error(`Ошибка при построении URL: ${error instanceof Error ? error.message : String(error)}`);
   }
 };
+
+/**
+ * Вычисляет URL для конкретной страницы пагинации
+ * @param baseUrl Базовый URL
+ * @param page Номер страницы
+ * @returns URL для указанной страницы
+ */
+export const calculatePageUrl = (baseUrl: string, page: number): string => {
+  try {
+    const url = new URL(baseUrl);
+    
+    // Обновляем или добавляем параметр страницы
+    if (page > 1) {
+      url.searchParams.set('page', page.toString());
+    } else {
+      url.searchParams.delete('page');
+    }
+    
+    return url.toString();
+  } catch (error) {
+    console.error('Ошибка при создании URL страницы:', error);
+    return baseUrl;
+  }
+};

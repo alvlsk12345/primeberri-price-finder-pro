@@ -1,7 +1,8 @@
 
 import { SearchParams, Product } from "../../types";
 import { formatSingleProduct } from "../../formatters/singleProductFormatter";
-import { parseApiResponse } from "../responseParserService";
+// Удаляем импорт parseApiResponse, так как он определен в этом файле
+// import { parseApiResponse } from "../responseParserService";
 
 // Обнаруженные форматы ответов API Zylalabs
 export enum ZylalabsResponseFormat {
@@ -182,10 +183,5 @@ export const parseResponse = async (data: any, originalQuery: string | SearchPar
   }
 };
 
-// При необходимости можете добавить свою реализацию parseApiResponse
-export const parseApiResponse = async (data: any, originalQuery: string | SearchParams) => {
-  const query = typeof originalQuery === 'string' ? originalQuery : originalQuery.query;
-  
-  // Используем основную функцию parseResponse
-  return parseResponse(data, query);
-};
+// Экспортируем функцию parseApiResponse как алиас для parseResponse для обеспечения обратной совместимости
+export const parseApiResponse = parseResponse;
