@@ -20,7 +20,8 @@ export const getBaseProducts = (): Product[] => {
       description: 'Качественный немецкий товар с быстрой доставкой в Россию.',
       availability: 'В наличии',
       brand: 'Deutsche Quality',
-      country: 'de'
+      country: 'de',
+      specifications: {}
     },
     {
       id: 'mock-de-2',
@@ -35,7 +36,8 @@ export const getBaseProducts = (): Product[] => {
       description: 'Немецкое качество по доступной цене. Доставка из Германии.',
       availability: 'Под заказ: 3-5 дней',
       brand: 'OTTO Brand',
-      country: 'de'
+      country: 'de',
+      specifications: {}
     },
     {
       id: 'mock-de-3',
@@ -50,7 +52,8 @@ export const getBaseProducts = (): Product[] => {
       description: 'Высококачественная электроника напрямую из Германии.',
       availability: 'В наличии: 10+ шт.',
       brand: 'ElectroDE',
-      country: 'de'
+      country: 'de',
+      specifications: {}
     },
     {
       id: 'mock-de-4',
@@ -65,7 +68,8 @@ export const getBaseProducts = (): Product[] => {
       description: 'Берлинский магазин, доставка по всей Европе.',
       availability: 'В наличии',
       brand: 'Berlin Store',
-      country: 'de'
+      country: 'de',
+      specifications: {}
     },
     {
       id: 'mock-de-5',
@@ -80,7 +84,8 @@ export const getBaseProducts = (): Product[] => {
       description: 'Немецкие аптечные товары с быстрой доставкой.',
       availability: '3 шт. в наличии',
       brand: 'Deutsche Apotheke',
-      country: 'de'
+      country: 'de',
+      specifications: {}
     },
     
     // Английские товары
@@ -97,7 +102,8 @@ export const getBaseProducts = (): Product[] => {
       description: 'Товар из ��нглии с доставкой по всему миру.',
       availability: 'Доступен',
       brand: 'British Goods',
-      country: 'gb'
+      country: 'gb',
+      specifications: {}
     },
     
     // Французский товар
@@ -114,7 +120,8 @@ export const getBaseProducts = (): Product[] => {
       description: 'Аутентичные французские товары с доставкой в Россию.',
       availability: 'Под заказ',
       brand: 'Paris Fashion',
-      country: 'fr'
+      country: 'fr',
+      specifications: {}
     },
     
     // Итальянский товар
@@ -131,7 +138,8 @@ export const getBaseProducts = (): Product[] => {
       description: 'Товар из Италии высокого качества.',
       availability: 'Ограниченное количество',
       brand: 'Milano Style',
-      country: 'it'
+      country: 'it',
+      specifications: {}
     },
     
     // Испанский товар
@@ -148,7 +156,8 @@ export const getBaseProducts = (): Product[] => {
       description: 'Товар из Испании с доставкой в Россию.',
       availability: 'В наличии',
       brand: 'Barcelona',
-      country: 'es'
+      country: 'es',
+      specifications: {}
     },
   ];
 };

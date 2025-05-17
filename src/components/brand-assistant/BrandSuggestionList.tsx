@@ -23,12 +23,15 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
 
   // Функция для выбора продукта из списка
   const handleSelectProduct = (suggestion: BrandSuggestion, immediate: boolean = false) => {
-    const searchQuery = `${suggestion.brand} ${suggestion.product}`;
+    const brandName = suggestion.brand || suggestion.name || "";
+    const productName = suggestion.product || "";
+    const searchQuery = `${brandName} ${productName}`;
+    
     console.log(`Выбираем товар для поиска: "${searchQuery}", immediate: ${immediate}`);
     
     // Показываем toast о начале поиска для лучшего UX
     if (immediate) {
-      toast.loading(`Выполняем поиск: ${suggestion.brand} ${suggestion.product}`, {
+      toast.loading(`Выполняем поиск: ${brandName} ${productName}`, {
         id: 'search-in-progress',
         duration: 3000
       });
@@ -37,7 +40,7 @@ export const BrandSuggestionList: React.FC<BrandSuggestionListProps> = ({
     // Вызываем функцию onSelect с правильными параметрами
     onSelect(searchQuery, immediate);
     
-    toast.success(`Выбран товар для поиска: ${suggestion.brand} ${suggestion.product}`, {
+    toast.success(`Выбран товар для поиска: ${brandName} ${productName}`, {
       duration: 2000,
     });
     

@@ -12,16 +12,15 @@ export interface Product {
   description: string;
   availability: string;
   brand: string;
-  country?: string; // Добавляем поле country
+  country?: string;
   specifications: Record<string, any>;
-  _numericPrice?: number;
 }
 
 export interface SearchParams {
   query: string;
-  page?: number; // Делаем необязательным
-  language?: string; // Делаем необязательным
-  countries?: string[]; // Делаем необязательным
+  page?: number;
+  language?: string;
+  countries?: string[];
   filters?: ProductFilters;
   originalQuery?: string;
   requireGermanResults?: boolean;
@@ -31,23 +30,22 @@ export interface SearchParams {
 export interface ProductFilters {
   priceRange?: [number | null, number | null];
   brands?: string[];
-  countries?: string[]; // Добавляем поддержку стран
-  sources?: string[]; // Добавляем поддержку источников
-  minPrice?: number; // Добавляем минимальную цену
-  maxPrice?: number; // Добавляем максимальную цену
-  rating?: number; // Добавляем рейтинг
+  countries?: string[];
+  sources?: string[];
+  minPrice?: number;
+  maxPrice?: number;
+  rating?: number;
   sortOption?: SortOption;
-  sortBy?: string; // Добавляем sortBy для обратной совместимости
+  sortBy?: string;
 }
 
 // Обновляем тип SortOption, чтобы включить варианты сортировки используемые в коде
 export type SortOption = 'price-asc' | 'price-desc' | 'rating-desc' | 'rating-asc' | 'price_asc' | 'price_desc' | 'rating_desc' | null;
 
-// Добавляем интерфейс ApiResponse для совместимости
 export interface ApiResponse {
   products: Product[];
   totalPages: number;
-  isDemo: string; // Строковое представление для совместимости
+  isDemo: string;
   apiInfo?: Record<string, string>;
 }
 
@@ -57,10 +55,12 @@ export interface ApiInfo {
   totalResults: string;
 }
 
-// Добавляем интерфейс для предложений брендов
+// Обновляем интерфейс BrandSuggestion, чтобы он соответствовал используемому в коде
 export interface BrandSuggestion {
-  id: string;
-  name: string;
+  id?: string;
+  name?: string;
+  brand?: string;
+  product?: string;
   description: string;
   logoUrl?: string;
   category?: string;
@@ -72,7 +72,6 @@ export interface BrandSuggestion {
   };
 }
 
-// Добавляем тип SearchResult для совместимости
 export interface SearchResult {
   products: Product[];
   totalPages: number;

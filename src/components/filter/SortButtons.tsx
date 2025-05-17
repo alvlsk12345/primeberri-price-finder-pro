@@ -15,7 +15,7 @@ export const SortButtons: React.FC<SortButtonsProps> = ({ sortBy, onSortChange }
       <Button
         size="sm"
         variant={sortBy === "price_asc" || sortBy === "price-asc" ? "brand" : "outline"}
-        onClick={() => onSortChange("price_asc")}
+        onClick={() => onSortChange("price-asc")}
         className="flex items-center gap-1 px-2 py-1 h-auto"
         aria-label="По возрастанию цены"
       >
@@ -26,7 +26,7 @@ export const SortButtons: React.FC<SortButtonsProps> = ({ sortBy, onSortChange }
       <Button
         size="sm"
         variant={sortBy === "price_desc" || sortBy === "price-desc" ? "brand" : "outline"}
-        onClick={() => onSortChange("price_desc")}
+        onClick={() => onSortChange("price-desc")}
         className="flex items-center gap-1 px-2 py-1 h-auto"
         aria-label="По убыванию цены"
       >
@@ -37,7 +37,7 @@ export const SortButtons: React.FC<SortButtonsProps> = ({ sortBy, onSortChange }
       <Button
         size="sm"
         variant={sortBy === "rating_desc" || sortBy === "rating-desc" ? "brand" : "outline"}
-        onClick={() => onSortChange("rating_desc")}
+        onClick={() => onSortChange("rating-desc")}
         className="flex items-center gap-1 px-2 py-1 h-auto"
         aria-label="По рейтингу"
       >

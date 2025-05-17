@@ -32,8 +32,8 @@ export const BrandSuggestionItem: React.FC<CombinedBrandSuggestionItemProps> = (
   const isSuggestionObject = 'suggestion' in props;
   
   // Извлекаем необходимые данные в зависимости от формата пропсов
-  const brand = isSuggestionObject ? props.suggestion.brand : props.brand;
-  const product = isSuggestionObject ? props.suggestion.product : props.product;
+  const brand = isSuggestionObject ? (props.suggestion.brand || props.suggestion.name || '') : props.brand;
+  const product = isSuggestionObject ? (props.suggestion.product || '') : props.product;
   const description = isSuggestionObject ? props.suggestion.description : props.description;
   const index = props.index;
   

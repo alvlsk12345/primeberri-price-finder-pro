@@ -16,14 +16,14 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
       
       // Убедимся, что результат всегда возвращается как массив BrandSuggestion[]
       if (Array.isArray(result)) {
-        return result;
+        return result.map(item => adaptToBrandSuggestion(item));
       }
       
       // Если результат не массив, но имеет поле products, возвращаем его
       if (result && typeof result === 'object' && 'products' in result) {
         const products = (result as any).products;
         if (Array.isArray(products)) {
-          return products;
+          return products.map(item => adaptToBrandSuggestion(item));
         }
       }
       
@@ -48,27 +48,15 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     // Обрабатываем ответ
     if (Array.isArray(result)) {
       // Приведение возвращаемых данных к типу BrandSuggestion
-      return result.map((brand: any) => ({
-        brand: brand.brand || brand.name || "Неизвестный бренд",
-        product: brand.product || "",
-        description: brand.description || "Описание недоступно",
-      }));
+      return result.map(item => adaptToBrandSuggestion(item));
     } else if (result && typeof result === 'object') {
       // Проверяем наличие поля products
       if ('products' in result && Array.isArray((result as any).products)) {
-        return (result as any).products.map((brand: any) => ({
-          brand: brand.brand || brand.name || "Неизвестный бренд",
-          product: brand.product || "",
-          description: brand.description || "Описание недоступно",
-        }));
-      } else if (result.brand || result.product) {
+        return (result as any).products.map((item: any) => adaptToBrandSuggestion(item));
+      } else if (result.brand || result.name || result.product) {
         // Если получен один объект вместо массива
         console.log('Получен один объект вместо массива, преобразуем его');
-        return [{
-          brand: result.brand || result.name || "Неизвестный бренд",
-          product: result.product || "",
-          description: result.description || "Описание недоступно",
-        }];
+        return [adaptToBrandSuggestion(result)];
       }
     }
     
@@ -82,3 +70,18 @@ export const fetchBrandSuggestions = async (description: string): Promise<BrandS
     return [];
   }
 };
+
+// Функция адаптер для приведения ответа от API к типу BrandSuggestion
+function adaptToBrandSuggestion(item: any): BrandSuggestion {
+  return {
+    id: item.id || crypto.randomUUID().slice(0, 8),
+    name: item.name || item.brand || "Неизвестный бренд",
+    brand: item.brand || item.name || "Неизвестный бренд",
+    product: item.product || "",
+    description: item.description || "Описание недоступно",
+    logoUrl: item.logoUrl || item.imageUrl || undefined,
+    category: item.category || undefined,
+    confidence: item.confidence || undefined,
+    price: item.price || undefined
+  };
+}

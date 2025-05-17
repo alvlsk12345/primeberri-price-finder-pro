@@ -18,7 +18,8 @@ export const createQueryRelatedProduct = (query: string): Product => {
     description: `Это специальный демо-товар, созданный на основе вашего запроса "${query}".`,
     availability: 'Ограниченное количество - 5 шт.',
     brand: query.split(' ')[0] || 'SpecialBrand',
-    country: 'de'
+    country: 'de',
+    specifications: {}
   };
 };
 
@@ -39,7 +40,8 @@ export const createExtraProduct = (query: string, index: number): Product => {
     description: `Дополнительный товар для обеспечения минимального количества результатов поиска.`,
     availability: 'В наличии',
     brand: 'Extra Brand',
-    country: 'de'
+    country: 'de',
+    specifications: {}
   };
 };
 
@@ -63,7 +65,8 @@ export const createPageSpecificProducts = (query: string, page: number, count: n
       description: `Товар со страницы ${page}. Дополнительное описание для запроса "${query}".`,
       availability: 'В наличии',
       brand: `Brand ${page}.${i}`,
-      country: i % 3 === 0 ? 'de' : (i % 3 === 1 ? 'gb' : 'fr')
+      country: i % 3 === 0 ? 'de' : (i % 3 === 1 ? 'gb' : 'fr'),
+      specifications: {}
     });
   }
   

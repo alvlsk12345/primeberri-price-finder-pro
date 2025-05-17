@@ -28,7 +28,12 @@ export const getSpecificProducts = (query: string): Product[] => {
         availability: 'В наличии',
         brand: 'Hugo Boss',
         country: 'de',
-        _numericPrice: 599.99
+        _numericPrice: 599.99,
+        specifications: {
+          material: 'Шерсть, полиэстер',
+          color: 'Черный',
+          style: 'Деловой'
+        }
       },
       {
         id: 'special-hugo-boss-2',
@@ -44,7 +49,12 @@ export const getSpecificProducts = (query: string): Product[] => {
         availability: 'Доступно 3 шт.',
         brand: 'Hugo Boss',
         country: 'de',
-        _numericPrice: 499.95
+        _numericPrice: 499.95,
+        specifications: {
+          material: 'Шерсть',
+          color: 'Синий',
+          style: 'Классический'
+        }
       },
       {
         id: 'special-hugo-boss-3',
@@ -60,7 +70,12 @@ export const getSpecificProducts = (query: string): Product[] => {
         availability: 'В наличии',
         brand: 'Hugo Boss',
         country: 'gb',
-        _numericPrice: 450.00
+        _numericPrice: 450.00,
+        specifications: {
+          material: 'Шерсть, эластан',
+          color: 'Тёмно-серый',
+          style: 'Slim fit'
+        }
       }
     ];
   }
@@ -82,7 +97,12 @@ export const getSpecificProducts = (query: string): Product[] => {
         availability: 'В наличии',
         brand: 'Premium Brand',
         country: 'de',
-        _numericPrice: 299.99
+        _numericPrice: 299.99,
+        specifications: {
+          material: 'Хлопок, полиэстер',
+          color: 'Черный',
+          style: 'Повседневный'
+        }
       },
       {
         id: 'special-jacket-2',
@@ -98,7 +118,12 @@ export const getSpecificProducts = (query: string): Product[] => {
         availability: 'Доступно',
         brand: 'Milano Fashion',
         country: 'it',
-        _numericPrice: 359.90
+        _numericPrice: 359.90,
+        specifications: {
+          material: 'Шерсть, шёлк',
+          color: 'Тёмно-синий',
+          style: 'Деловой'
+        }
       }
     ];
   }
@@ -120,7 +145,12 @@ export const getSpecificProducts = (query: string): Product[] => {
         availability: 'В наличии',
         brand: 'German Quality',
         country: 'de',
-        _numericPrice: 499.99
+        _numericPrice: 499.99,
+        specifications: {
+          material: 'Шерсть',
+          color: 'Черный',
+          style: 'Классический'
+        }
       },
       {
         id: 'special-suit-2',
@@ -136,7 +166,12 @@ export const getSpecificProducts = (query: string): Product[] => {
         availability: 'Под заказ (2-3 дня)',
         brand: 'Paris Fashion',
         country: 'fr',
-        _numericPrice: 699.90
+        _numericPrice: 699.90,
+        specifications: {
+          material: 'Шерсть, шёлк',
+          color: 'Тёмно-синий',
+          style: 'Премиум'
+        }
       }
     ];
   }
