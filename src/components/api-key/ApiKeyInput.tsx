@@ -3,12 +3,13 @@ import React from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { ApiKeyType, API_SERVICE_NAMES, isValidApiKey } from "@/services/api/apiKeyService";
 
 interface ApiKeyInputProps {
   apiKey: string;
   onApiKeyChange: (value: string) => void;
   onSave: () => void;
-  keyType: string;
+  keyType: ApiKeyType;
 }
 
 export const ApiKeyInput: React.FC<ApiKeyInputProps> = ({
@@ -17,15 +18,13 @@ export const ApiKeyInput: React.FC<ApiKeyInputProps> = ({
   onSave,
   keyType
 }) => {
-  // Функция для проверки валидности API ключа
-  const isValidApiKey = (key: string) => {
-    return key && key.length > 20;
-  };
+  const serviceName = API_SERVICE_NAMES[keyType] || keyType;
+  const isValid = isValidApiKey(apiKey, keyType);
 
   return (
     <div className="space-y-2">
       <Label htmlFor={`api-key-${keyType}`} className="text-sm text-gray-600">
-        Введите ваш API ключ от {keyType === "zylalabs" ? "Zylalabs" : keyType} для доступа к поиску товаров
+        Введите ваш API ключ от {serviceName} для доступа к поиску товаров
       </Label>
       <div className="flex gap-2">
         <Input
@@ -36,7 +35,7 @@ export const ApiKeyInput: React.FC<ApiKeyInputProps> = ({
           onChange={(e) => onApiKeyChange(e.target.value)}
           className="flex-1"
         />
-        <Button onClick={onSave} disabled={!apiKey || apiKey.length < 10}>
+        <Button onClick={onSave} disabled={!isValid}>
           Сохранить
         </Button>
       </div>

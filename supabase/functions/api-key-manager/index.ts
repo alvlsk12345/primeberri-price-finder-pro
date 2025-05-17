@@ -30,34 +30,36 @@ serve(async (req) => {
       throw new Error('Отсутствуют обязательные параметры: action и key')
     }
 
-    // Локальное хранилище ключей как временное решение
-    const keyStorage: Record<string, string> = {}
-    
-    // Получаем секрет из Supabase, если он доступен
-    let storedSecret = null;
-    if (key === 'zylalabs-api-key') {
-      storedSecret = Deno.env.get('ZYLALABS_API_KEY');
-      console.log('Проверка наличия секрета ZYLALABS_API_KEY в Edge Functions:', !!storedSecret);
-    }
+    // Определяем ключи API для поддержки
+    const supportedKeys = {
+      'zylalabs-api-key': 'ZYLALABS_API_KEY',
+      'openai_api_key': 'OPENAI_API_KEY',
+      'perplexity_api_key': 'PERPLEXITY_API_KEY'
+    };
     
     // Выполняем действие в зависимости от запрошенной операции
     if (action === 'get') {
       try {
-        // Приоритет у секрета из Supabase, если он доступен
-        if (storedSecret) {
-          console.log('Используем секрет из Supabase Edge Functions');
-          return new Response(
-            JSON.stringify({ success: true, value: storedSecret, source: 'supabase' }),
-            {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 200,
-            }
-          )
+        // Проверяем, поддерживается ли данный ключ
+        const envVarName = supportedKeys[key];
+        if (envVarName) {
+          // Пытаемся получить ключ из Supabase секретов
+          const storedSecret = Deno.env.get(envVarName);
+          if (storedSecret) {
+            console.log(`Использование секрета ${envVarName} из Supabase Edge Functions`);
+            return new Response(
+              JSON.stringify({ success: true, value: storedSecret, source: 'supabase' }),
+              {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 200,
+              }
+            )
+          }
         }
         
-        // Иначе пытаемся найти в локальном хранилище
+        // Если секрет не найден в Supabase, возвращаем null
         return new Response(
-          JSON.stringify({ success: true, value: keyStorage[key] || null, source: 'local' }),
+          JSON.stringify({ success: true, value: null, source: 'none' }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 200,
@@ -80,20 +82,18 @@ serve(async (req) => {
       }
 
       try {
-        // Если ключ предназначен для Zylalabs, выводим сообщение о настройке в Supabase
-        if (key === 'zylalabs-api-key') {
-          console.log('Примечание: API ключ Zylalabs также доступен через секрет Supabase');
-        }
+        // Определяем, какой ключ API установлен
+        const envVarName = supportedKeys[key];
+        let message = 'Значение успешно сохранено локально';
         
-        // Сохраняем в локальном хранилище (на случай, если секрет Supabase не настроен)
-        keyStorage[key] = value
+        if (envVarName) {
+          message = `API ключ сохранен локально. Для лучшей безопасности рекомендуется настроить секрет ${envVarName} в Supabase Edge Functions.`;
+        }
         
         return new Response(
           JSON.stringify({ 
             success: true, 
-            message: key === 'zylalabs-api-key' ? 
-              'API ключ сохранен локально. Для лучшей безопасности рекомендуется настроить секрет ZYLALABS_API_KEY в Supabase Edge Functions.' : 
-              'Значение успешно сохранено'
+            message: message
           }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },

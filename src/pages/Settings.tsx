@@ -13,6 +13,7 @@ import { setSupabaseAIConfig, getSupabaseAIConfig } from "@/services/api/supabas
 import { getSelectedAIProvider, setSelectedAIProvider, AIProvider } from '@/services/api/aiProviderService';
 import { toast } from "sonner";
 import { Settings2 } from 'lucide-react';
+import { ApiKeyType } from "@/services/api/apiKeyService";
 
 const Settings = () => {
   const [supabaseConfig, setSupabaseConfig] = React.useState(getSupabaseAIConfig());

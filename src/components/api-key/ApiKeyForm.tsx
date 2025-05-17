@@ -1,68 +1,78 @@
 
 import React, { useState, useEffect } from 'react';
-import { setApiKey, getApiKey } from "@/services/api/zylalabs";
 import { toast } from "sonner";
 import { KeyRound } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { useDemoModeForced } from "@/services/api/mock/mockServiceConfig";
 import { clearApiCache } from "@/services/api/zylalabs/cacheService";
-import { BASE_URL } from "@/services/api/zylalabs/config";
 import { ApiKeyInput } from './ApiKeyInput';
 import { ApiKeyStatus } from './ApiKeyStatus';
 import { DemoModeAlert } from './DemoModeAlert';
+import { 
+  ApiKeyType, 
+  getApiKey, 
+  setApiKey, 
+  API_SERVICE_NAMES, 
+  API_KEY_URLS,
+  getTestApiUrl,
+  getApiHeaders
+} from "@/services/api/apiKeyService";
+import { useDemoModeForced } from "@/services/api/mock/mockServiceConfig";
 
 // Интерфейс для пропсов ApiKeyForm
 interface ApiKeyFormProps {
-  keyType?: string;
+  keyType: ApiKeyType;
 }
 
-export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType = "zylalabs" }) => {
+export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType }) => {
   const [apiKey, setApiKeyState] = useState<string>("");
   const [hasCopied, setHasCopied] = useState<boolean>(false);
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [storedApiKey, setStoredApiKey] = useState<string>("");
   const [isCheckingApiKey, setIsCheckingApiKey] = useState<boolean>(false);
   
-  // Исправлено: получаем значение напрямую, а не через вызов функции
+  // Получаем значение напрямую
   const isDemoMode = useDemoModeForced;
+  const serviceName = API_SERVICE_NAMES[keyType];
 
   // Загрузка сохраненного API ключа при монтировании компонента
   useEffect(() => {
     const loadApiKey = async () => {
       try {
-        const savedKey = await getApiKey();
+        const savedKey = await getApiKey(keyType);
         if (savedKey) {
           setStoredApiKey(savedKey);
           setIsSaved(true);
         }
       } catch (error) {
-        console.error('Ошибка при загрузке API ключа:', error);
+        console.error(`Ошибка при загрузке API ключа ${keyType}:`, error);
       }
     };
     
     loadApiKey();
-  }, []);
+  }, [keyType]);
 
   // Обработчик сохранения API ключа
   const handleSaveApiKey = async () => {
     if (!apiKey || apiKey.length < 20) {
-      toast.error("Пожалуйста, введите действительный API ключ (минимум 20 символов)");
+      toast.error(`Пожалуйста, введите действительный API ключ ${serviceName} (минимум 20 символов)`);
       return;
     }
 
     try {
-      await setApiKey(apiKey);
+      await setApiKey(keyType, apiKey);
       setStoredApiKey(apiKey);
       setIsSaved(true);
       setApiKeyState(""); // Очищаем поле ввода после сохранения
       
-      // Очищаем кеш после смены API ключа
-      clearApiCache();
+      // Очищаем кеш после смены API ключа если это Zylalabs
+      if (keyType === 'zylalabs') {
+        clearApiCache();
+      }
       
-      toast.success("API ключ успешно сохранен и кеш очищен");
+      toast.success(`API ключ ${serviceName} успешно сохранен`);
     } catch (error) {
-      console.error('Ошибка при сохранении API ключа:', error);
-      toast.error("Не удалось сохранить API ключ");
+      console.error(`Ошибка при сохранении API ключа ${keyType}:`, error);
+      toast.error(`Не удалось сохранить API ключ ${serviceName}`);
     }
   };
 
@@ -71,64 +81,63 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType = "zylalabs" }) 
     if (storedApiKey) {
       navigator.clipboard.writeText(storedApiKey);
       setHasCopied(true);
-      toast.success("API ключ скопирован в буфер обмена");
+      toast.success(`API ключ ${serviceName} скопирован в буфер обмена`);
       
-      // Сбрасываем состояние через 2 секунды
       setTimeout(() => {
         setHasCopied(false);
       }, 2000);
     }
   };
   
-  // Проверка API ключа - используем BASE_URL из config
+  // Проверка API ключа
   const checkApiKey = async () => {
     setIsCheckingApiKey(true);
     try {
-      // Проверяем API ключ в localStorage
-      const savedKey = await getApiKey();
+      // Проверяем API ключ
+      const savedKey = await getApiKey(keyType);
       
       if (!savedKey) {
-        toast.error("API ключ не найден");
+        toast.error(`API ключ ${serviceName} не найден`);
         setIsCheckingApiKey(false);
         return;
       }
       
-      // Используем BASE_URL из config и добавляем параметр 'q' вместо 'query'
-      const testUrl = `${BASE_URL}?q=test&limit=1`;
+      // Получаем тестовый URL для данного типа API
+      const testUrl = getTestApiUrl(keyType);
       
       // Показываем уведомление о начале проверки
-      toast.loading("Проверка API ключа...", { id: "api-check", duration: 5000 });
+      toast.loading(`Проверка API ключа ${serviceName}...`, { id: "api-check", duration: 5000 });
       
-      // Очищаем кеш перед проверкой
-      clearApiCache();
+      // Очищаем кеш перед проверкой если это Zylalabs
+      if (keyType === 'zylalabs') {
+        clearApiCache();
+      }
       
       try {
+        const headers = getApiHeaders(keyType, savedKey);
         const response = await fetch(testUrl, {
           method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${savedKey}`,
-            'Content-Type': 'application/json'
-          }
+          headers: headers
         });
         
         // Закрываем уведомление о проверке
         toast.dismiss("api-check");
         
         if (response.ok) {
-          toast.success("API ключ действителен и работает корректно");
+          toast.success(`API ключ ${serviceName} действителен и работает корректно`);
         } else {
           const errorText = await response.text();
-          console.error('Ошибка при проверке API ключа:', response.status, errorText);
-          toast.error(`Ошибка проверки API ключа: ${response.status} - ${errorText.substring(0, 100)}...`);
+          console.error(`Ошибка при проверке API ключа ${keyType}:`, response.status, errorText);
+          toast.error(`Ошибка проверки API ключа ${serviceName}: ${response.status} - ${errorText.substring(0, 100)}...`);
         }
       } catch (error) {
         toast.dismiss("api-check");
-        console.error('Ошибка сети при проверке API ключа:', error);
-        toast.error(`Ошибка сети при проверке API ключа: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+        console.error(`Ошибка сети при проверке API ключа ${keyType}:`, error);
+        toast.error(`Ошибка сети при проверке API ключа ${serviceName}: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
       }
     } catch (error) {
-      console.error('Ошибка при проверке API ключа:', error);
-      toast.error("Не удалось проверить API ключ из-за внутренней ошибки");
+      console.error(`Ошибка при проверке API ключа ${keyType}:`, error);
+      toast.error(`Не удалось проверить API ключ ${serviceName} из-за внутренней ошибки`);
     } finally {
       setIsCheckingApiKey(false);
     }
@@ -138,7 +147,9 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType = "zylalabs" }) 
     <div className="space-y-4 mb-6">
       <div className="flex items-center gap-2 mb-2">
         <KeyRound className="h-5 w-5 text-blue-600" />
-        <Label htmlFor={`api-key-${keyType}`} className="text-lg font-medium">API ключ {keyType === "zylalabs" ? "Zylalabs" : keyType}</Label>
+        <Label htmlFor={`api-key-${keyType}`} className="text-lg font-medium">
+          API ключ {serviceName}
+        </Label>
       </div>
       
       <DemoModeAlert isDemoMode={isDemoMode} />
@@ -161,7 +172,7 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType = "zylalabs" }) 
       )}
       
       <div className="text-xs text-gray-500 mt-2">
-        <p>Для получения API ключа перейдите на сайт <a href="https://zylalabs.com/api/2033/real+time+product+search+api" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Zylalabs Real Time Product Search API</a></p>
+        <p>Для получения API ключа перейдите на сайт <a href={API_KEY_URLS[keyType]} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{serviceName}</a></p>
       </div>
     </div>
   );

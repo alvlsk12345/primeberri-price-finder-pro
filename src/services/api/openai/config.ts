@@ -1,18 +1,19 @@
 
 // Модуль для работы с конфигурациями OpenAI API
 import { toast } from "sonner";
+import { getApiKey as getApiKeyGeneric, setApiKey as setApiKeyGeneric } from '../apiKeyService';
 
 // Константа для названия ключа в localStorage
 const OPENAI_API_KEY = 'openai_api_key';
 
 // Функция для получения API ключа
-export const getApiKey = (): string => {
-  return localStorage.getItem(OPENAI_API_KEY) || '';
+export const getApiKey = async (): Promise<string> => {
+  return getApiKeyGeneric('openai');
 };
 
 // Функция для установки API ключа
-export const setApiKey = (apiKey: string): void => {
-  localStorage.setItem(OPENAI_API_KEY, apiKey);
+export const setApiKey = async (apiKey: string): Promise<boolean> => {
+  return setApiKeyGeneric('openai', apiKey);
 };
 
 // Функция для сброса API ключа (удаления)
@@ -23,12 +24,11 @@ export const resetApiKey = (): void => {
 };
 
 // Функция для проверки валидности API ключа
-export const hasValidApiKey = (): boolean => {
-  const apiKey = getApiKey();
+export const hasValidApiKey = async (): Promise<boolean> => {
+  const apiKey = await getApiKey();
   // Простая проверка на формат ключа OpenAI
   return /^sk-[A-Za-z0-9]{32,}$/.test(apiKey);
 };
 
 // Реэкспортируем функцию callOpenAI из apiClient
 export { callOpenAI } from './apiClient';
-
