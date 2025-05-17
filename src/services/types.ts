@@ -1,5 +1,3 @@
-
-
 export interface Product {
   id: string;
   title: string;
@@ -27,6 +25,7 @@ export interface SearchParams {
   originalQuery?: string;
   requireGermanResults?: boolean;
   minResultCount?: number;
+  limit?: number; // Добавляем опциональное свойство limit
 }
 
 export interface ProductFilters {
@@ -85,4 +84,3 @@ export interface SearchResult {
 export interface StoreMap {
   [key: string]: string;
 }
-

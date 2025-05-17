@@ -62,3 +62,21 @@ export const buildUrl = (params: SearchParams): string => {
   
   return url;
 };
+
+/**
+ * Вычисляет URL для конкретной страницы результатов
+ * @param baseUrl Базовый URL
+ * @param page Номер страницы
+ * @returns URL для запроса указанной страницы
+ */
+export const calculatePageUrl = (baseUrl: string, page: number): string => {
+  // Если URL содержит параметр page, заменяем его
+  if (baseUrl.includes('page=')) {
+    return baseUrl.replace(/page=\d+/, `page=${page}`);
+  }
+  
+  // Иначе добавляем параметр page
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  return `${baseUrl}${separator}page=${page}`;
+};
+
