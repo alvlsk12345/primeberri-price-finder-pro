@@ -23,11 +23,14 @@ export const makeZylalabsApiRequest = async (params: SearchParams, forceNewSearc
     // Формируем URL запроса на основе параметров
     const url = buildUrl(params);
     console.log('Запрос к API:', url);
+    console.log('Параметры запроса:', JSON.stringify(params));
+    console.log('API ключ получен (первые 5 символов):', apiKey.substring(0, 5) + '...');
     
     // Проверяем наличие данных в кеше (если не запрошен принудительный поиск)
     if (!forceNewSearch) {
       const cachedData = getCachedResponse(url);
       if (cachedData) {
+        console.log('Данные получены из кеша для URL:', url);
         return cachedData;
       }
     } else {
@@ -39,6 +42,7 @@ export const makeZylalabsApiRequest = async (params: SearchParams, forceNewSearc
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
     
     try {
+      console.log('Отправка запроса к API с заголовком Authorization...');
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -54,11 +58,16 @@ export const makeZylalabsApiRequest = async (params: SearchParams, forceNewSearc
       if (!response.ok) {
         const error = await response.text();
         console.error(`Ошибка API (${response.status}):`, error);
+        console.error('Заголовки ответа:', JSON.stringify([...response.headers.entries()]));
         return null;
       }
       
       // Парсим ответ
       const data = await response.json();
+      console.log('Получен успешный ответ от API:', data ? 'Данные получены' : 'Нет данных');
+      if (data) {
+        console.log('Количество элементов в ответе:', Array.isArray(data.products) ? data.products.length : 'Формат ответа не соответствует ожидаемому');
+      }
       
       // Сохраняем успешный ответ в кеш
       setCacheResponse(url, data);

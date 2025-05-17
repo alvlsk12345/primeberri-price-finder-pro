@@ -10,7 +10,7 @@ const corsHeaders = {
 serve(async (req) => {
   // CORS обработка для preflight запросов
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
@@ -33,12 +33,31 @@ serve(async (req) => {
     // Локальное хранилище ключей как временное решение
     const keyStorage: Record<string, string> = {}
     
+    // Получаем секрет из Supabase, если он доступен
+    let storedSecret = null;
+    if (key === 'zylalabs-api-key') {
+      storedSecret = Deno.env.get('ZYLALABS_API_KEY');
+      console.log('Проверка наличия секрета ZYLALABS_API_KEY в Edge Functions:', !!storedSecret);
+    }
+    
     // Выполняем действие в зависимости от запрошенной операции
     if (action === 'get') {
       try {
-        // Пытаемся найти в локальном хранилище
+        // Приоритет у секрета из Supabase, если он доступен
+        if (storedSecret) {
+          console.log('Используем секрет из Supabase Edge Functions');
+          return new Response(
+            JSON.stringify({ success: true, value: storedSecret, source: 'supabase' }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200,
+            }
+          )
+        }
+        
+        // Иначе пытаемся найти в локальном хранилище
         return new Response(
-          JSON.stringify({ success: true, value: keyStorage[key] || null }),
+          JSON.stringify({ success: true, value: keyStorage[key] || null, source: 'local' }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 200,
@@ -61,11 +80,21 @@ serve(async (req) => {
       }
 
       try {
-        // Сохраняем в локальном хранилище
+        // Если ключ предназначен для Zylalabs, выводим сообщение о настройке в Supabase
+        if (key === 'zylalabs-api-key') {
+          console.log('Примечание: API ключ Zylalabs также доступен через секрет Supabase');
+        }
+        
+        // Сохраняем в локальном хранилище (на случай, если секрет Supabase не настроен)
         keyStorage[key] = value
         
         return new Response(
-          JSON.stringify({ success: true }),
+          JSON.stringify({ 
+            success: true, 
+            message: key === 'zylalabs-api-key' ? 
+              'API ключ сохранен локально. Для лучшей безопасности рекомендуется настроить секрет ZYLALABS_API_KEY в Supabase Edge Functions.' : 
+              'Значение успешно сохранено'
+          }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 200,
