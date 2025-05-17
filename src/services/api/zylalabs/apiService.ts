@@ -17,11 +17,8 @@ export async function fetchProductsAsync(searchParams: SearchParams) {
     // Реальный запрос к API
     console.log('Запрос к Zylalabs API с параметрами:', searchParams);
     
-    // Формируем URL для запроса с учетом параметров
-    const pageUrl = calculatePageUrl(searchParams);
-    
-    // Выполняем запрос к API
-    const response = await makeZylalabsApiRequest(pageUrl);
+    // Выполняем запрос к API напрямую, передавая объект параметров
+    const response = await makeZylalabsApiRequest(searchParams);
     
     // Проверяем, что получены данные
     if (!response || !response.data) {
@@ -69,4 +66,3 @@ export const _testing = {
   calculatePageUrl,
   generateMockSearchResults
 };
-

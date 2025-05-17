@@ -20,7 +20,7 @@ export const makeZylalabsApiRequest = async (params: SearchParams, forceNewSearc
       return null;
     }
     
-    // Формируем URL запроса
+    // Формируем URL запроса на основе параметров
     const url = buildUrl(params);
     console.log('Запрос к API:', url);
     
