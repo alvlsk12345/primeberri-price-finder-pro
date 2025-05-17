@@ -27,7 +27,7 @@ export const SearchResultsSection: React.FC = () => {
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={handlePageChange}
-        isDemo={apiInfo && apiInfo.isDemo === true}
+        isDemo={apiInfo && apiInfo.isDemo === "true"}
       />
       
       {apiInfo && Object.keys(apiInfo).length > 0 && (
@@ -36,4 +36,3 @@ export const SearchResultsSection: React.FC = () => {
     </div>
   );
 };
-
