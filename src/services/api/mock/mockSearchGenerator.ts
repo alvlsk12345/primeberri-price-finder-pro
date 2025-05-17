@@ -45,7 +45,7 @@ export const generateMockSearchResults = (query: string, page: number = 1) => {
   baseProducts = enrichProductTitlesWithQuery(baseProducts, query);
   
   // Создаем итоговый список из минимум 10 товаров
-  // Убедимся, что все товары соответствуют типу Product
+  // Проверяем, что все товары соответствуют типу Product
   let allDemoProducts: Product[] = [queryRelatedProduct, ...baseProducts];
   
   // Если запрос про Hugo Boss или пиджаки, добавляем больше релевантных товаров
