@@ -1,5 +1,6 @@
 
 import { SearchParams } from "../../types";
+import { BASE_URL } from "./config"; 
 
 /**
  * Строит URL для запроса к Zylalabs API
@@ -7,9 +8,6 @@ import { SearchParams } from "../../types";
  * @returns URL для запроса
  */
 export const buildUrl = (params: SearchParams): string => {
-  // Базовый URL для API поиска товаров
-  const baseUrl = "https://api.zylalabs.com/api/2033/real-time-product-search-api/1809/search-products";
-  
   // Создаем экземпляр URLSearchParams для построения параметров запроса
   const urlParams = new URLSearchParams();
   
@@ -29,8 +27,8 @@ export const buildUrl = (params: SearchParams): string => {
     urlParams.append('language', params.language);
   }
   
-  // Собираем полный URL запроса
-  return `${baseUrl}?${urlParams.toString()}`;
+  // Собираем полный URL запроса с использованием BASE_URL из config.ts
+  return `${BASE_URL}?${urlParams.toString()}`;
 };
 
 /**

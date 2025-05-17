@@ -6,8 +6,9 @@ export const ZYLALABS_API_KEY = 'zylalabs-api-key';
 
 /**
  * Базовый URL для API запросов
+ * Важно: использует дефисы вместо пробелов в формате URL
  */
-export const BASE_URL = 'https://api.zylalabs.com/api/2033/real+time+product+search+api/1809/search+products';
+export const BASE_URL = 'https://api.zylalabs.com/api/2033/real-time-product-search-api/1809/search-products';
 
 /**
  * Таймаут для запросов в миллисекундах (30 секунд)
