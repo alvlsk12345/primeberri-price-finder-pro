@@ -36,3 +36,4 @@ export const SearchResultsSection: React.FC = () => {
     </div>
   );
 };
+
