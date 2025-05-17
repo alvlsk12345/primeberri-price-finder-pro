@@ -58,8 +58,8 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     return { ...product, id: uniqueId };
   }), [results]);
 
-  // Пагинация на клиенте - по 12 товаров на страницу
-  const itemsPerPage = 12;
+  // Пагинация на клиенте - изменяем с 12 на 36 товаров на страницу
+  const itemsPerPage = 36;
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   
@@ -117,6 +117,11 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     
     console.log(`SearchResults: переход на страницу ${page} разрешен (клиентская пагинация)`);
     onPageChange(page);
+    
+    // Дополнительная проверка через таймаут (для отладки)
+    setTimeout(() => {
+      console.log(`SearchResults: через 500мс после запроса страницы ${page}, текущая страница: ${currentPage}`);
+    }, 500);
   };
 
   return (
