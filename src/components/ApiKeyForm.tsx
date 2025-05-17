@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { setApiKey, getApiKey, ZYLALABS_API_KEY } from "@/services/api/zylalabs";
+import { setApiKey, getApiKey, ZYLALABS_API_KEY, BASE_URL } from "@/services/api/zylalabs";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
@@ -90,7 +89,7 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType = "zylalabs" }) 
     return `${key.substring(0, 5)}...${key.substring(key.length - 4)}`;
   };
   
-  // Проверка API ключа
+  // Проверка API ключа - исправление URL для использования BASE_URL из config
   const checkApiKey = async () => {
     setIsCheckingApiKey(true);
     try {
@@ -103,8 +102,9 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType = "zylalabs" }) 
         return;
       }
       
-      // Простая проверка - строим тестовый URL и делаем запрос
-      const testUrl = `https://api.zylalabs.com/api/2033/real+time+product+search+api/1809/search+products?query=test&limit=1`;
+      // Используем BASE_URL из config и добавляем параметры запроса
+      // Заменяем "search-products" на "search+products" для соответствия формату в BASE_URL
+      const testUrl = `${BASE_URL}?query=test&limit=1`;
       
       // Показываем уведомление о начале проверки
       toast.loading("Проверка API ключа...", { id: "api-check", duration: 5000 });
@@ -176,7 +176,7 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType = "zylalabs" }) 
           </Button>
         </div>
         <p className="text-xs text-gray-500 mt-1">
-          API ключ хранится локально в вашем браузере и используется только для запросов к API.
+          API ключ хранится локально в вашем браузере и используется ��олько для запросов к API.
         </p>
       </div>
       

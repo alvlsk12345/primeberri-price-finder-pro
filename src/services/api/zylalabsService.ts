@@ -5,6 +5,7 @@ import { makeZylalabsApiRequest } from "./zylalabs/apiClient";
 import { parseApiResponse } from "./zylalabs/responseParser";
 import { generateMockSearchResults } from "./mock/mockSearchGenerator";
 import { searchEuProducts } from "./zylalabs/euSearchService";
+import { buildUrl } from "./zylalabs/urlBuilder";
 
 /**
  * Основная функция для поиска товаров через Zylalabs API

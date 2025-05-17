@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RotateCw, ExternalLink, RefreshCw } from "lucide-react";
-import { getApiKey } from "@/services/api/zylalabs";
+import { getApiKey, BASE_URL } from "@/services/api/zylalabs";
 import { useSearch } from "@/contexts/SearchContext";
 import { useDemoModeForced } from "@/services/api/mock/mockServiceConfig";
 import { Button } from "@/components/ui/button";
@@ -122,7 +121,7 @@ export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({ currentP
             <RotateCw className="h-3 w-3" /> Повторить запрос
           </Button>
           <a 
-            href="https://zylalabs.com/api/2033/real+time+product+search+api" 
+            href="https://zylalabs.com/api/2033/real-time-product-search-api" 
             target="_blank" 
             rel="noopener noreferrer"
             className="flex items-center gap-1 text-xs px-2 py-1 text-red-800 border border-red-400 rounded hover:bg-red-100"

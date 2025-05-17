@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Bot, Search } from 'lucide-react';
@@ -9,12 +8,15 @@ import { hasValidApiKey as hasValidOpenAIApiKey } from '@/services/api/openai';
 import { getSelectedAIProvider, getProviderDisplayName, getProviderModelName } from '@/services/api/aiProviderService';
 import { isSupabaseConnected } from '@/services/api/supabase/client';
 import { isUsingSupabaseBackend } from '@/services/api/supabase/config';
+import { getApiKey, BASE_URL } from '@/services/api/zylalabs';
 
 export const DiagnosticButtons: React.FC = () => {
   const [isTesting, setIsTesting] = useState(false);
   const [isTestingGoogle, setIsTestingGoogle] = useState(false);
+  const [isTestingZylalabs, setIsTestingZylalabs] = useState(false);
   const [openAiStatus, setOpenAiStatus] = useState<'неизвестно' | 'работает' | 'ошибка'>('неизвестно');
   const [googleApiStatus, setGoogleApiStatus] = useState<'неизвестно' | 'работает' | 'ошибка'>('неизвестно');
+  const [zylalabsApiStatus, setZylalabsApiStatus] = useState<'неизвестно' | 'работает' | 'ошибка'>('неизвестно');
   const selectedProvider = getSelectedAIProvider();
   const providerDisplayName = getProviderDisplayName(selectedProvider);
   const modelName = getProviderModelName(selectedProvider);
@@ -30,6 +32,50 @@ export const DiagnosticButtons: React.FC = () => {
     
     checkSupabaseMode();
   }, []);
+
+  // Тест Zylalabs API
+  const testZylalabsApi = async () => {
+    try {
+      setIsTestingZylalabs(true);
+      const apiKey = await getApiKey();
+      
+      if (!apiKey) {
+        toast.error("API ключ Zylalabs не установлен", {
+          duration: 5000,
+          description: "Добавьте ключ в настройках приложения"
+        });
+        setZylalabsApiStatus('ошибка');
+        return;
+      }
+      
+      toast.loading("Тестирование Zylalabs API...");
+      // Используем BASE_URL из config
+      const testUrl = `${BASE_URL}?query=test&limit=1`;
+      
+      const response = await fetch(testUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        setZylalabsApiStatus('работает');
+        toast.success(`Тест Zylalabs API успешен`, { duration: 5000 });
+      } else {
+        const errorText = await response.text();
+        setZylalabsApiStatus('ошибка');
+        toast.error(`Ошибка Zylalabs API: ${response.status} - ${errorText.substring(0, 100)}...`, { duration: 7000 });
+      }
+    } catch (error) {
+      console.error("Ошибка при тестировании Zylalabs API:", error);
+      setZylalabsApiStatus('ошибка');
+      toast.error(`Ошибка Zylalabs API: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+    } finally {
+      setIsTestingZylalabs(false);
+    }
+  };
 
   // Тест Google API
   const testGoogleApi = async () => {
@@ -127,6 +173,31 @@ export const DiagnosticButtons: React.FC = () => {
 
   return (
     <div className="pt-3 flex flex-wrap gap-2">
+      <Button
+        onClick={testZylalabsApi}
+        size="sm"
+        variant={zylalabsApiStatus === 'работает' ? "outline" : "secondary"}
+        className={`text-xs flex items-center gap-1 ${
+          zylalabsApiStatus === 'работает' ? 'border-green-500 text-green-700' : 
+          zylalabsApiStatus === 'ошибка' ? 'bg-red-100 text-red-700 hover:bg-red-200' : ''
+        }`}
+        disabled={isTestingZylalabs}
+        type="button"
+      >
+        {isTestingZylalabs ? (
+          <>
+            <div className="animate-spin w-3 h-3 border border-current border-t-transparent rounded-full mr-1" />
+            Тестирование...
+          </>
+        ) : (
+          <>
+            <RefreshCw size={14} />
+            Тест Zylalabs API {zylalabsApiStatus !== 'неизвестно' ? 
+              `(${zylalabsApiStatus === 'работает' ? '✓' : '✗'})` : ''}
+          </>
+        )}
+      </Button>
+      
       <Button
         onClick={testGoogleApi}
         size="sm"
