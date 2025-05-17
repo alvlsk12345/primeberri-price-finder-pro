@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { clearApiCache } from "@/services/api/zylalabs/cacheService";
 import { toast } from "sonner";
 import { SortButtons } from "../filter/SortButtons";
+import { SortOption } from "@/services/types";
 
 export const SearchResultsSection: React.FC = () => {
   const { 
@@ -49,7 +50,7 @@ export const SearchResultsSection: React.FC = () => {
   const isDemo = apiInfo && apiInfo.isDemo === "true";
 
   // Обработчик изменения сортировки
-  const handleSortChange = (sortOption) => {
+  const handleSortChange = (sortOption: SortOption) => {
     handleFilterChange({ ...filters, sortBy: sortOption });
   };
 
@@ -91,7 +92,7 @@ export const SearchResultsSection: React.FC = () => {
       {/* Отображаем кнопки сортировки над результатами */}
       <div className="mb-4">
         <SortButtons 
-          sortBy={filters.sortBy || "price-asc"}
+          sortBy={filters.sortBy as SortOption || "price-asc"}
           onSortChange={handleSortChange}
         />
       </div>

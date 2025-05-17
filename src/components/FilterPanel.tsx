@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ProductFilters, Product } from "@/services/types";
+import { ProductFilters, Product, SortOption } from "@/services/types";
 import { FilterContainer } from './filter/FilterContainer';
 import { CountryFilter } from './filter/CountryFilter';
 import { SourcesFilter } from './filter/SourcesFilter';
@@ -85,7 +85,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap gap-4 items-center justify-between">
         <SortButtons 
-          sortBy={filters.sortBy || "price-asc"} 
+          sortBy={filters.sortBy as SortOption || "price-asc"} 
           onSortChange={(value) => handleSortChange(value)} 
         />
       </div>
