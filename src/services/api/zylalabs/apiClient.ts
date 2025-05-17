@@ -64,9 +64,25 @@ export const makeZylalabsApiRequest = async (params: SearchParams, forceNewSearc
       
       // Парсим ответ
       const data = await response.json();
-      console.log('Получен успешный ответ от API:', data ? 'Данные получены' : 'Нет данных');
+      
+      // Добавляем логирование полного ответа API для отладки
+      console.log('Получен ответ от API Zylalabs, структура ответа:', JSON.stringify(data));
+      
+      // Анализируем структуру ответа
       if (data) {
-        console.log('Количество элементов в ответе:', Array.isArray(data.products) ? data.products.length : 'Формат ответа не соответствует ожидаемому');
+        if (data.data && Array.isArray(data.data.products)) {
+          console.log('Обнаружена структура ответа: data.data.products, количество товаров:', data.data.products.length);
+        } else if (data.products && Array.isArray(data.products)) {
+          console.log('Обнаружена структура ответа: data.products, количество товаров:', data.products.length);
+        } else if (Array.isArray(data)) {
+          console.log('Обнаружена структура ответа: массив товаров, количество:', data.length);
+        } else if (data.status === "OK" && data.data && Array.isArray(data.data.products)) {
+          console.log('Обнаружена структура ответа: status:OK и data.data.products, количество товаров:', data.data.products.length);
+        } else if (data.message) {
+          console.warn('Получено сообщение от API:', data.message);
+        } else {
+          console.error('Неизвестная структура ответа API:', JSON.stringify(data).substring(0, 500) + '...');
+        }
       }
       
       // Сохраняем успешный ответ в кеш

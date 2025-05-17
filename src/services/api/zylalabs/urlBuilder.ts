@@ -3,80 +3,50 @@ import { BASE_URL } from "./config";
 import { SearchParams } from "../../types";
 
 /**
- * Кодирует кириллические и другие специальные символы в строке для URL
- * @param str Строка для кодирования
- * @returns Закодированная строка
- */
-const encodeSpecialChars = (str: string): string => {
-  // Кодируем кириллицу и другие специальные символы для URL
-  try {
-    return encodeURIComponent(str)
-      .replace(/%20/g, '+') // Заменяем пробелы на плюсы согласно стандарту URL
-      .replace(/%2C/g, ','); // Оставляем запятые как есть для лучшей читаемости
-  } catch (error) {
-    console.error('Ошибка кодирования строки для URL:', error);
-    return encodeURIComponent(str); // Возвращаем стандартное кодирование в случае ошибки
-  }
-};
-
-/**
- * Строит URL для запроса к API на основе параметров поиска
+ * Строит URL для запроса к API Zylalabs
  * @param params Параметры поиска
- * @returns URL для запроса к API
+ * @returns Полный URL для запроса
  */
 export const buildUrl = (params: SearchParams): string => {
-  // Начинаем с базового URL
-  let url = BASE_URL;
-  
-  // Добавляем обязательный параметр запроса
-  // Используем encodeSpecialChars для корректной обработки кириллицы
-  url += `?q=${encodeSpecialChars(params.query)}`;
-  
-  // Добавляем параметр страницы, если он указан
-  if (params.page && params.page > 1) {
-    url += `&page=${params.page}`;
-  } else {
-    url += '&page=1'; // По умолчанию первая страница
+  try {
+    // Проверяем наличие обязательных параметров
+    if (!params.query) {
+      console.error('Отсутствует обязательный параметр query');
+      throw new Error('Отсутствует обязательный параметр query');
+    }
+    
+    // Извлекаем базовый URL из конфигурации
+    let url = new URL(BASE_URL);
+    
+    // Добавляем параметры запроса
+    url.searchParams.append('q', params.query);
+    
+    // Добавляем параметр страницы (если указан)
+    if (params.page && params.page > 1) {
+      url.searchParams.append('page', params.page.toString());
+    }
+    
+    // Добавляем параметр языка (если указан) для получения локализованных результатов
+    if (params.language) {
+      url.searchParams.append('language', params.language);
+    }
+    
+    // Добавляем параметр страны (по умолчанию используем Германию)
+    if (params.countries && params.countries.length > 0) {
+      url.searchParams.append('country', params.countries[0]);
+    } else {
+      url.searchParams.append('country', 'de');
+    }
+    
+    // Добавляем лимит количества товаров на страницу (по умолчанию 10)
+    url.searchParams.append('limit', '10');
+    
+    // Логируем построенный URL
+    console.log('Построенный URL для API:', url.toString());
+    
+    return url.toString();
+  } catch (error) {
+    console.error('Ошибка при построении URL:', error);
+    throw new Error(`Ошибка при построении URL: ${error instanceof Error ? error.message : String(error)}`);
   }
-  
-  // Добавляем параметр языка, если он указан
-  if (params.language) {
-    url += `&language=${params.language}`;
-  }
-  
-  // Добавляем параметр страны, если он указан
-  // Используем только первую страну из массива (текущая логика API)
-  if (params.countries && params.countries.length > 0) {
-    url += `&country=${params.countries[0]}`;
-  }
-  
-  // Добавляем ограничение по количеству результатов, если оно указано
-  if (params.limit) {
-    url += `&limit=${params.limit}`;
-  } else {
-    url += '&limit=10'; // По умолчанию 10 результатов
-  }
-  
-  // Выводим URL в консоль для отладки
-  console.log('Построенный URL для API:', url);
-  
-  return url;
 };
-
-/**
- * Вычисляет URL для конкретной страницы результатов
- * @param baseUrl Базовый URL
- * @param page Номер страницы
- * @returns URL для запроса указанной страницы
- */
-export const calculatePageUrl = (baseUrl: string, page: number): string => {
-  // Если URL содержит параметр page, заменяем его
-  if (baseUrl.includes('page=')) {
-    return baseUrl.replace(/page=\d+/, `page=${page}`);
-  }
-  
-  // Иначе добавляем параметр page
-  const separator = baseUrl.includes('?') ? '&' : '?';
-  return `${baseUrl}${separator}page=${page}`;
-};
-

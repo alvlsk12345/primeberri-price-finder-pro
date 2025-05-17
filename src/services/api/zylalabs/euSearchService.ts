@@ -1,76 +1,112 @@
 
-// euSearchService.ts
-import { Product, SearchParams } from "../../types";
-import { makeZylalabsApiRequest } from "./apiClient";
-import { parseResponse } from "./responseParser";
-import { generateMockSearchResults } from "../mock/mockSearchGenerator";
-import { useMockData } from "../mock/mockServiceConfig";
+import { makeZylalabsApiRequest } from './apiClient';
+import { parseResponse } from './responseParser';
+import { clearApiCache } from './cacheService';
+import { getApiKey } from './config';
+import { generateMockEuProducts } from '../mock/mockProductsData';
 
 /**
- * Функция для поиска товаров в странах ЕС.
- * @param query Поисковый запрос.
- * @param page Номер страницы.
- * @param forceNewSearch Принудительно выполнить новый поиск (игнорировать кеш)
- * @param language Язык результатов (по умолчанию 'ru')
- * @param country Код страны для поиска (по умолчанию 'de')
- * @returns Результаты поиска и общее количество страниц.
+ * Поиск товаров в Европе через API Zylalabs
+ * @param query Строка запроса
+ * @param page Номер страницы
+ * @param forceNewSearch Принудительно выполнить новый запрос
+ * @param language Язык результатов
+ * @param country Страна для поиска
  */
 export const searchEuProducts = async (
-  query: string, 
-  page: number = 1, 
+  query: string,
+  page: number = 1,
   forceNewSearch: boolean = false,
   language: string = 'ru',
   country: string = 'de'
-): Promise<{ products: Product[], totalPages: number, isDemo: boolean, apiInfo: Record<string, string> }> => {
+) => {
   try {
-    // Подготовка параметров для запроса к API
-    const searchParams: SearchParams = {
-      query: query,
-      page: page,
-      countries: [country], // Используем переданный код страны
-      language: language    // Используем переданный язык
-    };
-
-    // Выполняем запрос к API
-    const apiResponse = await makeZylalabsApiRequest(searchParams, forceNewSearch);
-
-    // Если API вернул данные, обрабатываем их
-    if (apiResponse && apiResponse.products && apiResponse.products.length > 0) {
-      const parsedData = await parseResponse(apiResponse, searchParams);
+    console.log(`Поиск товаров в Европе: "${query}", страница ${page}, язык ${language}, страна ${country}`);
+    
+    // Проверяем наличие API ключа
+    const apiKey = await getApiKey();
+    if (!apiKey) {
+      console.log('API ключ отсутствует, используем демо-данные');
       return {
-        products: parsedData.products,
-        totalPages: parsedData.totalPages,
-        isDemo: false,
-        apiInfo: {
-          source: 'Zylalabs API'
-        }
-      };
-    } else {
-      // Если API не вернул результаты, возвращаем демо-данные
-      console.warn('API вернул 0 товаров, используем демо-данные');
-      const demoData = generateMockSearchResults(query, page);
-      return {
-        products: demoData.products,
-        totalPages: demoData.totalPages,
+        products: await generateMockEuProducts(query, 12),
+        totalPages: 5,
         isDemo: true,
         apiInfo: {
-          error: 'API вернул 0 товаров',
-          source: 'Demo Data'
+          source: 'demo',
+          reason: 'API ключ отсутствует'
         }
       };
     }
+    
+    // Очищаем кеш, если запрошен принудительный поиск
+    if (forceNewSearch) {
+      clearApiCache();
+    }
+    
+    // Подготавливаем параметры запроса к API
+    const params = {
+      query,
+      page,
+      countries: [country],
+      language
+    };
+    
+    // Запрашиваем данные с API
+    const response = await makeZylalabsApiRequest(params, forceNewSearch);
+    
+    if (!response) {
+      console.log('API вернул пустой ответ, используем демо-данные');
+      return {
+        products: await generateMockEuProducts(query, 12),
+        totalPages: 5,
+        isDemo: true,
+        apiInfo: {
+          source: 'demo',
+          reason: 'API вернул пустой ответ'
+        }
+      };
+    }
+    
+    // Парсим ответ и преобразуем товары в нужный формат
+    const result = await parseResponse(response, query);
+    
+    // Если API не вернул товары, используем демо-данные
+    if (!result.products || result.products.length === 0) {
+      console.log('API вернул 0 товаров, используем демо-данные');
+      return {
+        products: await generateMockEuProducts(query, 12),
+        totalPages: 5,
+        isDemo: true,
+        apiInfo: {
+          source: 'demo',
+          reason: 'API вернул 0 товаров',
+          apiResponse: typeof response === 'object' ? JSON.stringify(response).substring(0, 200) + '...' : String(response)
+        }
+      };
+    }
+    
+    console.log(`API вернул ${result.products.length} товаров`);
+    return result;
   } catch (error) {
-    console.error('Ошибка при поиске товаров в странах ЕС:', error);
+    console.error('Ошибка при поиске товаров через API Zylalabs:', error);
+    
     // В случае ошибки возвращаем демо-данные
-    const demoData = generateMockSearchResults(query, page);
     return {
-      products: demoData.products,
-      totalPages: demoData.totalPages,
+      products: await generateMockEuProducts(query, 12),
+      totalPages: 5,
       isDemo: true,
       apiInfo: {
-        error: 'Ошибка при поиске товаров в странах ЕС',
-        source: 'Demo Data'
+        source: 'demo',
+        reason: 'Ошибка API',
+        error: error instanceof Error ? error.message : String(error)
       }
     };
   }
+};
+
+/**
+ * Экспортируем функции для использования в других модулях
+ */
+export default {
+  searchEuProducts
 };
