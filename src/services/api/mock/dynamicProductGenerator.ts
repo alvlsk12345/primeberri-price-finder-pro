@@ -19,7 +19,11 @@ export const createQueryRelatedProduct = (query: string): Product => {
     availability: 'Ограниченное количество - 5 шт.',
     brand: query.split(' ')[0] || 'SpecialBrand',
     country: 'de',
-    specifications: {},
+    specifications: {
+      type: 'Demo',
+      category: 'Test',
+      features: ['Демонстрационный товар', 'Пример', 'Тест']
+    },
     _numericPrice: 249.99
   };
 };
@@ -44,7 +48,11 @@ export const createExtraProduct = (query: string, index: number): Product => {
     availability: 'В наличии',
     brand: 'Extra Brand',
     country: 'de',
-    specifications: {},
+    specifications: {
+      type: 'Extra',
+      category: 'Filler',
+      features: ['Дополнительный товар', 'Пример']
+    },
     _numericPrice: price
   };
 };
@@ -72,7 +80,11 @@ export const createPageSpecificProducts = (query: string, page: number, count: n
       availability: 'В наличии',
       brand: `Brand ${page}.${i}`,
       country: i % 3 === 0 ? 'de' : (i % 3 === 1 ? 'gb' : 'fr'),
-      specifications: {},
+      specifications: {
+        page: `${page}`,
+        position: `${i}`,
+        features: [`Товар страницы ${page}`, `Позиция ${i}`]
+      },
       _numericPrice: price
     });
   }

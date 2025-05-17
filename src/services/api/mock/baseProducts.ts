@@ -21,7 +21,12 @@ export const getBaseProducts = (): Product[] => {
       availability: 'В наличии',
       brand: 'Deutsche Quality',
       country: 'de',
-      specifications: {}
+      specifications: {
+        origin: 'Germany',
+        category: 'Electronics',
+        features: ['Высокое качество', 'Немецкая сборка']
+      },
+      _numericPrice: 199.99
     },
     {
       id: 'mock-de-2',
@@ -37,7 +42,12 @@ export const getBaseProducts = (): Product[] => {
       availability: 'Под заказ: 3-5 дней',
       brand: 'OTTO Brand',
       country: 'de',
-      specifications: {}
+      specifications: {
+        origin: 'Germany',
+        category: 'Household',
+        features: ['Доступная цена', 'Надежность']
+      },
+      _numericPrice: 149.95
     },
     {
       id: 'mock-de-3',
@@ -53,7 +63,12 @@ export const getBaseProducts = (): Product[] => {
       availability: 'В наличии: 10+ шт.',
       brand: 'ElectroDE',
       country: 'de',
-      specifications: {}
+      specifications: {
+        origin: 'Germany',
+        category: 'Electronics',
+        features: ['Современный дизайн', 'Инновационные технологии']
+      },
+      _numericPrice: 299.00
     },
     {
       id: 'mock-de-4',
@@ -69,7 +84,12 @@ export const getBaseProducts = (): Product[] => {
       availability: 'В наличии',
       brand: 'Berlin Store',
       country: 'de',
-      specifications: {}
+      specifications: {
+        origin: 'Berlin, Germany',
+        category: 'Fashion',
+        features: ['Берлинский стиль', 'Уникальный дизайн']
+      },
+      _numericPrice: 89.99
     },
     {
       id: 'mock-de-5',
@@ -85,7 +105,12 @@ export const getBaseProducts = (): Product[] => {
       availability: '3 шт. в наличии',
       brand: 'Deutsche Apotheke',
       country: 'de',
-      specifications: {}
+      specifications: {
+        origin: 'Germany',
+        category: 'Pharmacy',
+        features: ['Немецкое качество', 'Сертифицированные товары']
+      },
+      _numericPrice: 45.50
     },
     
     // Английские товары
@@ -103,7 +128,12 @@ export const getBaseProducts = (): Product[] => {
       availability: 'Доступен',
       brand: 'British Goods',
       country: 'gb',
-      specifications: {}
+      specifications: {
+        origin: 'United Kingdom',
+        category: 'Fashion',
+        features: ['Британское качество', 'Международная доставка']
+      },
+      _numericPrice: 35.99
     },
     
     // Французский товар
@@ -121,7 +151,12 @@ export const getBaseProducts = (): Product[] => {
       availability: 'Под заказ',
       brand: 'Paris Fashion',
       country: 'fr',
-      specifications: {}
+      specifications: {
+        origin: 'France',
+        category: 'Fashion',
+        features: ['Французский стиль', 'Парижский шик']
+      },
+      _numericPrice: 129.90
     },
     
     // Итальянский товар
@@ -139,7 +174,12 @@ export const getBaseProducts = (): Product[] => {
       availability: 'Ограниченное количество',
       brand: 'Milano Style',
       country: 'it',
-      specifications: {}
+      specifications: {
+        origin: 'Italy',
+        category: 'Fashion',
+        features: ['Итальянское качество', 'Изысканный дизайн']
+      },
+      _numericPrice: 79.95
     },
     
     // Испанский товар
@@ -157,7 +197,12 @@ export const getBaseProducts = (): Product[] => {
       availability: 'В наличии',
       brand: 'Barcelona',
       country: 'es',
-      specifications: {}
+      specifications: {
+        origin: 'Spain',
+        category: 'Fashion',
+        features: ['Испанский дизайн', 'Высокое качество']
+      },
+      _numericPrice: 59.50
     },
   ];
 };

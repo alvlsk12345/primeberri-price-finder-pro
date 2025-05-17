@@ -1,3 +1,4 @@
+
 import { Product } from "@/services/types";
 import { EUROPEAN_COUNTRIES } from "@/components/filter/CountryFilter";
 import { 
@@ -44,7 +45,8 @@ export const generateMockSearchResults = (query: string, page: number = 1) => {
   baseProducts = enrichProductTitlesWithQuery(baseProducts, query);
   
   // Создаем итоговый список из минимум 10 товаров
-  let allDemoProducts = [queryRelatedProduct, ...baseProducts];
+  // Убедимся, что все товары соответствуют типу Product
+  let allDemoProducts: Product[] = [queryRelatedProduct, ...baseProducts];
   
   // Если запрос про Hugo Boss или пиджаки, добавляем больше релевантных товаров
   if (matchesKeywords(query, ['hugo', 'boss', 'пиджак', 'jacket', 'костюм', 'suit'])) {

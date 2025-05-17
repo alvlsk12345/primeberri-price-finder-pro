@@ -32,3 +32,12 @@ export const buildUrl = (params: SearchParams): string => {
   // Собираем полный URL запроса
   return `${baseUrl}?${urlParams.toString()}`;
 };
+
+/**
+ * Формирует URL для запроса конкретной страницы результатов
+ * @param searchParams Параметры поиска
+ * @returns Полный URL для запроса
+ */
+export const calculatePageUrl = (searchParams: SearchParams): string => {
+  return buildUrl(searchParams);
+};

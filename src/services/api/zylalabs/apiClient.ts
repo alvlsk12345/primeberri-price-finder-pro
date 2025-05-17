@@ -67,6 +67,38 @@ export const makeZylalabsApiRequest = async (params: SearchParams) => {
   }
 };
 
+// Экспортируем функцию поиска товаров для использования в apiService
+export const searchProducts = async (url: string) => {
+  try {
+    // Получаем API ключ из локального хранилища
+    const apiKey = localStorage.getItem('zylalabs_api_key');
+    
+    if (!apiKey) {
+      console.error('Не найден API ключ для Zylalabs');
+      throw new Error('API ключ не настроен');
+    }
+    
+    // Выполняем запрос к API
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Ошибка API: ${response.status}`);
+    }
+    
+    // Возвращаем результат
+    return await response.json();
+  } catch (error) {
+    console.error('Ошибка при выполнении запроса к Zylalabs API:', error);
+    throw error;
+  }
+};
+
 // Импортируем функцию для проверки демо-режима
 import { useDemoModeForced } from '../mock/mockServiceConfig';
 

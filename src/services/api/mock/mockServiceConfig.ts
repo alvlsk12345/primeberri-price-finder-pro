@@ -10,3 +10,23 @@ export const useDemoModeForced = false; // Отключаем принудите
  * После истечения этого времени будет использоваться демо-режим
  */
 export const API_TIMEOUT = 60000; // Увеличиваем таймаут до 60 секунд для лучшего ожидания API
+
+/**
+ * Функция для проверки необходимости использования демо-данных
+ * @returns true, если нужно использовать демо-данные, false - в противном случае
+ */
+export const useMockData = (): boolean => {
+  // Проверяем флаг принудительного использования демо-данных
+  if (useDemoModeForced) {
+    return true;
+  }
+  
+  // Проверяем наличие API ключа
+  const apiKey = localStorage.getItem('zylalabs_api_key');
+  if (!apiKey) {
+    return true; // Если API ключ не настроен, используем демо-данные
+  }
+  
+  // По умолчанию пробуем использовать реальное API
+  return false;
+};
