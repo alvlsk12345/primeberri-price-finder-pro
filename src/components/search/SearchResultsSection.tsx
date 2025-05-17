@@ -42,9 +42,16 @@ export const SearchResultsSection: React.FC = () => {
     return null;
   }
 
+  // Определяем, используются ли демо-данные
+  const isDemo = apiInfo && apiInfo.isDemo === "true";
+
   return (
     <div className="search-results-section">
-      <SearchResultsAlert currentPage={currentPage} />
+      <SearchResultsAlert 
+        isUsingDemoData={!!isDemo} 
+        currentPage={currentPage}
+        apiInfo={apiInfo} 
+      />
       
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
@@ -56,7 +63,7 @@ export const SearchResultsSection: React.FC = () => {
             </Badge>
           )}
           
-          {apiInfo && apiInfo.isDemo === "true" && (
+          {isDemo && (
             <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-300">
               Демо-режим
             </Badge>
@@ -84,7 +91,7 @@ export const SearchResultsSection: React.FC = () => {
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={handlePageChange}
-        isDemo={apiInfo && apiInfo.isDemo === "true"}
+        isDemo={isDemo}
       />
       
       {apiInfo && Object.keys(apiInfo).length > 0 && (

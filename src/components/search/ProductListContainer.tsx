@@ -80,7 +80,10 @@ export const ProductListContainer: React.FC<ProductListContainerProps> = ({
     <div className="space-y-4">
       {/* Показываем уведомление для демо-данных или если мы не на первой странице */}
       {(isDemo || currentPage > 1) && products.length > 0 && (
-        <SearchResultsAlert currentPage={currentPage} />
+        <SearchResultsAlert 
+          isUsingDemoData={isDemo} 
+          currentPage={currentPage} 
+        />
       )}
       
       <ProductList 
