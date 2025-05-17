@@ -6,7 +6,7 @@ import { useSearch } from "@/contexts/SearchContext";
 
 export const ProductDetailsSection: React.FC = () => {
   try {
-    const { selectedProduct, searchQuery } = useSearch();
+    const { selectedProduct } = useSearch();
     
     if (!selectedProduct) {
       return null;

@@ -7,16 +7,12 @@ import { getProductLink } from "@/services/urlService";
 import { Product } from "@/services/types";
 
 type ActionButtonsProps = {
-  selectedProduct: Product | null;
-  searchQuery: string;
+  product: Product;
 };
 
-export const ActionButtons: React.FC<ActionButtonsProps> = ({ 
-  selectedProduct,
-  searchQuery 
-}) => {
+export const ActionButtons: React.FC<ActionButtonsProps> = ({ product }) => {
   const handleGoToPrimeberri = () => {
-    if (selectedProduct) {
+    if (product) {
       // В реальной реализации здесь будет логика перехода на сайт Primeberri
       window.open('https://primeberri.com/', '_blank');
       toast.success('Переход на сайт Primeberri');
@@ -29,9 +25,9 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     // Предотвращаем стандартное поведение для предотвращения перезагрузки страницы
     e.preventDefault();
     
-    if (selectedProduct) {
+    if (product) {
       // Получаем ссылку на товар из нашего сервиса
-      const productLink = getProductLink(selectedProduct);
+      const productLink = getProductLink(product);
       
       navigator.clipboard.writeText(productLink);
       toast.success('Ссылка на товар скопирована!');
@@ -44,8 +40,8 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   const handleVisitProduct = (e: React.MouseEvent) => {
     e.preventDefault();
     
-    if (selectedProduct) {
-      const productLink = getProductLink(selectedProduct);
+    if (product) {
+      const productLink = getProductLink(product);
       window.open(productLink, '_blank', 'noopener,noreferrer');
     } else {
       toast.error('Пожалуйста, выберите товар');

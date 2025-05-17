@@ -12,7 +12,7 @@ export async function fetchProductsAsync(searchParams: SearchParams) {
     if (useMockData()) {
       console.log('Используем демо-данные для запроса: ', searchParams.query);
       // Увеличиваем количество демо-товаров до 36 для соответствия API
-      return generateMockSearchResults(searchParams.query, searchParams.page || 1, 36);
+      return generateMockSearchResults(searchParams.query, searchParams.page || 1);
     }
 
     // Реальный запрос к API
@@ -45,7 +45,7 @@ export async function fetchProductsAsync(searchParams: SearchParams) {
     // Проверяем наличие товаров в ответе
     if (!response.data.products || !Array.isArray(response.data.products) || response.data.products.length === 0) {
       console.warn('API вернул 0 товаров, используем демо-данные');
-      return generateMockSearchResults(searchParams.query, searchParams.page || 1, 36);
+      return generateMockSearchResults(searchParams.query, searchParams.page || 1);
     }
     
     // Парсинг и обработка полученных данных
@@ -63,7 +63,7 @@ export async function fetchProductsAsync(searchParams: SearchParams) {
     
     // В случае ошибки используем демо-данные
     console.warn('Из-за ошибки API используем демо-данные');
-    return generateMockSearchResults(searchParams.query, searchParams.page || 1, 36);
+    return generateMockSearchResults(searchParams.query, searchParams.page || 1);
   }
 }
 
