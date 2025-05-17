@@ -21,9 +21,12 @@ export const searchProductsViaSelectedAI = async (query: string): Promise<any> =
     // Показываем уведомление о выбранном провайдере
     toast.info(`Поиск выполняется с использованием ${providerName}`, { duration: 2000 });
     
-    // Создаем параметры поиска
+    // Создаем параметры поиска с обязательными полями
     const searchParams: SearchParams = {
-      query: query
+      query: query,
+      page: 1,
+      language: 'en',
+      countries: []
     };
     
     // В зависимости от выбранного провайдера вызываем соответствующую функцию
@@ -46,7 +49,12 @@ export const searchProductsViaSelectedAI = async (query: string): Promise<any> =
     if (selectedProvider === 'openai') {
       toast.info('Пробуем выполнить поиск через Perplexity...', { duration: 2000 });
       try {
-        const fallbackParams: SearchParams = { query: query };
+        const fallbackParams: SearchParams = { 
+          query: query,
+          page: 1,
+          language: 'en',
+          countries: []
+        };
         return await searchProductsViaAbacus(fallbackParams);
       } catch (fallbackError) {
         console.error('Ошибка при использовании запасного провайдера:', fallbackError);
@@ -55,7 +63,12 @@ export const searchProductsViaSelectedAI = async (query: string): Promise<any> =
     } else {
       toast.info('Пробуем выполнить поиск через OpenAI...', { duration: 2000 });
       try {
-        const fallbackParams: SearchParams = { query: query };
+        const fallbackParams: SearchParams = { 
+          query: query,
+          page: 1,
+          language: 'en',
+          countries: []
+        };
         return await fetchFromOpenAI(fallbackParams);
       } catch (fallbackError) {
         console.error('Ошибка при использовании запасного провайдера:', fallbackError);

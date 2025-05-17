@@ -3,7 +3,6 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowDown, ArrowUp, Star } from "lucide-react";
 import { SortOption } from "@/services/types";
-import { cn } from "@/lib/utils";
 
 interface SortButtonsProps {
   sortBy: SortOption;
@@ -15,7 +14,7 @@ export const SortButtons: React.FC<SortButtonsProps> = ({ sortBy, onSortChange }
     <div className="flex gap-2 items-center">
       <Button
         size="sm"
-        variant={sortBy === "price_asc" ? "brand" : "outline"}
+        variant={sortBy === "price_asc" || sortBy === "price-asc" ? "brand" : "outline"}
         onClick={() => onSortChange("price_asc")}
         className="flex items-center gap-1 px-2 py-1 h-auto"
         aria-label="По возрастанию цены"
@@ -26,7 +25,7 @@ export const SortButtons: React.FC<SortButtonsProps> = ({ sortBy, onSortChange }
       
       <Button
         size="sm"
-        variant={sortBy === "price_desc" ? "brand" : "outline"}
+        variant={sortBy === "price_desc" || sortBy === "price-desc" ? "brand" : "outline"}
         onClick={() => onSortChange("price_desc")}
         className="flex items-center gap-1 px-2 py-1 h-auto"
         aria-label="По убыванию цены"
@@ -37,7 +36,7 @@ export const SortButtons: React.FC<SortButtonsProps> = ({ sortBy, onSortChange }
       
       <Button
         size="sm"
-        variant={sortBy === "rating_desc" ? "brand" : "outline"}
+        variant={sortBy === "rating_desc" || sortBy === "rating-desc" ? "brand" : "outline"}
         onClick={() => onSortChange("rating_desc")}
         className="flex items-center gap-1 px-2 py-1 h-auto"
         aria-label="По рейтингу"
