@@ -43,6 +43,25 @@ export const getStoreDomain = (storeName: string): string => {
   return 'shop.example.com';
 };
 
+// Функция для получения кода страны из домена
+export const getCountryCodeFromDomain = (domain: string): string => {
+  if (!domain) return '';
+  
+  const domainLC = domain.toLowerCase();
+  
+  if (domainLC.endsWith('.de') || domainLC.includes('amazon.de')) return 'DE';
+  if (domainLC.endsWith('.uk') || domainLC.includes('amazon.co.uk')) return 'GB';
+  if (domainLC.endsWith('.fr') || domainLC.includes('amazon.fr')) return 'FR';
+  if (domainLC.endsWith('.it') || domainLC.includes('amazon.it')) return 'IT';
+  if (domainLC.endsWith('.es') || domainLC.includes('amazon.es')) return 'ES';
+  if (domainLC.endsWith('.nl')) return 'NL';
+  if (domainLC.endsWith('.pl')) return 'PL';
+  if (domainLC.endsWith('.at')) return 'AT';
+  if (domainLC.endsWith('.ch')) return 'CH';
+  
+  return '';
+};
+
 // Функция для создания слага из имени продукта
 export const createProductSlug = (name: string): string => {
   return name.toLowerCase()
@@ -86,6 +105,15 @@ export const getProductLink = (product: Product): string => {
   // Определяем домен магазина или используем запасной вариант
   const domain = getStoreDomain(product.source);
   console.log(`getProductLink: Использую домен ${domain} для магазина ${product.source}`);
+  
+  // Определяем страну на основе домена, если она не указана в продукте
+  if (!product.country) {
+    const countryFromDomain = getCountryCodeFromDomain(domain);
+    if (countryFromDomain) {
+      console.log(`getProductLink: Определена страна ${countryFromDomain} из домена ${domain}`);
+      product.country = countryFromDomain;
+    }
+  }
   
   // Получаем ID продукта либо из уже имеющейся ссылки, либо из ID продукта
   const productId = product.link ? 

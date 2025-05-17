@@ -116,6 +116,18 @@ export function useSearchCore({
     // Сбрасываем счетчик попыток при успешном запросе
     resetRetryAttempts();
     
+    // ИСПРАВЛЕНИЕ: Проверяем ответ API и показываем реальное количество найденных результатов
+    if (results.products) {
+      console.log(`Количество полученных результатов: ${results.products.length}`);
+      
+      // Если в API totalResults показывает меньше, чем реально получено товаров,
+      // корректируем это значение
+      if (results.totalResults && results.totalResults < results.products.length) {
+        console.log(`Исправляем totalResults с ${results.totalResults} на ${results.products.length}`);
+        results.totalResults = results.products.length;
+      }
+    }
+    
     // Сохраняем полные нефильтрованные результаты
     if (results.products && results.products.length > 0) {
       console.log(`Сохраняем ${results.products.length} полных результатов поиска в allSearchResults`);
@@ -123,7 +135,7 @@ export function useSearchCore({
       
       // ВАЖНО: Вычисляем и устанавливаем правильное количество страниц
       // на основе полного набора результатов
-      const itemsPerPage = 36; // Изменяем на 36, чтобы соответствовать новому требованию
+      const itemsPerPage = 36; // 36 товаров на страницу
       const calculatedTotalPages = Math.max(1, Math.ceil(results.products.length / itemsPerPage));
       console.log(`Вычисляем общее количество страниц на основе ${results.products.length} результатов: ${calculatedTotalPages}`);
       
@@ -132,6 +144,13 @@ export function useSearchCore({
       const finalTotalPages = Math.max(calculatedTotalPages, results.totalPages || 1);
       console.log(`Устанавливаем общее количество страниц: ${finalTotalPages}`);
       setTotalPages(finalTotalPages);
+      
+      // ИСПРАВЛЕНИЕ: Добавляем информацию о количестве найденных товаров в apiInfo
+      setApiInfo({
+        ...results.apiInfo,
+        totalResults: String(results.products.length),
+        itemsPerPage: "36"
+      });
     } else {
       // Если нет результатов, устанавливаем 1 страницу
       console.log(`Нет результатов поиска, устанавливаем 1 страницу`);

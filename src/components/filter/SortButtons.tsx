@@ -47,4 +47,4 @@ export const SortButtons: React.FC<SortButtonsProps> = ({ sortBy, onSortChange }
       </Button>
     </div>
   );
-};
+}

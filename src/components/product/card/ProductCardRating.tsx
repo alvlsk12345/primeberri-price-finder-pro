@@ -38,16 +38,58 @@ const getCountryName = (countryCode: string): string => {
   return countries[countryCode.toUpperCase()] || countryCode;
 };
 
+// Функция для определения страны по домену в URL
+const detectCountryFromUrl = (source: string, link?: string): string => {
+  // Если есть прямая ссылка, пытаемся определить по домену
+  if (link) {
+    try {
+      // Пытаемся извлечь домен из URL
+      const url = new URL(link);
+      const domain = url.hostname.toLowerCase();
+      
+      // Проверяем домены верхнего уровня
+      if (domain.endsWith('.de')) return 'DE';
+      if (domain.endsWith('.uk')) return 'GB';
+      if (domain.endsWith('.fr')) return 'FR';
+      if (domain.endsWith('.it')) return 'IT';
+      if (domain.endsWith('.es')) return 'ES';
+      if (domain.endsWith('.nl')) return 'NL';
+      if (domain.endsWith('.pl')) return 'PL';
+      if (domain.endsWith('.at')) return 'AT';
+      if (domain.endsWith('.ch')) return 'CH';
+      if (domain.endsWith('.com')) {
+        // Для .com проверяем поддомены
+        if (domain.includes('amazon.de')) return 'DE';
+        if (domain.includes('amazon.co.uk')) return 'GB';
+        if (domain.includes('amazon.fr')) return 'FR';
+      }
+    } catch (e) {
+      console.log('Ошибка при извлечении домена из URL:', e);
+    }
+  }
+  
+  // Проверяем название магазина
+  const sourceLC = source.toLowerCase();
+  if (sourceLC.includes('amazon.de') || sourceLC.includes('amazon de')) return 'DE';
+  if (sourceLC.includes('ebay.de') || sourceLC.includes('ebay de')) return 'DE';
+  if (sourceLC.includes('otto.de') || sourceLC.includes('otto de')) return 'DE';
+  if (sourceLC.includes('zalando.de')) return 'DE';
+  
+  // Значение по умолчанию
+  return '';
+};
+
 export const ProductCardRating: React.FC<ProductCardRatingProps> = ({
   source,
   rating,
   country
 }) => {
-  // Определяем флаг для отображения
-  const flag = country ? getCountryFlag(country) : '🌍';
-  const countryName = country ? getCountryName(country) : 'Неизвестно';
+  // Определяем страну на основе данных товара и источника
+  const detectedCountry = country || detectCountryFromUrl(source);
   
-  console.log('Отображение флага для страны:', country, flag, countryName);
+  // Определяем флаг для отображения
+  const flag = detectedCountry ? getCountryFlag(detectedCountry) : '🌍';
+  const countryName = detectedCountry ? getCountryName(detectedCountry) : 'Неизвестно';
   
   return (
     <div className="text-sm my-2 flex items-center justify-between h-5 px-2">

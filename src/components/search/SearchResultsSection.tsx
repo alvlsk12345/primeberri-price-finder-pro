@@ -89,14 +89,7 @@ export const SearchResultsSection: React.FC = () => {
         </Button>
       </div>
       
-      {/* Отображаем кнопки сортировки над результатами */}
-      <div className="mb-4">
-        <SortButtons 
-          sortBy={filters.sortBy as SortOption || "price-asc"}
-          onSortChange={handleSortChange}
-        />
-      </div>
-      
+      {/* ИСПРАВЛЕНИЕ: Убираем дублирование кнопок сортировки */}
       <div className="mb-4">
         <FilterSection />
       </div>
@@ -116,4 +109,3 @@ export const SearchResultsSection: React.FC = () => {
       )}
     </div>
   );
-};

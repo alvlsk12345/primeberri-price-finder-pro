@@ -39,7 +39,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
   } = useFilterHandlers({ 
     localFilters, 
     setLocalFilters, 
-    onFilterChange, // Сразу передаем для автоприменения
+    onFilterChange,
     autoApply: true
   });
   
