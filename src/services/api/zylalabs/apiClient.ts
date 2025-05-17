@@ -11,7 +11,7 @@ import { generateMockSearchResults } from '../mock/mockSearchGenerator';
  */
 export const makeZylalabsApiRequest = async (params: SearchParams) => {
   // Проверяем, используем ли мы демо-режим
-  if (useDemoModeForced()) {
+  if (useDemoModeForced) {
     console.log('Используется демо-режим, возвращаем моки');
     return generateMockSearchResults(params.query, params.page || 1);
   }
