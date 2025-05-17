@@ -1,4 +1,6 @@
 
+import { ZYLALABS_API_KEY } from '../zylalabs/config';
+
 /**
  * Флаг для принудительного использования демо-режима
  * независимо от состояния API
@@ -22,7 +24,7 @@ export const useMockData = (): boolean => {
   }
   
   // Проверяем наличие API ключа
-  const apiKey = localStorage.getItem('zylalabs_api_key');
+  const apiKey = localStorage.getItem(ZYLALABS_API_KEY);
   if (!apiKey) {
     return true; // Если API ключ не настроен, используем демо-данные
   }

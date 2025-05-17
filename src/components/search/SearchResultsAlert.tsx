@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RotateCw, ExternalLink } from "lucide-react";
-import { getApiKey, ZYLALABS_API_KEY } from "@/services/api/zylalabs";
+import { getApiKey } from "@/services/api/zylalabs";
 import { useSearch } from "@/contexts/SearchContext";
 import { useDemoModeForced } from "@/services/api/mock/mockServiceConfig";
 import { Button } from "@/components/ui/button";

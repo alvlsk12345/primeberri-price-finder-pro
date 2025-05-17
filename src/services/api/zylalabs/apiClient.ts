@@ -3,6 +3,7 @@ import { SearchParams } from '../../types';
 import { buildUrl } from './urlBuilder';
 import { parseResponse } from './responseParser';
 import { generateMockSearchResults } from '../mock/mockSearchGenerator';
+import { getApiKey, ZYLALABS_API_KEY } from './config';
 
 /**
  * Выполняет запрос к Zylalabs API с возможностью отката на моки
@@ -18,7 +19,7 @@ export const makeZylalabsApiRequest = async (params: SearchParams) => {
 
   try {
     // Получаем API ключ из локального хранилища
-    const apiKey = localStorage.getItem('zylalabs_api_key');
+    const apiKey = await getApiKey();
     
     if (!apiKey) {
       console.error('Не найден API ключ для Zylalabs');
@@ -71,7 +72,7 @@ export const makeZylalabsApiRequest = async (params: SearchParams) => {
 export const searchProducts = async (url: string) => {
   try {
     // Получаем API ключ из локального хранилища
-    const apiKey = localStorage.getItem('zylalabs_api_key');
+    const apiKey = await getApiKey();
     
     if (!apiKey) {
       console.error('Не найден API ключ для Zylalabs');
