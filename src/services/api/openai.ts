@@ -25,10 +25,9 @@ export const configureOpenAI = (apiKey?: string): void => {
 };
 
 // Проверка наличия конфигурации OpenAI
-export const hasOpenAIConfig = (): boolean => {
-  return hasValidApiKey();
+export const hasOpenAIConfig = async (): Promise<boolean> => {
+  return await hasValidApiKey();
 };
 
 // Импорт функции для получения предложений брендов
 export { fetchBrandSuggestions } from './openai/brandSuggestion';
-
