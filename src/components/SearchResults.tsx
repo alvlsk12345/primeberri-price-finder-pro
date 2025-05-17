@@ -1,4 +1,3 @@
-
 import React, { useMemo, useEffect } from 'react';
 import { Product } from "@/services/types";
 import { NoSearchResults } from './search/NoSearchResults';
@@ -86,9 +85,6 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   // УЛУЧШЕННАЯ ЛОГИКА: Логируем и уведомляем о количестве результатов
   useEffect(() => {
     console.log(`SearchResults: количество продуктов: ${productsWithUniqueKeys.length}, страниц: ${actualTotalPages}, заявленных страниц: ${totalPages}`);
-    
-    // Больше не показываем уведомление о несоответствии количества страниц,
-    // так как теперь мы используем actualTotalPages в компоненте ProductListContainer
   }, [productsWithUniqueKeys.length, actualTotalPages, totalPages]);
   
   console.log(`Пагинация: страница ${currentPage}/${actualTotalPages}, показываем товары с ${startIndex+1} по ${Math.min(endIndex, productsWithUniqueKeys.length)} из ${productsWithUniqueKeys.length}`);

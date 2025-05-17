@@ -4,30 +4,28 @@ import { Button } from "@/components/ui/button";
 
 interface FilterActionsProps {
   resetFilters: () => void;
-  applyFilters: () => void;
-  autoApply?: boolean; // Добавляем новый необязательный параметр
+  applyFilters?: () => void; // Делаем необязательным
+  autoApply?: boolean; // Добавляем параметр автоприменения
 }
 
 export const FilterActions: React.FC<FilterActionsProps> = ({
   resetFilters,
   applyFilters,
-  autoApply = false // По умолчанию autoApply отключен
+  autoApply = true // По умолчанию включено автоприменение
 }) => {
-  // Если autoApply включен, применяем фильтры автоматически
+  // Если autoApply включен и applyFilters доступен, применяем фильтры автоматически
   React.useEffect(() => {
-    if (autoApply) {
+    if (autoApply && applyFilters) {
       applyFilters();
     }
   }, [autoApply, applyFilters]);
 
   return (
-    <div className="flex justify-between pt-2">
+    <div className="flex justify-end pt-2">
       <Button variant="outline" size="sm" onClick={resetFilters}>
         Сбросить
       </Button>
-      <Button variant="brand" size="sm" onClick={applyFilters}>
-        Применить
-      </Button>
+      {/* Кнопка "Применить" удалена */}
     </div>
   );
 };

@@ -103,7 +103,8 @@ export function useSearchCore({
       countries: searchCountries,
       filters: filters,
       requireGermanResults: true,
-      minResultCount: 36, // Увеличиваем до 36 для имитации полной загрузки
+      minResultCount: 36, // Запрашиваем 36 результатов
+      limit: 36, // Явно указываем лимит в 36 результатов
     };
     
     console.log('Параметры поиска:', searchParams);
@@ -122,7 +123,7 @@ export function useSearchCore({
       
       // ВАЖНО: Вычисляем и устанавливаем правильное количество страниц
       // на основе полного набора результатов
-      const itemsPerPage = 12; // Соответствует значению в SearchResults.tsx
+      const itemsPerPage = 36; // Изменяем на 36, чтобы соответствовать новому требованию
       const calculatedTotalPages = Math.max(1, Math.ceil(results.products.length / itemsPerPage));
       console.log(`Вычисляем общее количество страниц на основе ${results.products.length} результатов: ${calculatedTotalPages}`);
       
@@ -142,6 +143,9 @@ export function useSearchCore({
     
     // Сохраняем найденные товары
     if (sortedProducts.length > 0) {
+      // Выводим информацию о количестве результатов в консоль для отладки
+      console.log(`Отображаем ${sortedProducts.length} отфильтрованных результатов из ${results.products?.length || 0} полученных`);
+      
       setSearchResults(sortedProducts);
       lastSuccessfulResultsRef.current = sortedProducts;
       

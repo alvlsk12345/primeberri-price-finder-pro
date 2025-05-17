@@ -2,11 +2,9 @@
 import React from 'react';
 import { ProductFilters, Product } from "@/services/types";
 import { FilterContainer } from './filter/FilterContainer';
-import { PriceRangeFilter } from './filter/PriceRangeFilter';
-import { BrandsFilter } from './filter/BrandsFilter';
-import { SourcesFilter } from './filter/SourcesFilter';
-import { RatingFilter } from './filter/RatingFilter';
 import { CountryFilter } from './filter/CountryFilter';
+import { SourcesFilter } from './filter/SourcesFilter';
+import { SortButtons } from './filter/SortButtons';
 import { useFilterPanel } from '@/hooks/useFilterPanel';
 import { useFilterHandlers } from '@/hooks/useFilterHandlers';
 
@@ -31,23 +29,19 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     activeFiltersCount
   } = useFilterPanel(filters, results);
   
-  // Получаем обработчики событий из хука, предопределяя autoApply = true
+  // Получаем обработчики событий из хука, с autoApply = true
   const {
-    handlePriceChange,
     handleBrandChange,
     handleSourceChange,
     handleCountryChange,
-    handleRatingChange
+    handleRatingChange,
+    handleSortChange
   } = useFilterHandlers({ 
     localFilters, 
     setLocalFilters, 
-    onFilterChange // Передаем onFilterChange для автоприменения
+    onFilterChange, // Сразу передаем для автоприменения
+    autoApply: true
   });
-  
-  // Применение фильтров - будет вызываться и автоматически через useFilterHandlers
-  const applyFilters = () => {
-    onFilterChange(localFilters);
-  };
   
   // Сброс всех фильтров
   const resetFilters = () => {
@@ -56,7 +50,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     onFilterChange(emptyFilters);
   };
 
-  // Адаптеры для обработчиков, которые преобразуют типы параметров
+  // Адаптеры для обработчиков
   const handleCountryChangeAdapter = (country: string, checked: boolean) => {
     const updatedCountries = [...(localFilters.countries || [])];
     if (checked) {
@@ -70,27 +64,6 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
       }
     }
     handleCountryChange(updatedCountries);
-  };
-
-  const handlePriceChangeAdapter = (values: number[]) => {
-    if (values.length === 2) {
-      handlePriceChange(values[0], values[1]);
-    }
-  };
-
-  const handleBrandChangeAdapter = (brand: string, checked: boolean) => {
-    const updatedBrands = [...(localFilters.brands || [])];
-    if (checked) {
-      if (!updatedBrands.includes(brand)) {
-        updatedBrands.push(brand);
-      }
-    } else {
-      const index = updatedBrands.indexOf(brand);
-      if (index !== -1) {
-        updatedBrands.splice(index, 1);
-      }
-    }
-    handleBrandChange(updatedBrands);
   };
 
   const handleSourceChangeAdapter = (source: string, checked: boolean) => {
@@ -107,47 +80,32 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     }
     handleSourceChange(updatedSources);
   };
-
-  const handleRatingChangeAdapter = (values: number[]) => {
-    if (values.length > 0) {
-      handleRatingChange(values[0]);
-    }
-  };
   
   return (
-    <FilterContainer 
-      activeFiltersCount={activeFiltersCount}
-      resetFilters={resetFilters}
-      applyFilters={applyFilters}
-    >
-      <CountryFilter
-        selectedCountries={localFilters.countries || []}
-        onCountryChange={handleCountryChangeAdapter}
-      />
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap gap-4 items-center justify-between">
+        <SortButtons 
+          sortBy={filters.sortBy || "price-asc"} 
+          onSortChange={(value) => handleSortChange(value)} 
+        />
+      </div>
       
-      <PriceRangeFilter 
-        minPrice={localFilters.minPrice || priceRange[0]}
-        maxPrice={localFilters.maxPrice || priceRange[1]}
-        priceRange={priceRange}
-        onPriceChange={handlePriceChangeAdapter}
-      />
-      
-      <BrandsFilter 
-        availableBrands={availableBrands}
-        selectedBrands={localFilters.brands || []}
-        onBrandChange={handleBrandChangeAdapter}
-      />
-      
-      <SourcesFilter 
-        availableSources={availableSources}
-        selectedSources={localFilters.sources || []}
-        onSourceChange={handleSourceChangeAdapter}
-      />
-      
-      <RatingFilter 
-        rating={localFilters.rating || 0}
-        onRatingChange={handleRatingChangeAdapter}
-      />
-    </FilterContainer>
+      <FilterContainer 
+        activeFiltersCount={activeFiltersCount}
+        resetFilters={resetFilters}
+        autoApply={true}
+      >
+        <CountryFilter
+          selectedCountries={localFilters.countries || []}
+          onCountryChange={handleCountryChangeAdapter}
+        />
+        
+        <SourcesFilter 
+          availableSources={availableSources}
+          selectedSources={localFilters.sources || []}
+          onSourceChange={handleSourceChangeAdapter}
+        />
+      </FilterContainer>
+    </div>
   );
 };

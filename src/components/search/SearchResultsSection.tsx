@@ -10,6 +10,7 @@ import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { clearApiCache } from "@/services/api/zylalabs/cacheService";
 import { toast } from "sonner";
+import { SortButtons } from "../filter/SortButtons";
 
 export const SearchResultsSection: React.FC = () => {
   const { 
@@ -23,7 +24,9 @@ export const SearchResultsSection: React.FC = () => {
     totalPages, 
     handleProductSelect, 
     handlePageChange,
-    handleSearch
+    handleSearch,
+    filters,
+    handleFilterChange
   } = useSearch();
   
   // Функция для очистки кеша и повторного поиска
@@ -44,6 +47,11 @@ export const SearchResultsSection: React.FC = () => {
 
   // Определяем, используются ли демо-данные
   const isDemo = apiInfo && apiInfo.isDemo === "true";
+
+  // Обработчик изменения сортировки
+  const handleSortChange = (sortOption) => {
+    handleFilterChange({ ...filters, sortBy: sortOption });
+  };
 
   return (
     <div className="search-results-section">
@@ -78,6 +86,14 @@ export const SearchResultsSection: React.FC = () => {
         >
           <RefreshCw className="h-3 w-3" /> Обновить результаты
         </Button>
+      </div>
+      
+      {/* Отображаем кнопки сортировки над результатами */}
+      <div className="mb-4">
+        <SortButtons 
+          sortBy={filters.sortBy || "price-asc"}
+          onSortChange={handleSortChange}
+        />
       </div>
       
       <div className="mb-4">

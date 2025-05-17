@@ -8,12 +8,13 @@ import { useFilterContainer } from '@/hooks/useFilterContainer';
 interface FilterContainerProps {
   activeFiltersCount: number;
   resetFilters: () => void;
-  applyFilters: () => void;
+  applyFilters?: () => void; // Делаем необязательным
+  autoApply?: boolean; // Добавляем autoApply
   children: React.ReactNode;
 }
 
 export const FilterContainer: React.FC<FilterContainerProps> = (props) => {
-  const { activeFiltersCount, resetFilters, applyFilters } = useFilterContainer(props);
+  const { activeFiltersCount, resetFilters, applyFilters, autoApply = true } = props;
   
   return (
     <div className="flex flex-col items-end">
@@ -22,6 +23,7 @@ export const FilterContainer: React.FC<FilterContainerProps> = (props) => {
         <FilterContent 
           resetFilters={resetFilters} 
           applyFilters={applyFilters}
+          autoApply={autoApply}
         >
           {props.children}
         </FilterContent>

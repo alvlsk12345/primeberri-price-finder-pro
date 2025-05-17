@@ -1,10 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { getExchangeRate } from "@/services/exchangeService";
 import { Product } from "@/services/types";
+
 type CostCalculatorProps = {
   product: Product;
 };
+
 export const CostCalculator: React.FC<CostCalculatorProps> = ({
   product
 }) => {
@@ -49,16 +52,49 @@ export const CostCalculator: React.FC<CostCalculatorProps> = ({
     const dutyInRub = calculatedDuty * exchangeRate;
     setTotalPrice(priceInRub + dutyInRub);
   }, [parsedPrice, exchangeRate]);
+  
   if (isLoading) {
-    return <Card className="shadow-sm">
+    return (
+      <Card className="shadow-sm">
         <CardContent className="p-6">
           <div className="text-center py-4">
             Загрузка данных о курсе валют...
           </div>
         </CardContent>
-      </Card>;
+      </Card>
+    );
   }
-  return <Card className="shadow-sm">
-      
-    </Card>;
+  
+  return (
+    <Card className="shadow-sm">
+      <CardHeader>
+        <CardTitle className="text-lg">Расчет стоимости</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <div className="flex justify-between">
+          <span>Цена товара:</span>
+          <span className="font-medium">{parsedPrice.toFixed(2)} {product.currency}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Курс {product.currency}:</span>
+          <span className="font-medium">{exchangeRate?.toFixed(2)} ₽</span>
+        </div>
+        {duty > 0 && (
+          <div className="flex justify-between text-orange-700">
+            <span>Таможенная пошлина:</span>
+            <span className="font-medium">{duty.toFixed(2)} {product.currency}</span>
+          </div>
+        )}
+        <div className="border-t pt-2 mt-2">
+          <div className="flex justify-between font-bold">
+            <span>Итого:</span>
+            <span>{totalPrice.toFixed(2)} ₽</span>
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter className="text-xs text-gray-500 pt-0">
+        <p>* Расчет приблизительный и не включает доставку</p>
+      </CardFooter>
+    </Card>
+  );
 };

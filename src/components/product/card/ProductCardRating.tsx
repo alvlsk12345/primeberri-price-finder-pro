@@ -35,7 +35,7 @@ const getCountryName = (countryCode: string): string => {
     'CH': 'Швейцария'
   };
   
-  return countries[countryCode] || countryCode;
+  return countries[countryCode.toUpperCase()] || countryCode;
 };
 
 export const ProductCardRating: React.FC<ProductCardRatingProps> = ({
@@ -44,8 +44,10 @@ export const ProductCardRating: React.FC<ProductCardRatingProps> = ({
   country
 }) => {
   // Определяем флаг для отображения
-  const flag = country ? getCountryFlag(country) : null;
-  const countryName = country ? getCountryName(country) : '';
+  const flag = country ? getCountryFlag(country) : '🌍';
+  const countryName = country ? getCountryName(country) : 'Неизвестно';
+  
+  console.log('Отображение флага для страны:', country, flag, countryName);
   
   return (
     <div className="text-sm my-2 flex items-center justify-between h-5 px-2">
@@ -56,21 +58,19 @@ export const ProductCardRating: React.FC<ProductCardRatingProps> = ({
           <span className="text-xs ml-1">{rating}</span>
         </div>
         
-        {flag && (
-          <HoverCard>
-            <HoverCardTrigger asChild>
-              <span className="cursor-help text-base">
-                {flag}
-              </span>
-            </HoverCardTrigger>
-            <HoverCardContent className="p-2 text-xs">
-              <div className="flex items-center gap-2">
-                <Flag size={14} />
-                <span>Товар из: {countryName}</span>
-              </div>
-            </HoverCardContent>
-          </HoverCard>
-        )}
+        <HoverCard>
+          <HoverCardTrigger asChild>
+            <span className="cursor-help text-base">
+              {flag}
+            </span>
+          </HoverCardTrigger>
+          <HoverCardContent className="p-2 text-xs">
+            <div className="flex items-center gap-2">
+              <Flag size={14} />
+              <span>Товар из: {countryName}</span>
+            </div>
+          </HoverCardContent>
+        </HoverCard>
       </div>
     </div>
   );

@@ -1,57 +1,107 @@
 
+import { useState, useEffect, useCallback } from 'react';
 import { ProductFilters } from "@/services/types";
 
-type UseFilterHandlersProps = {
+// Параметры для хука обработки фильтров
+type FilterHandlersProps = {
   localFilters: ProductFilters;
   setLocalFilters: (filters: ProductFilters) => void;
-  onFilterChange?: (filters: ProductFilters) => void;
+  onFilterChange: (filters: ProductFilters) => void;
+  autoApply?: boolean; // Новый параметр для автоматического применения фильтров
 };
 
+// Хук для обработки изменений фильтров
 export function useFilterHandlers({
   localFilters,
   setLocalFilters,
-  onFilterChange
-}: UseFilterHandlersProps) {
-  // Вспомогательная функция для автоприменения фильтров
-  const applyFilters = (newFilters: ProductFilters) => {
-    if (onFilterChange) {
-      onFilterChange(newFilters);
+  onFilterChange,
+  autoApply = true // По умолчанию включаем автоприменение
+}: FilterHandlersProps) {
+  // Задержка для применения фильтров (предотвращает слишком частые запросы)
+  const [applyTimeout, setApplyTimeout] = useState<NodeJS.Timeout | null>(null);
+  
+  // Функция для отложенного применения фильтров
+  const applyFiltersWithDelay = useCallback(() => {
+    if (applyTimeout) {
+      clearTimeout(applyTimeout);
     }
-  };
-
-  // Обработчик изменения ценового диапазона
-  const handlePriceChange = (minPrice?: number, maxPrice?: number) => {
-    const newFilters = { ...localFilters, minPrice, maxPrice };
-    setLocalFilters(newFilters);
-    applyFilters(newFilters); // Автоприменение
+    
+    // Применяем фильтры с небольшой задержкой для предотвращения множественных запросов
+    const timeout = setTimeout(() => {
+      onFilterChange(localFilters);
+    }, 300);
+    
+    setApplyTimeout(timeout);
+  }, [localFilters, onFilterChange, applyTimeout]);
+  
+  // Очистка таймаута при размонтировании компонента
+  useEffect(() => {
+    return () => {
+      if (applyTimeout) {
+        clearTimeout(applyTimeout);
+      }
+    };
+  }, [applyTimeout]);
+  
+  // Обработчик изменения минимальной и максимальной цены
+  const handlePriceChange = (min: number, max: number) => {
+    setLocalFilters({
+      ...localFilters,
+      minPrice: min,
+      maxPrice: max
+    });
+    
+    if (autoApply) applyFiltersWithDelay();
   };
   
   // Обработчик изменения брендов
   const handleBrandChange = (brands: string[]) => {
-    const newFilters = { ...localFilters, brands };
-    setLocalFilters(newFilters);
-    applyFilters(newFilters); // Автоприменение
+    setLocalFilters({
+      ...localFilters,
+      brands
+    });
+    
+    if (autoApply) applyFiltersWithDelay();
   };
   
-  // Обработчик изменения источников
+  // Обработчик изменения источников (магазинов)
   const handleSourceChange = (sources: string[]) => {
-    const newFilters = { ...localFilters, sources };
-    setLocalFilters(newFilters);
-    applyFilters(newFilters); // Автоприменение
+    setLocalFilters({
+      ...localFilters,
+      sources
+    });
+    
+    if (autoApply) applyFiltersWithDelay();
   };
   
   // Обработчик изменения стран
   const handleCountryChange = (countries: string[]) => {
-    const newFilters = { ...localFilters, countries };
-    setLocalFilters(newFilters);
-    applyFilters(newFilters); // Автоприменение
+    setLocalFilters({
+      ...localFilters,
+      countries
+    });
+    
+    if (autoApply) applyFiltersWithDelay();
   };
   
   // Обработчик изменения рейтинга
-  const handleRatingChange = (rating?: number) => {
-    const newFilters = { ...localFilters, rating };
-    setLocalFilters(newFilters);
-    applyFilters(newFilters); // Автоприменение
+  const handleRatingChange = (rating: number) => {
+    setLocalFilters({
+      ...localFilters,
+      rating
+    });
+    
+    if (autoApply) applyFiltersWithDelay();
+  };
+
+  // Обработчик изменения сортировки
+  const handleSortChange = (sortBy: string) => {
+    setLocalFilters({
+      ...localFilters,
+      sortBy
+    });
+    
+    if (autoApply) applyFiltersWithDelay();
   };
   
   return {
@@ -59,6 +109,8 @@ export function useFilterHandlers({
     handleBrandChange,
     handleSourceChange,
     handleCountryChange,
-    handleRatingChange
+    handleRatingChange,
+    handleSortChange,
+    applyFilters: () => onFilterChange(localFilters)
   };
 }

@@ -11,38 +11,39 @@ interface SortButtonsProps {
 
 export const SortButtons: React.FC<SortButtonsProps> = ({ sortBy, onSortChange }) => {
   return (
-    <div className="flex gap-2 items-center">
+    <div className="flex gap-2 items-center w-full mb-4">
+      <span className="text-sm font-medium mr-2">Сортировка:</span>
       <Button
         size="sm"
         variant={sortBy === "price_asc" || sortBy === "price-asc" ? "brand" : "outline"}
         onClick={() => onSortChange("price-asc")}
-        className="flex items-center gap-1 px-2 py-1 h-auto"
+        className="flex items-center gap-1 px-3 py-2"
         aria-label="По возрастанию цены"
       >
         <ArrowUp className="h-4 w-4" />
-        <span className="text-xs">Цена</span>
+        <span>Дешевле</span>
       </Button>
       
       <Button
         size="sm"
         variant={sortBy === "price_desc" || sortBy === "price-desc" ? "brand" : "outline"}
         onClick={() => onSortChange("price-desc")}
-        className="flex items-center gap-1 px-2 py-1 h-auto"
+        className="flex items-center gap-1 px-3 py-2"
         aria-label="По убыванию цены"
       >
         <ArrowDown className="h-4 w-4" />
-        <span className="text-xs">Цена</span>
+        <span>Дороже</span>
       </Button>
       
       <Button
         size="sm"
         variant={sortBy === "rating_desc" || sortBy === "rating-desc" ? "brand" : "outline"}
         onClick={() => onSortChange("rating-desc")}
-        className="flex items-center gap-1 px-2 py-1 h-auto"
+        className="flex items-center gap-1 px-3 py-2"
         aria-label="По рейтингу"
       >
         <Star className="h-4 w-4" />
-        <span className="text-xs">Рейтинг</span>
+        <span>Популярные</span>
       </Button>
     </div>
   );
