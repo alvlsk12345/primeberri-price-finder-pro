@@ -89,6 +89,7 @@ export function useLocalFiltering({
     if (currentFilters.sortBy) {
       switch(currentFilters.sortBy as SortOption) {
         case 'price_asc':
+        case 'price-asc':
           filteredProducts.sort((a, b) => {
             const priceA = typeof a._numericPrice === 'number' ? a._numericPrice : parseFloat(a.price.replace(/[^0-9.-]+/g, '')) || 0;
             const priceB = typeof b._numericPrice === 'number' ? b._numericPrice : parseFloat(b.price.replace(/[^0-9.-]+/g, '')) || 0;
@@ -96,6 +97,7 @@ export function useLocalFiltering({
           });
           break;
         case 'price_desc':
+        case 'price-desc':
           filteredProducts.sort((a, b) => {
             const priceA = typeof a._numericPrice === 'number' ? a._numericPrice : parseFloat(a.price.replace(/[^0-9.-]+/g, '')) || 0;
             const priceB = typeof b._numericPrice === 'number' ? b._numericPrice : parseFloat(b.price.replace(/[^0-9.-]+/g, '')) || 0;
@@ -103,6 +105,7 @@ export function useLocalFiltering({
           });
           break;
         case 'rating_desc':
+        case 'rating-desc':
           filteredProducts.sort((a, b) => {
             const ratingA = typeof a.rating === 'number' ? a.rating : 0;
             const ratingB = typeof b.rating === 'number' ? b.rating : 0;

@@ -40,7 +40,7 @@ export const formatSingleProduct = async (
     const currency = product.currency || 'USD';
     
     // Извлекаем числовое значение цены для фильтрации
-    const _numericPrice = extractNumericPrice(price);
+    const numericPrice = extractNumericPrice(price);
     
     // URL изображения - улучшенная обработка изображений
     let image = '';
@@ -82,6 +82,9 @@ export const formatSingleProduct = async (
     // Бренд товара
     const brand = product.product_attributes?.Brand || product.brand || subtitle || '';
     
+    // Страна товара
+    const country = product.country || undefined;
+    
     // Спецификации товара (характеристики)
     const specifications = product.product_attributes || {};
     
@@ -98,8 +101,9 @@ export const formatSingleProduct = async (
       description,
       availability,
       brand,
+      country,
       specifications,
-      _numericPrice
+      _numericPrice: numericPrice
     };
   } catch (error) {
     console.error('Ошибка при форматировании товара:', error);

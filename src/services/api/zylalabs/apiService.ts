@@ -1,64 +1,71 @@
 
-import { toast } from "sonner";
-import { SearchParams } from "../../types";
-import { makeZylalabsApiRequest } from "./apiClient";
-import { parseApiResponse } from "./responseParser";
+import { Product, SearchParams } from "../../types";
+import { searchProducts } from "./apiClient";
+import { parseResponse } from "./responseParser";
+import { calculatePageUrl } from "./urlBuilder";
 import { generateMockSearchResults } from "../mock/mockSearchGenerator";
+import { useMockData } from "../mock/mockServiceConfig";
 
-/**
- * Основная функция для поиска товаров через Zylalabs API
- * @param params Параметры поиска
- * @returns Результаты поиска товаров
- */
-export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{products: any[], totalPages: number, isDemo: boolean, apiInfo: Record<string, string>}> => {
-  console.log('apiService: searchProductsViaZylalabs вызван с параметрами:', params);
+export async function fetchProductsAsync(searchParams: SearchParams) {
   try {
-    // Проверка, что используется правильная конечная точка API
-    console.log('Используется endpoint: https://zylalabs.com/api/2033/real+time+product+search+api/1809/search+products');
+    // Проверяем, нужно ли использовать демо-данные
+    if (useMockData()) {
+      console.log('Используем демо-данные для запроса: ', searchParams.query);
+      return generateMockSearchResults(searchParams.query, searchParams.page || 1);
+    }
+
+    // Реальный запрос к API
+    console.log('Запрос к Zylalabs API с параметрами:', searchParams);
     
-    // Вызываем API напрямую без круговой зависимости
-    const result = await makeZylalabsApiRequest(params);
-    console.log('Получен ответ от API Zylalabs:', Object.keys(result));
+    // Формируем URL для запроса с учетом параметров
+    const pageUrl = calculatePageUrl(searchParams);
     
-    // Проверяем наличие всех необходимых полей у товаров
-    if (result.products && result.products.length > 0) {
-      console.log('Проверка данных первого товара:');
-      const firstProduct = result.products[0];
-      console.log('- ID:', firstProduct.id);
-      console.log('- Название:', firstProduct.title);
-      console.log('- Цена:', firstProduct.price);
-      console.log('- Изображение:', firstProduct.image ? 'Да' : 'Нет');
-      console.log('- Магазин:', firstProduct.source);
-      console.log('- Бренд:', firstProduct.brand);
+    // Выполняем запрос к API
+    const response = await searchProducts(pageUrl);
+    
+    // Проверяем, что получены данные
+    if (!response || !response.data) {
+      console.error('Получен пустой ответ от API');
+      return {
+        products: [],
+        totalPages: 0,
+        isDemo: false,
+        apiInfo: {
+          error: 'Получен пустой ответ от API',
+          source: 'API Error'
+        }
+      };
     }
     
-    // Преобразуем данные isDemo к строке для совместимости с существующим кодом
-    const isDemo = result.isDemo ? "true" : "false";
+    // Проверяем наличие товаров в ответе
+    if (!response.data.products || !Array.isArray(response.data.products) || response.data.products.length === 0) {
+      console.warn('API вернул 0 товаров, используем демо-данные');
+      return generateMockSearchResults(searchParams.query, searchParams.page || 1);
+    }
+    
+    // Парсинг и обработка полученных данных
+    const parsedData = await parseResponse(response, searchParams);
     
     return {
-      products: result.products || [],
-      totalPages: result.totalPages || 1,
-      isDemo,
-      apiInfo: {
-        ...result.apiInfo || {},
-        isDemo
-      }
+      products: parsedData.products,
+      totalPages: parsedData.totalPages,
+      isDemo: Boolean(parsedData.isDemo), // Преобразуем в boolean
+      apiInfo: parsedData.apiInfo
     };
+    
   } catch (error) {
-    console.error('Ошибка при вызове API:', error);
-    toast.error('Произошла непредвиденная ошибка при поиске товаров');
+    console.error('Ошибка при получении данных от API:', error);
     
     // В случае ошибки используем демо-данные
-    const demoData = generateMockSearchResults(params.query, params.page);
-    return {
-      products: demoData.products,
-      totalPages: demoData.totalPages || 1,
-      isDemo: "true",
-      apiInfo: {
-        error: 'Ошибка при вызове API',
-        source: 'Demo Data',
-        isDemo: "true"
-      }
-    };
+    console.warn('Из-за ошибки API используем демо-данные');
+    return generateMockSearchResults(searchParams.query, searchParams.page || 1);
   }
+}
+
+// Экспортируем вспомогательные функции для тестирования
+export const _testing = {
+  parseResponse,
+  searchProducts,
+  calculatePageUrl,
+  generateMockSearchResults
 };

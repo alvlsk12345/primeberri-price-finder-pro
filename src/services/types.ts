@@ -1,4 +1,5 @@
 
+
 export interface Product {
   id: string;
   title: string;
@@ -14,6 +15,7 @@ export interface Product {
   brand: string;
   country?: string;
   specifications: Record<string, any>;
+  _numericPrice?: number; // Добавляем поле для хранения числового значения цены
 }
 
 export interface SearchParams {
@@ -45,7 +47,7 @@ export type SortOption = 'price-asc' | 'price-desc' | 'rating-desc' | 'rating-as
 export interface ApiResponse {
   products: Product[];
   totalPages: number;
-  isDemo: string;
+  isDemo: boolean | string;
   apiInfo?: Record<string, string>;
 }
 
@@ -78,3 +80,9 @@ export interface SearchResult {
   isDemo?: boolean | string;
   apiInfo?: Record<string, string>;
 }
+
+// Добавляем интерфейс StoreMap, используемый в urlService.ts
+export interface StoreMap {
+  [key: string]: string;
+}
+

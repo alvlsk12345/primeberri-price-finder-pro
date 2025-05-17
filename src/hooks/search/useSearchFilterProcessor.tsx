@@ -21,6 +21,7 @@ export function useSearchFilterProcessor() {
       if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
         const beforeCount = filteredProducts.length;
         filteredProducts = filteredProducts.filter(product => {
+          // Используем _numericPrice если оно есть, иначе извлекаем число из строки
           const productPrice = typeof product._numericPrice === 'number' 
             ? product._numericPrice 
             : parseFloat(product.price.replace(/[^0-9.-]+/g, ''));
@@ -85,6 +86,7 @@ export function useSearchFilterProcessor() {
     if (filters && filters.sortBy) {
       switch(filters.sortBy) {
         case 'price_asc':
+        case 'price-asc':
           console.log("Применяем сортировку по возрастанию цены");
           filteredProducts = filteredProducts.sort((a, b) => {
             const priceA = typeof a._numericPrice === 'number' ? a._numericPrice : parseFloat(a.price.replace(/[^0-9.-]+/g, '')) || 0;
@@ -94,6 +96,7 @@ export function useSearchFilterProcessor() {
           filterApplied = true;
           break;
         case 'price_desc':
+        case 'price-desc':
           console.log("Применяем сортировку по убыванию цены");
           filteredProducts = filteredProducts.sort((a, b) => {
             const priceA = typeof a._numericPrice === 'number' ? a._numericPrice : parseFloat(a.price.replace(/[^0-9.-]+/g, '')) || 0;
@@ -103,6 +106,7 @@ export function useSearchFilterProcessor() {
           filterApplied = true;
           break;
         case 'rating_desc':
+        case 'rating-desc':
           console.log("Применяем сортировку по рейтингу");
           filteredProducts = filteredProducts.sort((a, b) => {
             const ratingA = typeof a.rating === 'number' ? a.rating : 0;

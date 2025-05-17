@@ -41,7 +41,7 @@ export const processZylalabsProductsData = async (
       
       // Сортируем продукты, если указана опция сортировки
       if (filters.sortBy) {
-        filteredProducts = sortProducts(filteredProducts, filters.sortBy);
+        filteredProducts = sortProducts(filteredProducts, filters.sortBy as SortOption);
         console.log(`Товары отсортированы по: ${filters.sortBy}`);
       }
     }
@@ -60,21 +60,24 @@ const sortProducts = (products: Product[], sortBy: SortOption): Product[] => {
   const sortedProducts = [...products]; // Создаём копию, чтобы не менять исходный массив
   
   switch (sortBy) {
-    case "price_asc": 
+    case "price_asc":
+    case "price-asc": 
       return sortedProducts.sort((a, b) => {
         const priceA = a._numericPrice !== undefined ? a._numericPrice : 0;
         const priceB = b._numericPrice !== undefined ? b._numericPrice : 0;
         return priceA - priceB;
       });
       
-    case "price_desc": 
+    case "price_desc":
+    case "price-desc": 
       return sortedProducts.sort((a, b) => {
         const priceA = a._numericPrice !== undefined ? a._numericPrice : 0;
         const priceB = b._numericPrice !== undefined ? b._numericPrice : 0;
         return priceB - priceA;
       });
       
-    case "rating_desc": 
+    case "rating_desc":
+    case "rating-desc": 
       return sortedProducts.sort((a, b) => {
         const ratingA = a.rating !== undefined ? a.rating : 0;
         const ratingB = b.rating !== undefined ? b.rating : 0;

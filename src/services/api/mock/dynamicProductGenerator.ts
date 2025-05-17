@@ -19,7 +19,8 @@ export const createQueryRelatedProduct = (query: string): Product => {
     availability: 'Ограниченное количество - 5 шт.',
     brand: query.split(' ')[0] || 'SpecialBrand',
     country: 'de',
-    specifications: {}
+    specifications: {},
+    _numericPrice: 249.99
   };
 };
 
@@ -27,11 +28,13 @@ export const createQueryRelatedProduct = (query: string): Product => {
  * Создает дополнительный товар для достижения минимального количества результатов
  */
 export const createExtraProduct = (query: string, index: number): Product => {
+  const price = Math.floor(50 + Math.random() * 200) + Math.floor(Math.random() * 99) / 100;
+  
   return {
     id: `mock-extra-${index}`,
     title: `[ДЕМО] Дополнительный товар ${index}: ${query}`,
     subtitle: 'Германия',
-    price: `${Math.floor(50 + Math.random() * 200)}.${Math.floor(Math.random() * 99)} €`,
+    price: `${price} €`,
     currency: 'EUR',
     image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=300&h=300',
     link: `https://amazon.de/product-extra-${index}`,
@@ -41,7 +44,8 @@ export const createExtraProduct = (query: string, index: number): Product => {
     availability: 'В наличии',
     brand: 'Extra Brand',
     country: 'de',
-    specifications: {}
+    specifications: {},
+    _numericPrice: price
   };
 };
 
@@ -52,11 +56,13 @@ export const createPageSpecificProducts = (query: string, page: number, count: n
   const products: Product[] = [];
   
   for (let i = 0; i < count; i++) {
+    const price = Math.floor(50 + Math.random() * 200) + Math.floor(Math.random() * 99) / 100;
+    
     products.push({
       id: `mock-page-${page}-item-${i}`,
       title: `[ДЕМО] Страница ${page}, товар ${i + 1}: ${query}`,
       subtitle: 'Германия',
-      price: `${Math.floor(50 + Math.random() * 200)}.${Math.floor(Math.random() * 99)} €`,
+      price: `${price} €`,
       currency: 'EUR',
       image: `https://images.unsplash.com/photo-${1570000000 + (page * 1000) + i}?auto=format&fit=crop&w=300&h=300`,
       link: `https://amazon.de/product-page-${page}-${i}`,
@@ -66,7 +72,8 @@ export const createPageSpecificProducts = (query: string, page: number, count: n
       availability: 'В наличии',
       brand: `Brand ${page}.${i}`,
       country: i % 3 === 0 ? 'de' : (i % 3 === 1 ? 'gb' : 'fr'),
-      specifications: {}
+      specifications: {},
+      _numericPrice: price
     });
   }
   
