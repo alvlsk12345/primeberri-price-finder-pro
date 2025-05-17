@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 import { makeZylalabsCountryRequest } from "./apiClient";
 import { Product } from "../../types";
@@ -31,15 +32,20 @@ function getUniqueProductId(product: Product): string {
  * Поиск товаров по странам ЕС, начиная с Германии
  * @param query Поисковый запрос
  * @param page Страница поиска
+ * @param forceNewSearch Принудительно выполнить новый поиск, игнорируя кеш
  * @returns Список найденных товаров и информация о поиске
  */
-export const searchEuProducts = async (query: string, page: number = 1): Promise<{
+export const searchEuProducts = async (
+  query: string, 
+  page: number = 1, 
+  forceNewSearch: boolean = false
+): Promise<{
   products: Product[],
   totalPages: number,
   isDemo: boolean,
   apiInfo: Record<string, string>
 }> => {
-  console.log(`Начинаем параллельный поиск товаров в странах ЕС по запросу: "${query}", страница: ${page}`);
+  console.log(`Начинаем параллельный поиск товаров в странах ЕС по запросу: "${query}", страница: ${page}, forceNewSearch: ${forceNewSearch}`);
   
   // Сохраняем все найденные товары
   let germanProducts: Product[] = [];
@@ -47,12 +53,16 @@ export const searchEuProducts = async (query: string, page: number = 1): Promise
   const displayedProductIds = new Set<string>();
   const apiInfo: Record<string, string> = {};
   
-  // Шаг 1: Проверяем кэш для запроса
+  // Шаг 1: Проверяем кэш для запроса (только если не требуется новый поиск)
   const cacheKey = `eu-search-${query}-${page}`;
-  const cachedResults = getCachedResponse(cacheKey);
-  if (cachedResults) {
-    console.log('Найдены кэшированные результаты поиска');
-    return cachedResults;
+  if (!forceNewSearch) {
+    const cachedResults = getCachedResponse(cacheKey);
+    if (cachedResults) {
+      console.log('Найдены кэшированные результаты поиска');
+      return cachedResults;
+    }
+  } else {
+    console.log('Принудительный поиск активирован, кеш игнорируется');
   }
 
   // Показываем уведомление о начале поиска
@@ -134,6 +144,8 @@ export const searchEuProducts = async (query: string, page: number = 1): Promise
     apiInfo.totalGerman = germanProducts.length.toString();
     apiInfo.totalOtherEu = otherEuProducts.length.toString();
     apiInfo.uniqueProductCount = uniqueProducts.size.toString();
+    apiInfo.forceNewSearch = forceNewSearch ? 'true' : 'false';
+    apiInfo.timestamp = new Date().toISOString();
     
     console.log(`Найдено ${germanProducts.length} уникальных товаров из Германии, ${otherEuProducts.length} из других стран ЕС`);
     

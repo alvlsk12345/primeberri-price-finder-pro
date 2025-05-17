@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, RotateCw, ExternalLink } from "lucide-react";
+import { AlertCircle, RotateCw, ExternalLink, RefreshCw } from "lucide-react";
 import { getApiKey } from "@/services/api/zylalabs";
 import { useSearch } from "@/contexts/SearchContext";
 import { useDemoModeForced } from "@/services/api/mock/mockServiceConfig";
 import { Button } from "@/components/ui/button";
+import { clearApiCache } from "@/services/api/zylalabs/cacheService";
+import { toast } from "sonner";
 
 interface SearchResultsAlertProps {
   currentPage: number;
@@ -48,6 +50,12 @@ export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({ currentP
   const handleRetry = () => {
     handleSearch(currentPage, true); // Принудительно выполняем новый поиск
   };
+  
+  // Функция для очистки кеша API
+  const handleClearCache = () => {
+    const clearedItems = clearApiCache();
+    toast.success(`Кеш API очищен: удалено ${clearedItems} элементов`, { duration: 3000 });
+  };
 
   return (
     <Alert className="mb-4 border-red-300 bg-red-50">
@@ -62,12 +70,21 @@ export const SearchResultsAlert: React.FC<SearchResultsAlertProps> = ({ currentP
           <li>Превышением лимита запросов</li>
           <li>Проблемами с API ключом</li>
           <li>Ограничениями CORS</li>
+          <li>Использованием закешированных данных</li>
         </ul>
         <p className="mt-2">Используемый API ключ: {maskedKey}</p>
         {apiInfo && apiInfo.remainingCalls && (
           <p className="mt-2 text-sm">Оставшиеся запросы API: {apiInfo.remainingCalls}</p>
         )}
         <div className="mt-3 flex justify-end gap-2">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleClearCache}
+            className="flex items-center gap-1 text-red-800 border-red-400 hover:bg-red-100"
+          >
+            <RefreshCw className="h-3 w-3" /> Очистить кеш API
+          </Button>
           <Button 
             size="sm" 
             variant="outline" 

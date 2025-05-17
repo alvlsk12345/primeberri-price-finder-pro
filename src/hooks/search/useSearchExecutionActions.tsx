@@ -1,3 +1,4 @@
+
 import { ProductFilters } from "@/services/types";
 import { useSearchExecutor } from './useSearchExecutor';
 import { useSearchCache } from './useSearchCache';
@@ -16,8 +17,8 @@ type SearchExecutionProps = {
   setCachedResults: (results: {[page: number]: any[]}) => void;
   currentPage: number;
   setCurrentPage: (page: number) => void;
-  totalPages: number; // Добавляем totalPages в props
-  setTotalPages: (pages: number) => void; // Явно добавляем setTotalPages
+  totalPages: number; 
+  setTotalPages: (pages: number) => void; 
   filters: ProductFilters;
   setOriginalQuery: (query: string) => void;
   setHasSearched: (searched: boolean) => void;
@@ -40,8 +41,8 @@ export function useSearchExecutionActions({
   setCachedResults,
   currentPage,
   setCurrentPage,
-  totalPages, // Добавляем totalPages
-  setTotalPages, // Добавляем setTotalPages
+  totalPages, 
+  setTotalPages, 
   filters,
   setOriginalQuery,
   setHasSearched,
@@ -59,7 +60,7 @@ export function useSearchExecutionActions({
     cachedResults,
     setCachedResults, 
     setCurrentPage,
-    setTotalPages, // Передаем реальную функцию, а не пустышку
+    setTotalPages, 
     setHasSearched,
     setIsUsingDemoData,
     setApiInfo
@@ -118,7 +119,7 @@ export function useSearchExecutionActions({
     
     // Если это новый поиск или принудительный поиск, продолжаем обычный процесс
     
-    // Устанавливаем текущую страни��у перед выполнением поиска
+    // Устанавливаем текущую страницу перед выполнением поиска
     if (page !== currentPage) {
       console.log(`Устанавливаем новую текущую страницу: ${page}`);
       setCurrentPage(page);
@@ -130,7 +131,7 @@ export function useSearchExecutionActions({
     // Если не принудительный поиск, проверяем кеш
     const cachedResultsForQuery = !forceNewSearch ? getCachedResults(queryToUse, lastSearchQuery, page) : null;
     
-    if (cachedResultsForQuery) {
+    if (cachedResultsForQuery && !forceNewSearch) {
       console.log(`Используем кэшированные результаты для страницы ${page}, количество: ${cachedResultsForQuery.length}`);
       setSearchResults(cachedResultsForQuery);
       return;
@@ -151,14 +152,15 @@ export function useSearchExecutionActions({
       // Подготавливаем UI к поиску
       setIsLoading(true);
       
-      // Выполняем поиск с четким указанием страницы
+      // Выполняем поиск с четким указанием страницы и флага forceNewSearch
       console.log(`Выполняем поиск для запроса "${queryToUse}", страница: ${page}`);
       const result = await executeSearch(
         queryToUse,
         page,
         lastSearchQuery,
         filters,
-        getSearchCountries
+        getSearchCountries,
+        forceNewSearch
       );
       
       // После успешного поиска, проверяем состояние и логируем результат включая totalPages

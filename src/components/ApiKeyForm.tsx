@@ -5,8 +5,9 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
 import { toast } from "sonner";
-import { Check, Copy, KeyRound } from "lucide-react";
+import { Check, Copy, KeyRound, RefreshCw } from "lucide-react";
 import { useDemoModeForced } from "@/services/api/mock/mockServiceConfig";
+import { clearApiCache } from "@/services/api/zylalabs/cacheService";
 
 // Интерфейс для пропсов ApiKeyForm
 interface ApiKeyFormProps {
@@ -23,6 +24,7 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType = "zylalabs" }) 
   const [hasCopied, setHasCopied] = useState<boolean>(false);
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [storedApiKey, setStoredApiKey] = useState<string>("");
+  const [isCheckingApiKey, setIsCheckingApiKey] = useState<boolean>(false);
   
   // Исправлено: получаем значение напрямую, а не через вызов функции
   const isDemoMode = useDemoModeForced;
@@ -57,7 +59,10 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType = "zylalabs" }) 
       setIsSaved(true);
       setApiKeyState(""); // Очищаем поле ввода после сохранения
       
-      toast.success("API ключ успешно сохранен");
+      // Очищаем кеш после смены API ключа
+      clearApiCache();
+      
+      toast.success("API ключ успешно сохранен и кеш очищен");
     } catch (error) {
       console.error('Ошибка при сохранении API ключа:', error);
       toast.error("Не удалось сохранить API ключ");
@@ -83,6 +88,55 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType = "zylalabs" }) 
     if (!key) return "";
     if (key.length <= 10) return "********";
     return `${key.substring(0, 5)}...${key.substring(key.length - 4)}`;
+  };
+  
+  // Проверка API ключа
+  const checkApiKey = async () => {
+    setIsCheckingApiKey(true);
+    try {
+      // Проверяем API ключ в localStorage
+      const savedKey = await getApiKey();
+      
+      if (!savedKey) {
+        toast.error("API ключ не найден");
+        setIsCheckingApiKey(false);
+        return;
+      }
+      
+      // Простая проверка - строим тестовый URL и делаем запрос
+      const testUrl = `https://api.zylalabs.com/api/2033/real+time+product+search+api/1809/search+products?query=test&limit=1`;
+      
+      // Показываем уведомление о начале проверки
+      toast.loading("Проверка API ключа...", { id: "api-check", duration: 5000 });
+      
+      const response = await fetch(testUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${savedKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      // Закрываем уведомление о проверке
+      toast.dismiss("api-check");
+      
+      if (response.ok) {
+        toast.success("API ключ действителен и работает корректно");
+        
+        // Очищаем кеш после успешной проверки
+        clearApiCache();
+        toast.info("Кеш API очищен для обеспечения свежих данных", { duration: 4000 });
+      } else {
+        const errorText = await response.text();
+        console.error('Ошибка при проверке API ключа:', response.status, errorText);
+        toast.error(`Ошибка проверки API ключа: ${response.status} - ${errorText.substring(0, 100)}...`);
+      }
+    } catch (error) {
+      console.error('Ошибка при проверке API ключа:', error);
+      toast.error("Не удалось проверить API ключ из-за сетевой ошибки");
+    } finally {
+      setIsCheckingApiKey(false);
+    }
   };
 
   return (
@@ -127,8 +181,18 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType = "zylalabs" }) 
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleCopy}
+            onClick={checkApiKey}
+            disabled={isCheckingApiKey}
             className="ml-auto h-7 px-2 text-green-700 hover:text-green-800 hover:bg-green-100"
+          >
+            <RefreshCw className={`h-4 w-4 ${isCheckingApiKey ? 'animate-spin' : ''}`} />
+            <span className="ml-1">Проверить</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCopy}
+            className="h-7 px-2 text-green-700 hover:text-green-800 hover:bg-green-100"
           >
             {hasCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           </Button>

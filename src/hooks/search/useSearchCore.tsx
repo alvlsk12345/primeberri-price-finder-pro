@@ -58,8 +58,8 @@ export function useSearchCore({
   
   // Хук для повторных попыток поиска
   const { executeSearchWithRetry, resetRetryAttempts } = useSearchRetry({
-    executeSearch: async (queryToUse, page, lastSearchQuery, filters, getSearchCountries) => {
-      return await executeSearchCore(queryToUse, page, lastSearchQuery, filters, getSearchCountries);
+    executeSearch: async (queryToUse, page, lastSearchQuery, filters, getSearchCountries, forceNewSearch) => {
+      return await executeSearchCore(queryToUse, page, lastSearchQuery, filters, getSearchCountries, forceNewSearch);
     },
     handleSearchError
   });
@@ -70,9 +70,10 @@ export function useSearchCore({
     page: number, 
     lastSearchQuery: string, 
     filters: ProductFilters,
-    getSearchCountries: () => string[]
+    getSearchCountries: () => string[],
+    forceNewSearch: boolean = false
   ) => {
-    console.log(`executeSearchCore: запрос "${queryToUse}", страница ${page}`);
+    console.log(`executeSearchCore: запрос "${queryToUse}", страница ${page}, forceNewSearch: ${forceNewSearch}`);
     
     // Устанавливаем текущую страницу
     setCurrentPage(page);
@@ -100,9 +101,9 @@ export function useSearchCore({
     
     console.log('Параметры поиска:', searchParams);
     
-    // Выполняем поиск через API
-    const results = await executeApiCall(searchParams);
-    console.log(`Поиск завершен для страницы ${page}, получено ${results.products?.length || 0} результатов`);
+    // Выполняем поиск через API с передачей флага forceNewSearch
+    const results = await executeApiCall(searchParams, forceNewSearch);
+    console.log(`Поиск завершен для страницы ${page}, получено ${results.products?.length || 0} результатов, forceNewSearch: ${forceNewSearch}`);
     
     // Сбрасываем счетчик попыток при успешном запросе
     resetRetryAttempts();
@@ -158,12 +159,13 @@ export function useSearchCore({
     page: number, 
     lastSearchQuery: string, 
     filters: ProductFilters,
-    getSearchCountries: () => string[]
+    getSearchCountries: () => string[],
+    forceNewSearch: boolean = false
   ) => {
     setIsLoading(true);
     
     try {
-      return await executeSearchWithRetry(queryToUse, page, lastSearchQuery, filters, getSearchCountries);
+      return await executeSearchWithRetry(queryToUse, page, lastSearchQuery, filters, getSearchCountries, forceNewSearch);
     } catch (error) {
       console.error(`Критическая ошибка при выполнении поиска:`, error);
       return handleSearchError(error);

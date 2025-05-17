@@ -1,12 +1,8 @@
 
-import { useState } from 'react';
+import { useRef } from 'react';
 import { SearchParams } from "@/services/types";
-import { searchProductsViaZylalabs } from "@/services/api/zylalabsService";
-import { toast } from "sonner";
-import { getSelectedAIProvider, getProviderDisplayName } from "@/services/api/aiProviderService";
-
-// Уменьшаем время таймаута для более быстрого поиска
-const API_TIMEOUT = 20000; // 20 секунд вместо 30
+import { searchEuProducts } from "@/services/api/zylalabs/euSearchService";
+import { toast } from 'sonner';
 
 type SearchApiCallProps = {
   setIsLoading: (loading: boolean) => void;
@@ -14,134 +10,109 @@ type SearchApiCallProps = {
   setApiInfo: (info: Record<string, string> | undefined) => void;
 };
 
-// Расширяем тип SearchParams из services/types.ts для использования внутри этого компонента
-type ExtendedSearchParams = SearchParams & {
-  requireAdvancedSearch?: boolean;
-};
-
 export function useSearchApiCall({
   setIsLoading,
   setIsUsingDemoData,
   setApiInfo,
 }: SearchApiCallProps) {
-  // Таймаут для предотвращения слишком долгого запроса
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  // Ref для хранения ID таймаута
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
-  // Функция выполнения поискового запроса к API
-  const executeApiCall = async (searchParams: ExtendedSearchParams) => {
-    // Отменяем предыдущий таймаут, если он существует
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-      setSearchTimeout(null);
-    }
-    
-    // Явно устанавливаем загрузку в true
-    setIsLoading(true);
-    
-    // Собираем информацию о странах для отображения в toast
-    const countriesInfo = searchParams.countries && searchParams.countries.length > 0 
-      ? `(${searchParams.countries.map(c => c.toUpperCase()).join(', ')})` 
-      : '';
-    
-    // Показываем toast о поиске
-    toast.loading(`Выполняется поиск товаров ${countriesInfo}...`, {
-      id: 'search-progress',
-      duration: API_TIMEOUT + 5000
-    });
-    
-    // Создаем переменную для отслеживания актуального статуса загрузки
-    let isCurrentlyLoading = true;
-    
-    // Устанавливаем новый таймаут
-    const timeout = setTimeout(() => {
-      // Проверяем, всё ещё идёт ли загрузка
-      if (isCurrentlyLoading) {
-        console.log('Поиск занял слишком много времени');
-        toast.error('Поиск занял слишком много времени. Попробуйте еще раз или используйте другой запрос.', { duration: 5000 });
-        setIsLoading(false);
-      }
-    }, API_TIMEOUT);
-    
-    setSearchTimeout(timeout);
-    
-    try {
-      console.log('Выполняем запрос к API с параметрами:', searchParams);
-      
-      // Выполняем поиск через Zylalabs
-      let results = await searchProductsViaZylalabs(searchParams);
-      
-      console.log('Получен ответ от API:', results);
-      
-      // Отмечаем, что загрузка завершена
-      isCurrentlyLoading = false;
-      setIsLoading(false);
-      
-      // Скрываем toast загрузки и показываем уведомление о завершении поиска
-      toast.dismiss('search-progress');
-      
-      // Проверяем количество найденных товаров
-      const productCount = results.products?.length || 0;
-      if (productCount > 0) {
-        toast.success(`Найдено ${productCount} товаров`, { duration: 3000 });
-      }
-      
-      // Проверяем, используются ли демо-данные
-      if (results.isDemo) {
-        console.log('Используются демо-данные');
-        setIsUsingDemoData(true);
-        setApiInfo(undefined);
-        
-        // Показываем уведомление о демо-данных
-        toast.info('Используются демонстрационные данные', { duration: 3000 });
-      } else if (results.apiInfo) {
-        console.log('Используются данные API, информация:', results.apiInfo);
-        setIsUsingDemoData(false);
-        setApiInfo(results.apiInfo);
-      }
-      
-      // После получения результатов отменяем таймаут, чтобы избежать ложного сообщения
-      if (searchTimeout) {
-        clearTimeout(searchTimeout);
-        setSearchTimeout(null);
-      }
-      
-      return results;
-    } catch (error) {
-      console.error('Ошибка при выполнении API-запроса:', error);
-      
-      // Отмечаем, что загрузка завершена (с ошибкой)
-      isCurrentlyLoading = false;
-      setIsLoading(false);
-      
-      // Скрываем toast загрузки
-      toast.dismiss('search-progress');
-      
-      // Показываем toast об ошибке
-      toast.error('Произошла ошибка при поиске товаров', { duration: 3000 });
-      
-      // Отменяем таймаут при ошибке
-      if (searchTimeout) {
-        clearTimeout(searchTimeout);
-        setSearchTimeout(null);
-      }
-      
-      throw error;
-    }
-  };
-  
-  // Очистка таймаутов
+  // Функция очистки таймаута
   const cleanupApiCall = () => {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-      setSearchTimeout(null);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
     }
-    
-    // Скрываем toast загрузки при очистке
-    toast.dismiss('search-progress');
   };
   
-  return {
-    executeApiCall,
-    cleanupApiCall
+  // Функция для выполнения запроса к API
+  const executeApiCall = async (params: SearchParams, forceNewSearch: boolean = false) => {
+    try {
+      console.log('Выполняем запрос к API с параметрами:', params);
+      
+      // Очищаем предыдущие таймауты
+      cleanupApiCall();
+      
+      // Создаем новый таймаут для ограничения времени ожидания
+      const resultPromise = new Promise<any>(async (resolve, reject) => {
+        try {
+          // Используем Zylalabs API для поиска продуктов в странах ЕС
+          console.log('searchProductsViaZylalabs: Вызов с параметрами:', params);
+          
+          // Передаем параметр forceNewSearch в функцию searchEuProducts
+          const result = await searchEuProducts(params.query, params.page || 1, forceNewSearch);
+          
+          // Проверяем результаты поиска
+          if (result && result.products && result.products.length > 0) {
+            console.log('Отрисовка списка товаров, количество:', result.products.length);
+            
+            // Устанавливаем флаг использования демо-данных и информацию об API
+            setIsUsingDemoData(result.isDemo || false);
+            setApiInfo(result.apiInfo);
+            
+            // Возвращаем результаты поиска
+            resolve({
+              products: result.products,
+              totalPages: result.totalPages || 1,
+              isDemo: result.isDemo || false,
+              apiInfo: result.apiInfo,
+              forceNewSearch // Добавляем флаг, чтобы отслеживать принудительные запросы
+            });
+          } else {
+            console.log('Нет результатов поиска, возвращаем пустой массив');
+            
+            // Устанавливаем информацию об API
+            setApiInfo(result.apiInfo);
+            
+            // Возвращаем пустой результат
+            resolve({
+              products: [],
+              totalPages: 0,
+              isDemo: false,
+              apiInfo: result.apiInfo,
+              forceNewSearch
+            });
+          }
+        } catch (error) {
+          console.error('Ошибка при выполнении запроса к API:', error);
+          reject(error);
+        }
+      });
+      
+      // Ждем завершения промиса
+      const searchResult = await resultPromise;
+      
+      // Возвращаем результат поиска
+      return searchResult;
+    } catch (error) {
+      console.error('Критическая ошибка в executeApiCall:', error);
+      
+      // В случае ошибки возвращаем пустой результат
+      setIsUsingDemoData(true);
+      
+      // Устанавливаем информацию об API
+      setApiInfo({
+        error: 'Критическая ошибка при выполнении запроса',
+        errorMessage: error instanceof Error ? error.message : String(error)
+      });
+      
+      toast.error('Произошла ошибка при выполнении запроса к API', { 
+        description: error instanceof Error ? error.message : 'Неизвестная ошибка',
+        duration: 5000
+      });
+      
+      return {
+        products: [],
+        totalPages: 0,
+        isDemo: true,
+        apiInfo: {
+          error: 'Критическая ошибка при выполнении запроса',
+          errorMessage: error instanceof Error ? error.message : String(error)
+        }
+      };
+    }
   };
+
+  return { executeApiCall, cleanupApiCall };
 }

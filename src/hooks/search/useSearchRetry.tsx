@@ -1,78 +1,90 @@
 
-import { useRef } from 'react';
-import { Product } from "@/services/types";
+import { useState } from 'react';
+import { ProductFilters } from "@/services/types";
 import { toast } from "sonner";
 
-const MAX_RETRY_ATTEMPTS = 2;
-
-type SearchRetryProps = {
+type SearchRetryOptions = {
   executeSearch: (
     queryToUse: string, 
     page: number, 
     lastSearchQuery: string, 
-    filters: any,
-    getSearchCountries: () => string[]
+    filters: ProductFilters, 
+    getSearchCountries: () => string[],
+    forceNewSearch?: boolean
   ) => Promise<any>;
-  handleSearchError: (error: any) => {success: boolean, products: Product[], recovered?: boolean};
+  handleSearchError: (error: any) => any;
+  maxRetries?: number;
+  retryDelay?: number;
 };
 
 export function useSearchRetry({
   executeSearch,
-  handleSearchError
-}: SearchRetryProps) {
-  // Счетчик попыток повторных запросов
-  const retryAttemptsRef = useRef<number>(0);
+  handleSearchError,
+  maxRetries = 2,
+  retryDelay = 1500
+}: SearchRetryOptions) {
+  const [retryCount, setRetryCount] = useState<number>(0);
   
-  // Функция выполнения поиска с автоматическими повторными попытками
+  // Сбросить счетчик повторных попыток
+  const resetRetryAttempts = (): void => {
+    if (retryCount > 0) {
+      console.log(`Сбрасываем счетчик повторных попыток с ${retryCount} на 0`);
+      setRetryCount(0);
+    }
+  };
+  
+  // Выполнить поиск с повторными попытками при неудаче
   const executeSearchWithRetry = async (
-    queryToUse: string, 
-    page: number, 
-    lastSearchQuery: string, 
-    filters: any,
-    getSearchCountries: () => string[]
-  ) => {
+    queryToUse: string,
+    page: number,
+    lastSearchQuery: string,
+    filters: ProductFilters,
+    getSearchCountries: () => string[],
+    forceNewSearch: boolean = false
+  ): Promise<any> => {
     try {
-      // Выполняем поиск с четким указанием страницы
-      console.log(`Выполняем поиск для запроса "${queryToUse}", страница: ${page}`);
-      return await executeSearch(
-        queryToUse,
-        page,
-        lastSearchQuery,
-        filters,
-        getSearchCountries
-      );
+      // Попытка выполнить поиск
+      const result = await executeSearch(queryToUse, page, lastSearchQuery, filters, getSearchCountries, forceNewSearch);
+      
+      // Если поиск успешен, сбрасываем счетчик и возвращаем результаты
+      resetRetryAttempts();
+      return result;
     } catch (error) {
-      // Повтор запроса при ошибке сети или таймауте
-      if (retryAttemptsRef.current < MAX_RETRY_ATTEMPTS) {
-        retryAttemptsRef.current++;
-        console.log(`Ошибка при поиске. Повторная попытка ${retryAttemptsRef.current} из ${MAX_RETRY_ATTEMPTS}`);
-        toast.info(`Повторный запрос (попытка ${retryAttemptsRef.current})...`, { duration: 2000 });
+      console.error('Ошибка при выполнении поиска:', error);
+      
+      // Проверяем, можно ли выполнить повторную попытку
+      if (retryCount < maxRetries) {
+        // Увеличиваем счетчик попыток
+        const newRetryCount = retryCount + 1;
+        setRetryCount(newRetryCount);
         
-        // Задержка перед повторной попыткой
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        console.log(`Попытка ${newRetryCount} из ${maxRetries}, ожидание ${retryDelay}мс...`);
         
-        try {
-          // Рекурсивный вызов для повторной попытки
-          return await executeSearchWithRetry(queryToUse, page, lastSearchQuery, filters, getSearchCountries);
-        } catch (retryError) {
-          console.error('Повторная попытка не удалась:', retryError);
-          return handleSearchError(retryError);
-        }
+        // Показываем уведомление о повторной попытке
+        toast.loading(`Повторная попытка ${newRetryCount}/${maxRetries} поиска...`, {
+          id: 'retry-toast',
+          duration: retryDelay + 1000
+        });
+        
+        // Ждем указанное время перед повторной попыткой
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        
+        // Закрываем уведомление
+        toast.dismiss('retry-toast');
+        
+        // Выполняем повторную попытку с принудительным поиском (игнорируя кеш)
+        return executeSearch(queryToUse, page, lastSearchQuery, filters, getSearchCountries, true);
       } else {
-        // Исчерпаны все попытки
-        retryAttemptsRef.current = 0;
+        // Если достигнут лимит повторных попыток, сбрасываем счетчик
+        console.log('Превышено количество попыток поиска, сбрасываем счетчик');
+        toast.error('Не удалось выполнить поиск после нескольких попыток', { duration: 3000 });
+        resetRetryAttempts();
+        
+        // Обрабатываем ошибку
         return handleSearchError(error);
       }
     }
   };
-
-  // Сброс счетчика попыток
-  const resetRetryAttempts = () => {
-    retryAttemptsRef.current = 0;
-  };
-
-  return {
-    executeSearchWithRetry,
-    resetRetryAttempts
-  };
+  
+  return { executeSearchWithRetry, resetRetryAttempts, retryCount };
 }

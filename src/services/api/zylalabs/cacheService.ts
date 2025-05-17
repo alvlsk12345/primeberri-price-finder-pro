@@ -47,3 +47,39 @@ export const setCacheResponse = (url: string, data: any) => {
   };
   console.log('Данные сохранены в кеш для URL:', url);
 };
+
+/**
+ * Очистка всего API кеша
+ * @returns Количество удаленных элементов кеша
+ */
+export const clearApiCache = (): number => {
+  const cacheSize = Object.keys(apiResponseCache).length;
+  
+  // Очищаем кеш
+  for (const key in apiResponseCache) {
+    delete apiResponseCache[key];
+  }
+  
+  console.log(`Кеш API очищен, удалено ${cacheSize} элементов`);
+  return cacheSize;
+};
+
+/**
+ * Очистка элементов кеша, содержащих заданную строку в ключе
+ * @param keyPattern Строка для поиска в ключах кеша
+ * @returns Количество удаленных элементов кеша
+ */
+export const clearApiCacheByKeyPattern = (keyPattern: string): number => {
+  let deletedCount = 0;
+  
+  for (const key in apiResponseCache) {
+    if (key.includes(keyPattern)) {
+      delete apiResponseCache[key];
+      deletedCount++;
+    }
+  }
+  
+  console.log(`Очищено ${deletedCount} элементов кеша, содержащих "${keyPattern}"`);
+  return deletedCount;
+};
+
