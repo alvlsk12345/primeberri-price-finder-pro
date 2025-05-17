@@ -1,8 +1,6 @@
 
 import { SearchParams, Product } from "../../types";
 import { formatSingleProduct } from "../../formatters/singleProductFormatter";
-// Удаляем импорт parseApiResponse, так как он определен в этом файле
-// import { parseApiResponse } from "../responseParserService";
 
 // Обнаруженные форматы ответов API Zylalabs
 export enum ZylalabsResponseFormat {
@@ -125,15 +123,20 @@ export const parseResponse = async (data: any, originalQuery: string | SearchPar
       
       console.log(`Успешно обработано ${products.length} товаров из ${productsArray.length} исходных`);
       
+      // Рассчитываем общее количество страниц (36 элементов на странице)
+      const itemsPerPage = 36;
+      const totalPages = Math.ceil(totalResults / itemsPerPage) || 1;
+      
       return {
         products,
-        totalPages: data.data?.totalPages || Math.ceil(totalResults / 10) || 1,
+        totalPages,
         isDemo: false,
         apiInfo: {
           source: 'Zylalabs API',
           format: responseFormat,
           query,
-          totalResults: totalResults.toString()
+          totalResults: totalResults.toString(),
+          itemsPerPage: itemsPerPage.toString()
         }
       };
     } catch (formatError) {
@@ -156,7 +159,7 @@ export const parseResponse = async (data: any, originalQuery: string | SearchPar
       
       return {
         products: basicProducts,
-        totalPages: data.data?.totalPages || Math.ceil(totalResults / 10) || 1,
+        totalPages: Math.ceil(totalResults / 36) || 1,
         isDemo: false,
         apiInfo: {
           source: 'Zylalabs API (basic parsing)',

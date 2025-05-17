@@ -11,14 +11,22 @@ export async function fetchProductsAsync(searchParams: SearchParams) {
     // Проверяем, нужно ли использовать демо-данные
     if (useMockData()) {
       console.log('Используем демо-данные для запроса: ', searchParams.query);
-      return generateMockSearchResults(searchParams.query, searchParams.page || 1);
+      // Увеличиваем количество демо-товаров до 36 для соответствия API
+      return generateMockSearchResults(searchParams.query, searchParams.page || 1, 36);
     }
 
     // Реальный запрос к API
     console.log('Запрос к Zylalabs API с параметрами:', searchParams);
     
+    // Добавляем флаг для получения результатов из конечных магазинов
+    const enrichedParams = {
+      ...searchParams,
+      direct_shop_results: true,
+      shops_selection: 'amazon.de,otto.de,mediamarkt.de,zalando.de,saturn.de'
+    };
+    
     // Выполняем запрос к API напрямую, передавая объект параметров
-    const response = await makeZylalabsApiRequest(searchParams);
+    const response = await makeZylalabsApiRequest(enrichedParams);
     
     // Проверяем, что получены данные
     if (!response || !response.data) {
@@ -37,7 +45,7 @@ export async function fetchProductsAsync(searchParams: SearchParams) {
     // Проверяем наличие товаров в ответе
     if (!response.data.products || !Array.isArray(response.data.products) || response.data.products.length === 0) {
       console.warn('API вернул 0 товаров, используем демо-данные');
-      return generateMockSearchResults(searchParams.query, searchParams.page || 1);
+      return generateMockSearchResults(searchParams.query, searchParams.page || 1, 36);
     }
     
     // Парсинг и обработка полученных данных
@@ -55,7 +63,7 @@ export async function fetchProductsAsync(searchParams: SearchParams) {
     
     // В случае ошибки используем демо-данные
     console.warn('Из-за ошибки API используем демо-данные');
-    return generateMockSearchResults(searchParams.query, searchParams.page || 1);
+    return generateMockSearchResults(searchParams.query, searchParams.page || 1, 36);
   }
 }
 
@@ -63,6 +71,6 @@ export async function fetchProductsAsync(searchParams: SearchParams) {
 export const _testing = {
   parseResponse,
   makeZylalabsApiRequest,
-  buildUrl, // Заменили calculatePageUrl на buildUrl
+  buildUrl,
   generateMockSearchResults
 };

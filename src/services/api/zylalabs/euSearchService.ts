@@ -28,7 +28,7 @@ export const searchEuProducts = async (
     if (!apiKey) {
       console.log('API ключ отсутствует, используем демо-данные');
       return {
-        products: await generateMockEuProducts(query, 12),
+        products: await generateMockEuProducts(query, 36),
         totalPages: 5,
         isDemo: true,
         apiInfo: {
@@ -43,12 +43,14 @@ export const searchEuProducts = async (
       clearApiCache();
     }
     
-    // Подготавливаем параметры запроса к API
+    // Подготавливаем параметры запроса к API с добавлением direct_shop_results
     const params = {
       query,
       page,
       countries: [country],
-      language
+      language,
+      direct_shop_results: true,
+      shops_selection: 'amazon.de,otto.de,mediamarkt.de,zalando.de,saturn.de'
     };
     
     // Запрашиваем данные с API
@@ -57,7 +59,7 @@ export const searchEuProducts = async (
     if (!response) {
       console.log('API вернул пустой ответ, используем демо-данные');
       return {
-        products: await generateMockEuProducts(query, 12),
+        products: await generateMockEuProducts(query, 36),
         totalPages: 5,
         isDemo: true,
         apiInfo: {
@@ -74,7 +76,7 @@ export const searchEuProducts = async (
     if (!result.products || result.products.length === 0) {
       console.log('API вернул 0 товаров, используем демо-данные');
       return {
-        products: await generateMockEuProducts(query, 12),
+        products: await generateMockEuProducts(query, 36),
         totalPages: 5,
         isDemo: true,
         apiInfo: {
@@ -92,7 +94,7 @@ export const searchEuProducts = async (
     
     // В случае ошибки возвращаем демо-данные
     return {
-      products: await generateMockEuProducts(query, 12),
+      products: await generateMockEuProducts(query, 36),
       totalPages: 5,
       isDemo: true,
       apiInfo: {

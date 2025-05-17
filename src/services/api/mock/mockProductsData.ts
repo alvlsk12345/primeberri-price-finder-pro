@@ -29,7 +29,7 @@ import { Product } from '../../types';
  * @param count Количество товаров, которое нужно сгенерировать
  * @returns Массив демо-товаров
  */
-export const generateMockEuProducts = async (query: string, count: number = 10): Promise<Product[]> => {
+export const generateMockEuProducts = async (query: string, count: number = 36): Promise<Product[]> => {
   try {
     // Получаем базовые товары
     const baseProducts = getBaseProducts();
@@ -40,10 +40,29 @@ export const generateMockEuProducts = async (query: string, count: number = 10):
     // Обогащаем названия товаров поисковым запросом
     const enrichedProducts = enrichProductTitlesWithQuery(baseProducts, query);
     
-    // Объединяем все товары
-    const allProducts = [queryRelatedProduct, ...enrichedProducts];
+    // Добавляем прямые ссылки на магазины (имитация direct_shop_results=true)
+    const directStoreProducts = enrichedProducts.map(product => {
+      const storeMap: {[key: string]: string} = {
+        'Demo Store': 'amazon.de',
+        'Test Shop': 'otto.de',
+        'Example': 'mediamarkt.de',
+        'Sample': 'zalando.de',
+      };
+      
+      // Выбираем случайный магазин из списка
+      const stores = Object.values(storeMap);
+      const randomStore = stores[Math.floor(Math.random() * stores.length)];
+      
+      return {
+        ...product,
+        source: randomStore,
+        // Создаем URL с правильным доменом магазина
+        url: `https://${randomStore}/product/${encodeURIComponent(product.title.toLowerCase().replace(/\s+/g, '-'))}`
+      };
+    });
     
-    // Ограничиваем количество товаров
+    // Объединяем все товары и ограничиваем по количеству
+    const allProducts = [queryRelatedProduct, ...directStoreProducts];
     return allProducts.slice(0, count);
   } catch (error) {
     console.error('Ошибка при генерации демо-товаров для Европы:', error);

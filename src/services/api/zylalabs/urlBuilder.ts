@@ -38,8 +38,14 @@ export const buildUrl = (params: SearchParams): string => {
       url.searchParams.append('country', 'de');
     }
     
-    // Добавляем лимит количества товаров на страницу (по умолчанию 10)
-    url.searchParams.append('limit', '10');
+    // Добавляем лимит количества товаров на страницу (увеличен с 10 до 36)
+    url.searchParams.append('limit', '36');
+    
+    // Добавляем параметр для получения результатов из конечных магазинов
+    url.searchParams.append('direct_shop_results', 'true');
+    
+    // Добавляем предпочитаемые магазины
+    url.searchParams.append('shops_selection', 'amazon.de,otto.de,mediamarkt.de,zalando.de,saturn.de');
     
     // Логируем построенный URL
     console.log('Построенный URL для API:', url.toString());
