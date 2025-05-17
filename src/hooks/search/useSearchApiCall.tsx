@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import { SearchParams } from "@/services/types";
 import { searchEuProducts } from "@/services/api/zylalabs/euSearchService";
 import { toast } from 'sonner';
+import { clearApiCache } from '@/services/api/zylalabs/cacheService';
 
 type SearchApiCallProps = {
   setIsLoading: (loading: boolean) => void;
@@ -29,7 +30,7 @@ export function useSearchApiCall({
   // Функция для выполнения запроса к API
   const executeApiCall = async (params: SearchParams, forceNewSearch: boolean = false) => {
     try {
-      console.log('Выполняем запрос к API с параметрами:', params);
+      console.log('Выполняем запрос к API с параметрами:', params, 'Принудительный поиск:', forceNewSearch);
       
       // Очищаем предыдущие таймауты
       cleanupApiCall();
@@ -39,6 +40,12 @@ export function useSearchApiCall({
         try {
           // Используем Zylalabs API для поиска продуктов в странах ЕС
           console.log('searchProductsViaZylalabs: Вызов с параметрами:', params);
+          
+          // Если запрошен принудительный поиск, очищаем кеш для этого запроса
+          if (forceNewSearch) {
+            console.log('Очистка кеша перед принудительным поиском');
+            clearApiCache();
+          }
           
           // Передаем параметр forceNewSearch в функцию searchEuProducts
           const result = await searchEuProducts(params.query, params.page || 1, forceNewSearch);

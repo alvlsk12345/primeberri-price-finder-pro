@@ -31,7 +31,7 @@ export const SearchResultsSection: React.FC = () => {
     const clearedItems = clearApiCache();
     toast.success(`Кеш API очищен: удалено ${clearedItems} элементов`, { duration: 3000 });
     
-    // Выполняем новый поиск с текущими параметрами
+    // Выполняем новый поиск с текущими параметрами и принудительным флагом
     if (lastSearchQuery) {
       handleSearch(currentPage, true);
     }

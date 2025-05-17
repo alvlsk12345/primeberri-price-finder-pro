@@ -1,117 +1,82 @@
 
-import { SearchParams } from '../../types';
-import { buildUrl } from './urlBuilder';
-import { parseResponse } from './responseParser';
-import { generateMockSearchResults } from '../mock/mockSearchGenerator';
-import { getApiKey, ZYLALABS_API_KEY } from './config';
+import { getApiKey, BASE_URL, REQUEST_TIMEOUT } from "./config";
+import { SearchParams } from "../../types";
+import { buildUrl } from "./urlBuilder";
+import { getCachedResponse, setCacheResponse } from "./cacheService";
 
 /**
- * Выполняет запрос к Zylalabs API с возможностью отката на моки
- * @param params Параметры поиска
- * @returns Результаты поиска
+ * Выполняет запрос к API Zylalabs с обработкой ошибок и кешированием
+ * @param params Параметры запроса
+ * @param forceNewSearch Принудительно выполнить новый запрос (игнорировать кеш)
+ * @returns Результат запроса или null в случае ошибки
  */
-export const makeZylalabsApiRequest = async (params: SearchParams) => {
-  // Проверяем, используем ли мы демо-режим
-  if (useDemoModeForced) {
-    console.log('Используется демо-режим, возвращаем моки');
-    return generateMockSearchResults(params.query, params.page || 1);
-  }
-
+export const makeZylalabsApiRequest = async (params: SearchParams, forceNewSearch: boolean = false): Promise<any> => {
   try {
-    // Получаем API ключ из локального хранилища
+    // Получаем API ключ
     const apiKey = await getApiKey();
     
     if (!apiKey) {
-      console.error('Не найден API ключ для Zylalabs');
-      throw new Error('API ключ не настроен. Пожалуйста, добавьте API ключ в настройках.');
+      console.error('API ключ отсутствует. Пожалуйста, добавьте API ключ в настройках.');
+      return null;
     }
     
-    // Формируем URL для запроса
+    // Формируем URL запроса
     const url = buildUrl(params);
-    console.log('Zylalabs URL запроса:', url);
+    console.log('Запрос к API:', url);
     
-    // Выполняем запрос к API
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
+    // Проверяем наличие данных в кеше (если не запрошен принудительный поиск)
+    if (!forceNewSearch) {
+      const cachedData = getCachedResponse(url);
+      if (cachedData) {
+        return cachedData;
       }
-    });
-    
-    // Проверяем статус ответа
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Ошибка Zylalabs API:', response.status, errorText);
-      throw new Error(`Ошибка API: ${response.status} - ${errorText}`);
+    } else {
+      console.log('Выполняем принудительный новый запрос, кеш игнорируется');
     }
     
-    // Парсим ответ
-    const data = await response.json();
+    // Выполняем запрос с таймаутом
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
     
-    // Логируем структуру ответа для диагностики
-    console.log('Структура ответа API:', Object.keys(data));
-    if (data.data && data.data.products) {
-      console.log('Количество товаров:', data.data.products.length);
-      console.log('Пример товара:', data.data.products[0]);
-    }
-    
-    // Применяем трансформацию данных
-    return await parseResponse(data, params.query);
-  } catch (error) {
-    console.error('Ошибка при выполнении запроса к Zylalabs API:', error);
-    
-    // В случае ошибки возвращаем моки с пометкой о демо-режиме
-    console.log('Возвращаем моки из-за ошибки API');
-    const mockData = generateMockSearchResults(params.query, params.page || 1);
-    return { ...mockData, isDemo: true };
-  }
-};
-
-// Экспортируем функцию поиска товаров для использования в apiService
-export const searchProducts = async (url: string) => {
-  try {
-    // Получаем API ключ из локального хранилища
-    const apiKey = await getApiKey();
-    
-    if (!apiKey) {
-      console.error('Не найден API ключ для Zylalabs');
-      throw new Error('API ключ не настроен');
-    }
-    
-    // Выполняем запрос к API
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      // Проверяем статус ответа
+      if (!response.ok) {
+        const error = await response.text();
+        console.error(`Ошибка API (${response.status}):`, error);
+        return null;
       }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Ошибка API: ${response.status}`);
+      
+      // Парсим ответ
+      const data = await response.json();
+      
+      // Сохраняем успешный ответ в кеш
+      setCacheResponse(url, data);
+      
+      return data;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        console.error('Запрос превысил таймаут:', REQUEST_TIMEOUT, 'мс');
+      } else {
+        console.error('Ошибка при выполнении запроса:', error);
+      }
+      
+      return null;
     }
-    
-    // Возвращаем результат
-    return await response.json();
   } catch (error) {
-    console.error('Ошибка при выполнении запроса к Zylalabs API:', error);
-    throw error;
+    console.error('Критическая ошибка при выполнении запроса:', error);
+    return null;
   }
-};
-
-// Импортируем функцию для проверки демо-режима
-import { useDemoModeForced } from '../mock/mockServiceConfig';
-
-// Добавляем функцию для выполнения запросов по странам
-export const makeZylalabsCountryRequest = async (query: string, countryCode: string, page: number = 1, language: string = 'en') => {
-  // Создаем параметры для запроса по стране
-  const params: SearchParams = {
-    query,
-    page,
-    language,
-    countries: [countryCode]
-  };
-  
-  return makeZylalabsApiRequest(params);
 };

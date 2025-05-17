@@ -109,31 +109,36 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType = "zylalabs" }) 
       // Показываем уведомление о начале проверки
       toast.loading("Проверка API ключа...", { id: "api-check", duration: 5000 });
       
-      const response = await fetch(testUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${savedKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      // Очищаем кеш перед проверкой
+      clearApiCache();
       
-      // Закрываем уведомление о проверке
-      toast.dismiss("api-check");
-      
-      if (response.ok) {
-        toast.success("API ключ действителен и работает корректно");
+      try {
+        const response = await fetch(testUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${savedKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
         
-        // Очищаем кеш после успешной проверки
-        clearApiCache();
-        toast.info("Кеш API очищен для обеспечения свежих данных", { duration: 4000 });
-      } else {
-        const errorText = await response.text();
-        console.error('Ошибка при проверке API ключа:', response.status, errorText);
-        toast.error(`Ошибка проверки API ключа: ${response.status} - ${errorText.substring(0, 100)}...`);
+        // Закрываем уведомление о проверке
+        toast.dismiss("api-check");
+        
+        if (response.ok) {
+          toast.success("API ключ действителен и работает корректно");
+        } else {
+          const errorText = await response.text();
+          console.error('Ошибка при проверке API ключа:', response.status, errorText);
+          toast.error(`Ошибка проверки API ключа: ${response.status} - ${errorText.substring(0, 100)}...`);
+        }
+      } catch (error) {
+        toast.dismiss("api-check");
+        console.error('Ошибка сети при проверке API ключа:', error);
+        toast.error(`Ошибка сети при проверке API ключа: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
       }
     } catch (error) {
       console.error('Ошибка при проверке API ключа:', error);
-      toast.error("Не удалось проверить API ключ из-за сетевой ошибки");
+      toast.error("Не удалось проверить API ключ из-за внутренней ошибки");
     } finally {
       setIsCheckingApiKey(false);
     }
@@ -143,7 +148,7 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType = "zylalabs" }) 
     <div className="space-y-4 mb-6">
       <div className="flex items-center gap-2 mb-2">
         <KeyRound className="h-5 w-5 text-blue-600" />
-        <Label htmlFor="api-key" className="text-lg font-medium">API ключ {keyType === "zylalabs" ? "Zylalabs" : keyType}</Label>
+        <Label htmlFor={`api-key-${keyType}`} className="text-lg font-medium">API ключ {keyType === "zylalabs" ? "Zylalabs" : keyType}</Label>
       </div>
       
       {isDemoMode && (
@@ -154,12 +159,12 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ keyType = "zylalabs" }) 
       )}
       
       <div className="space-y-2">
-        <Label htmlFor="api-key" className="text-sm text-gray-600">
+        <Label htmlFor={`api-key-${keyType}`} className="text-sm text-gray-600">
           Введите ваш API ключ от {keyType === "zylalabs" ? "Zylalabs" : keyType} для доступа к поиску товаров
         </Label>
         <div className="flex gap-2">
           <Input
-            id="api-key"
+            id={`api-key-${keyType}`}
             type="password"
             placeholder="Введите API ключ..."
             value={apiKey}

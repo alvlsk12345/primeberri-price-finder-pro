@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { ProductFilters } from "@/services/types";
 import { toast } from "sonner";
+import { clearApiCache } from "@/services/api/zylalabs/cacheService";
 
 type SearchRetryOptions = {
   executeSearch: (
@@ -35,21 +36,37 @@ export function useSearchRetry({
   
   // Выполнить поиск с повторными попытками при неудаче
   const executeSearchWithRetry = async (
-    queryToUse: string,
-    page: number,
-    lastSearchQuery: string,
+    queryToUse: string, 
+    page: number, 
+    lastSearchQuery: string, 
     filters: ProductFilters,
     getSearchCountries: () => string[],
     forceNewSearch: boolean = false
   ): Promise<any> => {
     try {
+      // Очищаем кеш перед каждой повторной попыткой
+      if (retryCount > 0) {
+        console.log(`Очищаем кеш перед повторной попыткой #${retryCount}`);
+        clearApiCache();
+      }
+      
+      // Всегда используем принудительный поиск при повторной попытке
+      const useForceNewSearch = forceNewSearch || retryCount > 0;
+      
       // Попытка выполнить поиск
-      const result = await executeSearch(queryToUse, page, lastSearchQuery, filters, getSearchCountries, forceNewSearch);
+      const result = await executeSearch(
+        queryToUse, 
+        page, 
+        lastSearchQuery, 
+        filters, 
+        getSearchCountries, 
+        useForceNewSearch
+      );
       
       // Если поиск успешен, сбрасываем счетчик и возвращаем результаты
       resetRetryAttempts();
       return result;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Ошибка при выполнении поиска:', error);
       
       // Проверяем, можно ли выполнить повторную попытку

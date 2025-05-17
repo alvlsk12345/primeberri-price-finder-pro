@@ -1,239 +1,194 @@
 
-import { toast } from "sonner";
-import { makeZylalabsCountryRequest } from "./apiClient";
-import { Product } from "../../types";
-import { mapProductsFromApi } from "./productMapper";
+import { getApiKey, BASE_URL, REQUEST_TIMEOUT } from "./config";
 import { getCachedResponse, setCacheResponse } from "./cacheService";
+import { mapProductsFromApi } from "./productMapper";
+import { useDemoModeForced } from "../mock/mockServiceConfig";
+import { generateMockSearchResults } from "../mock/mockSearchGenerator";
+import { Product } from "../../types";
 
-// Приоритетные страны ЕС для поиска товаров
-const PRIORITY_EU_COUNTRIES = ['de', 'fr', 'es', 'it', 'nl', 'be', 'pl', 'se', 'at', 'ie', 'pt'];
-
-// Константы для оптимизации
-const MIN_PRODUCTS = 24; // Минимальное количество товаров для поиска
-const MAX_PRODUCTS = 36; // Максимальное количество товаров
-const MIN_GERMAN_PRODUCTS = 8; // Минимальное количество товаров из Германии
-const REQUEST_TIMEOUT = 15000; // Уменьшаем таймаут до 15 секунд для более быстрого ответа
+// Страны ЕС для поиска
+const EU_COUNTRIES = ['de', 'fr', 'it', 'es', 'nl', 'be', 'ie', 'at', 'pt', 'pl', 'se'];
 
 /**
- * Получает уникальный идентификатор товара, учитывая возможные дубликаты
- * @param product Товар для идентификации
- * @returns Уникальный идентификатор товара
- */
-function getUniqueProductId(product: Product): string {
-  // Используем комбинацию полей для более точной идентификации
-  const baseId = product.id || '';
-  const title = (product.title || '').slice(0, 50); // Обрезаем до 50 символов чтобы избежать различий из-за длинны
-  const price = product.price?.toString() || '';
-  
-  return `${baseId}-${title}-${price}`.trim().toLowerCase();
-}
-
-/**
- * Поиск товаров по странам ЕС, начиная с Германии
+ * Поиск товаров в странах ЕС
  * @param query Поисковый запрос
- * @param page Страница поиска
- * @param forceNewSearch Принудительно выполнить новый поиск, игнорируя кеш
- * @returns Список найденных товаров и информация о поиске
+ * @param page Номер страницы
+ * @param forceNewSearch Принудительно выполнить новый поиск (игнорировать кеш)
+ * @returns Результаты поиска товаров
  */
-export const searchEuProducts = async (
-  query: string, 
-  page: number = 1, 
-  forceNewSearch: boolean = false
-): Promise<{
+export const searchEuProducts = async (query: string, page: number = 1, forceNewSearch: boolean = false): Promise<{
   products: Product[],
   totalPages: number,
   isDemo: boolean,
   apiInfo: Record<string, string>
 }> => {
-  console.log(`Начинаем параллельный поиск товаров в странах ЕС по запросу: "${query}", страница: ${page}, forceNewSearch: ${forceNewSearch}`);
-  
-  // Сохраняем все найденные товары
-  let germanProducts: Product[] = [];
-  let otherEuProducts: Product[] = [];
-  const displayedProductIds = new Set<string>();
-  const apiInfo: Record<string, string> = {};
-  
-  // Шаг 1: Проверяем кэш для запроса (только если не требуется новый поиск)
-  const cacheKey = `eu-search-${query}-${page}`;
-  if (!forceNewSearch) {
-    const cachedResults = getCachedResponse(cacheKey);
-    if (cachedResults) {
-      console.log('Найдены кэшированные результаты поиска');
-      return cachedResults;
-    }
-  } else {
-    console.log('Принудительный поиск активирован, кеш игнорируется');
-  }
-
-  // Показываем уведомление о начале поиска
-  const searchToastId = 'search-progress';
-  toast.loading('Выполняется поиск товаров...', { id: searchToastId, duration: 30000 });
-  
   try {
-    // Шаг 2: Создаем запросы в приоритетном порядке стран
-    // Германия всегда на первом месте, остальные страны в фиксированном порядке
-    console.log(`Поиск в странах: [${PRIORITY_EU_COUNTRIES.join(', ')}]`);
+    console.log(`Поиск товаров в ЕС: запрос="${query}", страница=${page}, принудительный=${forceNewSearch}`);
     
-    // Создаем запросы для всех стран с ограничением по времени
-    const countryPromises = PRIORITY_EU_COUNTRIES.map(async (countryCode) => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
-      
-      try {
-        console.log(`Параллельный поиск в ${countryCode.toUpperCase()}...`);
-        const countryData = await makeZylalabsCountryRequest(query, countryCode, page, 'ru');
-        clearTimeout(timeoutId);
-        
-        // Проверяем формат возвращаемых данных
-        if (countryData && countryData.products && Array.isArray(countryData.products)) {
-          console.log(`Найдено ${countryData.products.length} товаров в ${countryCode.toUpperCase()}`);
+    // Проверяем режим демо-данных
+    if (useDemoModeForced) {
+      console.log('Режим демо-данных активирован, возвращаем демо-результаты');
+      const demoResults = generateMockSearchResults(query, page);
+      return {
+        products: demoResults.products,
+        totalPages: demoResults.totalPages,
+        isDemo: true,
+        apiInfo: {
+          source: 'Demo Mode (forced)',
+          timestamp: new Date().toISOString(),
+          query,
+          page: String(page),
+          forceNewSearch: String(forceNewSearch),
+          isDemo: "true"
+        }
+      };
+    }
+    
+    // Получаем API ключ
+    const apiKey = await getApiKey();
+    if (!apiKey) {
+      console.error('API ключ не найден, возвращаем демо-данные');
+      const demoData = generateMockSearchResults(query, page);
+      return {
+        products: demoData.products,
+        totalPages: demoData.totalPages,
+        isDemo: true,
+        apiInfo: {
+          error: 'API ключ не найден',
+          source: 'Demo Data',
+          isDemo: "true"
+        }
+      };
+    }
+    
+    // Создаем уникальный ключ кеша с учетом параметра принудительного поиска
+    const createCacheKey = (country: string) => 
+      `${BASE_URL}?query=${encodeURIComponent(query)}&page=${page}&countries=${country}&language=ru&forceNew=${forceNewSearch}`;
+    
+    // Собираем все товары из стран ЕС
+    let allProducts: Product[] = [];
+    let activeCountries: string[] = [];
+    let errorCountries: string[] = [];
+    let totalResults = 0;
+    const apiInfo: Record<string, string> = {};
+    
+    // Получаем данные из каждой страны параллельно
+    const results = await Promise.all(
+      EU_COUNTRIES.map(async (country) => {
+        try {
+          const url = `${BASE_URL}?query=${encodeURIComponent(query)}&page=${page}&countries=${country}&language=ru`;
+          const cacheKey = createCacheKey(country);
           
-          // Преобразовываем товары из API
-          const mappedCountryProducts = mapProductsFromApi(countryData.products, {
-            query,
-            countries: [countryCode],
-            language: 'ru'
+          // Проверяем кеш, если не запрошен принудительный поиск
+          const cachedData = getCachedResponse(cacheKey, forceNewSearch);
+          if (cachedData && !forceNewSearch) {
+            console.log(`Используем кешированные данные для страны: ${country}`);
+            return { 
+              country, 
+              data: cachedData, 
+              fromCache: true 
+            };
+          }
+          
+          console.log(`Запрос к API для страны: ${country} (URL: ${url})`);
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+          
+          const response = await fetch(url, {
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json'
+            },
+            signal: controller.signal
           });
           
-          // Возвращаем продукты и страну
-          return {
-            products: mappedCountryProducts,
-            country: countryCode,
-            success: true
-          };
-        }
-        return { products: [], country: countryCode, success: false };
-      } catch (err) {
-        clearTimeout(timeoutId);
-        console.error(`Ошибка при запросе к ${countryCode}:`, err);
-        return { products: [], country: countryCode, success: false };
-      }
-    });
-    
-    // Выполняем все запросы параллельно
-    const countryResults = await Promise.allSettled(countryPromises);
-    toast.dismiss(searchToastId);
-
-    // Обработка результатов с устранением дубликатов
-    const uniqueProducts = new Map<string, Product>();
-    
-    countryResults.forEach((result, index) => {
-      if (result.status === 'fulfilled' && result.value.success) {
-        const { products, country } = result.value;
-        
-        // Добавляем только уникальные продукты
-        for (const product of products) {
-          const uniqueId = getUniqueProductId(product);
+          clearTimeout(timeoutId);
           
-          // Если товар еще не добавлен, добавляем его
-          if (!uniqueProducts.has(uniqueId)) {
-            uniqueProducts.set(uniqueId, { ...product, country });
-            
-            // Разделяем результаты из Германии и других стран
-            if (country === 'de') {
-              germanProducts.push({ ...product, country });
-            } else {
-              otherEuProducts.push({ ...product, country });
-            }
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Ошибка API для страны ${country} (${response.status}):`, errorText);
+            throw new Error(`${response.status}: ${errorText.substring(0, 100)}...`);
           }
+          
+          const data = await response.json();
+          
+          // Сохраняем успешный ответ в кеш
+          setCacheResponse(cacheKey, data);
+          
+          return { country, data, fromCache: false };
+        } catch (error) {
+          console.error(`Ошибка при запросе данных для страны ${country}:`, error);
+          errorCountries.push(country);
+          return { country, data: null, error: String(error), fromCache: false };
         }
-      }
-    });
+      })
+    );
     
-    // Обновляем API информацию
-    apiInfo.totalGerman = germanProducts.length.toString();
-    apiInfo.totalOtherEu = otherEuProducts.length.toString();
-    apiInfo.uniqueProductCount = uniqueProducts.size.toString();
-    apiInfo.forceNewSearch = forceNewSearch ? 'true' : 'false';
-    apiInfo.timestamp = new Date().toISOString();
-    
-    console.log(`Найдено ${germanProducts.length} уникальных товаров из Германии, ${otherEuProducts.length} из других стран ЕС`);
-    
-    // Объединяем все найденные товары, отдавая приоритет товарам из Германии
-    let allDisplayProducts = [...germanProducts, ...otherEuProducts];
-    
-    // Проверка минимального количества товаров из Германии
-    if (germanProducts.length < MIN_GERMAN_PRODUCTS && germanProducts.length > 0 && allDisplayProducts.length > 0) {
-      console.log(`Внимание! Найдено недостаточно товаров из Германии (${germanProducts.length})`);
-      
-      // Обеспечиваем минимальное количество товаров для отображения
-      if (allDisplayProducts.length < MIN_PRODUCTS) {
-        console.log(`Найдено менее ${MIN_PRODUCTS} товаров (${allDisplayProducts.length}), добавляем товары из других стран`);
+    // Обрабатываем результаты и собираем товары
+    for (const result of results) {
+      if (result.data && Array.isArray(result.data.products)) {
+        const countryProducts = mapProductsFromApi(result.data.products, result.country);
+        allProducts = [...allProducts, ...countryProducts];
+        totalResults += countryProducts.length;
+        activeCountries.push(result.country);
         
-        // Добавляем товары из других стр��н, чтобы достичь минимума
-        const needed = Math.min(MIN_PRODUCTS - allDisplayProducts.length, otherEuProducts.length);
-        if (needed > 0 && otherEuProducts.length > 0) {
-          const additionalProducts = otherEuProducts.slice(0, needed)
-            .map(product => ({
-              ...product,
-              id: `${product.id}-additional-${Math.random().toString(36).substring(7)}` // Гарантируем уникальность ID
-            }));
-            
-          allDisplayProducts = [...germanProducts, ...otherEuProducts, ...additionalProducts];
-          console.log(`Добавлено ${additionalProducts.length} дополнительных товаров из других стран`);
+        // Сохраняем информацию об API
+        if (result.data.remainingCalls) {
+          apiInfo.remainingCalls = result.data.remainingCalls;
         }
       }
-    } else if (allDisplayProducts.length > MAX_PRODUCTS) {
-      // Ограничиваем до максимального количества товаров
-      console.log(`Ограничиваем количество товаров до ${MAX_PRODUCTS}`);
-      // Сохраняем все немецкие товары
-      const keptGermanProducts = germanProducts.slice(0, Math.min(germanProducts.length, MAX_PRODUCTS));
-      // Добавляем товары из других стран до достижения MAX_PRODUCTS
-      const keptOtherProducts = otherEuProducts.slice(0, MAX_PRODUCTS - keptGermanProducts.length);
-      allDisplayProducts = [...keptGermanProducts, ...keptOtherProducts];
     }
     
-    // Возвращаем результаты поиска
-    if (allDisplayProducts.length > 0) {
-      // Правильно рассчитываем количество страниц
-      const itemsPerPage = 12;
-      const calculatedPages = Math.ceil(allDisplayProducts.length / itemsPerPage);
-      
-      // Обновляем API информацию
-      apiInfo.totalProducts = allDisplayProducts.length.toString();
-      apiInfo.totalPages = calculatedPages.toString();
-      apiInfo.source = 'Zylalabs EU Search (Optimized)';
-      apiInfo.searchCountries = PRIORITY_EU_COUNTRIES.join(',');
-      apiInfo.germanProductCount = germanProducts.length.toString();
-      apiInfo.otherEuProductCount = otherEuProducts.length.toString();
-      
-      console.log(`Итого товаров: ${allDisplayProducts.length}, страниц: ${calculatedPages} (по ${itemsPerPage} на страницу)`);
-      
-      const result = {
-        products: allDisplayProducts,
-        totalPages: calculatedPages,
-        isDemo: false,
-        apiInfo
-      };
-      
-      // Кэшируем результаты для повторного использования
-      setCacheResponse(cacheKey, result);
-      
-      return result;
-    } else {
-      console.log('Не найдено товаров ни в одной из стран ЕС');
-      toast.error('Не найдено товаров ни в одной из стран ЕС. Попробуйте другой запрос.', { duration: 3000 });
+    // Проверяем наличие результатов
+    if (allProducts.length === 0) {
+      console.log('Не найдены товары в странах ЕС, возвращаем демо-данные');
+      const demoData = generateMockSearchResults(query, page);
       return {
-        products: [],
-        totalPages: 0,
-        isDemo: false,
+        products: demoData.products,
+        totalPages: demoData.totalPages,
+        isDemo: true,
         apiInfo: {
-          error: 'Не найдено товаров ни в одной из стран ЕС',
-          source: 'Zylalabs EU Search'
+          error: `Не найдены товары в странах: ${EU_COUNTRIES.join(', ')}`,
+          errorCountries: errorCountries.join(', '),
+          source: 'Demo Data',
+          forceNewSearch: String(forceNewSearch),
+          isDemo: "true"
         }
       };
     }
-  } catch (error) {
-    toast.dismiss(searchToastId);
-    console.error('Ошибка при поиске товаров:', error);
-    toast.error('Произошла ошибка при поиске товаров. Попробуйте снова.', { duration: 3000 });
+    
+    console.log(`Найдено ${allProducts.length} товаров в странах: ${activeCountries.join(', ')}`);
+    
+    // Формируем дополнительную информацию об API
+    apiInfo.activeCountries = activeCountries.join(',');
+    apiInfo.errorCountries = errorCountries.join(',');
+    apiInfo.totalResults = String(totalResults);
+    apiInfo.time = new Date().toISOString();
+    apiInfo.query = query;
+    apiInfo.page = String(page);
+    apiInfo.forceNewSearch = String(forceNewSearch);
+    apiInfo.isDemo = "false";
+    
     return {
-      products: [],
-      totalPages: 0,
+      products: allProducts,
+      totalPages: Math.max(1, Math.ceil(totalResults / 12)),
       isDemo: false,
+      apiInfo
+    };
+  } catch (error) {
+    console.error('Критическая ошибка при поиске товаров в ЕС:', error);
+    
+    // В случае ошибки возвращаем демо-данные
+    const demoData = generateMockSearchResults(query, page);
+    return {
+      products: demoData.products,
+      totalPages: demoData.totalPages,
+      isDemo: true,
       apiInfo: {
-        error: 'Ошибка при поиске товаров',
-        source: 'Zylalabs EU Search'
+        error: error instanceof Error ? error.message : String(error),
+        source: 'Demo Data (Error Fallback)',
+        forceNewSearch: String(forceNewSearch),
+        isDemo: "true"
       }
     };
   }

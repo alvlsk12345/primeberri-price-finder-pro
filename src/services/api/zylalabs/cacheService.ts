@@ -6,14 +6,28 @@ const CACHE_TTL = 7200000; // TTL кеша - 2 часа
 /**
  * Получение кешированного ответа API по URL
  * @param url URL запроса
- * @returns Кешированные данные или null, если кеш не найден или устарел
+ * @param forceNewSearch Игнорировать кеш и выполнить новый запрос
+ * @returns Кешированные данные или null, если кеш не найден, устарел или запрошен новый поиск
  */
-export const getCachedResponse = (url: string) => {
+export const getCachedResponse = (url: string, forceNewSearch: boolean = false) => {
+  // Если запрошен принудительный поиск, не используем кеш
+  if (forceNewSearch) {
+    console.log('Принудительный поиск активирован, игнорируем кеш для URL:', url);
+    return null;
+  }
+  
   const cachedItem = apiResponseCache[url];
   if (cachedItem && (Date.now() - cachedItem.timestamp < CACHE_TTL)) {
     console.log('Используем кешированные данные для URL:', url);
     return cachedItem.data;
   }
+  
+  if (cachedItem) {
+    console.log('Найден устаревший кеш для URL:', url, 'Возраст кеша (мс):', Date.now() - cachedItem.timestamp);
+  } else {
+    console.log('Кеш не найден для URL:', url);
+  }
+  
   return null;
 };
 
@@ -82,4 +96,3 @@ export const clearApiCacheByKeyPattern = (keyPattern: string): number => {
   console.log(`Очищено ${deletedCount} элементов кеша, содержащих "${keyPattern}"`);
   return deletedCount;
 };
-

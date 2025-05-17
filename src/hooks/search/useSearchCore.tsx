@@ -46,6 +46,13 @@ export function useSearchCore({
   const handleSearchError = (error: any): { success: boolean, products: Product[], recovered?: boolean } => {
     console.error('Ошибка поиска:', error);
     
+    // Сохраняем информацию об ошибке
+    setApiInfo({
+      error: error instanceof Error ? error.message : String(error),
+      time: new Date().toISOString(),
+      errorType: 'search_error'
+    });
+    
     if (lastSuccessfulResultsRef.current.length > 0) {
       // В случае ошибки возвращаем последние успешные результаты
       console.log('Произошла ошибка при поиске, возвращаем предыдущие результаты');
