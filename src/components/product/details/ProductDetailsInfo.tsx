@@ -1,14 +1,29 @@
 
 import React from 'react';
-import { Star } from "lucide-react";
+import { Star, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Product } from "@/services/types";
+import { getProductLink } from "@/services/urlService";
+import { toast } from "sonner";
 
 interface ProductDetailsInfoProps {
   product: Product;
 }
 
 export const ProductDetailsInfo: React.FC<ProductDetailsInfoProps> = ({ product }) => {
+  const handleOpenStore = () => {
+    const productLink = getProductLink(product);
+    
+    // Добавляем логирование для отладки
+    console.log(`Открываю ссылку магазина в новой вкладке: ${productLink}`);
+    console.log(`Источник товара: ${product.source}`);
+    
+    window.open(productLink, '_blank');
+    
+    // Показываем уведомление с указанием магазина
+    toast.success(`Переход в магазин ${product.source || 'товара'}`);
+  };
+  
   return (
     <div>
       <div className="mb-4">
@@ -22,7 +37,12 @@ export const ProductDetailsInfo: React.FC<ProductDetailsInfoProps> = ({ product 
       
       <div className="mb-4">
         <h4 className="font-semibold mb-1">Магазин</h4>
-        <p>{product.source || "Не указан"}</p>
+        <p className="flex items-center">
+          {product.source || "Не указан"}
+          {product.link && !product.link.includes('google.com/shopping') && !product.link.includes('shopping.google') && (
+            <span className="ml-2 text-xs text-green-600">(прямая ссылка)</span>
+          )}
+        </p>
       </div>
       
       {product.brand && (
@@ -33,11 +53,13 @@ export const ProductDetailsInfo: React.FC<ProductDetailsInfoProps> = ({ product 
       )}
       
       <Button
-        onClick={() => window.open(product.link, '_blank')}
+        onClick={handleOpenStore}
         className="w-full mt-2"
         variant="brand"
       >
-        Перейти в магазин
+        <span className="flex items-center gap-2">
+          Перейти в магазин <ExternalLink size={18} />
+        </span>
       </Button>
     </div>
   );

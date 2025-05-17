@@ -3,24 +3,44 @@ import { Product, StoreMap } from './types';
 
 // Карта реальных доменов магазинов
 const storeMap: StoreMap = {
-  'Amazon': 'amazon.com',
-  'eBay': 'ebay.com',
-  'Zalando': 'zalando.eu',
-  'ASOS': 'asos.com',
-  'JD Sports': 'jdsports.com',
+  'Amazon': 'amazon.de',
+  'Amazon.de': 'amazon.de',
+  'ebay': 'ebay.de',
+  'eBay': 'ebay.de',
+  'Zalando': 'zalando.de',
+  'ASOS': 'asos.de',
+  'JD Sports': 'jdsports.de',
+  'Nike': 'nike.com',
   'Nike Store': 'nike.com',
   'Nike.com': 'nike.com',
-  'Foot Locker': 'footlocker.eu',
-  'Adidas': 'adidas.com',
+  'Foot Locker': 'footlocker.de',
+  'Adidas': 'adidas.de',
   'H&M': 'hm.com',
   'Zara': 'zara.com',
-  'Sportisimo': 'sportisimo.eu',
+  'Sportisimo': 'sportisimo.de',
+  'Otto': 'otto.de',
+  'Otto.de': 'otto.de',
+  'MediaMarkt': 'mediamarkt.de',
+  'MediaMarkt.de': 'mediamarkt.de',
+  'Saturn': 'saturn.de',
+  'Saturn.de': 'saturn.de',
+  'Unisportstore': 'unisportstore.de',
   'Интернет-магазин': 'shop.example.com'
 };
 
 // Функция для получения доменного имени магазина
 export const getStoreDomain = (storeName: string): string => {
-  return storeMap[storeName] || 'shop.example.com';
+  // Проверяем, есть ли имя магазина в нашем словаре
+  if (storeName && storeMap[storeName]) {
+    return storeMap[storeName];
+  }
+  
+  // Если имя магазина содержит точку, возможно, это уже домен
+  if (storeName && storeName.includes('.')) {
+    return storeName;
+  }
+  
+  return 'shop.example.com';
 };
 
 // Функция для создания слага из имени продукта
@@ -53,13 +73,19 @@ export const extractProductId = (link: string, fallbackId: string): string => {
 
 // Обновляем функцию для получения реальной ссылки на страницу товара
 export const getProductLink = (product: Product): string => {
-  // Если у продукта есть валидная ссылка, используем её
-  if (product.link && product.link.startsWith('http') && !product.link.includes('undefined')) {
+  // Если у продукта есть валидная прямая ссылка на магазин, используем её
+  if (product.link && 
+      product.link.startsWith('http') && 
+      !product.link.includes('undefined') &&
+      !product.link.includes('google.com/shopping') &&
+      !product.link.includes('shopping.google')) {
+    console.log(`getProductLink: Использую прямую ссылку на магазин: ${product.link.substring(0, 100)}`);
     return product.link;
   }
   
   // Определяем домен магазина или используем запасной вариант
   const domain = getStoreDomain(product.source);
+  console.log(`getProductLink: Использую домен ${domain} для магазина ${product.source}`);
   
   // Получаем ID продукта либо из уже имеющейся ссылки, либо из ID продукта
   const productId = product.link ? 
@@ -70,16 +96,22 @@ export const getProductLink = (product: Product): string => {
   const productSlug = createProductSlug(product.title);
   
   // Формируем URL с правильными параметрами в зависимости от магазина
-  if (domain === 'amazon.com') {
+  if (domain.includes('amazon')) {
     return `https://${domain}/dp/${productId}`;
-  } else if (domain === 'ebay.com') {
+  } else if (domain.includes('ebay')) {
     return `https://${domain}/itm/${productId}`;
-  } else if (domain === 'nike.com') {
+  } else if (domain.includes('nike')) {
     // Для Nike используем специальный формат
     return `https://${domain}/t/${productSlug}/${productId}.html`;
-  } else if (domain === 'zalando.eu') {
+  } else if (domain.includes('zalando')) {
     // Для Zalando
     return `https://${domain}/item/${productSlug}-${productId}.html`;
+  } else if (domain.includes('otto')) {
+    // Для Otto.de
+    return `https://${domain}/p/${productSlug}/${productId}`;
+  } else if (domain.includes('mediamarkt') || domain.includes('saturn')) {
+    // Для MediaMarkt и Saturn
+    return `https://${domain}/de/product/_${productSlug}-${productId}.html`;
   } else {
     // Для других магазинов используем стандартный формат
     return `https://${domain}/product/${productSlug}-${productId}`;

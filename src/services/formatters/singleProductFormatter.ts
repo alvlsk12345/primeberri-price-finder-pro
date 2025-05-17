@@ -64,8 +64,23 @@ export const formatSingleProduct = async (
     
     console.log(`Результат обработки изображения для товара ${id}: ${image}`);
     
-    // URL страницы товара
-    const link = product.product_page_url || product.offer?.offer_page_url || product.link || '';
+    // URL страницы товара - теперь с правильным приоритетом ссылок
+    let link = '';
+    if (product.offer && product.offer.offer_page_url) {
+      // Приоритет 1: Прямая ссылка на магазин
+      link = product.offer.offer_page_url;
+      console.log(`Товар ${id}: использую прямую ссылку на магазин: ${link.substring(0, 100)}`);
+    } else if (product.link && !product.link.includes('google.com') && !product.link.includes('shopping.google')) {
+      // Приоритет 2: Собственная прямая ссылка, если она не от Google
+      link = product.link;
+      console.log(`Товар ${id}: использую собственную ссылку: ${link.substring(0, 100)}`);
+    } else if (product.product_page_url) {
+      // Приоритет 3: URL страницы Google Shopping (наименее предпочтительный)
+      link = product.product_page_url;
+      console.log(`Товар ${id}: использую ссылку Google Shopping: ${link.substring(0, 100)}`);
+    } else {
+      console.log(`Товар ${id}: нет доступных ссылок!`);
+    }
     
     // Рейтинг товара
     const rating = parseFloat(product.product_rating) || product.rating || 0;

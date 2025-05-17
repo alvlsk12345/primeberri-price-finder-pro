@@ -92,6 +92,19 @@ export const mapProductsFromApi = (products: any[], params: any): Product[] => {
       console.log(`Не найдены изображения для товара ${productId}`);
     }
     
+    // Получение корректного URL товара (теперь приоритет отдается прямым ссылкам на магазины)
+    let productUrl = '';
+    if (product.offer && product.offer.offer_page_url) {
+      productUrl = product.offer.offer_page_url;
+      console.log(`Использую прямую ссылку на магазин: ${productUrl.substring(0, 100)}`);
+    } else if (product.product_page_url) {
+      productUrl = product.product_page_url;
+      console.log(`Использую ссылку на Google Shopping: ${productUrl.substring(0, 100)}`);
+    } else if (product.link) {
+      productUrl = product.link;
+      console.log(`Использую дополнительную ссылку: ${productUrl.substring(0, 100)}`);
+    }
+    
     // Преобразование в формат Product
     return {
       id: productId,
@@ -100,7 +113,7 @@ export const mapProductsFromApi = (products: any[], params: any): Product[] => {
       price: (product.offer && product.offer.price) || product.price || 'Цена не указана',
       currency: product.currency || 'EUR',
       image: imageUrl,
-      link: (product.offer && product.offer.offer_page_url) || product.product_page_url || product.link || '',
+      link: productUrl,
       rating: parseFloat(product.product_rating) || 0,
       source: source,
       description: product.product_description || '',
