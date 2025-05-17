@@ -1,6 +1,6 @@
 
 import { Product, SearchParams } from "../../types";
-import { searchProducts } from "./apiClient";
+import { makeZylalabsApiRequest } from "./apiClient";
 import { parseResponse } from "./responseParser";
 import { calculatePageUrl } from "./urlBuilder";
 import { generateMockSearchResults } from "../mock/mockSearchGenerator";
@@ -21,7 +21,7 @@ export async function fetchProductsAsync(searchParams: SearchParams) {
     const pageUrl = calculatePageUrl(searchParams);
     
     // Выполняем запрос к API
-    const response = await searchProducts(pageUrl);
+    const response = await makeZylalabsApiRequest(pageUrl);
     
     // Проверяем, что получены данные
     if (!response || !response.data) {
@@ -65,7 +65,8 @@ export async function fetchProductsAsync(searchParams: SearchParams) {
 // Экспортируем вспомогательные функции для тестирования
 export const _testing = {
   parseResponse,
-  searchProducts,
+  makeZylalabsApiRequest,
   calculatePageUrl,
   generateMockSearchResults
 };
+

@@ -6,3 +6,5 @@ export * from './urlBuilder';
 export * from './productMapper';
 export * from './cacheService';
 export * from './euSearchService';
+export * from './apiService';
+
