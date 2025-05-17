@@ -11,16 +11,24 @@ import { useMockData } from "../mock/mockServiceConfig";
  * @param query Поисковый запрос.
  * @param page Номер страницы.
  * @param forceNewSearch Принудительно выполнить новый поиск (игнорировать кеш)
+ * @param language Язык результатов (по умолчанию 'ru')
+ * @param country Код страны для поиска (по умолчанию 'de')
  * @returns Результаты поиска и общее количество страниц.
  */
-export const searchEuProducts = async (query: string, page: number = 1, forceNewSearch: boolean = false): Promise<{ products: Product[], totalPages: number, isDemo: boolean, apiInfo: Record<string, string> }> => {
+export const searchEuProducts = async (
+  query: string, 
+  page: number = 1, 
+  forceNewSearch: boolean = false,
+  language: string = 'ru',
+  country: string = 'de'
+): Promise<{ products: Product[], totalPages: number, isDemo: boolean, apiInfo: Record<string, string> }> => {
   try {
     // Подготовка параметров для запроса к API
     const searchParams: SearchParams = {
       query: query,
       page: page,
-      countries: ['de', 'fr', 'es', 'it'], // Список стран ЕС для поиска
-      language: 'ru' // Указываем язык
+      countries: [country], // Используем переданный код страны
+      language: language    // Используем переданный язык
     };
 
     // Выполняем запрос к API
