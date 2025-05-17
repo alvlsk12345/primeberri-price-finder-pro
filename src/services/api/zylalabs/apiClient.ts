@@ -48,8 +48,15 @@ export const makeZylalabsApiRequest = async (params: SearchParams) => {
     // Парсим ответ
     const data = await response.json();
     
+    // Логируем структуру ответа для диагностики
+    console.log('Структура ответа API:', Object.keys(data));
+    if (data.data && data.data.products) {
+      console.log('Количество товаров:', data.data.products.length);
+      console.log('Пример товара:', data.data.products[0]);
+    }
+    
     // Применяем трансформацию данных
-    return parseResponse(data, params.query);
+    return await parseResponse(data, params.query);
   } catch (error) {
     console.error('Ошибка при выполнении запроса к Zylalabs API:', error);
     

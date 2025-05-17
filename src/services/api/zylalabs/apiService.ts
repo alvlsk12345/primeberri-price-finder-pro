@@ -20,8 +20,30 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
     const result = await makeZylalabsApiRequest(params);
     console.log('Получен ответ от API Zylalabs:', Object.keys(result));
     
-    // Анализ и обработка структуры ответа
-    return parseApiResponse(result, params);
+    // Проверяем наличие всех необходимых полей у товаров
+    if (result.products && result.products.length > 0) {
+      console.log('Проверка данных первого товара:');
+      const firstProduct = result.products[0];
+      console.log('- ID:', firstProduct.id);
+      console.log('- Название:', firstProduct.title);
+      console.log('- Цена:', firstProduct.price);
+      console.log('- Изображение:', firstProduct.image ? 'Да' : 'Нет');
+      console.log('- Магазин:', firstProduct.source);
+      console.log('- Бренд:', firstProduct.brand);
+    }
+    
+    // Преобразуем данные isDemo к строке для совместимости с существующим кодом
+    const isDemo = result.isDemo ? "true" : "false";
+    
+    return {
+      products: result.products || [],
+      totalPages: result.totalPages || 1,
+      isDemo,
+      apiInfo: {
+        ...result.apiInfo || {},
+        isDemo
+      }
+    };
   } catch (error) {
     console.error('Ошибка при вызове API:', error);
     toast.error('Произошла непредвиденная ошибка при поиске товаров');
@@ -31,10 +53,11 @@ export const searchProductsViaZylalabs = async (params: SearchParams): Promise<{
     return {
       products: demoData.products,
       totalPages: demoData.totalPages || 1,
-      isDemo: true,
+      isDemo: "true",
       apiInfo: {
         error: 'Ошибка при вызове API',
-        source: 'Demo Data'
+        source: 'Demo Data',
+        isDemo: "true"
       }
     };
   }
