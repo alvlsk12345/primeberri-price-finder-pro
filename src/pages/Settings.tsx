@@ -3,7 +3,7 @@ import React from 'react';
 import { SearchProvider } from "@/contexts/SearchContext";
 import { PageHeader } from "@/components/PageHeader";
 import { PageFooter } from "@/components/PageFooter";
-import { ApiKeyForm } from "@/components/ApiKeyForm";
+import { ApiKeyForm } from "@/components/api-key/ApiKeyForm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
