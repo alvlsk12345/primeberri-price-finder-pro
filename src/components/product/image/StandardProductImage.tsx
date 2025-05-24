@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Skeleton } from "@/components/ui/skeleton";
 import { ImageOff } from "lucide-react";
@@ -87,7 +86,7 @@ export const StandardProductImage: React.FC<StandardProductImageProps> = ({
   
   return (
     <div 
-      className="relative w-full h-[150px] mb-3 cursor-pointer overflow-hidden"
+      className="relative w-full aspect-[4/3] mb-3 cursor-pointer overflow-hidden bg-gray-50"
       onClick={onClick}
     >
       {(imageLoading || isRetrying) && (
@@ -124,7 +123,6 @@ export const StandardProductImage: React.FC<StandardProductImageProps> = ({
           decoding="async"
           crossOrigin="anonymous"
           onError={(e) => {
-            // Собираем информацию об ошибке для диагностики
             const errorInfo = {
               timestamp: new Date().toISOString(),
               imageUrl: image,
@@ -132,7 +130,6 @@ export const StandardProductImage: React.FC<StandardProductImageProps> = ({
               element: e.currentTarget.outerHTML.substring(0, 100)
             };
             
-            // Сохраняем информацию об ошибке
             setLoadingErrors(prev => [...prev, errorInfo]);
             
             console.error('Ошибка загрузки изображения:', {
@@ -141,18 +138,15 @@ export const StandardProductImage: React.FC<StandardProductImageProps> = ({
               isProxied: image.includes('proxied=true')
             });
             
-            // Проверяем, можем ли повторить попытку загрузки автоматически
             if (retryCount < maxRetries) {
               retryImageLoad();
             } else {
-              // Если исчерпаны попытки, скрываем изображение
               e.currentTarget.style.display = 'none';
             }
           }}
         />
       )}
       
-      {/* Индикатор повторных попыток */}
       {isRetrying && !imageError && (
         <div className="absolute bottom-0 left-0 right-0 bg-blue-500 h-1 animate-pulse">
           <div 

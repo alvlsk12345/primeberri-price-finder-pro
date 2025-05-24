@@ -56,41 +56,9 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     return { ...product, id: uniqueId };
   }), [results]);
 
-  // ИСПРАВЛЕНИЕ: увеличиваем количество товаров на странице до 36
-  const itemsPerPage = 36;
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  
-  // Получаем товары только для текущей страницы
-  const paginatedProducts = useMemo(() => 
-    productsWithUniqueKeys.slice(startIndex, endIndex),
-    [productsWithUniqueKeys, startIndex, endIndex]
-  );
-  
-  // Рассчитываем общее количество страниц на основе фактического количества товаров
-  const actualTotalPages = useMemo(() => {
-    const calculatedPages = Math.max(1, Math.ceil(productsWithUniqueKeys.length / itemsPerPage));
-    console.log(`SearchResults: рассчитано фактическое количество страниц: ${calculatedPages} (товаров: ${productsWithUniqueKeys.length})`);
-    
-    // Проверка на несоответствие рассчитанных страниц и переданных через props
-    if (calculatedPages !== totalPages) {
-      console.warn(`SearchResults: несоответствие в количестве страниц - рассчитано ${calculatedPages}, но передано ${totalPages}`);
-    }
-    
-    // Используем большее значение для безопасности
-    return Math.max(calculatedPages, totalPages);
-  }, [productsWithUniqueKeys.length, totalPages]);
-  
-  // Логируем и уведомляем о количестве результатов
-  useEffect(() => {
-    console.log(`SearchResults: всего продуктов: ${productsWithUniqueKeys.length}, страниц: ${actualTotalPages}`);
-  }, [productsWithUniqueKeys.length, actualTotalPages]);
-  
-  console.log(`Пагинация: страница ${currentPage}/${actualTotalPages}, показываем товары с ${startIndex+1} по ${Math.min(endIndex, productsWithUniqueKeys.length)} из ${productsWithUniqueKeys.length}`);
-
   // Handle page change с улучшенной проверкой валидности страницы
   const handlePageChange = (page: number) => {
-    console.log(`SearchResults: запрос смены страницы с ${currentPage} на ${page} (всего: ${actualTotalPages})`);
+    console.log(`SearchResults: запрос смены страницы с ${currentPage} на ${page} (всего: ${totalPages})`);
     
     // Проверяем валидность запрошенной страницы
     if (page < 1) {
@@ -98,9 +66,9 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
       return;
     }
     
-    if (page > actualTotalPages) {
-      console.warn(`SearchResults: запрошена страница ${page}, но максимум доступно ${actualTotalPages}`);
-      toast.error(`Страница ${page} недоступна. Максимум: ${actualTotalPages}`, { duration: 3000 });
+    if (page > totalPages) {
+      console.warn(`SearchResults: запрошена страница ${page}, но максимум доступно ${totalPages}`);
+      toast.error(`Страница ${page} недоступна. Максимум: ${totalPages}`, { duration: 3000 });
       return;
     }
     
@@ -116,11 +84,11 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   return (
     <div data-testid="search-results">
       <ProductListContainer 
-        products={paginatedProducts}
+        products={productsWithUniqueKeys}
         selectedProduct={selectedProduct}
         onSelect={onSelect}
         currentPage={currentPage}
-        totalPages={actualTotalPages}
+        totalPages={totalPages}
         onPageChange={handlePageChange}
         isDemo={isDemo}
       />

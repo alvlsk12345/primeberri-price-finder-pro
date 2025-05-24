@@ -1,4 +1,3 @@
-
 import { Product } from "@/services/types";
 
 /**
@@ -10,7 +9,7 @@ export const generateProductsForPage = (
   allDemoProducts: Product[],
   createPageSpecificProducts: (query: string, page: number, count?: number) => Product[]
 ): Product[] => {
-  const itemsPerPage = 9;
+  const itemsPerPage = 36;
   
   // Общее количество продуктов
   const totalItems = allDemoProducts.length;

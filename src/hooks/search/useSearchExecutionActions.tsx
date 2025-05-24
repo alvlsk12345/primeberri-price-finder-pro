@@ -1,4 +1,3 @@
-
 import { ProductFilters } from "@/services/types";
 import { useSearchExecutor } from './useSearchExecutor';
 import { useSearchCache } from './useSearchCache';
@@ -74,28 +73,26 @@ export function useSearchExecutionActions({
 
   // Основная функция поиска с улучшенной логикой работы с клиентской пагинацией
   const handleSearch = async (page: number = 1, forceNewSearch: boolean = false) => {
-    console.log(`handleSearch вызван: страница ${page}, forceNewSearch: ${forceNewSearch}, текущая страница: ${currentPage}, totalPages: ${totalPages}`);
-    
-    // Проверяем, есть ли запрос для поиска
-    if (!searchQuery && !lastSearchQuery) {
-      console.log('Пожалуйста, введите запрос для поиска товара');
-      return;
-    }
+    try {
+      if (!searchQuery.trim()) {
+        console.log('Пустой поисковый запрос, очищаем результаты');
+        setSearchResults([]);
+        setAllSearchResults([]);
+        setTotalPages(1);
+        return;
+      }
 
-    // Используем текущий поисковый запрос или последний успешный
-    const queryToUse = searchQuery || lastSearchQuery;
-    
-    // ВАЖНОЕ ИЗМЕНЕНИЕ: если это не новый поиск, а только смена страницы
-    // и у нас уже есть все результаты - используем клиентскую пагинацию без запросов
-    const isSameQuery = queryToUse === lastSearchQuery;
-    const hasAllResults = allSearchResults && allSearchResults.length > 0;
-    
-    if (isSameQuery && hasAllResults && !forceNewSearch) {
-      console.log(`Смена страницы на ${page} без повторного запроса - используем клиентскую пагинацию`);
+      const isSameQuery = searchQuery === lastSearchQuery;
+      const hasAllResults = allSearchResults.length > 0;
       
-      // Пересчитываем totalPages на основе allSearchResults перед сменой страницы
-      if (allSearchResults.length > 0) {
-        const itemsPerPage = 12;
+      console.log(`Поиск: "${searchQuery}", страница ${page}, принудительный: ${forceNewSearch}`);
+      console.log(`Тот же запрос: ${isSameQuery}, есть все результаты: ${hasAllResults}`);
+      
+      if (isSameQuery && hasAllResults && !forceNewSearch) {
+        console.log(`Смена страницы на ${page} без повторного запроса - используем клиентскую пагинацию`);
+        
+        // Используем размер страницы 36 для соответствия API
+        const itemsPerPage = 36;
         const calculatedPages = Math.ceil(allSearchResults.length / itemsPerPage);
         console.log(`Пересчитываем страницы: ${calculatedPages} (из ${allSearchResults.length} элементов)`);
         
@@ -110,70 +107,51 @@ export function useSearchExecutionActions({
           console.log(`Запрошена страница ${page}, но максимум доступно ${calculatedPages}`);
           page = calculatedPages;
         }
+        
+        // Вычисляем индексы для текущей страницы
+        const startIndex = (page - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        
+        // Получаем товары для текущей страницы
+        const pageProducts = allSearchResults.slice(startIndex, endIndex);
+        setSearchResults(pageProducts);
+        
+        // Обновляем текущую страницу
+        setCurrentPage(page);
+        return;
       }
       
-      // Просто меняем страницу без новых запросов
-      setCurrentPage(page);
-      return;
-    }
-    
-    // Если это новый поиск или принудительный поиск, продолжаем обычный процесс
-    
-    // Устанавливаем текущую страницу перед выполнением поиска
-    if (page !== currentPage) {
-      console.log(`Устанавливаем новую текущую страницу: ${page}`);
-      setCurrentPage(page);
-    }
-    
-    // Расширенная проверка кеша с более детальной диагностикой
-    console.log(`Проверка кеша для запроса "${queryToUse}", страница ${page}, forceNewSearch: ${forceNewSearch}`);
-    
-    // Если не принудительный поиск, проверяем кеш
-    const cachedResultsForQuery = !forceNewSearch ? getCachedResults(queryToUse, lastSearchQuery, page) : null;
-    
-    if (cachedResultsForQuery && !forceNewSearch) {
-      console.log(`Используем кэшированные результаты для страницы ${page}, количество: ${cachedResultsForQuery.length}`);
-      setSearchResults(cachedResultsForQuery);
-      return;
-    }
-    
-    // Сохраняем оригинальный запрос (для отображения пользователю)
-    setOriginalQuery(queryToUse);
-    
-    // Если это новый поисковый запрос, сбрасываем кеш
-    if (!isSameQuery || forceNewSearch) {
-      console.log(`Новый запрос или принудительный поиск. Очищаем кэш.`);
-      setLastSearchQuery(queryToUse);
-      // Сбрасываем кеш результатов для нового запроса
-      setCachedResults({});
-    }
-    
-    try {
-      // Подготавливаем UI к поиску
+      // Если это новый поиск или принудительный поиск
       setIsLoading(true);
       
-      // Выполняем поиск с четким указанием страницы и флага forceNewSearch
-      console.log(`Выполняем поиск для запроса "${queryToUse}", страница: ${page}`);
-      const result = await executeSearch(
-        queryToUse,
+      // Выполняем поиск
+      const { products, totalPages: newTotalPages, isDemo, apiInfo } = await executeSearch(
+        searchQuery,
         page,
-        lastSearchQuery,
+        forceNewSearch,
+        getSearchCountries(),
         filters,
-        getSearchCountries,
-        forceNewSearch
+        lastSearchQuery
       );
       
-      // После успешного поиска, проверяем состояние и логируем результат включая totalPages
-      console.log(`Поиск завершен. Текущая страница: ${currentPage}, запрошенная: ${page}, успех: ${result.success}, totalPages: ${totalPages}`);
+      console.log(`Получено ${products.length} товаров, всего страниц: ${newTotalPages}`);
       
-      // Если поиск был неудачным, пытаемся использовать кешированные результаты
-      if (!result.success) {
-        console.log(`Поиск не удался. Проверяем кэш.`);
-        handleSearchFailure(page);
-      }
+      // Обновляем состояние
+      setSearchResults(products);
+      setAllSearchResults(products);
+      setTotalPages(newTotalPages || 1);
+      setCurrentPage(page);
+      setLastSearchQuery(searchQuery);
+      setOriginalQuery(searchQuery);
+      setHasSearched(true);
+      setIsUsingDemoData(isDemo || false);
+      setApiInfo(apiInfo);
+      
     } catch (error) {
-      console.error(`Ошибка при выполнении поиска:`, error);
-      handleSearchFailure(page);
+      console.error('Ошибка при выполнении поиска:', error);
+      setSearchResults([]);
+      setTotalPages(1);
+      throw error;
     } finally {
       setIsLoading(false);
     }

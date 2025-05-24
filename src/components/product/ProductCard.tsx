@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Product } from "@/services/types";
@@ -23,14 +22,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
 
   return (
     <Card 
-      className={`cursor-pointer transition-all hover:shadow-md h-full flex flex-col ${
+      className={`cursor-pointer transition-all hover:shadow-md h-full flex flex-col min-w-0 ${
         isSelected ? 'ring-2 ring-primary' : ''
       }`}
       onClick={() => onSelect(product)}
     >
-      <CardContent className="p-3 flex flex-col h-full">
-        <div className="flex flex-col h-full">
-          <div className="flex-shrink-0 mb-3">
+      <CardContent className="p-3 flex flex-col h-full min-w-0">
+        <div className="flex flex-col h-full min-w-0">
+          <div className="flex-shrink-0">
             <ProductImage 
               image={product.image} 
               title={product.title} 
@@ -38,7 +37,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
             />
           </div>
           
-          <div className="flex flex-col flex-grow space-y-2">
+          <div className="flex flex-col flex-grow min-w-0">
             <ProductCardTitle 
               title={product.title}
               description={product.description}
@@ -51,7 +50,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
               country={product.country}
             />
             
-            <div className="flex-grow">
+            <div className="flex-grow min-w-0">
               <ProductCardPrice 
                 price={product.price}
                 availability={product.availability}
