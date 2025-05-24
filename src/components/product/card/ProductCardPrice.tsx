@@ -1,12 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
 import { getExchangeRate } from "@/services/exchangeService";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Flag } from "lucide-react";
+
 interface ProductCardPriceProps {
   price: string;
   availability?: string;
   currency: string;
 }
+
 export const ProductCardPrice: React.FC<ProductCardPriceProps> = ({
   price,
   availability,
@@ -47,8 +50,8 @@ export const ProductCardPrice: React.FC<ProductCardPriceProps> = ({
 
         // Format price with thousand separator
         setPriceInRubles(totalPriceInRubles.toLocaleString('ru-RU', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
         }));
       } catch (error) {
         console.error('Error calculating price in rubles:', error);
@@ -72,7 +75,8 @@ export const ProductCardPrice: React.FC<ProductCardPriceProps> = ({
   // Создаем содержимое подсказки в зависимости от стоимости товара
   const getTooltipContent = () => {
     if (parsedPrice > 200) {
-      return <div className="text-xs p-1">
+      return (
+        <div className="text-xs p-1">
           <p className="font-semibold mb-1">Расчёт стоимости:</p>
           <ul className="list-disc pl-4 space-y-1">
             <li>Стоимость товара: {parsedPrice} €</li>
@@ -81,9 +85,11 @@ export const ProductCardPrice: React.FC<ProductCardPriceProps> = ({
             <li>Пошлина: 15% от суммы свыше 200 €</li>
             <li>Курс: 105 ₽ за 1 €</li>
           </ul>
-        </div>;
+        </div>
+      );
     } else {
-      return <div className="text-xs p-1">
+      return (
+        <div className="text-xs p-1">
           <p className="font-semibold mb-1">Расчёт стоимости:</p>
           <ul className="list-disc pl-4 space-y-1">
             <li>Стоимость товара: {parsedPrice} €</li>
@@ -91,25 +97,36 @@ export const ProductCardPrice: React.FC<ProductCardPriceProps> = ({
             <li>Таможенный сбор: 5% от стоимости</li>
             <li>Курс: 105 ₽ за 1 €</li>
           </ul>
-        </div>;
+        </div>
+      );
     }
   };
-  return <div className="min-h-[4rem] flex flex-col justify-center">
-      <div className="font-bold text-lg">
+
+  return (
+    <div className="space-y-1">
+      <div className="font-bold text-base">
         {formattedPrice()}
       </div>
-      {priceInRubles && <TooltipProvider>
+      {priceInRubles && (
+        <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="text-sm text-blue-600 font-medium flex items-center gap-1">
-                {priceInRubles} ₽ <span className="whitespace-nowrap flex items-center">С доставкой в <Flag className="ml-1" size={14} /></span>
+              <div className="text-xs text-blue-600 font-medium flex items-center gap-1">
+                {priceInRubles} ₽ 
+                <span className="flex items-center">
+                  с доставкой в <Flag className="ml-1" size={12} />
+                </span>
               </div>
             </TooltipTrigger>
             <TooltipContent side="bottom">
               {getTooltipContent()}
             </TooltipContent>
           </Tooltip>
-        </TooltipProvider>}
-      {availability}
-    </div>;
+        </TooltipProvider>
+      )}
+      {availability && availability !== "Нет данных" && (
+        <div className="text-xs text-gray-600">{availability}</div>
+      )}
+    </div>
+  );
 };

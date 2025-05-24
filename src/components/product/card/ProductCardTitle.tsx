@@ -19,15 +19,15 @@ export const ProductCardTitle: React.FC<ProductCardTitleProps> = ({
   const isDemoProduct = title.includes('[ДЕМО]');
   
   return (
-    <div className="flex items-center justify-center mb-2 relative">
-      <h3 className="font-semibold text-base line-clamp-2 text-center h-12">
+    <div className="flex items-start justify-between gap-1 mb-2">
+      <h3 className="font-semibold text-sm leading-tight line-clamp-3 flex-grow">
         {isDemoProduct ? (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild onClick={onStopPropagation}>
-                <span className="flex items-center gap-1 justify-center">
-                  <span>{title.replace('[ДЕМО] ', '')}</span>
-                  <Info size={14} className="text-amber-500 flex-shrink-0" />
+                <span className="flex items-start gap-1">
+                  <span className="line-clamp-3">{title.replace('[ДЕМО] ', '')}</span>
+                  <Info size={12} className="text-amber-500 flex-shrink-0 mt-0.5" />
                 </span>
               </TooltipTrigger>
               <TooltipContent>
@@ -39,7 +39,7 @@ export const ProductCardTitle: React.FC<ProductCardTitleProps> = ({
       </h3>
       
       {description && (
-        <div className="absolute top-0 right-0">
+        <div className="flex-shrink-0">
           <ProductCardDescription 
             description={description} 
             onStopPropagation={onStopPropagation} 

@@ -21,16 +21,14 @@ export const ProductList: React.FC<ProductListProps> = ({ products, selectedProd
   }
   
   return (
-    // ИСПРАВЛЕНИЕ: улучшенная отзывчивая сетка для 36 товаров
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-6 gap-3 pb-2">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 auto-rows-fr">
       {products.map((product) => (
-        <div key={product.id} className="h-full flex">
-          <ProductCard
-            product={product}
-            isSelected={selectedProduct?.id === product.id}
-            onSelect={onSelect}
-          />
-        </div>
+        <ProductCard
+          key={product.id}
+          product={product}
+          isSelected={selectedProduct?.id === product.id}
+          onSelect={onSelect}
+        />
       ))}
     </div>
   );

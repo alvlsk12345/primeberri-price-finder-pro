@@ -28,15 +28,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
       }`}
       onClick={() => onSelect(product)}
     >
-      <CardContent className="p-4 flex flex-col h-full">
-        <div className="flex flex-col items-center w-full h-full">
-          <ProductImage 
-            image={product.image} 
-            title={product.title} 
-            productId={product.id} 
-          />
+      <CardContent className="p-3 flex flex-col h-full">
+        <div className="flex flex-col h-full">
+          <div className="flex-shrink-0 mb-3">
+            <ProductImage 
+              image={product.image} 
+              title={product.title} 
+              productId={product.id} 
+            />
+          </div>
           
-          <div className="w-full text-center flex flex-col flex-grow mt-3 min-h-[12rem]">
+          <div className="flex flex-col flex-grow space-y-2">
             <ProductCardTitle 
               title={product.title}
               description={product.description}
@@ -49,11 +51,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
               country={product.country}
             />
             
-            <ProductCardPrice 
-              price={product.price}
-              availability={product.availability}
-              currency={product.currency}
-            />
+            <div className="flex-grow">
+              <ProductCardPrice 
+                price={product.price}
+                availability={product.availability}
+                currency={product.currency}
+              />
+            </div>
             
             <ProductCardCalculator 
               product={product}
@@ -61,7 +65,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSelected, o
             />
           </div>
           
-          <div className="w-full mt-auto border-t pt-3">
+          <div className="flex-shrink-0 mt-3 pt-3 border-t">
             <ProductCardActions 
               product={product}
               isSelected={isSelected}
