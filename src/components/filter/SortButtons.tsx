@@ -10,12 +10,17 @@ interface SortButtonsProps {
 }
 
 export const SortButtons: React.FC<SortButtonsProps> = ({ sortBy, onSortChange }) => {
+  // ИСПРАВЛЕНИЕ: улучшенная логика активного состояния кнопок
+  const isActivePriceAsc = sortBy === "price_asc" || sortBy === "price-asc";
+  const isActivePriceDesc = sortBy === "price_desc" || sortBy === "price-desc";
+  const isActiveRating = sortBy === "rating_desc" || sortBy === "rating-desc";
+
   return (
     <div className="flex gap-2 items-center w-full mb-4">
       <span className="text-sm font-medium mr-2">Сортировка:</span>
       <Button
         size="sm"
-        variant={sortBy === "price_asc" || sortBy === "price-asc" ? "brand" : "outline"}
+        variant={isActivePriceAsc ? "default" : "outline"}
         onClick={() => onSortChange("price-asc")}
         className="flex items-center gap-1 px-3 py-2"
         aria-label="По возрастанию цены"
@@ -26,7 +31,7 @@ export const SortButtons: React.FC<SortButtonsProps> = ({ sortBy, onSortChange }
       
       <Button
         size="sm"
-        variant={sortBy === "price_desc" || sortBy === "price-desc" ? "brand" : "outline"}
+        variant={isActivePriceDesc ? "default" : "outline"}
         onClick={() => onSortChange("price-desc")}
         className="flex items-center gap-1 px-3 py-2"
         aria-label="По убыванию цены"
@@ -37,7 +42,7 @@ export const SortButtons: React.FC<SortButtonsProps> = ({ sortBy, onSortChange }
       
       <Button
         size="sm"
-        variant={sortBy === "rating_desc" || sortBy === "rating-desc" ? "brand" : "outline"}
+        variant={isActiveRating ? "default" : "outline"}
         onClick={() => onSortChange("rating-desc")}
         className="flex items-center gap-1 px-3 py-2"
         aria-label="По рейтингу"

@@ -94,15 +94,15 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
       // Отбираем товары из Германии
       const selectedGermanProducts = germanProducts.slice(0, minGermanResults);
       
-      // Отбираем товары из других стран
-      const minOtherResults = Math.min(params.minResultCount ? params.minResultCount - minGermanResults : 6, otherEuropeanProducts.length);
+      // Отбираем товары из других стран - ИСПРАВЛЕНИЕ: увеличиваем до 30 для получения 36 общих
+      const minOtherResults = Math.min(params.minResultCount ? params.minResultCount - minGermanResults : 30, otherEuropeanProducts.length);
       const selectedOtherProducts = otherEuropeanProducts.slice(0, minOtherResults);
       
       // Комбинируем результаты, отдавая приоритет товарам из Германии
       let combinedProducts = [...selectedGermanProducts, ...selectedOtherProducts];
       
       // Если нам не хватает до минимального количества результатов, добавляем оставшиеся товары
-      const neededResults = Math.max(0, (params.minResultCount || 12) - combinedProducts.length);
+      const neededResults = Math.max(0, (params.minResultCount || 36) - combinedProducts.length);
       if (neededResults > 0) {
         // Сначала добавляем больше немецких товаров, если они есть
         if (germanProducts.length > minGermanResults) {
@@ -111,9 +111,9 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
         }
         
         // Если еще нужны товары, добавляем другие европейские
-        if (combinedProducts.length < (params.minResultCount || 12) && otherEuropeanProducts.length > minOtherResults) {
+        if (combinedProducts.length < (params.minResultCount || 36) && otherEuropeanProducts.length > minOtherResults) {
           const additionalOther = otherEuropeanProducts.slice(minOtherResults, 
-            minOtherResults + ((params.minResultCount || 12) - combinedProducts.length));
+            minOtherResults + ((params.minResultCount || 36) - combinedProducts.length));
           combinedProducts = [...combinedProducts, ...additionalOther];
         }
       }
@@ -123,15 +123,25 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
       console.log(`После приоритизации: ${products.length} товаров (из них ${selectedGermanProducts.length} из Германии)`);
     }
     
+    // ИСПРАВЛЕНИЕ: гарантируем минимум 36 товаров
+    if (products.length < 36) {
+      console.log(`Получено только ${products.length} товаров, попытка расширить результаты`);
+      // Добавляем дополнительные товары из общего списка если есть
+      const allAvailableProducts = [...germanProducts, ...otherEuropeanProducts];
+      const additionalProducts = allAvailableProducts.slice(products.length, 36);
+      products = [...products, ...additionalProducts];
+      console.log(`Расширили до ${products.length} товаров`);
+    }
+    
     // Максимальное количество - 36 товаров
     if (products.length > 36) {
       products = products.slice(0, 36);
       console.log(`Ограничение количества товаров до 36`);
     }
     
-    // Расчет общего количества страниц
-    const itemsPerPage = 12; // 12 элементов на странице
-    const totalPages = response.totalPages || Math.max(1, Math.ceil(products.length / itemsPerPage));
+    // ИСПРАВЛЕНИЕ: расчет общего количества страниц для 36 товаров на страницу
+    const itemsPerPage = 36; // Показываем все 36 товаров на одной странице
+    const totalPages = Math.max(1, Math.ceil(products.length / itemsPerPage));
     
     console.log(`Итоговое количество товаров: ${products.length}, страниц: ${totalPages}`);
     
@@ -144,7 +154,8 @@ export const searchProducts = async (params: SearchParams): Promise<{ products: 
         ...response.apiInfo,
         finalProductCount: products.length.toString(),
         germanCount: germanProducts.length.toString(),
-        otherEuCount: otherEuropeanProducts.length.toString()
+        otherEuCount: otherEuropeanProducts.length.toString(),
+        itemsPerPage: itemsPerPage.toString()
       }
     };
   } catch (error) {

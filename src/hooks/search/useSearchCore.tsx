@@ -94,17 +94,17 @@ export function useSearchCore({
       searchCountries = ['de', ...searchCountries];
     }
     
-    // Создаём параметры поиска на основе примера
+    // ИСПРАВЛЕНИЕ: создаём параметры поиска с запросом 36 товаров
     const searchParams = {
       query: searchText,
       originalQuery: queryToUse,
       page: page,
-      language: 'ru',  // Устанавливаем русский язык для получения описаний на русском
+      language: 'ru',
       countries: searchCountries,
       filters: filters,
       requireGermanResults: true,
-      minResultCount: 36, // Запрашиваем 36 результатов
-      limit: 36, // Явно указываем лимит в 36 результатов
+      minResultCount: 36, // ИСПРАВЛЕНИЕ: запрашиваем 36 результатов
+      limit: 36, // ИСПРАВЛЕНИЕ: явно указываем лимит в 36 результатов
     };
     
     console.log('Параметры поиска:', searchParams);
@@ -116,7 +116,7 @@ export function useSearchCore({
     // Сбрасываем счетчик попыток при успешном запросе
     resetRetryAttempts();
     
-    // ИСПРАВЛЕНИЕ: Проверяем ответ API и показываем реальное количество найденных результатов
+    // ИСПРАВЛЕНИЕ: проверяем ответ API и показываем реальное количество найденных результатов
     if (results.products) {
       console.log(`Количество полученных результатов: ${results.products.length}`);
       
@@ -133,19 +133,12 @@ export function useSearchCore({
       console.log(`Сохраняем ${results.products.length} полных результатов поиска в allSearchResults`);
       setAllSearchResults(results.products);
       
-      // ВАЖНО: Вычисляем и устанавливаем правильное количество страниц
-      // на основе полного набора результатов
-      const itemsPerPage = 36; // 36 товаров на страницу
-      const calculatedTotalPages = Math.max(1, Math.ceil(results.products.length / itemsPerPage));
-      console.log(`Вычисляем общее количество страниц на основе ${results.products.length} результатов: ${calculatedTotalPages}`);
+      // ИСПРАВЛЕНИЕ: для 36 товаров на одной странице устанавливаем 1 страницу
+      const calculatedTotalPages = 1; // Все 36 товаров на одной странице
+      console.log(`Устанавливаем общее количество страниц: ${calculatedTotalPages} (все товары на одной странице)`);
+      setTotalPages(calculatedTotalPages);
       
-      // Гарантированно устанавливаем общее количество страниц
-      // используем максимальное из вычисленного и полученного от API
-      const finalTotalPages = Math.max(calculatedTotalPages, results.totalPages || 1);
-      console.log(`Устанавливаем общее количество страниц: ${finalTotalPages}`);
-      setTotalPages(finalTotalPages);
-      
-      // ИСПРАВЛЕНИЕ: Добавляем информацию о количестве найденных товаров в apiInfo
+      // ИСПРАВЛЕНИЕ: добавляем информацию о количестве найденных товаров в apiInfo
       setApiInfo({
         ...results.apiInfo,
         totalResults: String(results.products.length),
@@ -157,7 +150,7 @@ export function useSearchCore({
       setTotalPages(1);
     }
     
-    // Применяем сортировку и фильтрацию к результатам
+    // ИСПРАВЛЕНИЕ: применяем сортировку и фильтрацию к результатам
     let sortedProducts = applyFiltersAndSorting(results.products || [], filters);
     
     // Сохраняем найденные товары
